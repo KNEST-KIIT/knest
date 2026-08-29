@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { Suspense } from 'react'
 import { Avatar, EmptyState, Heading, LinkCard, LiveRegion, Section } from '@/components/ui'
 import { EXPERTISE_OPTIONS } from '@/payload/fields/taxonomy'
@@ -99,6 +100,23 @@ export default async function MentorsPage({
 
       <div className="mt-10">
         <MentorsList filters={filters} />
+      </div>
+
+      <div
+        id="become-a-mentor"
+        className="mt-16 scroll-mt-24 rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-[var(--color-paper-soft)] p-8"
+      >
+        <Heading as="h2" size="heading">
+          Are you a mentor?
+        </Heading>
+        <p className="mt-3 max-w-[52ch] text-[var(--color-ink-soft)]">
+          Mentor profiles are added by KNEST, not self-serve — every mentor here is someone the
+          team has vouched for. If you&rsquo;d like to be one,{' '}
+          <Link href="/about#contact" className="underline underline-offset-2">
+            get in touch
+          </Link>
+          .
+        </p>
       </div>
     </Section>
   )
