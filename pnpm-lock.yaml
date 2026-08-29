@@ -14,7 +14,7 @@ importers:
     dependencies:
       '@auth/drizzle-adapter':
         specifier: ^1.11.3
-        version: 1.11.3(nodemailer@9.0.6)
+        version: 1.11.3(nodemailer@8.0.11)
       '@payloadcms/db-postgres':
         specifier: ^3.88.0
         version: 3.88.0(payload@3.88.0(graphql@16.14.2)(typescript@5.9.3))
@@ -41,10 +41,10 @@ importers:
         version: 16.3.3(@types/node@26.4.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(sass@1.77.4)
       next-auth:
         specifier: 5.0.0-beta.32
-        version: 5.0.0-beta.32(next@16.3.3(@types/node@26.4.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(sass@1.77.4))(nodemailer@9.0.6)(react@19.2.8)
+        version: 5.0.0-beta.32(next@16.3.3(@types/node@26.4.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(sass@1.77.4))(nodemailer@8.0.11)(react@19.2.8)
       nodemailer:
-        specifier: ^9.0.6
-        version: 9.0.6
+        specifier: ^8.0.11
+        version: 8.0.11
       payload:
         specifier: ^3.88.0
         version: 3.88.0(graphql@16.14.2)(typescript@5.9.3)
@@ -91,6 +91,9 @@ importers:
       drizzle-kit:
         specifier: ^0.31.10
         version: 0.31.10
+      playwright:
+        specifier: ^1.62.1
+        version: 1.62.1
       postcss:
         specifier: ^8.5.26
         version: 8.5.26
@@ -1835,6 +1838,11 @@ packages:
   focus-trap@7.5.4:
     resolution: {integrity: sha512-N7kHdlgsO/v+iD/dMoJKtsSqs5Dz/dXZVebRgJw23LDk+jMi/974zyiOYDziY2JPp8xivq9BmUGwIJMiuSBi7w==}
 
+  fsevents@2.3.2:
+    resolution: {integrity: sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==}
+    engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
+    os: [darwin]
+
   fsevents@2.3.3:
     resolution: {integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==}
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
@@ -2319,8 +2327,8 @@ packages:
       sass:
         optional: true
 
-  nodemailer@9.0.6:
-    resolution: {integrity: sha512-IQUGFdhdGwI9+AWX+FpUt4DLmvFaOjTMEoneTIWX/RXxuy1TdenPwWrvFMSfLkPKl+HQEXWuSAxEMMbPYXtBmg==}
+  nodemailer@8.0.11:
+    resolution: {integrity: sha512-nrO/pDAUKl+wXX+lx16tDLbnm0fW6sK/x8mgohaCpg+CdCEl482bD4tCuAZk2DyliruiNTIZxRCoWkDqJEnAiA==}
     engines: {node: '>=6.0.0'}
 
   normalize-path@3.0.0:
@@ -2436,6 +2444,16 @@ packages:
 
   pino@9.14.0:
     resolution: {integrity: sha512-8OEwKp5juEvb/MjpIc4hjqfgCNysrS94RIOMXYvpYCdm/jglrKEiAYmiumbmGhCvs+IcInsphYDFwqrjr7398w==}
+    hasBin: true
+
+  playwright-core@1.62.1:
+    resolution: {integrity: sha512-wPYSwEBJY9GHraISXqyqtx0na0LpO3XEX7jNDhntbex7tzUS7kLnZsOlFruFJB4Hi/rhDMjXGqHewDZ68nYZVw==}
+    engines: {node: '>=20'}
+    hasBin: true
+
+  playwright@1.62.1:
+    resolution: {integrity: sha512-0M+L3LAD8/nm554LOla9Ayx0j0tmFZ0FBcoQ7F1VuVHpM/XpiC8RcDzBQB8W5+hA8L22THxELzeF+2WcUzvcLg==}
+    engines: {node: '>=20'}
     hasBin: true
 
   pluralize@8.0.0:
@@ -2967,7 +2985,7 @@ snapshots:
       '@types/json-schema': 7.0.15
       js-yaml: 4.3.2
 
-  '@auth/core@0.41.3(nodemailer@9.0.6)':
+  '@auth/core@0.41.3(nodemailer@8.0.11)':
     dependencies:
       '@panva/hkdf': 1.2.1
       jose: 6.2.10
@@ -2975,11 +2993,11 @@ snapshots:
       preact: 10.24.3
       preact-render-to-string: 6.5.11(preact@10.24.3)
     optionalDependencies:
-      nodemailer: 9.0.6
+      nodemailer: 8.0.11
 
-  '@auth/drizzle-adapter@1.11.3(nodemailer@9.0.6)':
+  '@auth/drizzle-adapter@1.11.3(nodemailer@8.0.11)':
     dependencies:
-      '@auth/core': 0.41.3(nodemailer@9.0.6)
+      '@auth/core': 0.41.3(nodemailer@8.0.11)
     transitivePeerDependencies:
       - '@simplewebauthn/browser'
       - '@simplewebauthn/server'
@@ -4559,6 +4577,9 @@ snapshots:
     dependencies:
       tabbable: 6.5.0
 
+  fsevents@2.3.2:
+    optional: true
+
   fsevents@2.3.3:
     optional: true
 
@@ -5063,13 +5084,13 @@ snapshots:
 
   nanoid@3.3.18: {}
 
-  next-auth@5.0.0-beta.32(next@16.3.3(@types/node@26.4.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(sass@1.77.4))(nodemailer@9.0.6)(react@19.2.8):
+  next-auth@5.0.0-beta.32(next@16.3.3(@types/node@26.4.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(sass@1.77.4))(nodemailer@8.0.11)(react@19.2.8):
     dependencies:
-      '@auth/core': 0.41.3(nodemailer@9.0.6)
+      '@auth/core': 0.41.3(nodemailer@8.0.11)
       next: 16.3.3(@types/node@26.4.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(sass@1.77.4)
       react: 19.2.8
     optionalDependencies:
-      nodemailer: 9.0.6
+      nodemailer: 8.0.11
 
   next@16.3.3(@types/node@26.4.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(sass@1.77.4):
     dependencies:
@@ -5097,7 +5118,7 @@ snapshots:
       - '@types/node'
       - babel-plugin-macros
 
-  nodemailer@9.0.6: {}
+  nodemailer@8.0.11: {}
 
   normalize-path@3.0.0: {}
 
@@ -5260,6 +5281,14 @@ snapshots:
       safe-stable-stringify: 2.5.0
       sonic-boom: 4.2.1
       thread-stream: 3.2.0
+
+  playwright-core@1.62.1: {}
+
+  playwright@1.62.1:
+    dependencies:
+      playwright-core: 1.62.1
+    optionalDependencies:
+      fsevents: 2.3.2
 
   pluralize@8.0.0: {}
 

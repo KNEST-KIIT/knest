@@ -27,12 +27,17 @@ export const Infrastructure: CollectionConfig = {
     {
       name: 'spaceType',
       type: 'select',
+      // Named to match KNEST's own infrastructure list (official pitch deck,
+      // School of Innovation & Entrepreneurial Leadership) rather than
+      // generic categories.
       options: [
+        { label: 'Flexible co-working space', value: 'coworking' },
+        { label: 'Modular startup studio', value: 'startup_studio' },
+        { label: 'Collaboration zone', value: 'collaboration_zone' },
         { label: 'Maker lab', value: 'maker_lab' },
-        { label: 'Startup studio', value: 'startup_studio' },
+        { label: 'Digital content studio', value: 'digital_studio' },
         { label: 'Founder cabin', value: 'founder_cabin' },
-        { label: 'Coworking', value: 'coworking' },
-        { label: 'Digital studio', value: 'digital_studio' },
+        { label: 'Pre-incubation space', value: 'pre_incubation_space' },
         { label: 'Event space', value: 'event_space' },
         { label: 'Meeting room', value: 'meeting_room' },
       ],

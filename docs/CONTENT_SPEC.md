@@ -13,6 +13,97 @@
 
 ---
 
+## 0. Official source material
+
+Sourced from KNEST's official pitch deck (School of Innovation & Entrepreneurial
+Leadership, KIIT Deemed to be University), added after Phase 4. Where this section and
+the narrative voice built in Phase 0 differ, they are not in conflict — they are
+different registers for different surfaces. The narrative voice (§1, "WHAT IF YOU
+ACTUALLY BUILT IT?") is how KNEST talks to a prospective student. This section is
+institutional fact: what KNEST officially is, for `/about` and `/ecosystem` (Phase 9),
+and it takes precedence anywhere the two would actually contradict each other on a
+matter of fact.
+
+**What the name means.** KNEST — **K**IIT, **N**urturing **E**ntrepreneurship &
+**S**tudent **T**alent. Worth stating once, plainly, on `/about` — not necessarily on
+the homepage, where the emotional register comes first.
+
+**Official mission statement (verbatim):**
+
+> "To establish a university-anchored ecosystem where ideas are transformed into
+> responsible enterprises and institutions through disciplined experimentation, applied
+> learning, and ethical leadership."
+
+**Official tagline:** `INNOVATION READY . ENTERPRISE READY . MARKET READY` — a strong
+candidate for a footer strapline or an `/about` sub-head; the deck sets it in caps with
+mid-dots as separators, which the design system should preserve rather than
+re-punctuate.
+
+**The six objectives** (source material for `/about`, condensed to plain sentences
+where the deck used fragments):
+
+1. Enable early-stage ideation and venture creation among students.
+2. Provide structured support from idea vetting through validation.
+3. Position KIIT as a leading entrepreneurial university in India.
+4. Build students' capacity to take on the risk of founding something.
+5. Give founders access to mentors, markets, funding and policy platforms — including
+   NEN, the National Entrepreneurship Network.
+6. Create a sustainable, alumni-led startup ecosystem.
+
+**The ecosystem model.** KNEST frames itself with an academic citation (Etzkowitz &
+Leydesdorff's Triple Helix model, 1995) — three pillars reinforcing each other:
+
+- **KIIT University** — policy and infrastructure
+- **Schools of KIIT** — innovation and research
+- **Corporate partners** — market access and capital
+
+This is the right shape for the `/ecosystem` page's structural diagram (Phase 9,
+signature experience 04) — not a KNEST invention to visualise, but KNEST's own account
+of how it works, worth crediting as such.
+
+**Who does what.** Three groups share the operational load — useful for `/about`, not
+for the homepage:
+
+| Group | Responsibility |
+|---|---|
+| School of Innovation & Entrepreneurial Leadership | Entrepreneurial leadership, venture development, innovation education, startup mentorship |
+| KIIT Kareer School | Career guidance, startup careers, industry connections, alumni engagement |
+| Other KIIT schools | Identifying founder mindset early, lab access, operational support, physical space |
+
+**Named infrastructure** (already reflected in the Infrastructure CMS collection's
+`spaceType` options): flexible co-working space (10,000–15,000 sq ft), modular startup
+studios, collaboration zones, maker labs, a digital content studio, founder cabins,
+pre-incubation space, and an integrated startup management platform.
+
+**Five-year goals — stated as goals, never as achieved metrics (§46).** The deck's
+numbers are targets for a five-year horizon, not current facts:
+
+- 150–200 student startups within five years
+- 25–30 scalable ventures per year
+- A strong pipeline into Startup India and Startup Odisha
+- Deeper industry collaboration, a stronger alumni founder network, improved national
+  and global rankings
+
+If these appear on `/about` or `/ecosystem`, they are headed **"OUR FIVE-YEAR GOALS"**
+or similarly explicit — never presented as `Metrics` collection entries, which imply a
+verified, dated, sourced fact (§46, and see the Metrics collection's own required
+`source` and `asOf` fields). A goal wearing a metric's clothing is exactly the
+fabricated-data failure §46 exists to prevent, even when the number itself is honestly
+a target rather than an invention.
+
+**Visual identity** (already reflected in `src/styles/tokens.css` and
+`src/styles/fonts.ts`): a green/cream/black palette — the token values are a text-safe
+darkening of the deck's more saturated poster green, since a UI has WCAG contrast
+constraints a static slide does not — a heavy condensed display face (Anton), and a
+handwritten accent face (Caveat) used sparingly on the deck's cover and closing slide,
+reserved here for the homepage narrative (Phase 8) rather than any utilitarian screen.
+**Not yet available:** a vector version of KNEST's own mark (the green three-arch
+symbol appearing on several slides) — the site uses a text wordmark until a real SVG or
+transparent-background asset is supplied; approximating a logo from a raster PDF risks
+misrepresenting it.
+
+---
+
 ## 1. Homepage
 
 Sections are CMS-controlled and individually disableable. Order is fixed; copy below

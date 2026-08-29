@@ -1,39 +1,59 @@
 /*
  * The KNEST identity, in one file.
  *
- * The repository had no existing brand assets when this was built, so these
- * values are a proposal rather than an inheritance. Everything downstream reads
- * these variables and nothing hardcodes a colour or a size — swapping in real
- * brand values later is a change to this file alone.
+ * As of this revision, sourced from KNEST's official pitch deck (School of
+ * Innovation & Entrepreneurial Leadership, KIIT) rather than invented: a
+ * green/cream/black palette, a heavy condensed display face, and a
+ * handwritten accent face reserved for the public homepage narrative
+ * (Phase 8). Everything downstream reads these variables and nothing
+ * hardcodes a colour or size — this is the file that changes if the brand
+ * changes again.
+ *
+ * The brand green in the deck is a punchier, more saturated hue than the one
+ * below. This is deliberately a text-safe darkening of it: WCAG AA requires
+ * 4.5:1 contrast for normal text, and the deck's green — used directly as
+ * link/button text on cream — falls to roughly 3.2:1. #0F7538 clears 4.5:1
+ * against both white (5.8:1, for white text on a green button) and cream
+ * (5.13:1, for green text/links on the page). Accessibility is the
+ * constraint a static poster doesn't have to satisfy that a UI does (spec §44).
  */
 @theme {
-  /* --- Ground: high-contrast editorial, not grey-on-grey --- */
-  --color-ink: #0b0b0c;
-  --color-ink-soft: #1a1a1d;
-  --color-ink-muted: #6b6b70;
-  --color-paper: #fafaf7;
-  --color-paper-soft: #f1f1ec;
-  --color-line: #dededa;
+  /* --- Ground: warm cream and near-black, matching the deck's palette --- */
+  --color-ink: #16150f;
+  --color-ink-soft: #2a2820;
+  --color-ink-muted: #6b6858;
+  --color-paper: #f7f1de;
+  --color-paper-soft: #efe6c9;
+  --color-line: #e2d8b8;
 
-  /* --- Accent: signal orange. Energetic, deliberately not corporate blue. --- */
-  --color-signal: #ff4a1c;
-  --color-signal-deep: #d93a12;
-  --color-signal-wash: #fff1ec;
+  /* --- Accent: KNEST green. Darkened from the deck's poster green for
+     text-safe contrast; see note above. --- */
+  --color-signal: #0f7538;
+  --color-signal-deep: #0a5a2a;
+  --color-signal-wash: #e7f3ea;
 
-  /* --- Support: archival green for ecosystem and data surfaces --- */
-  --color-archive: #2f4f43;
-  --color-archive-soft: #e6ede9;
+  /* --- Support: a muted sage-green for ecosystem/data surfaces, distinct
+     from the vivid brand accent --- */
+  --color-archive: #3f6b52;
+  --color-archive-soft: #e4eee8;
 
-  /* --- Status --- */
-  --color-positive: #1f7a4d;
+  /* --- Status: positive reuses the brand green — "good" and "on-brand"
+     are the same colour here, which is the point --- */
+  --color-positive: #0f7538;
   --color-caution: #a86400;
   --color-critical: #b3261e;
 
-  /* --- Type: fluid ramp, no fixed breakpoints to fight --- */
-  /* Supplied by next/font (src/styles/fonts.ts); the stack below is the
-     fallback used before they load and if they fail entirely. */
+  /* --- Type ---
+     Display: a heavy condensed poster face, matching the deck's headline
+     treatment (ANTON has one weight; that weight already reads as "black").
+     Text: unchanged, a neutral face the brand deck doesn't specify.
+     Accent: a handwritten/marker face for the sparing aside-style touches
+     seen on the deck's cover and closing slide ("Nurturing Entrepreneurship
+     & Student Talent", "Innovate & Lead") — reserved for the homepage
+     narrative (Phase 8), not the utilitarian screens already built. */
   --font-display: var(--font-display-family), ui-sans-serif, system-ui, sans-serif;
   --font-text: var(--font-text-family), ui-sans-serif, system-ui, sans-serif;
+  --font-accent: var(--font-accent-family), cursive;
   --font-mono: ui-monospace, 'SF Mono', Menlo, monospace;
 
   --text-hero: clamp(2.75rem, 1.2rem + 7vw, 8rem);
@@ -53,6 +73,6 @@
   --radius-lg: 1rem;
 
   /* --- Elevation: two levels --- */
-  --shadow-raised: 0 1px 2px rgb(11 11 12 / 0.06), 0 4px 12px rgb(11 11 12 / 0.05);
-  --shadow-floating: 0 2px 4px rgb(11 11 12 / 0.06), 0 16px 40px rgb(11 11 12 / 0.12);
+  --shadow-raised: 0 1px 2px rgb(22 21 15 / 0.06), 0 4px 12px rgb(22 21 15 / 0.05);
+  --shadow-floating: 0 2px 4px rgb(22 21 15 / 0.06), 0 16px 40px rgb(22 21 15 / 0.12);
 }

@@ -839,11 +839,13 @@ export interface Infrastructure {
   } | null;
   spaceType?:
     | (
-        | 'maker_lab'
-        | 'startup_studio'
-        | 'founder_cabin'
         | 'coworking'
+        | 'startup_studio'
+        | 'collaboration_zone'
+        | 'maker_lab'
         | 'digital_studio'
+        | 'founder_cabin'
+        | 'pre_incubation_space'
         | 'event_space'
         | 'meeting_room'
       )
