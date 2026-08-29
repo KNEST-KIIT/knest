@@ -60,8 +60,20 @@ export const Events: CollectionConfig = {
     { name: 'capacity', type: 'number', min: 1 },
 
     {
+      name: 'mentorSpeakers',
+      type: 'relationship',
+      relationTo: 'mentors',
+      hasMany: true,
+      admin: {
+        description:
+          'A KNEST mentor speaking at this event — their bio and photo come from their own profile. Use "Other speakers" below for guests who aren’t in the mentor directory.',
+      },
+    },
+    {
       name: 'speakers',
       type: 'array',
+      label: 'Other speakers',
+      admin: { description: 'For speakers who don’t have a KNEST mentor profile.' },
       fields: [
         { name: 'name', type: 'text', required: true },
         { name: 'title', type: 'text' },
@@ -73,6 +85,15 @@ export const Events: CollectionConfig = {
     { name: 'relevantStages', type: 'select', options: [...STAGE_OPTIONS], hasMany: true, admin: { description: 'Used to recommend this event on the right dashboards.' } },
     { name: 'sectors', type: 'select', options: [...SECTOR_OPTIONS], hasMany: true },
     { name: 'program', type: 'relationship', relationTo: 'programs' },
+    {
+      name: 'cohort',
+      type: 'relationship',
+      relationTo: 'cohorts',
+      admin: {
+        description:
+          'Optional. Ties this event to one specific cohort rather than the program in general — leave blank for a program-wide event.',
+      },
+    },
     { name: 'heroImage', type: 'upload', relationTo: 'media', admin: { position: 'sidebar' } },
     { name: 'featured', type: 'checkbox', defaultValue: false, admin: { position: 'sidebar' } },
     seoField,

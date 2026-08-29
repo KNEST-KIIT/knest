@@ -397,6 +397,10 @@ export interface Mentor {
   linkedinUrl?: string | null;
   photo?: (number | null) | Media;
   featured?: boolean | null;
+  /**
+   * Links this profile to a platform account, mirroring Founders.userId. Without it a signed-in mentor has no way to find their own public profile from the dashboard. Leave blank if they have none.
+   */
+  userId?: string | null;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -648,6 +652,13 @@ export interface Event {
    */
   registrationUrl?: string | null;
   capacity?: number | null;
+  /**
+   * A KNEST mentor speaking at this event — their bio and photo come from their own profile. Use "Other speakers" below for guests who aren’t in the mentor directory.
+   */
+  mentorSpeakers?: (number | Mentor)[] | null;
+  /**
+   * For speakers who don’t have a KNEST mentor profile.
+   */
   speakers?:
     | {
         name: string;
@@ -681,6 +692,10 @@ export interface Event {
       )[]
     | null;
   program?: (number | null) | Program;
+  /**
+   * Optional. Ties this event to one specific cohort rather than the program in general — leave blank for a program-wide event.
+   */
+  cohort?: (number | null) | Cohort;
   heroImage?: (number | null) | Media;
   featured?: boolean | null;
   /**
@@ -1257,6 +1272,7 @@ export interface MentorsSelect<T extends boolean = true> {
   linkedinUrl?: T;
   photo?: T;
   featured?: T;
+  userId?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
@@ -1292,6 +1308,7 @@ export interface EventsSelect<T extends boolean = true> {
   location?: T;
   registrationUrl?: T;
   capacity?: T;
+  mentorSpeakers?: T;
   speakers?:
     | T
     | {
@@ -1304,6 +1321,7 @@ export interface EventsSelect<T extends boolean = true> {
   relevantStages?: T;
   sectors?: T;
   program?: T;
+  cohort?: T;
   heroImage?: T;
   featured?: T;
   seo?:

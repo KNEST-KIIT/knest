@@ -57,5 +57,15 @@ export const Mentors: CollectionConfig = {
     { name: 'linkedinUrl', type: 'text' },
     { name: 'photo', type: 'upload', relationTo: 'media' },
     { name: 'featured', type: 'checkbox', defaultValue: false, admin: { position: 'sidebar' } },
+    {
+      name: 'userId',
+      type: 'text',
+      index: true,
+      admin: {
+        position: 'sidebar',
+        description:
+          'Links this profile to a platform account, mirroring Founders.userId. Without it a signed-in mentor has no way to find their own public profile from the dashboard. Leave blank if they have none.',
+      },
+    },
   ],
 }
