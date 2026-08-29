@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { Card, EmptyState, Heading, Section, Tag } from '@/components/ui'
 import { listInfrastructure } from '@/server/content/infrastructure'
 import { listPartners } from '@/server/content/partners'
-import { TripleHelix } from './triple-helix'
+import { TripleHelix } from '@/components/content/triple-helix'
 
 export const metadata: Metadata = {
   title: 'Ecosystem',

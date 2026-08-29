@@ -38,7 +38,15 @@ export function SignupForm({ googleEnabled }: { googleEnabled: boolean }) {
     }
 
     const next = searchParams.get('next')
-    router.push(next ? `/onboarding?next=${encodeURIComponent(next)}` : '/onboarding')
+    // A next that already targets /onboarding (e.g. the homepage journey
+    // selector's ?stage= prefill) goes there directly rather than being
+    // re-wrapped — /onboarding itself never reads a `next` param, so
+    // wrapping it here would just discard the stage it carries.
+    if (next?.startsWith('/onboarding')) {
+      router.push(next)
+    } else {
+      router.push(next ? `/onboarding?next=${encodeURIComponent(next)}` : '/onboarding')
+    }
     router.refresh()
   }
 
