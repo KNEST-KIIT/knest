@@ -28,6 +28,22 @@ export async function listStartups(filters: StartupFilters = {}) {
   return result.docs
 }
 
+/** Startups.featured, for the homepage and /invest showcases — no filter beyond featured itself. */
+export async function listFeaturedStartups(limit = 6) {
+  const payload = await getContentClient()
+
+  const result = await payload.find({
+    collection: 'startups',
+    where: { featured: { equals: true } },
+    depth: 1,
+    limit,
+    sort: '-createdAt',
+    overrideAccess: false,
+  })
+
+  return result.docs
+}
+
 export async function getStartupBySlug(slug: string): Promise<Startup | null> {
   const payload = await getContentClient()
 
