@@ -4,6 +4,7 @@ import { formatDate } from '@/lib/dates'
 import { getApplicationForReview } from '@/server/applications/review'
 import { nextStatuses } from '@/server/applications/transitions'
 import { StatusForm } from './status-form'
+import { Heading } from '@/components/ui'
 
 export const metadata: Metadata = { title: 'Review application — Admin' }
 
@@ -20,9 +21,9 @@ export default async function AdminApplicationDetailPage({ params }: { params: P
     <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
       <div>
         <p className="text-[length:var(--text-small)] text-[var(--color-ink-muted)]">{program?.title}</p>
-        <h1 className="font-[family-name:var(--font-display)] text-[length:var(--text-title)] font-extrabold uppercase">
+        <Heading as="h1" size="title">
           {applicant.name ?? applicant.email}
-        </h1>
+        </Heading>
         <p className="mt-1 text-[length:var(--text-small)] text-[var(--color-ink-muted)]">
           {applicant.email}
           {application.submittedAt && ` · Submitted ${formatDate(application.submittedAt)}`}
@@ -57,9 +58,9 @@ export default async function AdminApplicationDetailPage({ params }: { params: P
 
       <aside>
         <div className="rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-white p-6">
-          <h2 className="font-[family-name:var(--font-display)] text-[length:var(--text-heading)] font-bold uppercase">
+          <Heading as="h2" size="heading">
             Status
-          </h2>
+          </Heading>
           <p className="mt-2 text-[length:var(--text-small)] text-[var(--color-ink-muted)]">
             Currently: <strong>{application.status}</strong>
           </p>

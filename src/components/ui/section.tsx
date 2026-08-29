@@ -1,4 +1,5 @@
 import { cn } from '@/lib/cn'
+import { Heading } from './heading'
 
 /** Page-section rhythm: 128px desktop, 72px mobile, set in one place. */
 export function Section({
@@ -26,9 +27,10 @@ export function Section({
   )
 }
 
+/** @deprecated Use `Heading size="display"` — kept as a thin alias so existing call sites keep working while they migrate. */
 export function SectionHeading({
   children,
-  as: Tag = 'h2',
+  as = 'h2',
   className,
 }: {
   children: React.ReactNode
@@ -36,15 +38,9 @@ export function SectionHeading({
   className?: string
 }) {
   return (
-    <Tag
-      className={cn(
-        'font-[family-name:var(--font-display)] text-[length:var(--text-display)]',
-        'font-extrabold uppercase leading-[0.95] tracking-[-0.02em]',
-        className,
-      )}
-    >
+    <Heading as={as} size="display" className={className}>
       {children}
-    </Tag>
+    </Heading>
   )
 }
 

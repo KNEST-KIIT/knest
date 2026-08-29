@@ -18,7 +18,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
       <div className="min-h-dvh bg-[var(--color-paper-soft)]">
         <header className="flex items-center justify-between border-b border-[var(--color-line)] bg-[var(--color-paper)] px-6 py-4">
           <div className="flex items-center gap-6">
-            <Link href="/admin/applications" className="font-[family-name:var(--font-display)] text-base font-extrabold uppercase tracking-[0.12em]">
+            <Link href="/admin/applications" className="font-[family-name:var(--font-display)] text-base uppercase tracking-[0.12em]">
               KNEST Admin
             </Link>
             <nav aria-label="Admin" className="flex gap-4 text-[length:var(--text-small)]">

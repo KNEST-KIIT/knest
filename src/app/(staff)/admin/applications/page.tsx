@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { EmptyState } from '@/components/ui'
+import { EmptyState, Heading, Table } from '@/components/ui'
+import type { Column } from '@/components/ui'
 import { formatDate } from '@/lib/dates'
 import { listApplicationsForReview } from '@/server/applications/review'
 import { getContentClient } from '@/server/content/payload-client'
@@ -16,6 +17,40 @@ const STATUS_LABELS: Record<string, string> = {
   accepted: 'Accepted',
   rejected: 'Not this time',
   waitlisted: 'Waitlisted',
+}
+
+type Row = Awaited<ReturnType<typeof listApplicationsForReview>>[number]
+
+const COLUMNS: Column<Row>[] = [
+  {
+    header: 'Applicant',
+    cell: (row) => (
+      <Link href={`/admin/applications/${row.application.id}`} className="font-medium text-[var(--color-signal)]">
+        {row.applicant.name ?? row.applicant.email}
+      </Link>
+    ),
+  },
+  { header: 'Program', cell: (row) => row.programTitle },
+  {
+    header: 'Submitted',
+    cell: (row) => (row.application.submittedAt ? formatDate(row.application.submittedAt) : '—'),
+  },
+  { header: 'Status', cell: (row) => STATUS_LABELS[row.application.status] },
+]
+
+function Card({ row }: { row: Row }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <Link href={`/admin/applications/${row.application.id}`} className="font-medium text-[var(--color-signal)]">
+        {row.applicant.name ?? row.applicant.email}
+      </Link>
+      <p className="text-[length:var(--text-small)] text-[var(--color-ink-muted)]">{row.programTitle}</p>
+      <p className="mt-2 text-[length:var(--text-small)]">
+        {STATUS_LABELS[row.application.status]}
+        {row.application.submittedAt && ` · ${formatDate(row.application.submittedAt)}`}
+      </p>
+    </div>
+  )
 }
 
 export default async function AdminApplicationsPage({
@@ -34,9 +69,9 @@ export default async function AdminApplicationsPage({
 
   return (
     <div>
-      <h1 className="font-[family-name:var(--font-display)] text-[length:var(--text-title)] font-extrabold uppercase">
+      <Heading as="h1" size="title">
         Applications
-      </h1>
+      </Heading>
 
       <form className="mt-6 flex flex-wrap gap-4" method="get">
         <select name="program" defaultValue={params.program ?? ''} className="h-11 rounded-[var(--radius-sm)] border border-[var(--color-line)] bg-white px-3">
@@ -65,34 +100,7 @@ export default async function AdminApplicationsPage({
           <EmptyState heading="Nothing here yet" body="Applications matching this filter will appear here." size="compact" />
         </div>
       ) : (
-        <div className="mt-8 overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-line)] bg-white">
-          <table className="w-full text-left text-[length:var(--text-small)]">
-            <thead className="border-b border-[var(--color-line)] text-[var(--color-ink-muted)]">
-              <tr>
-                <th className="px-4 py-3 font-medium">Applicant</th>
-                <th className="px-4 py-3 font-medium">Program</th>
-                <th className="px-4 py-3 font-medium">Submitted</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map(({ application, applicant, programTitle }) => (
-                <tr key={application.id} className="border-b border-[var(--color-line)] last:border-b-0">
-                  <td className="px-4 py-3">
-                    <Link href={`/admin/applications/${application.id}`} className="font-medium text-[var(--color-signal)]">
-                      {applicant.name ?? applicant.email}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3">{programTitle}</td>
-                  <td className="px-4 py-3">
-                    {application.submittedAt ? formatDate(application.submittedAt) : '—'}
-                  </td>
-                  <td className="px-4 py-3">{STATUS_LABELS[application.status]}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <Table className="mt-8" rows={rows} columns={COLUMNS} rowKey={(row) => row.application.id} renderCard={(row) => <Card row={row} />} />
       )}
     </div>
   )

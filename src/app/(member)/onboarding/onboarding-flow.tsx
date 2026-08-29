@@ -3,11 +3,10 @@
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { EXPERTISE_OPTIONS, SECTOR_OPTIONS } from '@/payload/fields/taxonomy'
-import { Field, Input, Textarea } from '@/components/ui'
+import { Field, Heading, Input, MultiSelect, SingleSelect, Textarea } from '@/components/ui'
 import type { JourneyStage, PlatformRole } from '@/server/auth/roles'
 import { recommend } from '@/server/onboarding/recommend'
 import { GOALS, JOURNEY_STAGES, MENTOR_AVAILABILITY, PLATFORM_ROLES } from '@/server/onboarding/validation'
-import { MultiSelect, SingleSelect } from './option-list'
 import { StepShell } from './step-shell'
 
 const ROLE_LABELS: Record<(typeof PLATFORM_ROLES)[number], string> = {
@@ -335,12 +334,12 @@ export function OnboardingFlow({ initial, stagePrefill }: Props) {
       </p>
       <div className="mb-8 h-1 w-full rounded-full bg-[var(--color-signal)]" />
 
-      <h1 className="font-[family-name:var(--font-display)] text-[length:var(--text-title)] font-extrabold uppercase leading-tight">
+      <Heading as="h1" size="title">
         Your KNEST path
-      </h1>
+      </Heading>
 
       <div className="mt-6 rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-[var(--color-paper-soft)] p-6">
-        <p className="font-[family-name:var(--font-display)] text-[length:var(--text-heading)] font-extrabold uppercase text-[var(--color-signal)]">
+        <p className="font-[family-name:var(--font-display)] text-[length:var(--text-heading)] uppercase text-[var(--color-signal)]">
           {result.path}
         </p>
         <p className="mt-2 text-[length:var(--text-body)]">{result.body}</p>

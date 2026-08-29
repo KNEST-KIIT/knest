@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Field, Input } from '@/components/ui'
+import { Field, Heading, Input } from '@/components/ui'
 import { Button } from '@/components/ui/button'
 
 export function ResetForm() {
@@ -26,9 +26,9 @@ export function ResetForm() {
   if (sent) {
     return (
       <div>
-        <h1 className="font-[family-name:var(--font-display)] text-[length:var(--text-title)] font-extrabold uppercase leading-tight">
+        <Heading as="h1" size="title">
           Check your email.
-        </h1>
+        </Heading>
         <p className="mt-3 text-[length:var(--text-small)] text-[var(--color-ink-soft)]">
           If there&rsquo;s an account for that address, the link is on its way. Check your inbox.
         </p>
@@ -38,9 +38,9 @@ export function ResetForm() {
 
   return (
     <div>
-      <h1 className="font-[family-name:var(--font-display)] text-[length:var(--text-title)] font-extrabold uppercase leading-tight">
+      <Heading as="h1" size="title">
         Reset your password.
-      </h1>
+      </Heading>
       <p className="mt-3 text-[length:var(--text-small)] text-[var(--color-ink-soft)]">
         Enter your email and we&rsquo;ll send you a link.
       </p>

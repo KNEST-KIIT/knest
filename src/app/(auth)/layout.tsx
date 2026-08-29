@@ -19,7 +19,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <div className="w-full max-w-[420px]">
           <Link
             href="/"
-            className="mb-8 block text-center font-[family-name:var(--font-display)] text-lg font-extrabold uppercase tracking-[0.12em]"
+            className="mb-8 block text-center font-[family-name:var(--font-display)] text-lg uppercase tracking-[0.12em]"
           >
             KNEST
           </Link>

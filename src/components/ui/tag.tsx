@@ -1,6 +1,7 @@
 import { cn } from '@/lib/cn'
 
-type Tone = 'neutral' | 'signal' | 'positive' | 'caution' | 'critical' | 'archive'
+export type StatusTone = 'neutral' | 'signal' | 'positive' | 'caution' | 'critical' | 'archive'
+type Tone = StatusTone
 
 const tones: Record<Tone, string> = {
   neutral: 'bg-[var(--color-paper-soft)] text-[var(--color-ink-soft)]',

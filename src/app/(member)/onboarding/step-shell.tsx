@@ -1,5 +1,6 @@
 'use client'
 
+import { Heading } from '@/components/ui'
 import { Button } from '@/components/ui/button'
 
 /**
@@ -46,9 +47,9 @@ export function StepShell({
         </div>
       </div>
 
-      <h1 className="font-[family-name:var(--font-display)] text-[length:var(--text-title)] font-extrabold uppercase leading-tight">
+      <Heading as="h1" size="title">
         {heading}
-      </h1>
+      </Heading>
       {subhead && <p className="mt-3 text-[length:var(--text-small)] text-[var(--color-ink-soft)]">{subhead}</p>}
 
       <div className="mt-6">{children}</div>

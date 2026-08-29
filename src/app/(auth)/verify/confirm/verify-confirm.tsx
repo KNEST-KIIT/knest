@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { Heading } from '@/components/ui'
 
 export function VerifyConfirm({ email, token }: { email: string; token: string }) {
   const [state, setState] = useState<'checking' | 'ok' | 'error'>('checking')
@@ -30,9 +31,9 @@ export function VerifyConfirm({ email, token }: { email: string; token: string }
   if (state === 'error') {
     return (
       <div>
-        <h1 className="font-[family-name:var(--font-display)] text-[length:var(--text-title)] font-extrabold uppercase leading-tight">
+        <Heading as="h1" size="title">
           That link has expired.
-        </h1>
+        </Heading>
         <p className="mt-3 text-[length:var(--text-small)] text-[var(--color-ink-soft)]">
           <a href="/verify" className="font-medium text-[var(--color-signal)]">
             Request a new one.
@@ -44,9 +45,9 @@ export function VerifyConfirm({ email, token }: { email: string; token: string }
 
   return (
     <div>
-      <h1 className="font-[family-name:var(--font-display)] text-[length:var(--text-title)] font-extrabold uppercase leading-tight">
+      <Heading as="h1" size="title">
         Email confirmed.
-      </h1>
+      </Heading>
       <p className="mt-3 text-[length:var(--text-small)] text-[var(--color-ink-soft)]">
         You&rsquo;re all set.{' '}
         <a href="/dashboard" className="font-medium text-[var(--color-signal)]">

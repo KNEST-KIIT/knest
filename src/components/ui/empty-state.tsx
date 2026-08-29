@@ -1,4 +1,5 @@
 import { cn } from '@/lib/cn'
+import { Heading } from './heading'
 
 /**
  * A first-class component, not a fallback.
@@ -32,16 +33,9 @@ export function EmptyState({
         className,
       )}
     >
-      <h3
-        className={cn(
-          'font-[family-name:var(--font-display)] font-bold uppercase tracking-tight',
-          size === 'compact'
-            ? 'text-[length:var(--text-heading)]'
-            : 'text-[length:var(--text-title)]',
-        )}
-      >
+      <Heading as="h3" size={size === 'compact' ? 'heading' : 'title'} className="tracking-tight">
         {heading}
-      </h3>
+      </Heading>
       <p className="mt-4 max-w-[46ch] text-[var(--color-ink-soft)]">{body}</p>
       {action && <div className="mt-8">{action}</div>}
     </div>

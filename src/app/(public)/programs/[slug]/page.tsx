@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { EmptyState, LinkCard, Tag } from '@/components/ui'
+import { EmptyState, Heading, LinkCard, Tag } from '@/components/ui'
 import { RichText } from '@/components/content/rich-text'
 import { formatDate } from '@/lib/dates'
 import { getProgramBySlug, listProgramCohortsWithStartups } from '@/server/content/programs'
@@ -44,9 +44,9 @@ export default async function ProgramDetailPage({ params }: { params: Promise<{ 
           )}
         </div>
 
-        <h1 className="mt-4 font-[family-name:var(--font-display)] text-[length:var(--text-display)] font-extrabold uppercase leading-[0.95]">
+        <Heading as="h1" size="display" className="mt-4">
           {program.title}
-        </h1>
+        </Heading>
         <p className="mt-4 text-[length:var(--text-heading)] text-[var(--color-ink-soft)]">{program.tagline}</p>
 
         <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-[length:var(--text-small)] text-[var(--color-ink-muted)]">
@@ -59,35 +59,35 @@ export default async function ProgramDetailPage({ params }: { params: Promise<{ 
       <div className="mt-12 grid gap-12 lg:grid-cols-[1fr_320px]">
         <div className="flex flex-col gap-12">
           <section>
-            <h2 className="font-[family-name:var(--font-display)] text-[length:var(--text-heading)] font-bold uppercase">
+            <Heading as="h2" size="heading">
               Who this is for
-            </h2>
+            </Heading>
             <RichText data={program.whoItsFor} className="mt-4" />
           </section>
 
           {program.whatYoullBuild && (
             <section>
-              <h2 className="font-[family-name:var(--font-display)] text-[length:var(--text-heading)] font-bold uppercase">
+              <Heading as="h2" size="heading">
                 What you&rsquo;ll build
-              </h2>
+              </Heading>
               <RichText data={program.whatYoullBuild} className="mt-4" />
             </section>
           )}
 
           {program.whatYoullGet && (
             <section>
-              <h2 className="font-[family-name:var(--font-display)] text-[length:var(--text-heading)] font-bold uppercase">
+              <Heading as="h2" size="heading">
                 What you&rsquo;ll get
-              </h2>
+              </Heading>
               <RichText data={program.whatYoullGet} className="mt-4" />
             </section>
           )}
 
           {program.timeline && program.timeline.length > 0 && (
             <section>
-              <h2 className="font-[family-name:var(--font-display)] text-[length:var(--text-heading)] font-bold uppercase">
+              <Heading as="h2" size="heading">
                 How it runs
-              </h2>
+              </Heading>
               <ol className="mt-4 flex flex-col gap-4">
                 {program.timeline.map((phase, i) => (
                   <li key={i} className="border-l-2 border-[var(--color-signal)] pl-4">
@@ -112,9 +112,9 @@ export default async function ProgramDetailPage({ params }: { params: Promise<{ 
 
           {mentors.length > 0 && (
             <section>
-              <h2 className="font-[family-name:var(--font-display)] text-[length:var(--text-heading)] font-bold uppercase">
+              <Heading as="h2" size="heading">
                 Who you&rsquo;ll meet
-              </h2>
+              </Heading>
               <div className="mt-4 flex flex-wrap gap-3">
                 {mentors.map((mentor) => (
                   <Tag key={mentor.id} tone="archive">
@@ -127,9 +127,9 @@ export default async function ProgramDetailPage({ params }: { params: Promise<{ 
 
           {allStartups.length > 0 && (
             <section>
-              <h2 className="font-[family-name:var(--font-display)] text-[length:var(--text-heading)] font-bold uppercase">
+              <Heading as="h2" size="heading">
                 Startups from this program
-              </h2>
+              </Heading>
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 {allStartups.map((startup) => (
                   <LinkCard key={startup.id} href={`/startups/${startup.slug}`} label={`View ${startup.name}`}>
@@ -145,18 +145,18 @@ export default async function ProgramDetailPage({ params }: { params: Promise<{ 
 
           {program.requirements && (
             <section>
-              <h2 className="font-[family-name:var(--font-display)] text-[length:var(--text-heading)] font-bold uppercase">
+              <Heading as="h2" size="heading">
                 What we ask of you
-              </h2>
+              </Heading>
               <RichText data={program.requirements} className="mt-4" />
             </section>
           )}
 
           {faqs.length > 0 && (
             <section>
-              <h2 className="font-[family-name:var(--font-display)] text-[length:var(--text-heading)] font-bold uppercase">
+              <Heading as="h2" size="heading">
                 Questions
-              </h2>
+              </Heading>
               <div className="mt-4 flex flex-col divide-y divide-[var(--color-line)] border-y border-[var(--color-line)]">
                 {faqs.map((faq, i) => (
                   <details key={i} className="group py-4">
@@ -171,9 +171,9 @@ export default async function ProgramDetailPage({ params }: { params: Promise<{ 
           )}
 
           <section>
-            <h2 className="font-[family-name:var(--font-display)] text-[length:var(--text-title)] font-extrabold uppercase">
+            <Heading as="h2" size="title">
               Ready?
-            </h2>
+            </Heading>
             <div className="mt-4 max-w-[360px] lg:hidden">
               <ApplyCta program={program} />
             </div>

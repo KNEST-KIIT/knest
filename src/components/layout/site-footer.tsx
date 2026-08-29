@@ -38,7 +38,7 @@ export function SiteFooter() {
       <div className="mx-auto w-full max-w-[1280px] px-6 py-16 md:px-10">
         <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-4">
           <div>
-            <p className="font-[family-name:var(--font-display)] text-lg font-extrabold uppercase tracking-[0.12em]">
+            <p className="font-[family-name:var(--font-display)] text-lg uppercase tracking-[0.12em]">
               KNEST
             </p>
             <p className="mt-4 max-w-[32ch] text-[length:var(--text-small)] text-[var(--color-ink-soft)]">

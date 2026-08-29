@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ButtonLink, Field, Input, PasswordInput } from '@/components/ui'
+import { ButtonLink, Field, Heading, Input, PasswordInput } from '@/components/ui'
 import { Button } from '@/components/ui/button'
 
 export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
@@ -39,9 +39,9 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
 
   return (
     <div>
-      <h1 className="font-[family-name:var(--font-display)] text-[length:var(--text-title)] font-extrabold uppercase leading-tight">
+      <Heading as="h1" size="title">
         Welcome back.
-      </h1>
+      </Heading>
 
       {googleEnabled && (
         <>

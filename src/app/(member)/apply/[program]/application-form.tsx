@@ -3,8 +3,7 @@
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Field, Input, Textarea } from '@/components/ui'
-import { MultiSelect, SingleSelect } from '@/app/(member)/onboarding/option-list'
+import { Field, Heading, Input, LiveRegion, MultiSelect, SingleSelect, Textarea } from '@/components/ui'
 import type { ApplicationQuestion } from '@/server/applications/types'
 
 type Props = {
@@ -132,9 +131,9 @@ export function ApplicationForm({ applicationId, programTitle, questions, initia
   if (submitted) {
     return (
       <div>
-        <h1 className="font-[family-name:var(--font-display)] text-[length:var(--text-title)] font-extrabold uppercase leading-tight">
+        <Heading as="h1" size="title">
           Your application is in.
-        </h1>
+        </Heading>
         <p className="mt-4 text-[var(--color-ink-soft)]">
           We&rsquo;ve got it. Here&rsquo;s what happens next: our team reads every application, and
           you&rsquo;ll hear from us. You can track the status any time from your dashboard. A confirmation is
@@ -154,9 +153,9 @@ export function ApplicationForm({ applicationId, programTitle, questions, initia
     return (
       <div>
         <p className="mb-2 text-[length:var(--text-small)] text-[var(--color-ink-muted)]">Before you submit</p>
-        <h1 className="font-[family-name:var(--font-display)] text-[length:var(--text-title)] font-extrabold uppercase leading-tight">
+        <Heading as="h1" size="title">
           Have a last look.
-        </h1>
+        </Heading>
         <p className="mt-2 text-[length:var(--text-small)] text-[var(--color-ink-soft)]">
           You won&rsquo;t be able to edit after this.
         </p>
@@ -214,6 +213,10 @@ export function ApplicationForm({ applicationId, programTitle, questions, initia
           <p className="text-[length:var(--text-micro)] text-[var(--color-ink-muted)]">Saved automatically</p>
         )}
       </div>
+      {/* Announced separately from the visible indicator above: the visible
+          text alone doesn't reliably reach a screen reader user whose focus
+          is still in the field they just filled in. */}
+      <LiveRegion message={lastSaved ? 'Saved.' : ''} />
       <div className="h-1 w-full rounded-full bg-[var(--color-paper-soft)]">
         <div
           className="h-1 rounded-full bg-[var(--color-signal)] transition-[width] duration-300"
@@ -223,9 +226,9 @@ export function ApplicationForm({ applicationId, programTitle, questions, initia
 
       {question && (
         <div className="mt-8">
-          <h1 className="font-[family-name:var(--font-display)] text-[length:var(--text-title)] font-extrabold uppercase leading-tight">
+          <Heading as="h1" size="title">
             {question.label}
-          </h1>
+          </Heading>
           {question.helpText && <p className="mt-2 text-[length:var(--text-small)] text-[var(--color-ink-soft)]">{question.helpText}</p>}
 
           <div className="mt-6">

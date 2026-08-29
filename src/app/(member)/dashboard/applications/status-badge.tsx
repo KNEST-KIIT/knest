@@ -1,7 +1,8 @@
-import { StatusDot } from '@/components/ui'
+import { StatusBadge } from '@/components/ui'
+import type { StatusTone } from '@/components/ui'
 
 /** CONTENT_SPEC.md §5 — every status carries its sub-line, since a bare label leaves the applicant guessing what it implies. */
-const STATUS: Record<string, { label: string; sub: string; tone: 'neutral' | 'signal' | 'positive' | 'caution' | 'critical' | 'archive' }> = {
+const CONFIG: Record<string, { label: string; sub: string; tone: StatusTone }> = {
   draft: { label: 'Draft', sub: 'Not submitted yet — pick up where you left off.', tone: 'neutral' },
   submitted: { label: 'Submitted', sub: "We have it. You'll hear from us soon.", tone: 'signal' },
   under_review: { label: 'Under review', sub: 'Someone is reading your application now.', tone: 'signal' },
@@ -14,11 +15,5 @@ const STATUS: Record<string, { label: string; sub: string; tone: 'neutral' | 'si
 }
 
 export function ApplicationStatusBadge({ status }: { status: string }) {
-  const info = STATUS[status] ?? STATUS.draft!
-  return (
-    <div>
-      <StatusDot tone={info.tone} label={info.label} />
-      <p className="mt-1 text-[length:var(--text-small)] text-[var(--color-ink-muted)]">{info.sub}</p>
-    </div>
-  )
+  return <StatusBadge status={CONFIG[status] ? status : 'draft'} config={CONFIG} />
 }

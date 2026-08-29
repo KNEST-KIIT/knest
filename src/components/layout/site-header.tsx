@@ -64,7 +64,7 @@ export function SiteHeader({ signedIn = false }: { signedIn?: boolean }) {
       <div className="mx-auto flex h-16 w-full max-w-[1280px] items-center justify-between px-6 md:px-10">
         <Link
           href="/"
-          className="font-[family-name:var(--font-display)] text-lg font-extrabold uppercase tracking-[0.12em]"
+          className="font-[family-name:var(--font-display)] text-lg uppercase tracking-[0.12em]"
         >
           KNEST
         </Link>
@@ -142,7 +142,7 @@ export function SiteHeader({ signedIn = false }: { signedIn?: boolean }) {
               <Link
                 key={item.href}
                 href={item.href}
-                className="border-b border-[var(--color-line)] py-4 font-[family-name:var(--font-display)] text-[length:var(--text-heading)] font-bold uppercase"
+                className="border-b border-[var(--color-line)] py-4 font-[family-name:var(--font-display)] text-[length:var(--text-heading)] uppercase"
               >
                 {item.label}
               </Link>

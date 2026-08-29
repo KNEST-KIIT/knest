@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { ButtonLink, Card, EmptyState, Section, SectionHeading } from '@/components/ui'
+import { ButtonLink, Card, EmptyState, Heading, Section } from '@/components/ui'
 import { formatDate } from '@/lib/dates'
 import { requireUser } from '@/server/auth/guards'
 import { listApplicationsForUser } from '@/server/applications/actions'
@@ -13,7 +13,9 @@ export default async function ApplicationsPage() {
 
   return (
     <Section>
-      <SectionHeading as="h1">Your applications</SectionHeading>
+      <Heading as="h1" size="display">
+        Your applications
+      </Heading>
 
       {rows.length === 0 ? (
         <div className="mt-8">
@@ -28,9 +30,9 @@ export default async function ApplicationsPage() {
           {rows.map(({ application, programTitle, programSlug }) => (
             <Card key={application.id} className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="font-[family-name:var(--font-display)] text-[length:var(--text-heading)] font-bold uppercase">
+                <Heading as="h3" size="heading">
                   {programTitle}
-                </p>
+                </Heading>
                 <p className="mt-1 text-[length:var(--text-small)] text-[var(--color-ink-muted)]">
                   {application.submittedAt ? `Submitted ${formatDate(application.submittedAt)}` : 'Not submitted'}
                 </p>

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { ResetConfirmForm } from './reset-confirm-form'
+import { Heading } from '@/components/ui'
 
 export const metadata: Metadata = { title: 'Set a new password' }
 
@@ -13,9 +14,9 @@ export default async function ResetConfirmPage({
   if (!email || !token) {
     return (
       <div>
-        <h1 className="font-[family-name:var(--font-display)] text-[length:var(--text-title)] font-extrabold uppercase leading-tight">
+        <Heading as="h1" size="title">
           That link is invalid.
-        </h1>
+        </Heading>
         <p className="mt-3 text-[length:var(--text-small)] text-[var(--color-ink-soft)]">
           It may have expired, or the address may be wrong.{' '}
           <a href="/reset" className="font-medium text-[var(--color-signal)]">

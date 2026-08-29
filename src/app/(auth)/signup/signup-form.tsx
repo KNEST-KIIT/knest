@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ButtonLink, Field, Input, PasswordInput } from '@/components/ui'
+import { ButtonLink, Field, Heading, Input, PasswordInput } from '@/components/ui'
 import { Button } from '@/components/ui/button'
 
 export function SignupForm({ googleEnabled }: { googleEnabled: boolean }) {
@@ -44,9 +44,9 @@ export function SignupForm({ googleEnabled }: { googleEnabled: boolean }) {
 
   return (
     <div>
-      <h1 className="font-[family-name:var(--font-display)] text-[length:var(--text-title)] font-extrabold uppercase leading-tight">
+      <Heading as="h1" size="title">
         Start your journey.
-      </h1>
+      </Heading>
       <p className="mt-3 text-[length:var(--text-small)] text-[var(--color-ink-soft)]">
         One account. It follows you from your first event to your first venture.
       </p>

@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { cn } from '@/lib/cn'
+import { Heading } from './heading'
 
 export function Card({
   className,
@@ -62,8 +63,8 @@ export function LinkCard({
 
 export function CardTitle({ children }: { children: React.ReactNode }) {
   return (
-    <h3 className="font-[family-name:var(--font-display)] text-[length:var(--text-heading)] font-bold leading-tight">
+    <Heading as="h3" size="heading" uppercase={false}>
       {children}
-    </h3>
+    </Heading>
   )
 }

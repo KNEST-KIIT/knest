@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Field, PasswordInput } from '@/components/ui'
+import { Field, Heading, PasswordInput } from '@/components/ui'
 import { Button } from '@/components/ui/button'
 
 export function ResetConfirmForm({ email, token }: { email: string; token: string }) {
@@ -36,9 +36,9 @@ export function ResetConfirmForm({ email, token }: { email: string; token: strin
 
   return (
     <div>
-      <h1 className="font-[family-name:var(--font-display)] text-[length:var(--text-title)] font-extrabold uppercase leading-tight">
+      <Heading as="h1" size="title">
         Set a new password.
-      </h1>
+      </Heading>
 
       <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-5" noValidate>
         <Field label="New password" hint="At least 12 characters.">

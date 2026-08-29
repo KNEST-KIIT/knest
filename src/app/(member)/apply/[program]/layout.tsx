@@ -15,7 +15,7 @@ export default async function ApplyLayout({ children }: { children: React.ReactN
       <SkipLink />
       <div className="min-h-dvh bg-[var(--color-paper)]">
         <header className="border-b border-[var(--color-line)] px-6 py-4">
-          <Link href="/" className="font-[family-name:var(--font-display)] text-base font-extrabold uppercase tracking-[0.12em]">
+          <Link href="/" className="font-[family-name:var(--font-display)] text-base uppercase tracking-[0.12em]">
             KNEST
           </Link>
         </header>
