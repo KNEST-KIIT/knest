@@ -34,6 +34,10 @@ export const Staff: CollectionConfig = {
     admin: ({ req }) => isStaff(staffRoleOf(req.user)),
   },
   fields: [
+    // A custom text id so this mirror matches app.users, whose ids are UUIDs.
+    // Payload would otherwise default to a numeric id and the auth strategy
+    // could not return a real user id at all.
+    { name: 'id', type: 'text', required: true },
     { name: 'email', type: 'email', required: true },
     { name: 'name', type: 'text' },
     { name: 'staffRole', type: 'text' },

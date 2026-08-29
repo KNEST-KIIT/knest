@@ -2,6 +2,7 @@
   "name": "knest",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "packageManager": "pnpm@10.33.0",
   "scripts": {
     "dev": "next dev",
@@ -13,7 +14,9 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/db/migrate.ts",
     "db:seed": "tsx src/db/seed.ts",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "payload": "payload",
+    "generate:types": "payload generate:types"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.3",
@@ -31,6 +34,7 @@
     "pg": "^8.23.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "sharp": "^0.35.4",
     "zod": "^4.5.2"
   },
   "devDependencies": {

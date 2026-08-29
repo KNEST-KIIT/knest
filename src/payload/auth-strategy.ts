@@ -33,6 +33,8 @@ export const authJsStrategy: AuthStrategy = {
         name: true,
         staffRole: true,
         isActive: true,
+        createdAt: true,
+        updatedAt: true,
       },
     })
 
@@ -41,12 +43,17 @@ export const authJsStrategy: AuthStrategy = {
     // payload, so revoking staff access takes effect on the next request.
     if (!row || !row.isActive || !row.staffRole) return { user: null }
 
+    // Payload's generated Staff type requires these timestamps. They are the
+    // real ones from app.users rather than placeholders, so anything Payload
+    // displays about this account is accurate.
     return {
       user: {
         id: row.id,
         email: row.email,
         name: row.name,
         staffRole: row.staffRole,
+        createdAt: row.createdAt.toISOString(),
+        updatedAt: row.updatedAt.toISOString(),
         collection: 'staff',
         _strategy: 'authjs',
       },
