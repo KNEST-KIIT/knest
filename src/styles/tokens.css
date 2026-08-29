@@ -1,0 +1,56 @@
+/*
+ * The KNEST identity, in one file.
+ *
+ * The repository had no existing brand assets when this was built, so these
+ * values are a proposal rather than an inheritance. Everything downstream reads
+ * these variables and nothing hardcodes a colour or a size — swapping in real
+ * brand values later is a change to this file alone.
+ */
+@theme {
+  /* --- Ground: high-contrast editorial, not grey-on-grey --- */
+  --color-ink: #0b0b0c;
+  --color-ink-soft: #1a1a1d;
+  --color-ink-muted: #6b6b70;
+  --color-paper: #fafaf7;
+  --color-paper-soft: #f1f1ec;
+  --color-line: #dededa;
+
+  /* --- Accent: signal orange. Energetic, deliberately not corporate blue. --- */
+  --color-signal: #ff4a1c;
+  --color-signal-deep: #d93a12;
+  --color-signal-wash: #fff1ec;
+
+  /* --- Support: archival green for ecosystem and data surfaces --- */
+  --color-archive: #2f4f43;
+  --color-archive-soft: #e6ede9;
+
+  /* --- Status --- */
+  --color-positive: #1f7a4d;
+  --color-caution: #a86400;
+  --color-critical: #b3261e;
+
+  /* --- Type: fluid ramp, no fixed breakpoints to fight --- */
+  --font-display: 'Knest Display', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-text: 'Knest Text', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, monospace;
+
+  --text-hero: clamp(2.75rem, 1.2rem + 7vw, 8rem);
+  --text-display: clamp(2.25rem, 1.2rem + 4.4vw, 5rem);
+  --text-title: clamp(1.6rem, 1.2rem + 1.8vw, 2.75rem);
+  --text-heading: clamp(1.25rem, 1.1rem + 0.7vw, 1.6rem);
+  --text-body: clamp(1rem, 0.97rem + 0.15vw, 1.125rem);
+  --text-small: 0.875rem;
+  --text-micro: 0.75rem;
+
+  /* --- Space: 8pt --- */
+  --spacing: 0.5rem;
+
+  /* --- Radius: three, no more --- */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 1rem;
+
+  /* --- Elevation: two levels --- */
+  --shadow-raised: 0 1px 2px rgb(11 11 12 / 0.06), 0 4px 12px rgb(11 11 12 / 0.05);
+  --shadow-floating: 0 2px 4px rgb(11 11 12 / 0.06), 0 16px 40px rgb(11 11 12 / 0.12);
+}

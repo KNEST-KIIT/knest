@@ -1,0 +1,39 @@
+@import 'tailwindcss';
+@import './tokens.css';
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-text);
+    font-size: var(--text-body);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /*
+   * Every interactive element gets a visible focus ring (spec §44). Defined
+   * once here rather than per component so nothing can quietly ship without it.
+   */
+  :focus-visible {
+    outline: 2px solid var(--color-signal);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* Spec §43/§44 — motion is an enhancement, never load-bearing. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
