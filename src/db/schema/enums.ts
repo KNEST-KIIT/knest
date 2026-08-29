@@ -53,3 +53,15 @@ export const profileVisibility = appSchema.enum('profile_visibility', [
   'community',
   'private',
 ])
+
+/**
+ * A mentor's stated availability, collected in onboarding step 5 for the
+ * mentor role. Mirrors the values on the CMS Mentors collection so a staff
+ * member turning this into a public profile isn't translating between two
+ * vocabularies.
+ */
+export const mentorAvailability = appSchema.enum('mentor_availability', [
+  'open',
+  'limited',
+  'unavailable',
+])

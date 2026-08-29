@@ -4,6 +4,7 @@ import type { AdapterAccountType } from 'next-auth/adapters'
 import {
   appSchema,
   journeyStage,
+  mentorAvailability,
   platformRole,
   profileVisibility,
   staffRole,
@@ -46,6 +47,16 @@ export const users = appSchema.table(
     skills: text('skills').array().notNull().default([]),
     interests: text('interests').array().notNull().default([]),
     profileVisibility: profileVisibility('profile_visibility').notNull().default('community'),
+
+    // --- Onboarding step 2: what they're looking for (spec §09) ---
+    goals: text('goals').array().notNull().default([]),
+
+    // --- Onboarding step 5, mentor branch only. A mentor's platform account
+    // does not become a public Mentor profile automatically — staff review
+    // before publishing (spec §14) — these fields are what they review. ---
+    expertiseAreas: text('expertise_areas').array().notNull().default([]),
+    yearsOfExperience: integer('years_of_experience'),
+    mentorAvailability: mentorAvailability('mentor_availability'),
 
     // --- Journey (spec §09) ---
     journeyStage: journeyStage('journey_stage'),
