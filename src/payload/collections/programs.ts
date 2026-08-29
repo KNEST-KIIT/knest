@@ -141,6 +141,60 @@ export const Programs: CollectionConfig = {
             { name: 'partners', type: 'relationship', relationTo: 'partners', hasMany: true },
           ],
         },
+        {
+          label: 'Application',
+          description:
+            'The question set applicants answer. No hardcoded form — add, remove or reorder questions here and the application at /apply reflects it immediately (spec §18).',
+          fields: [
+            {
+              name: 'applicationQuestions',
+              type: 'array',
+              labels: { singular: 'Question', plural: 'Questions' },
+              admin: {
+                description:
+                  'Each question gets a stable id when created — reordering or editing later never disconnects it from answers already submitted.',
+              },
+              fields: [
+                { name: 'label', type: 'text', required: true },
+                { name: 'helpText', type: 'text' },
+                {
+                  name: 'fieldType',
+                  type: 'select',
+                  required: true,
+                  defaultValue: 'text',
+                  options: [
+                    { label: 'Short text', value: 'text' },
+                    { label: 'Long text', value: 'textarea' },
+                    { label: 'Select one', value: 'select' },
+                    { label: 'Select multiple', value: 'multiselect' },
+                    { label: 'Link (URL)', value: 'url' },
+                    { label: 'File upload', value: 'file' },
+                  ],
+                },
+                {
+                  name: 'options',
+                  type: 'array',
+                  admin: {
+                    condition: (_, siblingData) =>
+                      siblingData?.fieldType === 'select' || siblingData?.fieldType === 'multiselect',
+                    description: 'The choices for a select or multi-select question.',
+                  },
+                  fields: [{ name: 'label', type: 'text', required: true }],
+                },
+                { name: 'required', type: 'checkbox', defaultValue: true },
+                {
+                  name: 'maxLength',
+                  type: 'number',
+                  admin: {
+                    condition: (_, siblingData) =>
+                      siblingData?.fieldType === 'text' || siblingData?.fieldType === 'textarea',
+                    description: 'Optional character limit.',
+                  },
+                },
+              ],
+            },
+          ],
+        },
         { label: 'SEO', fields: [seoField] },
       ],
     },

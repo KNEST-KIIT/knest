@@ -302,6 +302,31 @@ export interface Program {
   mentors?: (number | Mentor)[] | null;
   partners?: (number | Partner)[] | null;
   /**
+   * Each question gets a stable id when created — reordering or editing later never disconnects it from answers already submitted.
+   */
+  applicationQuestions?:
+    | {
+        label: string;
+        helpText?: string | null;
+        fieldType: 'text' | 'textarea' | 'select' | 'multiselect' | 'url' | 'file';
+        /**
+         * The choices for a select or multi-select question.
+         */
+        options?:
+          | {
+              label: string;
+              id?: string | null;
+            }[]
+          | null;
+        required?: boolean | null;
+        /**
+         * Optional character limit.
+         */
+        maxLength?: number | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
    * Optional. Leave blank to use the title and summary above.
    */
   seo?: {
@@ -1118,6 +1143,22 @@ export interface ProgramsSelect<T extends boolean = true> {
   applicationOpensAt?: T;
   mentors?: T;
   partners?: T;
+  applicationQuestions?:
+    | T
+    | {
+        label?: T;
+        helpText?: T;
+        fieldType?: T;
+        options?:
+          | T
+          | {
+              label?: T;
+              id?: T;
+            };
+        required?: T;
+        maxLength?: T;
+        id?: T;
+      };
   seo?:
     | T
     | {

@@ -15,6 +15,13 @@
       "when": 1788016096280,
       "tag": "0001_wet_rafael_vega",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788017352549,
+      "tag": "0002_wonderful_ender_wiggin",
+      "breakpoints": true
     }
   ]
 }

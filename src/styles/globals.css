@@ -37,3 +37,42 @@
     }
   }
 }
+
+@layer components {
+  /*
+   * Minimal prose styling for CMS-authored rich text. Deliberately not a
+   * generic Tailwind Typography plugin — the whole point of the CMS
+   * boundary (spec §22) is that editors write copy, not layout, so this
+   * only needs to make headings, paragraphs, lists and links readable.
+   */
+  .prose-knest {
+    color: var(--color-ink-soft);
+    line-height: 1.7;
+  }
+  .prose-knest > * + * {
+    margin-top: 1em;
+  }
+  .prose-knest h2,
+  .prose-knest h3 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--color-ink);
+    margin-top: 1.5em;
+  }
+  .prose-knest ul,
+  .prose-knest ol {
+    padding-left: 1.5em;
+  }
+  .prose-knest ul {
+    list-style: disc;
+  }
+  .prose-knest ol {
+    list-style: decimal;
+  }
+  .prose-knest a {
+    color: var(--color-signal);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+}

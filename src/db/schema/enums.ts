@@ -65,3 +65,36 @@ export const mentorAvailability = appSchema.enum('mentor_availability', [
   'limited',
   'unavailable',
 ])
+
+/**
+ * Application lifecycle (spec §18). draft -> submitted is the only transition
+ * the applicant can trigger; everything after is staff-driven and enforced
+ * server-side by an explicit transition table (src/server/applications/
+ * transitions.ts) — an application cannot skip from submitted to accepted.
+ */
+export const applicationStatus = appSchema.enum('application_status', [
+  'draft',
+  'submitted',
+  'under_review',
+  'shortlisted',
+  'interview',
+  'accepted',
+  'rejected',
+  'waitlisted',
+])
+
+/** The six field types a program's application question set can use (spec §18). */
+export const applicationFieldType = appSchema.enum('application_field_type', [
+  'text',
+  'textarea',
+  'select',
+  'multiselect',
+  'url',
+  'file',
+])
+
+export const notificationType = appSchema.enum('notification_type', [
+  'application_received',
+  'application_status_changed',
+  'application_deadline_reminder',
+])
