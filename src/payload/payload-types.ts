@@ -510,21 +510,31 @@ export interface Startup {
    */
   slug: string;
   tagline: string;
-  description?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
+  /**
+   * The arc from what was broken to where it stands now. Populate only the stages this startup has actually reached — a startup still at "product" has no honest "progress" entry yet, so leave later stages out rather than filling them with a placeholder.
+   */
+  story?:
+    | {
+        stage: 'problem' | 'idea' | 'experiment' | 'product' | 'progress';
+        heading: string;
+        body: {
+          root: {
+            type: string;
+            children: {
+              type: any;
+              version: number;
+              [k: string]: unknown;
+            }[];
+            direction: ('ltr' | 'rtl') | null;
+            format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+            indent: number;
+            version: number;
+          };
+          [k: string]: unknown;
+        };
+        id?: string | null;
+      }[]
+    | null;
   stage?: ('exploring' | 'idea' | 'validation' | 'mvp' | 'early_revenue' | 'scaling' | 'established') | null;
   sectors?:
     | (
@@ -1209,7 +1219,14 @@ export interface StartupsSelect<T extends boolean = true> {
   name?: T;
   slug?: T;
   tagline?: T;
-  description?: T;
+  story?:
+    | T
+    | {
+        stage?: T;
+        heading?: T;
+        body?: T;
+        id?: T;
+      };
   stage?: T;
   sectors?: T;
   cohort?: T;

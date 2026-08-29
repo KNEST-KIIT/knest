@@ -30,7 +30,32 @@ export const Startups: CollectionConfig = {
     { name: 'name', type: 'text', required: true },
     slugField('name'),
     { name: 'tagline', type: 'text', required: true, maxLength: 120 },
-    { name: 'description', type: 'richText' },
+    {
+      name: 'story',
+      type: 'array',
+      labels: { singular: 'Story stage', plural: 'Story stages' },
+      minRows: 0,
+      admin: {
+        description:
+          'The arc from what was broken to where it stands now. Populate only the stages this startup has actually reached — a startup still at "product" has no honest "progress" entry yet, so leave later stages out rather than filling them with a placeholder.',
+      },
+      fields: [
+        {
+          name: 'stage',
+          type: 'select',
+          required: true,
+          options: [
+            { label: 'Problem', value: 'problem' },
+            { label: 'Idea', value: 'idea' },
+            { label: 'Experiment', value: 'experiment' },
+            { label: 'Product', value: 'product' },
+            { label: 'Progress', value: 'progress' },
+          ],
+        },
+        { name: 'heading', type: 'text', required: true },
+        { name: 'body', type: 'richText', required: true },
+      ],
+    },
 
     {
       type: 'row',
