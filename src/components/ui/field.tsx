@@ -66,8 +66,12 @@ const control =
   'aria-[invalid=true]:border-[var(--color-critical)] ' +
   'disabled:bg-[var(--color-paper-soft)] disabled:cursor-not-allowed'
 
-export function Input({ className, ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
-  return <input className={cn(control, 'h-12', className)} {...props} />
+export function Input({
+  className,
+  ref,
+  ...props
+}: React.InputHTMLAttributes<HTMLInputElement> & { ref?: React.Ref<HTMLInputElement> }) {
+  return <input ref={ref} className={cn(control, 'h-12', className)} {...props} />
 }
 
 export function Textarea({
