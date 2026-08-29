@@ -30,8 +30,10 @@
   --color-critical: #b3261e;
 
   /* --- Type: fluid ramp, no fixed breakpoints to fight --- */
-  --font-display: 'Knest Display', ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-text: 'Knest Text', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  /* Supplied by next/font (src/styles/fonts.ts); the stack below is the
+     fallback used before they load and if they fail entirely. */
+  --font-display: var(--font-display-family), ui-sans-serif, system-ui, sans-serif;
+  --font-text: var(--font-text-family), ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, 'SF Mono', Menlo, monospace;
 
   --text-hero: clamp(2.75rem, 1.2rem + 7vw, 8rem);
