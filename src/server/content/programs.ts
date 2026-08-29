@@ -40,6 +40,31 @@ export async function listPrograms(filters: ProgramFilters = {}) {
   return result.docs
 }
 
+/** Programs a mentor is attached to — "programs you support" on the mentor dashboard (§4.1). */
+export async function listProgramsByMentor(mentorId: number) {
+  const payload = await getContentClient()
+
+  const result = await payload.find({
+    collection: 'programs',
+    where: { mentors: { equals: mentorId } },
+    depth: 0,
+    limit: 50,
+    overrideAccess: false,
+  })
+
+  return result.docs
+}
+
+/** For a founder's accepted program (dashboard §4.1) — the caller already has the ID from an application row. */
+export async function getProgramById(id: number): Promise<Program | null> {
+  const payload = await getContentClient()
+  try {
+    return await payload.findByID({ collection: 'programs', id, depth: 1, overrideAccess: false })
+  } catch {
+    return null
+  }
+}
+
 export async function getProgramBySlug(slug: string): Promise<Program | null> {
   const payload = await getContentClient()
 

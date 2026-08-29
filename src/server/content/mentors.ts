@@ -40,6 +40,27 @@ export async function listMentors(filters: MentorFilters = {}) {
   return [...result.docs].sort(byAvailability)
 }
 
+/**
+ * Resolves a signed-in mentor's own public profile via Mentors.userId
+ * (dashboard §4.1). A signed-in mentor account does not automatically have a
+ * published Mentor document — staff review before publishing — so this can
+ * legitimately return null; the caller renders an honest empty state rather
+ * than treating it as an error.
+ */
+export async function getMentorByUserId(userId: string): Promise<Mentor | null> {
+  const payload = await getContentClient()
+
+  const result = await payload.find({
+    collection: 'mentors',
+    where: { userId: { equals: userId } },
+    depth: 1,
+    limit: 1,
+    overrideAccess: false,
+  })
+
+  return result.docs[0] ?? null
+}
+
 export async function getMentorBySlug(slug: string): Promise<Mentor | null> {
   const payload = await getContentClient()
 
