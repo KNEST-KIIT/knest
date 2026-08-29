@@ -28,3 +28,14 @@ export function formatDeadline(date: Date | string): string {
   const relative = formatRelativeIfSoon(date)
   return relative ? `${formatDate(date)} — ${relative}` : formatDate(date)
 }
+
+const DATETIME = new Intl.DateTimeFormat('en-GB', {
+  day: 'numeric',
+  month: 'long',
+  hour: 'numeric',
+  minute: '2-digit',
+})
+
+export function formatEventTime(date: Date | string): string {
+  return DATETIME.format(new Date(date))
+}
