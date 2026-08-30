@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { Reveal, RevealGroup, RevealItem } from '@/components/motion'
 import { ButtonLink, Heading, Section } from '@/components/ui'
+import { stagger } from '@/lib/motion'
 import { getSessionUser } from '@/server/auth/guards'
 import { enabledSections, getHomepage } from '@/server/content/homepage'
 import { track } from '@/server/analytics/track'
@@ -37,7 +39,7 @@ export default async function HomePage() {
 
           case 'problem':
             return (
-              <Section key={key} className="mx-auto max-w-[68ch]">
+              <Section reveal key={key} measure="prose">
                 <Heading as="h2" size="title">
                   {homepage.problemHeading}
                 </Heading>
@@ -53,23 +55,34 @@ export default async function HomePage() {
 
           case 'person':
             return (
-              <Section key={key} inverted className="mx-auto max-w-[68ch] text-center">
-                <Heading as="h2" size="title">
-                  {homepage.personHeading}
-                </Heading>
+              <Section key={key} inverted measure="prose" centered>
+                <Reveal>
+                  <Heading as="h2" size="title">
+                    {homepage.personHeading}
+                  </Heading>
+                </Reveal>
                 {homepage.personLines && homepage.personLines.length > 0 && (
-                  <div className="mt-6 flex flex-col gap-2 text-[length:var(--text-heading)]">
+                  // These lines are a build, not a list: each "Maybe you've…"
+                  // narrows the room until the last line lands. Revealing them
+                  // in sequence is the section reading itself out in the order
+                  // it was written to be read.
+                  <RevealGroup
+                    interval={stagger.loose}
+                    className="mt-6 flex flex-col gap-2 text-[length:var(--text-heading)]"
+                  >
                     {homepage.personLines.map((entry, i) => (
-                      <p key={entry.id ?? i}>{entry.line}</p>
+                      <RevealItem key={entry.id ?? i}>
+                        <p>{entry.line}</p>
+                      </RevealItem>
                     ))}
-                  </div>
+                  </RevealGroup>
                 )}
               </Section>
             )
 
           case 'knest':
             return (
-              <Section key={key} className="mx-auto max-w-[68ch]">
+              <Section reveal key={key} measure="prose">
                 <Heading as="h2" size="title">
                   {homepage.knestHeading}
                 </Heading>
@@ -79,7 +92,7 @@ export default async function HomePage() {
 
           case 'journey_selector':
             return (
-              <Section key={key}>
+              <Section reveal key={key}>
                 <JourneySelector signedIn={Boolean(user)} />
               </Section>
             )
@@ -94,27 +107,29 @@ export default async function HomePage() {
           case 'offer':
             return (
               <Section key={key}>
-                <Heading as="h2" size="display">
-                  What KNEST actually gives you.
-                </Heading>
-                <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
+                <Reveal>
+                  <Heading as="h2" size="display">
+                    What KNEST actually gives you.
+                  </Heading>
+                </Reveal>
+                <RevealGroup className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
                   {OFFER_ITEMS.map((item) => (
-                    <div key={item.label}>
+                    <RevealItem key={item.label}>
                       <p className="font-[family-name:var(--font-display)] text-[length:var(--text-heading)] uppercase">
                         {item.label}
                       </p>
                       <p className="mt-2 text-[length:var(--text-small)] text-[var(--color-ink-soft)]">
                         {item.body}
                       </p>
-                    </div>
+                    </RevealItem>
                   ))}
-                </div>
+                </RevealGroup>
               </Section>
             )
 
           case 'ecosystem':
             return (
-              <Section key={key}>
+              <Section reveal key={key}>
                 <TheEcosystem />
               </Section>
             )
@@ -128,7 +143,7 @@ export default async function HomePage() {
 
           case 'closing':
             return (
-              <Section key={key} inverted className="text-center">
+              <Section reveal key={key} inverted className="text-center">
                 <Heading as="h2" size="display">
                   {homepage.closingHeading}
                 </Heading>

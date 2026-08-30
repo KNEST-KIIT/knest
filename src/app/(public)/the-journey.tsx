@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { Reveal, RevealGroup, RevealItem } from '@/components/motion'
 import { Heading } from '@/components/ui'
 import { STAGE_OPTIONS } from '@/payload/fields/taxonomy'
 import { listPrograms } from '@/server/content/programs'
@@ -20,20 +21,24 @@ export async function TheJourney() {
 
   return (
     <div>
-      <Heading as="h2" size="display">
-        From question to venture.
-      </Heading>
-      <p className="mt-4 max-w-[56ch] text-[var(--color-ink-soft)]">
-        Nobody goes from idea to company in one leap. Here&rsquo;s the path, and where KNEST meets
-        you on it.
-      </p>
+      <Reveal>
+        <Heading as="h2" size="display">
+          From question to venture.
+        </Heading>
+        <p className="mt-4 max-w-[56ch] text-[var(--color-ink-soft)]">
+          Nobody goes from idea to company in one leap. Here&rsquo;s the path, and where KNEST
+          meets you on it.
+        </p>
+      </Reveal>
 
-      <div className="mt-10 -mx-6 flex gap-4 overflow-x-auto px-6 pb-4 md:mx-0 md:grid md:grid-cols-4 md:overflow-visible md:px-0 lg:grid-cols-7">
+      {/* The stagger is left-to-right, which is the direction the path runs.
+          On mobile this is a horizontal scroller and the same order applies. */}
+      <RevealGroup className="mt-10 -mx-6 flex gap-4 overflow-x-auto px-6 pb-4 md:mx-0 md:grid md:grid-cols-4 md:overflow-visible md:px-0 lg:grid-cols-7">
         {stagePrograms.map(({ stage, programs }) => (
+          <RevealItem key={stage.value} className="flex w-[220px] shrink-0 md:w-auto">
           <Link
-            key={stage.value}
             href={`/programs?stage=${stage.value}`}
-            className="group flex w-[220px] shrink-0 flex-col rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-white p-5 transition-colors hover:border-[var(--color-ink)] md:w-auto"
+            className="group flex w-full flex-col rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-flat)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-standard)] hover:border-[var(--color-ink)] hover:shadow-[var(--shadow-raised)]"
           >
             <p className="font-[family-name:var(--font-display)] text-[length:var(--text-small)] uppercase tracking-[0.1em] text-[var(--color-signal)]">
               {stage.label}
@@ -52,8 +57,9 @@ export async function TheJourney() {
               </ul>
             )}
           </Link>
+          </RevealItem>
         ))}
-      </div>
+      </RevealGroup>
     </div>
   )
 }

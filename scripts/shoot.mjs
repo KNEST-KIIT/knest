@@ -3,6 +3,7 @@
  *
  * Usage:
  *   node scripts/shoot.mjs <url> <out.png> [widthxheight] [--full] [--reduce-motion]
+ *                          [--scroll=<px|selector>]
  *
  * Defaults to a 1280x900 desktop viewport at 2x. Waits for fonts to settle
  * and for Motion's entrance animations to finish before capturing, so a
@@ -43,6 +44,19 @@ if (flags.includes('--full')) {
     window.scrollTo(0, 0)
   })
 }
+// --scroll takes either a pixel offset or a selector to bring into view, so
+// a tall page can be reviewed a screen at a time instead of as one
+// unreadably long strip.
+const scroll = flags.find((f) => f.startsWith('--scroll='))?.slice('--scroll='.length)
+if (scroll) {
+  if (/^\d+$/.test(scroll)) {
+    await page.evaluate((y) => window.scrollTo(0, y), Number(scroll))
+  } else {
+    await page.locator(scroll).first().scrollIntoViewIfNeeded()
+  }
+  await page.waitForTimeout(700)
+}
+
 await page.waitForTimeout(900)
 await page.screenshot({ path: out, fullPage: flags.includes('--full') })
 await browser.close()

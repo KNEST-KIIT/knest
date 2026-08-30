@@ -1,3 +1,4 @@
+import { Reveal, RevealGroup, RevealItem } from '@/components/motion'
 import { EmptyState, Heading, LinkCard, Tag } from '@/components/ui'
 import { STARTUPS_EMPTY } from '@/lib/empty-state-copy'
 import { listStartups } from '@/server/content/startups'
@@ -21,12 +22,15 @@ export async function BuiltWithKnest({ homepage }: { homepage: Homepage }) {
         <EmptyState {...STARTUPS_EMPTY} size="default" />
       ) : (
         <>
-          <Heading as="h2" size="display">
-            Built with KNEST.
-          </Heading>
-          <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <Reveal>
+            <Heading as="h2" size="display">
+              Built with KNEST.
+            </Heading>
+          </Reveal>
+          <RevealGroup className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {startups.slice(0, 6).map((startup) => (
-              <LinkCard key={startup.id} href={`/startups/${startup.slug}`} label={`View ${startup.name}`}>
+              <RevealItem key={startup.id} className="flex">
+              <LinkCard href={`/startups/${startup.slug}`} label={`View ${startup.name}`} className="w-full">
                 {startup.stage && <Tag tone="signal">{startup.stage}</Tag>}
                 <Heading as="h3" size="heading" className="mt-4">
                   {startup.name}
@@ -35,8 +39,9 @@ export async function BuiltWithKnest({ homepage }: { homepage: Homepage }) {
                   {startup.tagline}
                 </p>
               </LinkCard>
+              </RevealItem>
             ))}
-          </div>
+          </RevealGroup>
         </>
       )}
     </div>
