@@ -68,7 +68,7 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
         <Link
           href="/"
           aria-label="KNEST — home"
-          className="rounded-[var(--radius-sm)] text-[22px] transition-opacity duration-[var(--duration-instant)] hover:opacity-70"
+          className="-mx-2 flex h-11 items-center rounded-[var(--radius-sm)] px-2 text-[22px] transition-opacity duration-[var(--duration-instant)] hover:opacity-70"
         >
           <KnestWordmark />
         </Link>

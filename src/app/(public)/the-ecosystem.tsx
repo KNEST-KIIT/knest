@@ -39,7 +39,7 @@ export async function TheEcosystem() {
 
       <Link
         href="/ecosystem"
-        className="mt-8 inline-flex items-center text-[length:var(--text-small)] font-medium text-[var(--color-signal)]"
+        className="mt-6 -mb-3 inline-flex h-11 items-center text-[length:var(--text-small)] font-medium text-[var(--color-signal)] hover:underline"
       >
         See the full ecosystem →
       </Link>

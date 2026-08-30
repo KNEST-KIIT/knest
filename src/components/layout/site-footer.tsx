@@ -43,7 +43,7 @@ export function SiteFooter() {
             <Link
               href="/"
               aria-label="KNEST — home"
-              className="inline-block text-[26px] transition-opacity duration-[var(--duration-instant)] hover:opacity-70"
+              className="-mx-2 inline-flex h-11 items-center px-2 text-[26px] transition-opacity duration-[var(--duration-instant)] hover:opacity-70"
             >
               <KnestWordmark />
             </Link>
@@ -77,11 +77,20 @@ export function SiteFooter() {
 
         <div className="mt-14 flex flex-col gap-3 border-t border-[var(--color-line)] pt-6 text-[length:var(--text-small)] text-[var(--color-ink-muted)] sm:flex-row sm:items-center sm:justify-between">
           <p>&copy; {new Date().getFullYear()} KNEST, KIIT University.</p>
-          <div className="flex gap-6">
-            <Link href="/privacy" className="transition-colors duration-[var(--duration-instant)] hover:text-[var(--color-signal)]">
+          {/* `-my-3 py-3` grows the hit area to 44px without changing where
+              the text sits, so the row keeps its rhythm and the link stops
+              being a 22px-tall target on a phone. */}
+          <div className="-my-3 flex gap-6">
+            <Link
+              href="/privacy"
+              className="flex items-center py-3 transition-colors duration-[var(--duration-instant)] hover:text-[var(--color-signal)]"
+            >
               Privacy
             </Link>
-            <Link href="/terms" className="transition-colors duration-[var(--duration-instant)] hover:text-[var(--color-signal)]">
+            <Link
+              href="/terms"
+              className="flex items-center py-3 transition-colors duration-[var(--duration-instant)] hover:text-[var(--color-signal)]"
+            >
               Terms
             </Link>
           </div>

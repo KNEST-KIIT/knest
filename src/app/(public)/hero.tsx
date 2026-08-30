@@ -79,13 +79,13 @@ export function Hero({ homepage }: { homepage: Homepage }) {
           initial={{ opacity: 0, y: travel.md }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: duration.slow, ease: ease.entrance, delay: 0.44 }}
-          className="mt-10 flex flex-wrap gap-4"
+          className="mt-10 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-4"
         >
-          <ButtonLink href="/signup" size="lg">
+          <ButtonLink href="/signup" size="lg" className="w-full sm:w-auto">
             {homepage.heroPrimaryCta}
           </ButtonLink>
           {homepage.heroSecondaryCta && (
-            <ButtonLink href="/programs" variant="secondary" size="lg">
+            <ButtonLink href="/programs" variant="secondary" size="lg" className="w-full sm:w-auto">
               {homepage.heroSecondaryCta}
             </ButtonLink>
           )}

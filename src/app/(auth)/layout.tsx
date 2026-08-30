@@ -21,7 +21,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <Link
             href="/"
             aria-label="KNEST — home"
-            className="mb-8 flex justify-center text-[26px] transition-opacity duration-[var(--duration-instant)] hover:opacity-70"
+            className="mb-8 flex h-11 items-center justify-center text-[26px] transition-opacity duration-[var(--duration-instant)] hover:opacity-70"
           >
             <KnestWordmark />
           </Link>
