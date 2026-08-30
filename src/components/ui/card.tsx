@@ -13,6 +13,7 @@ export function Card({
     <div
       className={cn(
         'rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-white p-6',
+        'shadow-[var(--shadow-flat)]',
         className,
       )}
     >
@@ -44,7 +45,13 @@ export function LinkCard({
     <div
       className={cn(
         'group relative flex flex-col rounded-[var(--radius-lg)] border border-[var(--color-line)]',
-        'bg-white p-6 transition-colors hover:border-[var(--color-ink)]',
+        'bg-white p-6',
+        // Deliberately restrained: the border darkens and the card gains one
+        // step of elevation. No translate and no scale — a card that jumps
+        // under the pointer is the default "startup landing page" tic, and
+        // on a grid of them it makes the whole page twitch as you read it.
+        'transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-standard)]',
+        'shadow-[var(--shadow-flat)] hover:border-[var(--color-ink)] hover:shadow-[var(--shadow-raised)]',
         'focus-within:outline focus-within:outline-2 focus-within:outline-offset-2',
         'focus-within:outline-[var(--color-signal)]',
         className,

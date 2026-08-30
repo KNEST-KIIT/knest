@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Field, Heading, PasswordInput } from '@/components/ui'
+import { Field, FormError, Heading, PasswordInput } from '@/components/ui'
 import { Button } from '@/components/ui/button'
 
 export function ResetConfirmForm({ email, token }: { email: string; token: string }) {
@@ -56,8 +56,8 @@ export function ResetConfirmForm({ email, token }: { email: string; token: strin
           </p>
         )}
 
-        <Button type="submit" size="lg" fullWidth disabled={pending}>
-          {pending ? 'Saving…' : 'Save new password'}
+        <Button type="submit" size="lg" fullWidth pending={pending} pendingLabel="Saving">
+          Save new password
         </Button>
       </form>
     </div>

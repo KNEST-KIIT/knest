@@ -62,6 +62,33 @@
   }
 
   /*
+   * Loading placeholders. The sweep runs across a gradient painted on top of
+   * the block's own colour, so the resting appearance (what a
+   * reduced-motion user sees, since the global rule above collapses the
+   * animation) is the plain block rather than a half-faded one.
+   */
+  @keyframes shimmer {
+    from {
+      background-position: 200% 0;
+    }
+    to {
+      background-position: -200% 0;
+    }
+  }
+  .animate-shimmer {
+    background-image: linear-gradient(
+      90deg,
+      transparent 0%,
+      color-mix(in srgb, white 55%, transparent) 45%,
+      color-mix(in srgb, white 55%, transparent) 55%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    background-repeat: no-repeat;
+    animation: shimmer 1.6s linear infinite;
+  }
+
+  /*
    * Minimal prose styling for CMS-authored rich text. Deliberately not a
    * generic Tailwind Typography plugin — the whole point of the CMS
    * boundary (spec §22) is that editors write copy, not layout, so this

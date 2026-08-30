@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { KnestWordmark } from '@/components/brand'
 import { SkipLink } from '@/components/layout/skip-link'
 import { requireStaff } from '@/server/auth/guards'
 
@@ -18,8 +19,22 @@ export default async function StaffLayout({ children }: { children: React.ReactN
       <div className="min-h-dvh bg-[var(--color-paper-soft)]">
         <header className="flex items-center justify-between border-b border-[var(--color-line)] bg-[var(--color-paper)] px-6 py-4">
           <div className="flex items-center gap-6">
-            <Link href="/admin/applications" className="font-[family-name:var(--font-display)] text-base uppercase tracking-[0.12em]">
-              KNEST Admin
+            <Link
+              href="/admin/applications"
+              aria-label="KNEST admin — applications"
+              className="flex items-center gap-2.5 transition-opacity duration-[var(--duration-instant)] hover:opacity-70"
+            >
+              <span className="text-[21px]">
+                <KnestWordmark />
+              </span>
+              {/* The wordmark says which product; this says which part of it.
+                  Separated so the mark is never redrawn with a suffix baked in. */}
+              <span
+                aria-hidden
+                className="rounded-[var(--radius-sm)] bg-[var(--color-paper-soft)] px-2 py-0.5 text-[length:var(--text-micro)] font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-muted)]"
+              >
+                Admin
+              </span>
             </Link>
             <nav aria-label="Admin" className="flex gap-4 text-[length:var(--text-small)]">
               <Link href="/admin/applications">Applications</Link>

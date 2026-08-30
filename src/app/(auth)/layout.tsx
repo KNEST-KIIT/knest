@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { KnestWordmark } from '@/components/brand'
 import { SkipLink } from '@/components/layout/skip-link'
 
 /**
@@ -19,9 +20,10 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <div className="w-full max-w-[420px]">
           <Link
             href="/"
-            className="mb-8 block text-center font-[family-name:var(--font-display)] text-lg uppercase tracking-[0.12em]"
+            aria-label="KNEST — home"
+            className="mb-8 flex justify-center text-[26px] transition-opacity duration-[var(--duration-instant)] hover:opacity-70"
           >
-            KNEST
+            <KnestWordmark />
           </Link>
           <div className="rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-white p-8 shadow-[var(--shadow-raised)]">
             {children}

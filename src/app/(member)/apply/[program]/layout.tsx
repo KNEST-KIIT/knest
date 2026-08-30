@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { KnestWordmark } from '@/components/brand'
 import { SkipLink } from '@/components/layout/skip-link'
 import { requireUser } from '@/server/auth/guards'
 
@@ -15,8 +16,12 @@ export default async function ApplyLayout({ children }: { children: React.ReactN
       <SkipLink />
       <div className="min-h-dvh bg-[var(--color-paper)]">
         <header className="border-b border-[var(--color-line)] px-6 py-4">
-          <Link href="/" className="font-[family-name:var(--font-display)] text-base uppercase tracking-[0.12em]">
-            KNEST
+          <Link
+            href="/"
+            aria-label="KNEST — home"
+            className="inline-block text-[21px] transition-opacity duration-[var(--duration-instant)] hover:opacity-70"
+          >
+            <KnestWordmark />
           </Link>
         </header>
         <main id="main" className="mx-auto w-full max-w-[720px] px-6 pb-32 pt-10 md:pb-16">

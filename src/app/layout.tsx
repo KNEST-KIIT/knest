@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { MotionProvider } from '@/components/motion'
+import { ToastProvider } from '@/components/ui'
 import { accentFont, displayFont, textFont } from '@/styles/fonts'
 import '@/styles/globals.css'
 
@@ -25,7 +26,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </noscript>
       </head>
       <body>
-        <MotionProvider>{children}</MotionProvider>
+        <MotionProvider>
+          <ToastProvider>{children}</ToastProvider>
+        </MotionProvider>
       </body>
     </html>
   )

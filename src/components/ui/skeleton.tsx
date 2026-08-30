@@ -8,7 +8,7 @@ import { cn } from '@/lib/cn'
  * to approximate that route's real shape.
  */
 export function Skeleton({ className }: { className?: string }) {
-  return <div className={cn('animate-pulse rounded-[var(--radius-sm)] bg-[var(--color-paper-soft)]', className)} />
+  return <div className={cn('animate-shimmer rounded-[var(--radius-sm)] bg-[var(--color-paper-soft)]', className)} />
 }
 
 export function SkeletonCard() {

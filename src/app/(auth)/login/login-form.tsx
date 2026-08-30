@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ButtonLink, Field, Heading, Input, PasswordInput } from '@/components/ui'
+import { ButtonLink, Field, FormError, Heading, Input, PasswordInput } from '@/components/ui'
 import { Button } from '@/components/ui/button'
 
 export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
@@ -74,14 +74,10 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
           </a>
         </div>
 
-        {error && (
-          <p role="alert" className="text-[length:var(--text-small)] text-[var(--color-critical)]">
-            {error}
-          </p>
-        )}
+        <FormError>{error}</FormError>
 
-        <Button type="submit" size="lg" fullWidth disabled={pending}>
-          {pending ? 'Logging in…' : 'Log in'}
+        <Button type="submit" size="lg" fullWidth pending={pending} pendingLabel="Logging in">
+          Log in
         </Button>
       </form>
 

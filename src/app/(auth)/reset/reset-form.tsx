@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Field, Heading, Input } from '@/components/ui'
+import { Field, FormError, Heading, Input } from '@/components/ui'
 import { Button } from '@/components/ui/button'
 
 export function ResetForm() {
@@ -49,8 +49,8 @@ export function ResetForm() {
         <Field label="Email">
           {(fieldProps) => <Input {...fieldProps} name="email" type="email" autoComplete="email" required />}
         </Field>
-        <Button type="submit" size="lg" fullWidth disabled={pending}>
-          {pending ? 'Sending…' : 'Send reset link'}
+        <Button type="submit" size="lg" fullWidth pending={pending} pendingLabel="Sending">
+          Send reset link
         </Button>
       </form>
     </div>
