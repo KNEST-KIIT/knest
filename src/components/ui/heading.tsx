@@ -4,23 +4,20 @@ import { cn } from '@/lib/cn'
  * The one heading primitive, in three sizes matching the three tiers already
  * in use across the app (display/title/heading).
  *
- * Re-brand note: the old Anton-based version defaulted to `uppercase` and
- * carried no font-weight utility, because Anton ships one fixed weight that
- * already reads as maximally heavy — requesting a heavier weight on top of
- * it just triggers faux-bold distortion. Bricolage Grotesque (the new
- * display face) is a real variable font with four loaded weights, so this
- * now carries actual weight per tier instead of leaning on a single-weight
- * face's built-in heaviness, and `uppercase` defaults to `false` — mixed
- * case is the new identity's actual look; the four call sites that already
- * asked for `uppercase={false}` explicitly under the old default are
- * unaffected either way.
+ * Re-brand note (second pass): Fraunces (the display face, replacing the
+ * grotesque from the first re-brand pass) is a serif built for editorial
+ * weight, not poster heaviness — 700 is its heaviest loaded cut, and
+ * negative tracking that suited a condensed grotesque reads cramped on a
+ * serif with real letterforms, so tracking is neutral-to-loose here instead
+ * of tight. `uppercase` still defaults to `false` — mixed case is what
+ * makes a serif display face read editorial rather than like a crest.
  */
 
 const SIZES = {
-  hero: 'text-[length:var(--text-hero)] font-extrabold leading-[0.94] tracking-[-0.03em]',
-  display: 'text-[length:var(--text-display)] font-extrabold leading-[0.98] tracking-[-0.02em]',
-  title: 'text-[length:var(--text-title)] font-bold leading-tight tracking-[-0.01em]',
-  heading: 'text-[length:var(--text-heading)] font-semibold leading-tight',
+  hero: 'text-[length:var(--text-hero)] font-semibold leading-[1.02] tracking-[-0.01em]',
+  display: 'text-[length:var(--text-display)] font-semibold leading-[1.05]',
+  title: 'text-[length:var(--text-title)] font-medium leading-tight',
+  heading: 'text-[length:var(--text-heading)] font-medium leading-snug',
 } as const
 
 export function Heading({

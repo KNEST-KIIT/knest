@@ -85,10 +85,10 @@ export function JourneySelector({ signedIn }: { signedIn: boolean }) {
               role="radio"
               aria-checked={selected === i}
               onClick={() => select(i)}
-              className={`rounded-[var(--radius-lg)] border px-6 py-5 text-left font-[family-name:var(--font-display)] text-[length:var(--text-heading)] font-bold uppercase tracking-tight shadow-[var(--shadow-raised)] transition-[border-color,background-color,color,box-shadow,transform] duration-150 hover:-translate-y-0.5 ${
+              className={`rounded-[var(--radius-lg)] border px-6 py-5 text-left font-[family-name:var(--font-display)] text-[length:var(--text-heading)] font-semibold uppercase tracking-[0.01em] shadow-[var(--shadow-raised)] transition-[border-color,background-color,color,box-shadow] duration-150 ${
                 selected === i
                   ? 'border-[var(--color-signal)] bg-[var(--color-signal-wash)] text-[var(--color-signal-deep)] shadow-[var(--shadow-floating)]'
-                  : 'border-[var(--color-line)] bg-white hover:border-[var(--color-ink)] hover:shadow-[var(--shadow-floating)]'
+                  : 'border-[var(--color-line)] bg-white hover:border-[var(--color-signal)] hover:shadow-[var(--shadow-floating)]'
               }`}
             >
               {opt.label}

@@ -38,15 +38,12 @@ export function SiteFooter() {
       <div className="mx-auto w-full max-w-[1280px] px-6 py-16 md:px-10">
         <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-4">
           <div>
-            <div className="flex items-center gap-2.5">
-              <span
-                aria-hidden
-                className="flex size-8 items-center justify-center rounded-[var(--radius-sm)] bg-[var(--color-signal)] font-[family-name:var(--font-display)] text-sm font-extrabold text-white"
-              >
-                K
-              </span>
-              <span className="font-[family-name:var(--font-display)] text-lg font-bold tracking-[-0.01em]">
+            <div className="flex items-baseline gap-2">
+              <span className="font-[family-name:var(--font-display)] text-lg font-semibold tracking-[-0.01em]">
                 KNEST
+              </span>
+              <span aria-hidden className="text-[length:var(--text-micro)] uppercase tracking-[0.16em] text-white/55">
+                KIIT
               </span>
             </div>
             <p className="mt-4 max-w-[32ch] text-[length:var(--text-small)] text-white/60">

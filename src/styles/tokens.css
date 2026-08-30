@@ -1,71 +1,65 @@
 /*
- * The KNEST identity, in one file — re-drawn as a full visual re-brand.
+ * The KNEST identity, in one file — second pass at the full re-brand.
  *
- * This deliberately walks away from the pitch-deck-matched green/cream/black
- * palette the previous revision documented: a near-black ink on a clean
- * white/warm-off-white ground, a vivid burnt-orange primary accent (action,
- * energy — the "something is happening here" color a venture/innovation
- * platform wants), and a deep indigo secondary accent for
- * ecosystem/informational surfaces, so the two accents read as "do this" vs
- * "here's context" rather than one color doing both jobs.
+ * The first pass (near-black + burnt-orange + a variable grotesque) read as
+ * a generic "YC-style startup" template — accurate feedback: that exact
+ * combination has become the default look for startup landing pages, and
+ * copying the default is the opposite of "best in class." This pass leans
+ * into what's actually specific to KNEST instead of borrowing a startup's
+ * visual vocabulary: it's a *university-anchored* ecosystem, not a funded
+ * startup, so the identity now reads institutional-modern — deep oxford
+ * ink, warm parchment, a serif display face with real editorial weight,
+ * and an oxblood/brass color pairing associated with academic and
+ * publishing tradition rather than SaaS marketing sites.
  *
- * Every color below is contrast-checked against the surfaces it's actually
- * used on (WCAG AA, 4.5:1 for normal text), computed and verified — not
- * eyeballed — the same discipline the previous revision's own accessibility
- * fix (PHASE-10-12-IMPLEMENTATION-PLAN.md §6.3) established. Everything
- * downstream reads these variables and nothing hardcodes a color or size —
- * this is the file that changes if the brand changes again.
+ * Every color is still contrast-checked against the surfaces it's actually
+ * used on (WCAG AA, computed not eyeballed) — a distinctive identity isn't
+ * an excuse to regress the accessibility work already done.
  */
 @theme {
-  /* --- Ground: near-black ink on a clean, warm-neutral white --- */
-  --color-ink: #0b0b0c;
-  --color-ink-soft: #27262b;
-  /* #625f6b measured 6.23:1 on white, 5.72:1 on --color-paper-soft — both
-     clear the 4.5:1 AA floor for small text with real headroom. */
-  --color-ink-muted: #625f6b;
-  --color-paper: #ffffff;
-  --color-paper-soft: #f6f5f2;
-  --color-line: #e8e6e1;
+  /* --- Ground: deep oxford navy-black ink on warm parchment --- */
+  --color-ink: #0d1321;
+  --color-ink-soft: #2b3350;
+  /* #43415a measured 8.92:1 on --color-paper, 7.72:1 on --color-paper-soft. */
+  --color-ink-muted: #43415a;
+  --color-paper: #f8f4e9;
+  --color-paper-soft: #ede4c9;
+  --color-line: #ddd0a8;
 
-  /* --- Primary accent: burnt orange. #c2410c measured 5.18:1 on white,
-     4.75:1 on --color-paper-soft (both text-on-ground uses) and 5.18:1 for
-     white text on the button background — clears AA in every direction it's
-     actually used. --color-signal-deep (#9a3412, 7.31:1) is the hover/press
-     state, not a decorative darker shade picked by eye. --- */
-  --color-signal: #c2410c;
-  --color-signal-deep: #9a3412;
-  --color-signal-wash: #fdeee3;
+  /* --- Primary accent: oxblood. #7a1f2b measures 10.2:1 on white, 9.04:1
+     on --color-paper — an academic/publishing red, not a startup orange.
+     --color-signal-deep (#6e1c27) is the hover/press state. --- */
+  --color-signal: #7a1f2b;
+  --color-signal-deep: #6e1c27;
+  --color-signal-wash: #f4e4e2;
 
-  /* --- Secondary accent: deep indigo, for ecosystem/data surfaces that
-     want a distinct color from the primary "do this" orange. #4338ca
-     measures 7.9:1 on white, 7.25:1 on --color-paper-soft. --- */
-  --color-archive: #4338ca;
-  --color-archive-soft: #eeecfb;
+  /* --- Secondary accent: brass, for ecosystem/data surfaces — a seal-and-
+     ledger color, distinct from oxblood's "do this" register. #7d5f18
+     measures 5.96:1 on white, 5.28:1 on --color-paper. --- */
+  --color-archive: #7d5f18;
+  --color-archive-soft: #ece3c4;
 
-  /* --- Status: independent of both accents, since neither orange nor
-     indigo reads as "success" the way the old brand-green scheme's reused
-     accent did. --- */
+  /* --- Status: independent of both accents. --- */
   --color-positive: #15803d;
   --color-caution: #92400e;
   --color-critical: #b91c1c;
 
   /* --- Type ---
-     Display: Bricolage Grotesque, a variable grotesque with real weight
-     range (500-800) — confident and a little kinetic, not locked to one
-     fixed "always heavy" register the way the old poster face was.
-     Text: unchanged — Instrument Sans was already the right choice and a
-     re-brand is about identity, not re-litigating body-copy legibility.
-     Accent: Instrument Serif italic — an editorial, premium touch for the
-     sparing narrative moments (homepage), replacing the old handwritten
-     script with something that reads more considered. */
-  --font-display: var(--font-display-family), ui-sans-serif, system-ui, sans-serif;
+     Display: Fraunces, a variable serif with real optical-size and weight
+     range — the editorial, considered face that actually differentiates
+     this from a sans-only SaaS template. Text: unchanged, Instrument Sans
+     was already right and stays neutral against the new palette. Fraunces'
+     own italic now covers the sparing narrative-accent role a separate
+     third typeface (first Caveat, then Instrument Serif) covered before —
+     one fewer typeface in the system reads more considered, not less. */
+  --font-display: var(--font-display-family), Georgia, 'Times New Roman', serif;
   --font-text: var(--font-text-family), ui-sans-serif, system-ui, sans-serif;
-  --font-accent: var(--font-accent-family), Georgia, serif;
+  --font-accent: var(--font-display-family), Georgia, serif;
   --font-mono: ui-monospace, 'SF Mono', Menlo, monospace;
 
-  --text-hero: clamp(2.75rem, 1.2rem + 7vw, 7.5rem);
-  --text-display: clamp(2.25rem, 1.2rem + 4.4vw, 4.75rem);
-  --text-title: clamp(1.6rem, 1.2rem + 1.8vw, 2.625rem);
+  --text-hero: clamp(2.75rem, 1.2rem + 7vw, 7.25rem);
+  --text-display: clamp(2.25rem, 1.2rem + 4.4vw, 4.5rem);
+  --text-title: clamp(1.6rem, 1.2rem + 1.8vw, 2.5rem);
   --text-heading: clamp(1.25rem, 1.1rem + 0.7vw, 1.5rem);
   --text-body: clamp(1rem, 0.97rem + 0.15vw, 1.125rem);
   --text-small: 0.875rem;
@@ -74,14 +68,14 @@
   /* --- Space: 8pt --- */
   --spacing: 0.5rem;
 
-  /* --- Radius: three, no more — a touch larger than before, matching the
-     softer, more contemporary card language product sites use now. --- */
-  --radius-sm: 0.375rem;
-  --radius-md: 0.625rem;
-  --radius-lg: 1.25rem;
+  /* --- Radius: three, no more — smaller than the "soft SaaS card" pass,
+     matching a more editorial, less rounded-app-UI language. --- */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.625rem;
 
-  /* --- Elevation: two levels, tuned softer/more diffused for a premium
-     rather than a "drop shadow" feel. --- */
-  --shadow-raised: 0 1px 2px rgb(11 11 12 / 0.04), 0 6px 16px rgb(11 11 12 / 0.06);
-  --shadow-floating: 0 4px 8px rgb(11 11 12 / 0.05), 0 24px 56px rgb(11 11 12 / 0.14);
+  /* --- Elevation: two levels, kept subtle rather than the softer/bigger
+     "floating card" shadows — an institutional surface sits flatter. --- */
+  --shadow-raised: 0 1px 2px rgb(13 19 33 / 0.05), 0 3px 8px rgb(13 19 33 / 0.05);
+  --shadow-floating: 0 2px 4px rgb(13 19 33 / 0.06), 0 12px 28px rgb(13 19 33 / 0.12);
 }

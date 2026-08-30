@@ -62,19 +62,16 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
       )}
     >
       <div className="mx-auto flex h-[4.5rem] w-full max-w-[1280px] items-center justify-between px-6 md:px-10">
-        <Link href="/" className="flex items-center gap-2.5">
-          <span
-            aria-hidden
-            className="flex size-8 items-center justify-center rounded-[var(--radius-sm)] bg-[var(--color-ink)] font-[family-name:var(--font-display)] text-sm font-extrabold text-white"
-          >
-            K
-          </span>
-          <span className="font-[family-name:var(--font-display)] text-lg font-bold tracking-[-0.01em]">
+        <Link href="/" className="flex items-baseline gap-2">
+          <span className="font-[family-name:var(--font-display)] text-lg font-semibold tracking-[-0.01em]">
             KNEST
+          </span>
+          <span aria-hidden className="hidden text-[length:var(--text-micro)] uppercase tracking-[0.16em] text-[var(--color-ink-muted)] sm:inline">
+            KIIT
           </span>
         </Link>
 
-        <nav aria-label="Main" className="hidden items-center gap-1 lg:flex">
+        <nav aria-label="Main" className="hidden items-center gap-7 lg:flex">
           {NAV.map((item) => {
             const active = pathname.startsWith(item.href)
             return (
@@ -83,10 +80,10 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
                 href={item.href}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'rounded-full px-3.5 py-2 text-[length:var(--text-small)] font-medium transition-colors',
+                  'border-b-2 py-1 text-[length:var(--text-small)] font-medium transition-colors',
                   active
-                    ? 'bg-[var(--color-signal-wash)] text-[var(--color-signal-deep)]'
-                    : 'text-[var(--color-ink-soft)] hover:bg-[var(--color-paper-soft)] hover:text-[var(--color-ink)]',
+                    ? 'border-[var(--color-signal)] text-[var(--color-ink)]'
+                    : 'border-transparent text-[var(--color-ink-soft)] hover:border-[var(--color-line)] hover:text-[var(--color-ink)]',
                 )}
               >
                 {item.label}

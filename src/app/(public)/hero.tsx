@@ -3,29 +3,19 @@ import type { Homepage } from '@/payload/payload-types'
 
 /**
  * WHAT IF? — signature experience 01 (CONTENT_SPEC.md §1.1). Type-only, no
- * stock photography. The only motion is a one-time rise+fade on the
- * headline; everything else on the page after this renders in its final
- * state immediately.
+ * stock photography, no decorative gradient wash — the restraint is the
+ * point, and it's also what keeps this from reading like a generic SaaS
+ * hero. The only motion is a one-time rise+fade on the headline; everything
+ * else on the page after this renders in its final state immediately.
  */
 export function Hero({ homepage }: { homepage: Homepage }) {
   return (
-    <div className="relative flex min-h-[90vh] flex-col justify-center overflow-hidden px-6 py-24 md:px-10">
-      {/* A quiet field of color behind the type — not an image, an
-          atmosphere. Purely decorative, so it's aria-hidden. */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10"
-        style={{
-          background:
-            'radial-gradient(60% 50% at 15% 20%, var(--color-signal-wash) 0%, transparent 60%), radial-gradient(50% 45% at 100% 0%, var(--color-archive-soft) 0%, transparent 55%)',
-        }}
-      />
-
+    <div className="flex min-h-[90vh] flex-col justify-center px-6 py-24 md:px-10">
       <div className="mx-auto w-full max-w-[1280px]">
-        <span className="animate-rise-fade inline-flex items-center gap-2 rounded-full border border-[var(--color-line)] bg-white/70 px-3.5 py-1.5 text-[length:var(--text-micro)] font-semibold uppercase tracking-[0.1em] text-[var(--color-signal-deep)] backdrop-blur-sm">
-          <span aria-hidden className="size-1.5 rounded-full bg-[var(--color-signal)]" />
+        <p className="animate-rise-fade flex items-center gap-3 text-[length:var(--text-micro)] font-semibold uppercase tracking-[0.18em] text-[var(--color-signal)]">
+          <span aria-hidden className="h-px w-8 bg-[var(--color-signal)]" />
           KIIT&rsquo;s innovation ecosystem
-        </span>
+        </p>
 
         <Heading
           as="h1"
