@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { UnauthorizedError } from '@/server/auth/guards'
 import { startApplication } from '@/server/applications/actions'
+import { RateLimitError } from '@/server/security/rate-limit'
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null)
@@ -14,6 +15,9 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: 'Sign in to continue.' }, { status: error.status })
+    }
+    if (error instanceof RateLimitError) {
+      return NextResponse.json({ error: 'Too many attempts. Try again later.' }, { status: 429 })
     }
     throw error
   }

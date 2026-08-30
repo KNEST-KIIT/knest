@@ -8,6 +8,8 @@ import { sendNotificationEmail, writeNotification } from '@/server/notifications
 import { applicationReceivedTemplate } from '@/server/notifications/templates'
 import { track } from '@/server/analytics/track'
 import { generateStorageKey, putFile } from '@/server/storage'
+import { enforceRateLimit, RATE_LIMITS } from '@/server/security/rate-limit'
+import { verifyFileContents } from '@/server/security/file-verify'
 import { getApplicationProgram, getApplicationProgramBySlug } from './program-questions'
 import { ALLOWED_UPLOAD_MIME_TYPES, MAX_UPLOAD_BYTES, schemaForQuestion } from './validation'
 
@@ -37,6 +39,7 @@ export async function startApplication(
   programSlug: string,
 ): Promise<{ ok: true; applicationId: string } | { ok: false; error: string }> {
   const user = await requireUserOrThrow()
+  await enforceRateLimit(`application-start:${user.id}`, RATE_LIMITS.applicationStart)
   const program = await getApplicationProgramBySlug(programSlug)
 
   if (!program) return { ok: false, error: 'That program doesn’t exist.' }
@@ -115,6 +118,7 @@ export async function uploadDocument(
   file: { name: string; type: string; size: number; buffer: Buffer },
 ): Promise<ActionResult> {
   const user = await requireUserOrThrow()
+  await enforceRateLimit(`file-upload:${user.id}`, RATE_LIMITS.fileUpload)
   const application = await loadOwnedApplication(applicationId, user.id)
   if (!application) throw new UnauthorizedError(403)
   if (application.status !== 'draft') {
@@ -128,6 +132,13 @@ export async function uploadDocument(
   }
   if (file.size > MAX_UPLOAD_BYTES) {
     return { ok: false, error: 'That file is over 10 MB. Try compressing it.' }
+  }
+  // The declared Content-Type above is client-supplied and trivially spoofed
+  // (rename a .exe to .pdf) — this sniffs the actual file's magic numbers and
+  // rejects a mismatch the same way an oversized file already is, before it
+  // ever reaches storage (§4.2).
+  if (!(await verifyFileContents(file.buffer, file.type))) {
+    return { ok: false, error: 'We can take PDF, DOC or PPT files.' }
   }
 
   const storageKey = generateStorageKey(file.name)
