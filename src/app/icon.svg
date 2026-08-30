@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <!-- The KNEST mark. Kept in sync by hand with src/components/brand/knest-mark.tsx;
+       a favicon is a static file, so it cannot read the CSS colour tokens.
+       Colours below are --color-signal (#0f7538) and --color-paper (#f7f1de). -->
+  <circle cx="50" cy="50" r="50" fill="#0f7538"/>
+  <g transform="rotate(-40 50 50) translate(24.20 25.17) scale(2.15)">
+    <path d="M12 1.5c2.9 3 4.5 6.6 4.5 9.9v7.1h-9v-7.1c0-3.3 1.6-6.9 4.5-9.9Z" fill="#f7f1de"/>
+    <path d="M7.5 13.2 4 19v2.6l3.5-2.1Z" fill="#f7f1de"/>
+    <path d="M16.5 13.2 20 19v2.6l-3.5-2.1Z" fill="#f7f1de"/>
+    <circle cx="12" cy="8.6" r="1.8" fill="#0f7538"/>
+  </g>
+</svg>

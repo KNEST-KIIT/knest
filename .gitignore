@@ -12,3 +12,6 @@ coverage/
 AGENTS.md
 CLAUDE.md
 uploads/
+
+# scratch previews used while tuning visual work
+preview-*.html

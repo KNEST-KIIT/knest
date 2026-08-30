@@ -77,7 +77,44 @@
   --radius-md: 0.5rem;
   --radius-lg: 1rem;
 
-  /* --- Elevation: two levels --- */
-  --shadow-raised: 0 1px 2px rgb(22 21 15 / 0.06), 0 4px 12px rgb(22 21 15 / 0.05);
-  --shadow-floating: 0 2px 4px rgb(22 21 15 / 0.06), 0 16px 40px rgb(22 21 15 / 0.12);
+  /* --- Elevation ---
+     Four levels, each a real job rather than a decorative depth ramp:
+     `flat` is the default (a border does the separating, which suits a
+     paper-coloured ground far better than a shadow does), `raised` lifts a
+     card under the pointer, `floating` is for things that genuinely leave
+     the page — menus, popovers, toasts — and `overlay` is for the one
+     surface that sits above everything, the dialog.
+
+     Shadows are tinted with the ink colour, not black. On a cream ground a
+     neutral-black shadow reads grey and dirty; matching the shadow to the
+     paper's warmth is the difference between "elevated" and "smudged". */
+  --shadow-flat: none;
+  --shadow-raised: 0 1px 2px rgb(22 21 15 / 0.05), 0 4px 12px rgb(22 21 15 / 0.05);
+  --shadow-floating: 0 2px 4px rgb(22 21 15 / 0.06), 0 12px 28px rgb(22 21 15 / 0.10);
+  --shadow-overlay: 0 4px 8px rgb(22 21 15 / 0.08), 0 24px 64px rgb(22 21 15 / 0.18);
+
+  /* --- Motion ---
+     One duration scale and one set of easings, so nothing in the app picks
+     a number at random. These are the CSS half of the system; the JS half
+     (springs, variants, stagger) reads the identical values from
+     src/lib/motion.ts — the two are kept in sync deliberately, and that
+     file is the place the reasoning for each number is written down.
+
+     Everything here is neutralised by the prefers-reduced-motion block in
+     globals.css, and its JS counterpart by MotionConfig reducedMotion="user". */
+  --duration-instant: 120ms;
+  --duration-fast: 200ms;
+  --duration-base: 320ms;
+  --duration-slow: 500ms;
+  --duration-deliberate: 700ms;
+
+  /* Decelerating — things arriving. Fast at the start, settling at the end,
+     which is what makes an entrance feel like it landed rather than stopped. */
+  --ease-entrance: cubic-bezier(0.16, 1, 0.3, 1);
+  /* Accelerating — things leaving. Exits should get out of the way. */
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  /* Symmetric — state changes that neither arrive nor leave (colour, border). */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  /* A small overshoot, reserved for confirming a user's own action. */
+  --ease-emphasis: cubic-bezier(0.34, 1.4, 0.64, 1);
 }

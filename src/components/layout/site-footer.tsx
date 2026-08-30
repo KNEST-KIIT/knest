@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { KnestWordmark } from '@/components/brand'
 
 const COLUMNS = [
   {
@@ -36,12 +37,16 @@ export function SiteFooter() {
   return (
     <footer className="border-t border-[var(--color-line)] bg-[var(--color-paper-soft)]">
       <div className="mx-auto w-full max-w-[1280px] px-6 py-16 md:px-10">
-        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr] lg:gap-10">
           <div>
-            <p className="font-[family-name:var(--font-display)] text-lg uppercase tracking-[0.12em]">
-              KNEST
-            </p>
-            <p className="mt-4 max-w-[32ch] text-[length:var(--text-small)] text-[var(--color-ink-soft)]">
+            <Link
+              href="/"
+              aria-label="KNEST — home"
+              className="inline-block text-[26px] transition-opacity duration-[var(--duration-instant)] hover:opacity-70"
+            >
+              <KnestWordmark />
+            </Link>
+            <p className="mt-5 max-w-[32ch] text-[length:var(--text-small)] leading-relaxed text-[var(--color-ink-soft)]">
               KIIT&rsquo;s innovation and entrepreneurship ecosystem.
               <br />
               KIIT University, Bhubaneswar, Odisha.
@@ -53,12 +58,12 @@ export function SiteFooter() {
               <h2 className="text-[length:var(--text-micro)] font-semibold uppercase tracking-[0.14em] text-[var(--color-ink-muted)]">
                 {column.heading}
               </h2>
-              <ul className="mt-4 flex flex-col gap-3">
+              <ul className="mt-5 flex flex-col gap-3.5">
                 {column.links.map((link) => (
                   <li key={link.href + link.label}>
                     <Link
                       href={link.href}
-                      className="text-[length:var(--text-small)] transition-colors hover:text-[var(--color-signal)]"
+                      className="text-[length:var(--text-small)] text-[var(--color-ink-soft)] transition-colors duration-[var(--duration-instant)] hover:text-[var(--color-signal)]"
                     >
                       {link.label}
                     </Link>
@@ -72,8 +77,12 @@ export function SiteFooter() {
         <div className="mt-14 flex flex-col gap-3 border-t border-[var(--color-line)] pt-6 text-[length:var(--text-small)] text-[var(--color-ink-muted)] sm:flex-row sm:items-center sm:justify-between">
           <p>&copy; {new Date().getFullYear()} KNEST, KIIT University.</p>
           <div className="flex gap-6">
-            <Link href="/privacy">Privacy</Link>
-            <Link href="/terms">Terms</Link>
+            <Link href="/privacy" className="transition-colors duration-[var(--duration-instant)] hover:text-[var(--color-signal)]">
+              Privacy
+            </Link>
+            <Link href="/terms" className="transition-colors duration-[var(--duration-instant)] hover:text-[var(--color-signal)]">
+              Terms
+            </Link>
           </div>
         </div>
       </div>
