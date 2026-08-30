@@ -9,7 +9,14 @@ export type RecommendedPath = 'EXPLORE' | 'VALIDATE' | 'BUILD' | 'GROW' | 'MENTO
 export type Recommendation = {
   path: RecommendedPath
   headline: string
-  body: string
+  /**
+   * Optional, and usually absent. Every branch below used to set `body` to
+   * the identical string as `headline`, so the dashboard's next-step card
+   * printed the same sentence twice, to every user, on every visit. The
+   * headline is the message; `reason` explains it. A branch only carries a
+   * body when it genuinely has a second thing to say.
+   */
+  body?: string
   /**
    * Shown to the user, always (spec §09: "the recommendation should be
    * rule-based and transparent"). A recommendation nobody can interrogate is
@@ -37,7 +44,6 @@ export function recommend(platformRole: PlatformRole, journeyStage: JourneyStage
     return {
       path: 'MENTOR',
       headline: 'Founders need people who’ve done the hard part.',
-      body: 'Founders need people who’ve done the hard part.',
       reason:
         'You’re here to support founders — the next step is completing your mentor profile.',
       cta: 'Complete profile',
@@ -48,7 +54,6 @@ export function recommend(platformRole: PlatformRole, journeyStage: JourneyStage
     return {
       path: 'CONNECT',
       headline: 'Let’s find the right conversation.',
-      body: 'Let’s find the right conversation.',
       reason: 'Partnerships start with a conversation rather than a form.',
       cta: 'Get in touch',
     }
@@ -64,7 +69,6 @@ export function recommend(platformRole: PlatformRole, journeyStage: JourneyStage
       return {
         path: 'VALIDATE',
         headline: 'You have an idea. The next job is finding out if it’s real.',
-        body: 'You have an idea. The next job is finding out if it’s real.',
         reason: 'You have an idea but haven’t tested it yet — validation comes before building.',
         cta: 'Find a program',
       }
@@ -73,7 +77,6 @@ export function recommend(platformRole: PlatformRole, journeyStage: JourneyStage
       return {
         path: 'BUILD',
         headline: 'Time to put something in front of real users.',
-        body: 'Time to put something in front of real users.',
         reason: 'You’re building — what you need now is momentum, feedback and structure.',
         cta: 'See programs',
       }
@@ -82,7 +85,6 @@ export function recommend(platformRole: PlatformRole, journeyStage: JourneyStage
       return {
         path: 'GROW',
         headline: 'You’ve got a startup. Now: customers, capital, scale.',
-        body: 'You’ve got a startup. Now: customers, capital, scale.',
         reason:
           'You already have a startup, so we’d point you at growth and investor access rather than early-stage work.',
         cta: 'See programs',
@@ -92,7 +94,6 @@ export function recommend(platformRole: PlatformRole, journeyStage: JourneyStage
       return {
         path: 'EXPLORE',
         headline: 'Start with events and the fundamentals. No idea required.',
-        body: 'Start with events and the fundamentals. No idea required.',
         reason:
           'You’re exploring and want to understand entrepreneurship — so we’d start you with people and ideas, not an application.',
         cta: 'See what’s on',

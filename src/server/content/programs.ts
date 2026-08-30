@@ -37,7 +37,31 @@ export async function listPrograms(filters: ProgramFilters = {}) {
     overrideAccess: false,
   })
 
-  return result.docs
+  return sortByActionability(result.docs)
+}
+
+/**
+ * What you can act on, first.
+ *
+ * The CMS sort is `-nextCohortStart`, which puts whatever runs next at the
+ * top regardless of whether anyone can apply to it — so a closed program led
+ * the listing, and the first thing a visitor to /programs saw was something
+ * they could not do anything about. Recency is the tie-breaker, not the rule.
+ *
+ * Done in memory rather than in the query because the ordering is over an
+ * enum's meaning, not its stored value, and there are at most 100 rows.
+ */
+const STATUS_PRIORITY: Record<Program['applicationStatus'], number> = {
+  open: 0,
+  opening_soon: 1,
+  in_progress: 2,
+  closed: 3,
+}
+
+function sortByActionability(programs: Program[]): Program[] {
+  return [...programs].sort(
+    (a, b) => STATUS_PRIORITY[a.applicationStatus] - STATUS_PRIORITY[b.applicationStatus],
+  )
 }
 
 /** Programs a mentor is attached to — "programs you support" on the mentor dashboard (§4.1). */

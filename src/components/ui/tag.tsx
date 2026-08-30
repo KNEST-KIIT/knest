@@ -24,7 +24,14 @@ export function Tag({
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-[var(--radius-sm)] px-2.5 py-1',
+        // `w-fit` because `inline-flex` does not stop a flex child being
+        // stretched across its container's cross axis. Every card in the app
+        // is a `flex flex-col`, so the status pill at the top of a program,
+        // startup or event card was rendering as a full-width bar across the
+        // card rather than a pill hugging its label. An explicit width beats
+        // `align-items: stretch`, and is inert outside a flex or grid parent,
+        // so this is safe everywhere Tag is already used.
+        'inline-flex w-fit items-center rounded-[var(--radius-sm)] px-2.5 py-1',
         'text-[length:var(--text-micro)] font-semibold uppercase tracking-[0.08em]',
         tones[tone],
         className,

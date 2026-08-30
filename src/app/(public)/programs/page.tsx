@@ -62,6 +62,12 @@ async function ProgramsList({ filters }: { filters: Filters }) {
             <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-[length:var(--text-small)] text-[var(--color-ink-muted)]">
               {program.duration && <span>{program.duration}</span>}
               {program.nextCohortStart && <span>Next: {formatDate(program.nextCohortStart)}</span>}
+              {/* The deadline is the fact that decides whether to act now, and
+                  it was on the detail page only — so the listing showed a
+                  program as open without saying how long that stayed true. */}
+              {program.applicationStatus === 'open' && program.applicationDeadline && (
+                <span>Apply by {formatDate(program.applicationDeadline)}</span>
+              )}
             </div>
             <span className="mt-4 inline-block text-[length:var(--text-small)] font-medium text-[var(--color-signal)]">
               View program →

@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import { Heading } from '@/components/ui'
 
 /**
  * The single-action hero card (CONTENT_SPEC.md §5) — one visual shape reused
@@ -17,7 +16,7 @@ export function NextStepCard({
 }: {
   eyebrow: string
   heading: string
-  body: string
+  body?: string
   reason?: string
   actionLabel: string
   actionHref: string
@@ -27,10 +26,16 @@ export function NextStepCard({
       <p className="font-[family-name:var(--font-display)] text-[length:var(--text-small)] uppercase tracking-[0.14em] text-[var(--color-signal)]">
         {eyebrow}
       </p>
-      <Heading as="h2" size="heading" className="mt-2" uppercase={false}>
-        {heading}
-      </Heading>
-      <p className="mt-2 text-[var(--color-ink-soft)]">{body}</p>
+      {/*
+        The text face, not the display face. Anton is a condensed poster
+        cut drawn for caps and short labels; this heading is a full
+        sentence ("You have an idea. The next job is finding out if it's
+        real."), and a sentence set in a condensed poster face lowercase
+        is cramped and slow to read. Display type for labels, text type
+        for sentences — the size still carries the hierarchy.
+      */}
+      <h2 className="mt-2 text-[length:var(--text-heading)] font-semibold leading-snug">{heading}</h2>
+      {body && <p className="mt-2 text-[var(--color-ink-soft)]">{body}</p>}
       {reason && (
         <p className="mt-4 text-[length:var(--text-small)] text-[var(--color-ink-muted)]">
           <strong>Why this: </strong>

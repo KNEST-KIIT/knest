@@ -162,8 +162,23 @@ export default async function ProgramDetailPage({ params }: { params: Promise<{ 
               <div className="mt-4 flex flex-col divide-y divide-[var(--color-line)] border-y border-[var(--color-line)]">
                 {faqs.map((faq, i) => (
                   <details key={i} className="group py-4">
-                    <summary className="cursor-pointer list-none font-medium marker:content-none">
-                      {faq.question}
+                    {/* A question with no disclosure indicator does not look
+                        like a control. The chevron rotates to point at the
+                        answer once it is open. */}
+                    <summary className="flex cursor-pointer list-none items-start justify-between gap-4 font-medium marker:content-none">
+                      <span>{faq.question}</span>
+                      <svg
+                        aria-hidden
+                        viewBox="0 0 16 16"
+                        className="mt-1 size-4 shrink-0 text-[var(--color-ink-muted)] transition-transform duration-[var(--duration-fast)] ease-[var(--ease-standard)] group-open:rotate-180"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.75"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M4 6l4 4 4-4" />
+                      </svg>
                     </summary>
                     <RichText data={faq.answer} className="mt-3 text-[length:var(--text-small)]" />
                   </details>
@@ -172,11 +187,17 @@ export default async function ProgramDetailPage({ params }: { params: Promise<{ 
             </section>
           )}
 
-          <section>
+          {/*
+            The apply CTA lives in the sticky aside on desktop and inline at
+            the end of the page on mobile. The whole section is hidden at `lg`,
+            not just its body — with only the body hidden, desktop rendered
+            the heading "Ready?" with nothing underneath it.
+          */}
+          <section className="lg:hidden">
             <Heading as="h2" size="title">
               Ready?
             </Heading>
-            <div className="mt-4 max-w-[360px] lg:hidden">
+            <div className="mt-4 max-w-[360px]">
               <ApplyCta program={program} />
             </div>
           </section>

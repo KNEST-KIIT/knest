@@ -112,10 +112,15 @@ const control =
  * picker beats any custom listbox — but every browser draws its own arrow at
  * its own size. Suppressing it and painting one keeps the control looking
  * like the rest of the form.
+ *
+ * The arrow lives in globals.css rather than in an arbitrary Tailwind value.
+ * An inline `bg-[url("data:image/svg+xml,…")]` needs quotes, `%23` and commas
+ * to survive Tailwind's class parser; the first version of this compiled to
+ * `background-image: none`, which suppressed the native arrow and drew
+ * nothing in its place — a select with no affordance at all, and no error
+ * anywhere to say so.
  */
-const selectChevron =
-  "appearance-none bg-[url(\"data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%235f5a49' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E\")] " +
-  'bg-[length:16px_16px] bg-[right_0.875rem_center] bg-no-repeat'
+const selectChevron = 'select-chevron'
 
 export function Input({
   className,
