@@ -1,4 +1,4 @@
-import { ButtonLink } from '@/components/ui'
+import { ButtonLink, Heading } from '@/components/ui'
 import type { Homepage } from '@/payload/payload-types'
 
 /**
@@ -9,14 +9,35 @@ import type { Homepage } from '@/payload/payload-types'
  */
 export function Hero({ homepage }: { homepage: Homepage }) {
   return (
-    <div className="flex min-h-[90vh] flex-col justify-center px-6 py-24 md:px-10">
+    <div className="relative flex min-h-[90vh] flex-col justify-center overflow-hidden px-6 py-24 md:px-10">
+      {/* A quiet field of color behind the type — not an image, an
+          atmosphere. Purely decorative, so it's aria-hidden. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 -z-10"
+        style={{
+          background:
+            'radial-gradient(60% 50% at 15% 20%, var(--color-signal-wash) 0%, transparent 60%), radial-gradient(50% 45% at 100% 0%, var(--color-archive-soft) 0%, transparent 55%)',
+        }}
+      />
+
       <div className="mx-auto w-full max-w-[1280px]">
-        <h1 className="animate-rise-fade whitespace-pre-line font-[family-name:var(--font-display)] text-[length:var(--text-display)] uppercase leading-[0.95] tracking-[-0.02em]">
+        <span className="animate-rise-fade inline-flex items-center gap-2 rounded-full border border-[var(--color-line)] bg-white/70 px-3.5 py-1.5 text-[length:var(--text-micro)] font-semibold uppercase tracking-[0.1em] text-[var(--color-signal-deep)] backdrop-blur-sm">
+          <span aria-hidden className="size-1.5 rounded-full bg-[var(--color-signal)]" />
+          KIIT&rsquo;s innovation ecosystem
+        </span>
+
+        <Heading
+          as="h1"
+          size="hero"
+          className="animate-rise-fade mt-5 whitespace-pre-line"
+          style={{ animationDelay: '0.08s' }}
+        >
           {homepage.heroHeadline}
-        </h1>
+        </Heading>
         <p
           className="animate-rise-fade mt-6 max-w-[52ch] text-[length:var(--text-heading)] text-[var(--color-ink-soft)]"
-          style={{ animationDelay: '0.15s' }}
+          style={{ animationDelay: '0.18s' }}
         >
           {homepage.heroSubhead}
         </p>

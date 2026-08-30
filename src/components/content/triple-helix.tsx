@@ -18,7 +18,7 @@ export function TripleHelix() {
             key={pillar.label}
             className="rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-white p-6 text-center"
           >
-            <p className="font-[family-name:var(--font-display)] text-[length:var(--text-heading)] uppercase leading-tight">
+            <p className="font-[family-name:var(--font-display)] text-[length:var(--text-heading)] font-bold leading-tight">
               {pillar.label}
             </p>
             <p className="mt-2 text-[length:var(--text-small)] text-[var(--color-ink-muted)]">{pillar.role}</p>

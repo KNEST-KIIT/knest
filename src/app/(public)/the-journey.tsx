@@ -33,9 +33,9 @@ export async function TheJourney() {
           <Link
             key={stage.value}
             href={`/programs?stage=${stage.value}`}
-            className="group flex w-[220px] shrink-0 flex-col rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-white p-5 transition-colors hover:border-[var(--color-ink)] md:w-auto"
+            className="group flex w-[220px] shrink-0 flex-col rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-raised)] transition-[border-color,box-shadow,transform] duration-150 hover:-translate-y-0.5 hover:border-[var(--color-ink)] hover:shadow-[var(--shadow-floating)] md:w-auto"
           >
-            <p className="font-[family-name:var(--font-display)] text-[length:var(--text-small)] uppercase tracking-[0.1em] text-[var(--color-signal)]">
+            <p className="font-[family-name:var(--font-display)] text-[length:var(--text-small)] font-bold uppercase tracking-[0.1em] text-[var(--color-signal)]">
               {stage.label}
             </p>
             {programs.length === 0 ? (

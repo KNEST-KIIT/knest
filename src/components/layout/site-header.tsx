@@ -55,34 +55,44 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
   return (
     <header
       className={cn(
-        'sticky top-0 z-50 transition-colors duration-200',
+        'sticky top-0 z-50 transition-[background-color,border-color] duration-200',
         scrolled || open
-          ? 'border-b border-[var(--color-line)] bg-[var(--color-paper)]'
-          : 'border-b border-transparent bg-[var(--color-paper)]/80 backdrop-blur',
+          ? 'border-b border-[var(--color-line)] bg-[var(--color-paper)]/95 backdrop-blur-md'
+          : 'border-b border-transparent bg-[var(--color-paper)]/70 backdrop-blur-md',
       )}
     >
-      <div className="mx-auto flex h-16 w-full max-w-[1280px] items-center justify-between px-6 md:px-10">
-        <Link
-          href="/"
-          className="font-[family-name:var(--font-display)] text-lg uppercase tracking-[0.12em]"
-        >
-          KNEST
+      <div className="mx-auto flex h-[4.5rem] w-full max-w-[1280px] items-center justify-between px-6 md:px-10">
+        <Link href="/" className="flex items-center gap-2.5">
+          <span
+            aria-hidden
+            className="flex size-8 items-center justify-center rounded-[var(--radius-sm)] bg-[var(--color-ink)] font-[family-name:var(--font-display)] text-sm font-extrabold text-white"
+          >
+            K
+          </span>
+          <span className="font-[family-name:var(--font-display)] text-lg font-bold tracking-[-0.01em]">
+            KNEST
+          </span>
         </Link>
 
-        <nav aria-label="Main" className="hidden items-center gap-7 lg:flex">
-          {NAV.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              aria-current={pathname.startsWith(item.href) ? 'page' : undefined}
-              className={cn(
-                'text-[length:var(--text-small)] transition-colors hover:text-[var(--color-signal)]',
-                pathname.startsWith(item.href) && 'text-[var(--color-signal)]',
-              )}
-            >
-              {item.label}
-            </Link>
-          ))}
+        <nav aria-label="Main" className="hidden items-center gap-1 lg:flex">
+          {NAV.map((item) => {
+            const active = pathname.startsWith(item.href)
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-current={active ? 'page' : undefined}
+                className={cn(
+                  'rounded-full px-3.5 py-2 text-[length:var(--text-small)] font-medium transition-colors',
+                  active
+                    ? 'bg-[var(--color-signal-wash)] text-[var(--color-signal-deep)]'
+                    : 'text-[var(--color-ink-soft)] hover:bg-[var(--color-paper-soft)] hover:text-[var(--color-ink)]',
+                )}
+              >
+                {item.label}
+              </Link>
+            )
+          })}
         </nav>
 
         <div className="hidden items-center gap-4 lg:flex">
@@ -159,12 +169,12 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
         <div
           ref={panelRef}
           id="mobile-nav"
-          className="fixed inset-x-0 bottom-0 top-16 z-50 flex flex-col bg-[var(--color-paper)] lg:hidden"
+          className="fixed inset-x-0 bottom-0 top-[4.5rem] z-50 flex flex-col bg-[var(--color-paper)] lg:hidden"
         >
           <nav aria-label="Main" className="flex flex-1 flex-col gap-1 overflow-y-auto px-6 py-6">
             <Link
               href="/search"
-              className="border-b border-[var(--color-line)] py-4 font-[family-name:var(--font-display)] text-[length:var(--text-heading)] uppercase"
+              className="border-b border-[var(--color-line)] py-4 font-[family-name:var(--font-display)] text-[length:var(--text-heading)] font-bold"
             >
               Search
             </Link>
@@ -172,7 +182,7 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
               <Link
                 key={item.href}
                 href={item.href}
-                className="border-b border-[var(--color-line)] py-4 font-[family-name:var(--font-display)] text-[length:var(--text-heading)] uppercase"
+                className="border-b border-[var(--color-line)] py-4 font-[family-name:var(--font-display)] text-[length:var(--text-heading)] font-bold"
               >
                 {item.label}
               </Link>

@@ -68,7 +68,7 @@ export default function AboutPage() {
         <ol className="mt-6 flex flex-col gap-4">
           {OBJECTIVES.map((objective, i) => (
             <li key={i} className="flex gap-4">
-              <span className="font-[family-name:var(--font-display)] text-[length:var(--text-heading)] text-[var(--color-signal)]">
+              <span className="font-[family-name:var(--font-display)] text-[length:var(--text-heading)] font-extrabold text-[var(--color-signal)]">
                 {String(i + 1).padStart(2, '0')}
               </span>
               <span className="text-[var(--color-ink-soft)]">{objective}</span>

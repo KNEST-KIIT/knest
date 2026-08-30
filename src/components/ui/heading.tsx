@@ -2,42 +2,45 @@ import { cn } from '@/lib/cn'
 
 /**
  * The one heading primitive, in three sizes matching the three tiers already
- * in use across the app (display/title/heading — surveyed from actual call
- * sites before this was built: 2/18/12 instances respectively). Every display
- * heading in the app should render through this rather than hand-copying the
- * className string, which had drifted to 35 independent instances by Phase
- * 5-6.
+ * in use across the app (display/title/heading).
  *
- * Deliberately carries no font-weight utility: Anton (the display face) loads
- * a single weight (400) that already reads as maximally heavy by design.
- * Requesting `font-bold`/`font-extrabold` on top asks the browser to
- * synthesize a weight with no matching font file — most browsers "faux-bold"
- * that by thickening strokes algorithmically, which visibly distorts an
- * already-heavy poster face. The old className strings had drifted into
- * doing exactly this in 24 of 35 places.
+ * Re-brand note: the old Anton-based version defaulted to `uppercase` and
+ * carried no font-weight utility, because Anton ships one fixed weight that
+ * already reads as maximally heavy — requesting a heavier weight on top of
+ * it just triggers faux-bold distortion. Bricolage Grotesque (the new
+ * display face) is a real variable font with four loaded weights, so this
+ * now carries actual weight per tier instead of leaning on a single-weight
+ * face's built-in heaviness, and `uppercase` defaults to `false` — mixed
+ * case is the new identity's actual look; the four call sites that already
+ * asked for `uppercase={false}` explicitly under the old default are
+ * unaffected either way.
  */
 
 const SIZES = {
-  display: 'text-[length:var(--text-display)] leading-[0.95] tracking-[-0.02em]',
-  title: 'text-[length:var(--text-title)] leading-tight',
-  heading: 'text-[length:var(--text-heading)] leading-tight',
+  hero: 'text-[length:var(--text-hero)] font-extrabold leading-[0.94] tracking-[-0.03em]',
+  display: 'text-[length:var(--text-display)] font-extrabold leading-[0.98] tracking-[-0.02em]',
+  title: 'text-[length:var(--text-title)] font-bold leading-tight tracking-[-0.01em]',
+  heading: 'text-[length:var(--text-heading)] font-semibold leading-tight',
 } as const
 
 export function Heading({
   as: Tag = 'h2',
   size = 'title',
-  uppercase = true,
+  uppercase = false,
   className,
+  style,
   children,
 }: {
   as?: 'h1' | 'h2' | 'h3' | 'h4'
   size?: keyof typeof SIZES
   uppercase?: boolean
   className?: string
+  style?: React.CSSProperties
   children: React.ReactNode
 }) {
   return (
     <Tag
+      style={style}
       className={cn(
         'font-[family-name:var(--font-display)]',
         SIZES[size],
