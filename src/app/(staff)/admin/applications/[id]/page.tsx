@@ -8,6 +8,13 @@ import { Heading } from '@/components/ui'
 
 export const metadata: Metadata = { title: 'Review application — Admin' }
 
+/** Select/multiselect answers store the option's stable `value`, not its label — this resolves back to what the applicant actually saw and picked. */
+function formatAnswer(raw: unknown, options?: { label: string; value: string }[] | null): string {
+  const labelFor = (v: string) => options?.find((o) => o.value === v)?.label ?? v
+  if (Array.isArray(raw)) return raw.length > 0 ? raw.map((v) => labelFor(String(v))).join(', ') : '—'
+  return typeof raw === 'string' && raw ? labelFor(raw) : '—'
+}
+
 export default async function AdminApplicationDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const detail = await getApplicationForReview(id)
@@ -46,9 +53,7 @@ export default async function AdminApplicationDetailPage({ params }: { params: P
                 )
               ) : (
                 <p className="mt-1 whitespace-pre-wrap">
-                  {Array.isArray(answerMap.get(q.id))
-                    ? (answerMap.get(q.id) as string[]).join(', ')
-                    : (answerMap.get(q.id) as string) || '—'}
+                  {formatAnswer(answerMap.get(q.id), q.options)}
                 </p>
               )}
             </div>

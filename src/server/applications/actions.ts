@@ -39,7 +39,6 @@ export async function startApplication(
   programSlug: string,
 ): Promise<{ ok: true; applicationId: string } | { ok: false; error: string }> {
   const user = await requireUserOrThrow()
-  await enforceRateLimit(`application-start:${user.id}`, RATE_LIMITS.applicationStart)
   const program = await getApplicationProgramBySlug(programSlug)
 
   if (!program) return { ok: false, error: 'That program doesn’t exist.' }
@@ -48,6 +47,20 @@ export async function startApplication(
   }
   if (program.applicationDeadline && new Date(program.applicationDeadline) < new Date()) {
     return { ok: false, error: `Applications for this program closed on ${program.applicationDeadline}.` }
+  }
+
+  // /apply/[program] calls this on every page view, not just the first —
+  // it's the idempotent lookup for an already-started draft as much as it
+  // is "start" (see the docstring above). Rate-limiting that would penalize
+  // someone simply reloading or resuming their own application, so the
+  // limit only applies when this genuinely is a new application: no draft
+  // already on file for this user+program.
+  const alreadyStarted = await db.query.applications.findFirst({
+    where: and(eq(applications.userId, user.id), eq(applications.programId, program.id)),
+    columns: { id: true },
+  })
+  if (!alreadyStarted) {
+    await enforceRateLimit(`application-start:${user.id}`, RATE_LIMITS.applicationStart)
   }
 
   const [created] = await db

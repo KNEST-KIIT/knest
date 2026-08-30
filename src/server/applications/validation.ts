@@ -21,12 +21,12 @@ export function schemaForQuestion(question: ApplicationQuestion): z.ZodTypeAny {
       return required ? schema : schema.optional().or(z.literal(''))
     }
     case 'select': {
-      const values = (question.options ?? []).map((o) => o.label)
+      const values = (question.options ?? []).map((o) => o.value)
       const schema = z.string().refine((v) => values.includes(v), 'Pick one of the options.')
       return required ? schema : schema.optional().or(z.literal(''))
     }
     case 'multiselect': {
-      const values = (question.options ?? []).map((o) => o.label)
+      const values = (question.options ?? []).map((o) => o.value)
       const schema = z.array(z.string().refine((v) => values.includes(v)))
       return required ? schema.min(1, 'Pick at least one.') : schema
     }

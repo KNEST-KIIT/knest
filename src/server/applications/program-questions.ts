@@ -52,7 +52,7 @@ function mapProgram(program: {
         label: string
         helpText?: string | null
         fieldType: ApplicationQuestion['fieldType']
-        options?: { label: string }[] | null
+        options?: { label: string; value: string }[] | null
         required?: boolean | null
         maxLength?: number | null
       }[]

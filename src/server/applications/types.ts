@@ -3,7 +3,7 @@ export type ApplicationQuestion = {
   label: string
   helpText?: string | null
   fieldType: 'text' | 'textarea' | 'select' | 'multiselect' | 'url' | 'file'
-  options?: { label: string }[] | null
+  options?: { label: string; value: string }[] | null
   required?: boolean | null
   maxLength?: number | null
 }

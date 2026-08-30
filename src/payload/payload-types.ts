@@ -315,6 +315,10 @@ export interface Program {
         options?:
           | {
               label: string;
+              /**
+               * The stable identifier stored on every submitted answer (PHASE-5-6-RETROSPECTIVE.md §13). Auto-filled from the label when left blank — editing the label afterward never changes an answer already on file.
+               */
+              value: string;
               id?: string | null;
             }[]
           | null;
@@ -1178,6 +1182,7 @@ export interface ProgramsSelect<T extends boolean = true> {
           | T
           | {
               label?: T;
+              value?: T;
               id?: T;
             };
         required?: T;

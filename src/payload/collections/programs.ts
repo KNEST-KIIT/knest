@@ -8,6 +8,7 @@ import {
 } from '../fields/taxonomy'
 import { seoField } from '../fields/seo'
 import { slugField } from '../fields/slug'
+import { slugify } from '../fields/slugify'
 
 /**
  * Programs are the product of the public site: everything upstream exists to
@@ -179,7 +180,27 @@ export const Programs: CollectionConfig = {
                       siblingData?.fieldType === 'select' || siblingData?.fieldType === 'multiselect',
                     description: 'The choices for a select or multi-select question.',
                   },
-                  fields: [{ name: 'label', type: 'text', required: true }],
+                  fields: [
+                    { name: 'label', type: 'text', required: true },
+                    {
+                      name: 'value',
+                      type: 'text',
+                      required: true,
+                      admin: {
+                        description:
+                          'The stable identifier stored on every submitted answer (PHASE-5-6-RETROSPECTIVE.md §13). Auto-filled from the label when left blank — editing the label afterward never changes an answer already on file.',
+                      },
+                      hooks: {
+                        beforeValidate: [
+                          ({ value, siblingData }) => {
+                            if (value) return value
+                            const label = (siblingData as Record<string, unknown> | undefined)?.label
+                            return typeof label === 'string' ? slugify(label) : value
+                          },
+                        ],
+                      },
+                    },
+                  ],
                 },
                 { name: 'required', type: 'checkbox', defaultValue: true },
                 {

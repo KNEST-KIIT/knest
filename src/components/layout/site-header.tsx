@@ -15,7 +15,7 @@ const NAV = [
   { href: '/about', label: 'About' },
 ]
 
-export function SiteHeader({ signedIn = false }: { signedIn?: boolean }) {
+export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: boolean; unreadCount?: number }) {
   const [open, setOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const pathname = usePathname()
@@ -97,9 +97,23 @@ export function SiteHeader({ signedIn = false }: { signedIn?: boolean }) {
             </svg>
           </Link>
           {signedIn ? (
-            <ButtonLink href="/dashboard" size="sm">
-              Dashboard
-            </ButtonLink>
+            <div className="relative">
+              <ButtonLink
+                href="/dashboard"
+                size="sm"
+                aria-label={unreadCount > 0 ? `Dashboard — ${unreadCount} unread notification${unreadCount === 1 ? '' : 's'}` : undefined}
+              >
+                Dashboard
+              </ButtonLink>
+              {unreadCount > 0 && (
+                <span
+                  aria-hidden
+                  className="absolute -right-1.5 -top-1.5 flex size-4 items-center justify-center rounded-full bg-[var(--color-signal)] text-[9px] font-medium text-white"
+                >
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </div>
           ) : (
             <>
               <ButtonLink href="/signup" size="sm">
@@ -167,8 +181,13 @@ export function SiteHeader({ signedIn = false }: { signedIn?: boolean }) {
           {/* Pinned inside the safe area so it clears the home indicator. */}
           <div className="flex flex-col gap-3 border-t border-[var(--color-line)] px-6 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
             {signedIn ? (
-              <ButtonLink href="/dashboard" size="lg" fullWidth>
-                Dashboard
+              <ButtonLink
+                href="/dashboard"
+                size="lg"
+                fullWidth
+                aria-label={unreadCount > 0 ? `Dashboard — ${unreadCount} unread notification${unreadCount === 1 ? '' : 's'}` : undefined}
+              >
+                Dashboard{unreadCount > 0 && ` (${unreadCount > 9 ? '9+' : unreadCount})`}
               </ButtonLink>
             ) : (
               <>

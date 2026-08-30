@@ -2,6 +2,7 @@ import { SiteFooter } from '@/components/layout/site-footer'
 import { SiteHeader } from '@/components/layout/site-header'
 import { SkipLink } from '@/components/layout/skip-link'
 import { requireUser } from '@/server/auth/guards'
+import { countUnread } from '@/server/notifications/actions'
 
 /**
  * Only requireUser() here, not requireOnboardedUser(): applying (/apply)
@@ -13,12 +14,13 @@ import { requireUser } from '@/server/auth/guards'
  * personalised next step, so it enforces completion itself.
  */
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  await requireUser('/dashboard')
+  const user = await requireUser('/dashboard')
+  const unreadCount = await countUnread(user.id)
 
   return (
     <>
       <SkipLink />
-      <SiteHeader signedIn />
+      <SiteHeader signedIn unreadCount={unreadCount} />
       <main id="main">{children}</main>
       <SiteFooter />
     </>

@@ -1,4 +1,5 @@
 import type { Field } from 'payload'
+import { slugify } from './slugify'
 
 /**
  * URL slug, derived from a source field on create but editable afterwards.
@@ -25,12 +26,7 @@ export function slugField(from = 'title'): Field {
           if (operation !== 'create') return value
           const source = (data as Record<string, unknown> | undefined)?.[from]
           if (typeof source !== 'string') return value
-          return source
-            .toLowerCase()
-            .trim()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/^-+|-+$/g, '')
-            .slice(0, 80)
+          return slugify(source).slice(0, 80)
         },
       ],
     },

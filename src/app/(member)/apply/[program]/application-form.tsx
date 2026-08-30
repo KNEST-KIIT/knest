@@ -14,6 +14,13 @@ type Props = {
   initialDocuments: Record<string, string>
 }
 
+/** Select/multiselect answers hold the option's stable `value`, not its label — this shows the applicant back what they actually picked. */
+function formatAnswer(raw: unknown, options?: { label: string; value: string }[] | null): string {
+  const labelFor = (v: string) => options?.find((o) => o.value === v)?.label ?? v
+  if (Array.isArray(raw)) return raw.length > 0 ? raw.map((v) => labelFor(String(v))).join(', ') : '—'
+  return typeof raw === 'string' && raw ? labelFor(raw) : '—'
+}
+
 async function postJSON(url: string, body: unknown) {
   const res = await fetch(url, {
     method: 'POST',
@@ -165,13 +172,7 @@ export function ApplicationForm({ applicationId, programTitle, questions, initia
             <div key={q.id} className="flex items-start justify-between gap-4 py-4">
               <div>
                 <p className="text-[length:var(--text-small)] font-medium text-[var(--color-ink-muted)]">{q.label}</p>
-                <p className="mt-1">
-                  {q.fieldType === 'file'
-                    ? documentNames[q.id] || '—'
-                    : Array.isArray(answers[q.id])
-                      ? (answers[q.id] as string[]).join(', ') || '—'
-                      : (answers[q.id] as string) || '—'}
-                </p>
+                <p className="mt-1">{q.fieldType === 'file' ? documentNames[q.id] || '—' : formatAnswer(answers[q.id], q.options)}</p>
               </div>
               <button
                 type="button"
@@ -261,7 +262,7 @@ export function ApplicationForm({ applicationId, programTitle, questions, initia
 
             {question.fieldType === 'select' && (
               <SingleSelect
-                options={(question.options ?? []).map((o) => ({ value: o.label, label: o.label }))}
+                options={(question.options ?? []).map((o) => ({ value: o.value, label: o.label }))}
                 value={(answers[question.id] as string) ?? null}
                 onChange={(v) => setAnswers((prev) => ({ ...prev, [question.id]: v }))}
               />
@@ -269,7 +270,7 @@ export function ApplicationForm({ applicationId, programTitle, questions, initia
 
             {question.fieldType === 'multiselect' && (
               <MultiSelect
-                options={(question.options ?? []).map((o) => ({ value: o.label, label: o.label }))}
+                options={(question.options ?? []).map((o) => ({ value: o.value, label: o.label }))}
                 value={(answers[question.id] as string[]) ?? []}
                 onChange={(v) => setAnswers((prev) => ({ ...prev, [question.id]: v }))}
               />
