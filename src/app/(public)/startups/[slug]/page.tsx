@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { Avatar, Heading, Tag, Timeline } from '@/components/ui'
+import { Avatar, Heading, Tag, Timeline, Container } from '@/components/ui'
 import { formatDate } from '@/lib/dates'
 import { getStartupBySlug } from '@/server/content/startups'
 import { track } from '@/server/analytics/track'
@@ -38,7 +38,7 @@ export default async function StartupDetailPage({ params }: { params: Promise<{ 
   }))
 
   return (
-    <div className="mx-auto w-full max-w-[1280px] px-6 py-16 md:px-10">
+    <Container className="py-16">
       <div className="max-w-[68ch]">
         <div className="flex flex-wrap items-center gap-3">
           {startup.stage && <Tag tone="signal">{startup.stage}</Tag>}
@@ -116,6 +116,6 @@ export default async function StartupDetailPage({ params }: { params: Promise<{ 
           </aside>
         )}
       </div>
-    </div>
+    </Container>
   )
 }

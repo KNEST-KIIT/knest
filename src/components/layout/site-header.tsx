@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { AnimatePresence, motion } from 'motion/react'
 import { KnestWordmark } from '@/components/brand'
-import { ButtonLink } from '@/components/ui'
+import { ButtonLink, Container } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import { duration, ease, spring, stagger } from '@/lib/motion'
 
@@ -64,7 +64,7 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
           : 'border-b border-transparent bg-[var(--color-paper)]/80 backdrop-blur',
       )}
     >
-      <div className="mx-auto flex h-16 w-full max-w-[1280px] items-center justify-between px-6 md:px-10">
+      <Container className="flex h-16 items-center justify-between">
         <Link
           href="/"
           aria-label="KNEST — home"
@@ -200,7 +200,7 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
             />
           </span>
         </button>
-      </div>
+      </Container>
 
       <AnimatePresence>
         {open && (

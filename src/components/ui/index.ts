@@ -1,6 +1,7 @@
 export { Avatar } from './avatar'
 export { Button, ButtonLink } from './button'
 export { Card, CardTitle, LinkCard } from './card'
+export { Container } from './container'
 export { EmptyState } from './empty-state'
 export { Field, Input, Select, Textarea } from './field'
 export { FilterBar } from './filter-bar'

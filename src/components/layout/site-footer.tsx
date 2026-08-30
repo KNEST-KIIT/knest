@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { KnestWordmark } from '@/components/brand'
+import { Container } from '@/components/ui'
 
 const COLUMNS = [
   {
@@ -36,7 +37,7 @@ const COLUMNS = [
 export function SiteFooter() {
   return (
     <footer className="border-t border-[var(--color-line)] bg-[var(--color-paper-soft)]">
-      <div className="mx-auto w-full max-w-[1280px] px-6 py-16 md:px-10">
+      <Container className="py-16">
         <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr] lg:gap-10">
           <div>
             <Link
@@ -85,7 +86,7 @@ export function SiteFooter() {
             </Link>
           </div>
         </div>
-      </div>
+      </Container>
     </footer>
   )
 }

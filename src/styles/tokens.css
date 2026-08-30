@@ -69,8 +69,19 @@
   --text-small: 0.875rem;
   --text-micro: 0.75rem;
 
-  /* --- Space: 8pt --- */
-  --spacing: 0.5rem;
+  /* --- Space ---
+     `--spacing` is Tailwind v4's *base unit*, not a step: every spacing and
+     sizing utility is a multiple of it. It was set to 0.5rem here to express
+     an 8pt grid, but that doubles the whole scale — `h-16` rendered at 128px,
+     `size-11` at 88px, `size-5` at 40px — while every component in the app
+     was written against standard Tailwind numbers (button.tsx picks `h-11`
+     precisely because 11 x 4px = the 44px minimum touch target, and got 88px).
+     The token and the components disagreed, and the components were right.
+
+     Back to Tailwind's default 4px unit, so a class means what it says.
+     An 8pt rhythm is still available — and still used — by picking even
+     steps: `p-2` is 8px, `gap-6` is 24px, `py-16` is 64px. */
+  --spacing: 0.25rem;
 
   /* --- Radius: three, no more --- */
   --radius-sm: 0.25rem;

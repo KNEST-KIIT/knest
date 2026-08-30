@@ -1,4 +1,5 @@
 import { cn } from '@/lib/cn'
+import { Container } from './container'
 import { Heading } from './heading'
 
 /** Page-section rhythm: 128px desktop, 72px mobile, set in one place. */
@@ -17,12 +18,12 @@ export function Section({
     <section
       id={id}
       className={cn(
-        'px-6 py-[72px] md:px-10 md:py-32',
+        'py-[72px] md:py-32',
         inverted && 'bg-[var(--color-ink)] text-[var(--color-paper)]',
         className,
       )}
     >
-      <div className="mx-auto w-full max-w-[1280px]">{children}</div>
+      <Container>{children}</Container>
     </section>
   )
 }

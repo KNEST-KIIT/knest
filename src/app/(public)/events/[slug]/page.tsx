@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { Avatar, Heading, Tag } from '@/components/ui'
+import { Avatar, Heading, Tag, Container } from '@/components/ui'
 import { RichText } from '@/components/content/rich-text'
 import { formatEventTime } from '@/lib/dates'
 import { getEventBySlug } from '@/server/content/events'
@@ -42,7 +42,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
   const otherSpeakers = event.speakers ?? []
 
   return (
-    <div className="mx-auto w-full max-w-[1280px] px-6 py-16 md:px-10">
+    <Container className="py-16">
       <div className="max-w-[68ch]">
         <Tag tone="archive">{TYPE_LABELS[event.eventType ?? 'workshop']}</Tag>
         <Heading as="h1" size="display" className="mt-4">
@@ -117,6 +117,6 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
           </div>
         </aside>
       </div>
-    </div>
+    </Container>
   )
 }
