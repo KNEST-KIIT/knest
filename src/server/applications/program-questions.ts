@@ -19,8 +19,45 @@ export async function getApplicationProgram(programId: number): Promise<Applicat
     depth: 0,
     overrideAccess: false,
   })
-  if (!program) return null
+  return program ? mapProgram(program) : null
+}
 
+/**
+ * Maps directly off the slug-fetched document instead of discarding it and
+ * calling getApplicationProgram(id) — that was a fully redundant second
+ * round trip for a document already in hand (§5.3).
+ */
+export async function getApplicationProgramBySlug(slug: string): Promise<ApplicationProgram | null> {
+  const payload = await getContentClient()
+  const result = await payload.find({
+    collection: 'programs',
+    where: { slug: { equals: slug } },
+    depth: 0,
+    limit: 1,
+    overrideAccess: false,
+  })
+  const program = result.docs[0]
+  return program ? mapProgram(program) : null
+}
+
+function mapProgram(program: {
+  id: number
+  title: string
+  slug: string
+  applicationStatus: 'open' | 'opening_soon' | 'closed' | 'in_progress'
+  applicationDeadline?: string | null
+  applicationQuestions?:
+    | {
+        id?: string | null
+        label: string
+        helpText?: string | null
+        fieldType: ApplicationQuestion['fieldType']
+        options?: { label: string }[] | null
+        required?: boolean | null
+        maxLength?: number | null
+      }[]
+    | null
+}): ApplicationProgram {
   return {
     id: program.id,
     title: program.title,
@@ -39,16 +76,24 @@ export async function getApplicationProgram(programId: number): Promise<Applicat
   }
 }
 
-export async function getApplicationProgramBySlug(slug: string): Promise<ApplicationProgram | null> {
+/** Batched title/slug lookup for application list pages (§5.2) — one query for N programs instead of N. */
+export async function getProgramTitlesByIds(
+  programIds: number[],
+): Promise<Map<number, { title: string; slug: string }>> {
+  const map = new Map<number, { title: string; slug: string }>()
+  if (programIds.length === 0) return map
+
   const payload = await getContentClient()
   const result = await payload.find({
     collection: 'programs',
-    where: { slug: { equals: slug } },
+    where: { id: { in: programIds } },
     depth: 0,
-    limit: 1,
+    limit: programIds.length,
     overrideAccess: false,
   })
-  const program = result.docs[0]
-  if (!program) return null
-  return getApplicationProgram(program.id)
+
+  for (const program of result.docs) {
+    map.set(program.id, { title: program.title, slug: program.slug })
+  }
+  return map
 }

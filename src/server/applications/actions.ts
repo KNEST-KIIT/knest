@@ -10,7 +10,7 @@ import { track } from '@/server/analytics/track'
 import { generateStorageKey, putFile } from '@/server/storage'
 import { enforceRateLimit, RATE_LIMITS } from '@/server/security/rate-limit'
 import { verifyFileContents } from '@/server/security/file-verify'
-import { getApplicationProgram, getApplicationProgramBySlug } from './program-questions'
+import { getApplicationProgram, getApplicationProgramBySlug, getProgramTitlesByIds } from './program-questions'
 import { ALLOWED_UPLOAD_MIME_TYPES, MAX_UPLOAD_BYTES, schemaForQuestion } from './validation'
 
 export type ActionResult = { ok: true } | { ok: false; error: string; code?: string }
@@ -254,12 +254,13 @@ export async function listApplicationsForUser(userId: string) {
     orderBy: [desc(applications.updatedAt)],
   })
 
-  return Promise.all(
-    rows.map(async (row) => {
-      const program = await getApplicationProgram(row.programId)
-      return { application: row, programTitle: program?.title ?? 'Unknown program', programSlug: program?.slug ?? null }
-    }),
-  )
+  // One batched lookup for every program referenced, not one per row (§5.2).
+  const programs = await getProgramTitlesByIds([...new Set(rows.map((row) => row.programId))])
+
+  return rows.map((row) => {
+    const program = programs.get(row.programId)
+    return { application: row, programTitle: program?.title ?? 'Unknown program', programSlug: program?.slug ?? null }
+  })
 }
 
 export async function getOwnedApplicationDetail(applicationId: string, userId: string) {

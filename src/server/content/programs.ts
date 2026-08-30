@@ -71,7 +71,11 @@ export async function getProgramBySlug(slug: string): Promise<Program | null> {
   const result = await payload.find({
     collection: 'programs',
     where: { slug: { equals: slug } },
-    depth: 2,
+    // depth: 1 — programs/[slug]/page.tsx only reads direct fields off the
+    // program itself and one level into its `mentors` relationship
+    // (mentor.name); nothing it renders is two hops away (§5.4, verified
+    // against that page's actual field usage).
+    depth: 1,
     limit: 1,
     overrideAccess: false,
   })
@@ -94,19 +98,25 @@ export async function listProgramCohortsWithStartups(programId: number) {
     limit: 50,
     overrideAccess: false,
   })
+  if (cohorts.docs.length === 0) return []
 
-  const withStartups = await Promise.all(
-    cohorts.docs.map(async (cohort) => {
-      const startups = await payload.find({
-        collection: 'startups',
-        where: { cohort: { equals: cohort.id } },
-        depth: 1,
-        limit: 100,
-        overrideAccess: false,
-      })
-      return { cohort, startups: startups.docs }
+  // One query for every cohort's startups, not one per cohort (§5.2), then
+  // grouped back by cohort id in memory.
+  const cohortIds = cohorts.docs.map((cohort) => cohort.id)
+  const allStartups = await payload.find({
+    collection: 'startups',
+    where: { cohort: { in: cohortIds } },
+    depth: 1,
+    limit: 100,
+    overrideAccess: false,
+  })
+
+  return cohorts.docs.map((cohort) => ({
+    cohort,
+    startups: allStartups.docs.filter((startup) => {
+      const cohortRef = startup.cohort
+      const startupCohortId = typeof cohortRef === 'object' ? cohortRef?.id : cohortRef
+      return startupCohortId === cohort.id
     }),
-  )
-
-  return withStartups
+  }))
 }

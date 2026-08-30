@@ -8,7 +8,7 @@ import { requireAdminArea, requireStaffOrThrow } from '@/server/auth/guards'
 import { sendNotificationEmail, writeNotification } from '@/server/notifications/send'
 import { applicationStatusChangedTemplate } from '@/server/notifications/templates'
 import { track } from '@/server/analytics/track'
-import { getApplicationProgram } from './program-questions'
+import { getApplicationProgram, getProgramTitlesByIds } from './program-questions'
 import { isLegalTransition } from './transitions'
 import type { ActionResult } from './actions'
 
@@ -27,12 +27,14 @@ export async function listApplicationsForReview(filters: { programId?: number; s
     with: { user: { columns: { id: true, name: true, email: true } } },
   })
 
-  return Promise.all(
-    rows.map(async (row) => {
-      const program = await getApplicationProgram(row.programId)
-      return { application: row, applicant: row.user, programTitle: program?.title ?? 'Unknown program' }
-    }),
-  )
+  // One batched lookup for every program referenced, not one per row (§5.2).
+  const programs = await getProgramTitlesByIds([...new Set(rows.map((row) => row.programId))])
+
+  return rows.map((row) => ({
+    application: row,
+    applicant: row.user,
+    programTitle: programs.get(row.programId)?.title ?? 'Unknown program',
+  }))
 }
 
 export async function getApplicationForReview(applicationId: string) {

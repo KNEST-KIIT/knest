@@ -12,12 +12,11 @@ import { listPrograms } from '@/server/content/programs'
  * of being silently dropped.
  */
 export async function TheJourney() {
-  const stagePrograms = await Promise.all(
-    STAGE_OPTIONS.map(async (stage) => ({
-      stage,
-      programs: await listPrograms({ stage: stage.value }),
-    })),
-  )
+  const allPrograms = await listPrograms({})
+  const stagePrograms = STAGE_OPTIONS.map((stage) => ({
+    stage,
+    programs: allPrograms.filter((program) => program.stage?.includes(stage.value)),
+  }))
 
   return (
     <div>
