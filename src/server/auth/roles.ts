@@ -19,6 +19,8 @@ export const ADMIN_AREAS = {
   mentors: ['mentor_manager'],
   users: [],
   settings: [],
+  // Cross-program, ecosystem-wide — super_admin only, same as users/settings.
+  analytics: [],
 } as const satisfies Record<string, readonly StaffRole[]>
 
 export type AdminArea = keyof typeof ADMIN_AREAS

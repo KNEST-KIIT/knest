@@ -6,6 +6,7 @@ import { applicationAnswers, applicationDocuments, applications, users } from '@
 import { requireUserOrThrow, UnauthorizedError } from '@/server/auth/guards'
 import { sendNotificationEmail, writeNotification } from '@/server/notifications/send'
 import { applicationReceivedTemplate } from '@/server/notifications/templates'
+import { track } from '@/server/analytics/track'
 import { generateStorageKey, putFile } from '@/server/storage'
 import { getApplicationProgram, getApplicationProgramBySlug } from './program-questions'
 import { ALLOWED_UPLOAD_MIME_TYPES, MAX_UPLOAD_BYTES, schemaForQuestion } from './validation'
@@ -52,7 +53,10 @@ export async function startApplication(
     .onConflictDoNothing({ target: [applications.userId, applications.programId] })
     .returning({ id: applications.id })
 
-  if (created) return { ok: true, applicationId: created.id }
+  if (created) {
+    await track('application_start', { programId: program.id })
+    return { ok: true, applicationId: created.id }
+  }
 
   const existing = await db.query.applications.findFirst({
     where: and(eq(applications.userId, user.id), eq(applications.programId, program.id)),
@@ -228,6 +232,7 @@ export async function submitApplication(applicationId: string): Promise<ActionRe
   })
 
   await sendNotificationEmail(sessionUser.id, notifyInput.email)
+  await track('application_submit', { applicationId, programId: program.id })
 
   return { ok: true }
 }

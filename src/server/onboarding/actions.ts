@@ -4,6 +4,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '@/db/client'
 import { users } from '@/db/schema'
 import { requireUserOrThrow } from '@/server/auth/guards'
+import { track } from '@/server/analytics/track'
 import {
   stepGoalsSchema,
   stepInterestsSchema,
@@ -128,6 +129,8 @@ export async function completeOnboarding(): Promise<StepResult> {
     .update(users)
     .set({ onboardingCompletedAt: new Date(), updatedAt: new Date() })
     .where(eq(users.id, user.id))
+
+  await track('onboarding_completed')
 
   return { ok: true }
 }

@@ -7,6 +7,7 @@ import type { applicationStatus } from '@/db/schema'
 import { requireAdminArea, requireStaffOrThrow } from '@/server/auth/guards'
 import { sendNotificationEmail, writeNotification } from '@/server/notifications/send'
 import { applicationStatusChangedTemplate } from '@/server/notifications/templates'
+import { track } from '@/server/analytics/track'
 import { getApplicationProgram } from './program-questions'
 import { isLegalTransition } from './transitions'
 import type { ActionResult } from './actions'
@@ -120,6 +121,9 @@ export async function changeApplicationStatus(
   })
 
   await sendNotificationEmail(application.userId, notifyInput.email)
+  if (newStatus === 'accepted') {
+    await track('application_accepted', { applicationId, programId: application.programId }, { userId: application.userId })
+  }
 
   return { ok: true }
 }

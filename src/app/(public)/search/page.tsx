@@ -3,6 +3,7 @@ import { Button, EmptyState, Heading, Input, LinkCard, LiveRegion, Section, Tag 
 import { resultSummary } from '@/lib/result-summary'
 import { searchEmpty } from '@/lib/empty-state-copy'
 import { search, type SearchResultType } from '@/server/content/search'
+import { track } from '@/server/analytics/track'
 
 export const metadata: Metadata = {
   title: 'Search',
@@ -18,6 +19,7 @@ const TYPE_LABELS: Record<SearchResultType, string> = {
 
 async function SearchResults({ query }: { query: string }) {
   const results = await search(query)
+  await track('search_query', { query, resultCount: results.length })
   const empty = searchEmpty(query)
   const summary = resultSummary(results.length, 'result', {
     hasFilters: true,

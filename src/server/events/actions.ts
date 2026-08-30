@@ -5,6 +5,7 @@ import { db } from '@/db/client'
 import { eventRegistrations } from '@/db/schema'
 import { requireUserOrThrow } from '@/server/auth/guards'
 import { getEventById } from '@/server/content/events'
+import { track } from '@/server/analytics/track'
 
 export type ActionResult = { ok: true } | { ok: false; error: string }
 
@@ -43,6 +44,8 @@ export async function registerForEvent(eventId: number): Promise<ActionResult> {
     .insert(eventRegistrations)
     .values({ userId: user.id, eventId })
     .onConflictDoNothing()
+
+  await track('event_register', { eventId })
 
   return { ok: true }
 }

@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { Avatar, Heading, Tag, Timeline } from '@/components/ui'
 import { formatDate } from '@/lib/dates'
 import { getStartupBySlug } from '@/server/content/startups'
+import { track } from '@/server/analytics/track'
 import { StoryArc } from './story-arc'
 
 export async function generateMetadata({
@@ -25,6 +26,7 @@ export default async function StartupDetailPage({ params }: { params: Promise<{ 
   const { slug } = await params
   const startup = await getStartupBySlug(slug)
   if (!startup) notFound()
+  await track('startup_view', { startupId: startup.id })
 
   const founders = (startup.founders ?? []).filter((f) => typeof f === 'object')
   const cohort = typeof startup.cohort === 'object' ? startup.cohort : null

@@ -9,6 +9,7 @@ import { sendEmail } from '@/server/email/send'
 import { consumeToken, issueToken } from './tokens'
 import { createDatabaseSession, destroyDatabaseSession, revokeAllSessions } from './session'
 import { credentialsSchema, emailSchema, passwordSchema, signupSchema } from './validation'
+import { track } from '@/server/analytics/track'
 
 export type AuthResult = { ok: true } | { ok: false; error: string }
 
@@ -78,6 +79,11 @@ export async function signUpWithPassword(input: unknown): Promise<AuthResult> {
   if (!created) return { ok: false, error: 'We couldn’t create that account.' }
 
   await createDatabaseSession(created.id)
+  // getSessionUser() can't see the session cookie just set above — Next only
+  // reflects a cookies().set() in a later request, not a later read within
+  // the same one (verified live: the userId came back null without this
+  // override) — so the new user's id is passed explicitly.
+  await track('signup', undefined, { userId: created.id })
   await sendVerificationEmail(created.email).catch((error) => {
     // Signup already succeeded and the session is live; a mail-send failure
     // here must not fail the whole request. The person can request the link

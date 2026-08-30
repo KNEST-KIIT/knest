@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { ButtonLink, Heading, Section } from '@/components/ui'
 import { getSessionUser } from '@/server/auth/guards'
 import { enabledSections, getHomepage } from '@/server/content/homepage'
+import { track } from '@/server/analytics/track'
 import { Hero } from './hero'
 import { JourneySelector } from './journey-selector'
 import { TheJourney } from './the-journey'
@@ -24,7 +25,7 @@ const OFFER_ITEMS = [
 ]
 
 export default async function HomePage() {
-  const [homepage, user] = await Promise.all([getHomepage(), getSessionUser()])
+  const [homepage, user] = await Promise.all([getHomepage(), getSessionUser(), track('landing_view')])
   const sections = enabledSections(homepage)
 
   return (

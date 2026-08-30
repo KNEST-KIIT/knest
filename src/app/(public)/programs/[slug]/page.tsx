@@ -4,6 +4,7 @@ import { EmptyState, Heading, LinkCard, Tag } from '@/components/ui'
 import { RichText } from '@/components/content/rich-text'
 import { formatDate } from '@/lib/dates'
 import { getProgramBySlug, listProgramCohortsWithStartups } from '@/server/content/programs'
+import { track } from '@/server/analytics/track'
 import { ApplyCta } from './apply-cta'
 import { ProgramStatusBadge } from '../program-status-badge'
 
@@ -26,6 +27,7 @@ export default async function ProgramDetailPage({ params }: { params: Promise<{ 
   const { slug } = await params
   const program = await getProgramBySlug(slug)
   if (!program) notFound()
+  await track('program_view', { programId: program.id })
 
   const cohortsWithStartups = await listProgramCohortsWithStartups(program.id)
   const allStartups = cohortsWithStartups.flatMap((c) => c.startups)

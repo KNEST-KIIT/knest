@@ -54,6 +54,20 @@ export function JourneySelector({ signedIn }: { signedIn: boolean }) {
     return `/signup?next=${encodeURIComponent(href)}`
   }
 
+  function select(i: number) {
+    setSelected(i)
+    const chosen = OPTIONS[i]
+    if (!chosen) return
+    // Fire-and-forget — the one client-triggered analytics call in the app
+    // (src/app/api/analytics/track/route.ts), for a choice made entirely
+    // client-side with no other server round-trip to piggyback on.
+    fetch('/api/analytics/track', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event: 'journey_selector_choice', props: { path: chosen.cta } }),
+    }).catch(() => {})
+  }
+
   return (
     <div>
       <Heading as="h2" size="display">
@@ -71,7 +85,7 @@ export function JourneySelector({ signedIn }: { signedIn: boolean }) {
               type="button"
               role="radio"
               aria-checked={selected === i}
-              onClick={() => setSelected(i)}
+              onClick={() => select(i)}
               className={`rounded-[var(--radius-lg)] border px-6 py-5 text-left font-[family-name:var(--font-display)] text-[length:var(--text-heading)] uppercase tracking-tight transition-colors ${
                 selected === i
                   ? 'border-[var(--color-signal)] bg-[var(--color-signal-wash)] text-[var(--color-signal-deep)]'

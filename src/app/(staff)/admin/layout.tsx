@@ -23,6 +23,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
             </Link>
             <nav aria-label="Admin" className="flex gap-4 text-[length:var(--text-small)]">
               <Link href="/admin/applications">Applications</Link>
+              <Link href="/admin/analytics">Analytics</Link>
             </nav>
           </div>
           <Link href="/admin" className="text-[length:var(--text-small)] text-[var(--color-ink-muted)]">

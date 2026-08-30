@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { ButtonLink, Heading, Tag } from '@/components/ui'
 import { RichText } from '@/components/content/rich-text'
 import { getResourceBySlug } from '@/server/content/resources'
+import { track } from '@/server/analytics/track'
 
 const FORMAT_LABELS: Record<string, string> = {
   guide: 'Guide',
@@ -28,6 +29,7 @@ export default async function ResourceDetailPage({ params }: { params: Promise<{
   const { slug } = await params
   const resource = await getResourceBySlug(slug)
   if (!resource) notFound()
+  await track('resource_view', { resourceId: resource.id })
 
   return (
     <div className="mx-auto w-full max-w-[720px] px-6 py-16 md:px-10">
