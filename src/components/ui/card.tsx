@@ -12,7 +12,7 @@ export function Card({
   return (
     <div
       className={cn(
-        'rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-white p-6 shadow-[var(--shadow-raised)]',
+        'rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-white p-6',
         className,
       )}
     >
@@ -44,8 +44,7 @@ export function LinkCard({
     <div
       className={cn(
         'group relative flex flex-col rounded-[var(--radius-lg)] border border-[var(--color-line)]',
-        'bg-white p-6 shadow-[var(--shadow-raised)] transition-[border-color,box-shadow] duration-200',
-        'hover:border-[var(--color-signal)] hover:shadow-[var(--shadow-floating)]',
+        'bg-white p-6 transition-colors hover:border-[var(--color-ink)]',
         'focus-within:outline focus-within:outline-2 focus-within:outline-offset-2',
         'focus-within:outline-[var(--color-signal)]',
         className,

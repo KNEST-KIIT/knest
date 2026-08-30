@@ -98,12 +98,9 @@ export default async function HomePage() {
                   What KNEST actually gives you.
                 </Heading>
                 <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
-                  {OFFER_ITEMS.map((item, i) => (
-                    <div key={item.label} className="border-t-2 border-[var(--color-signal)] pt-4">
-                      <p className="font-[family-name:var(--font-display)] text-[length:var(--text-micro)] font-semibold uppercase tracking-[0.1em] text-[var(--color-ink-muted)]">
-                        {String(i + 1).padStart(2, '0')}
-                      </p>
-                      <p className="mt-1 font-[family-name:var(--font-display)] text-[length:var(--text-heading)] font-bold">
+                  {OFFER_ITEMS.map((item) => (
+                    <div key={item.label}>
+                      <p className="font-[family-name:var(--font-display)] text-[length:var(--text-heading)] uppercase">
                         {item.label}
                       </p>
                       <p className="mt-2 text-[length:var(--text-small)] text-[var(--color-ink-soft)]">

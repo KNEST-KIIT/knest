@@ -1,33 +1,22 @@
-import { ButtonLink, Heading } from '@/components/ui'
+import { ButtonLink } from '@/components/ui'
 import type { Homepage } from '@/payload/payload-types'
 
 /**
  * WHAT IF? — signature experience 01 (CONTENT_SPEC.md §1.1). Type-only, no
- * stock photography, no decorative gradient wash — the restraint is the
- * point, and it's also what keeps this from reading like a generic SaaS
- * hero. The only motion is a one-time rise+fade on the headline; everything
- * else on the page after this renders in its final state immediately.
+ * stock photography. The only motion is a one-time rise+fade on the
+ * headline; everything else on the page after this renders in its final
+ * state immediately.
  */
 export function Hero({ homepage }: { homepage: Homepage }) {
   return (
     <div className="flex min-h-[90vh] flex-col justify-center px-6 py-24 md:px-10">
       <div className="mx-auto w-full max-w-[1280px]">
-        <p className="animate-rise-fade flex items-center gap-3 text-[length:var(--text-micro)] font-semibold uppercase tracking-[0.18em] text-[var(--color-signal)]">
-          <span aria-hidden className="h-px w-8 bg-[var(--color-signal)]" />
-          KIIT&rsquo;s innovation ecosystem
-        </p>
-
-        <Heading
-          as="h1"
-          size="hero"
-          className="animate-rise-fade mt-5 whitespace-pre-line"
-          style={{ animationDelay: '0.08s' }}
-        >
+        <h1 className="animate-rise-fade whitespace-pre-line font-[family-name:var(--font-display)] text-[length:var(--text-display)] uppercase leading-[0.95] tracking-[-0.02em]">
           {homepage.heroHeadline}
-        </Heading>
+        </h1>
         <p
           className="animate-rise-fade mt-6 max-w-[52ch] text-[length:var(--text-heading)] text-[var(--color-ink-soft)]"
-          style={{ animationDelay: '0.18s' }}
+          style={{ animationDelay: '0.15s' }}
         >
           {homepage.heroSubhead}
         </p>

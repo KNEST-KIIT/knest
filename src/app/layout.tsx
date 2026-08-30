@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { displayFont, textFont } from '@/styles/fonts'
+import { accentFont, displayFont, textFont } from '@/styles/fonts'
 import '@/styles/globals.css'
 
 export const metadata: Metadata = {
@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${displayFont.variable} ${textFont.variable}`}>
+    <html lang="en" className={`${displayFont.variable} ${textFont.variable} ${accentFont.variable}`}>
       <body>{children}</body>
     </html>
   )

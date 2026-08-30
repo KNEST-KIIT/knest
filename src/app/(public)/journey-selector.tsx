@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { ButtonLink, Heading, LiveRegion } from '@/components/ui'
+import Link from 'next/link'
+import { Heading, LiveRegion } from '@/components/ui'
 
 const OPTIONS = [
   {
@@ -85,10 +86,10 @@ export function JourneySelector({ signedIn }: { signedIn: boolean }) {
               role="radio"
               aria-checked={selected === i}
               onClick={() => select(i)}
-              className={`rounded-[var(--radius-lg)] border px-6 py-5 text-left font-[family-name:var(--font-display)] text-[length:var(--text-heading)] font-semibold uppercase tracking-[0.01em] shadow-[var(--shadow-raised)] transition-[border-color,background-color,color,box-shadow] duration-150 ${
+              className={`rounded-[var(--radius-lg)] border px-6 py-5 text-left font-[family-name:var(--font-display)] text-[length:var(--text-heading)] uppercase tracking-tight transition-colors ${
                 selected === i
-                  ? 'border-[var(--color-signal)] bg-[var(--color-signal-wash)] text-[var(--color-signal-deep)] shadow-[var(--shadow-floating)]'
-                  : 'border-[var(--color-line)] bg-white hover:border-[var(--color-signal)] hover:shadow-[var(--shadow-floating)]'
+                  ? 'border-[var(--color-signal)] bg-[var(--color-signal-wash)] text-[var(--color-signal-deep)]'
+                  : 'border-[var(--color-line)] bg-white hover:border-[var(--color-ink)]'
               }`}
             >
               {opt.label}
@@ -98,17 +99,18 @@ export function JourneySelector({ signedIn }: { signedIn: boolean }) {
 
         <div className="flex items-center">
           {option ? (
-            <div className="w-full rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-[var(--color-paper-soft)] p-8 shadow-[var(--shadow-raised)]">
+            <div className="w-full rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-[var(--color-paper-soft)] p-8">
               {/* The reveal replaces the "pick one" prompt with no page
                   reload — a screen reader user needs this announced the
                   same way a filter-count change already is elsewhere. */}
               <LiveRegion message={option.response} />
-              <p className="font-[family-name:var(--font-accent)] text-[length:var(--text-heading)] italic text-[var(--color-ink)]">
-                {option.response}
-              </p>
-              <ButtonLink href={destinationFor(option.href)} className="mt-6">
+              <p className="text-[length:var(--text-heading)] text-[var(--color-ink)]">{option.response}</p>
+              <Link
+                href={destinationFor(option.href)}
+                className="mt-6 inline-flex h-12 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-signal)] px-6 text-[length:var(--text-small)] font-medium text-white hover:bg-[var(--color-signal-deep)]"
+              >
                 {option.cta} →
-              </ButtonLink>
+              </Link>
             </div>
           ) : (
             <p className="text-[length:var(--text-small)] text-[var(--color-ink-muted)]">

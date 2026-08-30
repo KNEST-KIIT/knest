@@ -1,66 +1,70 @@
 /*
- * The KNEST identity, in one file — second pass at the full re-brand.
+ * The KNEST identity, in one file.
  *
- * The first pass (near-black + burnt-orange + a variable grotesque) read as
- * a generic "YC-style startup" template — accurate feedback: that exact
- * combination has become the default look for startup landing pages, and
- * copying the default is the opposite of "best in class." This pass leans
- * into what's actually specific to KNEST instead of borrowing a startup's
- * visual vocabulary: it's a *university-anchored* ecosystem, not a funded
- * startup, so the identity now reads institutional-modern — deep oxford
- * ink, warm parchment, a serif display face with real editorial weight,
- * and an oxblood/brass color pairing associated with academic and
- * publishing tradition rather than SaaS marketing sites.
+ * As of this revision, sourced from KNEST's official pitch deck (School of
+ * Innovation & Entrepreneurial Leadership, KIIT) rather than invented: a
+ * green/cream/black palette, a heavy condensed display face, and a
+ * handwritten accent face reserved for the public homepage narrative
+ * (Phase 8). Everything downstream reads these variables and nothing
+ * hardcodes a colour or size — this is the file that changes if the brand
+ * changes again.
  *
- * Every color is still contrast-checked against the surfaces it's actually
- * used on (WCAG AA, computed not eyeballed) — a distinctive identity isn't
- * an excuse to regress the accessibility work already done.
+ * The brand green in the deck is a punchier, more saturated hue than the one
+ * below. This is deliberately a text-safe darkening of it: WCAG AA requires
+ * 4.5:1 contrast for normal text, and the deck's green — used directly as
+ * link/button text on cream — falls to roughly 3.2:1. #0F7538 clears 4.5:1
+ * against both white (5.8:1, for white text on a green button) and cream
+ * (5.13:1, for green text/links on the page). Accessibility is the
+ * constraint a static poster doesn't have to satisfy that a UI does (spec §44).
  */
 @theme {
-  /* --- Ground: deep oxford navy-black ink on warm parchment --- */
-  --color-ink: #0d1321;
-  --color-ink-soft: #2b3350;
-  /* #43415a measured 8.92:1 on --color-paper, 7.72:1 on --color-paper-soft. */
-  --color-ink-muted: #43415a;
-  --color-paper: #f8f4e9;
-  --color-paper-soft: #ede4c9;
-  --color-line: #ddd0a8;
+  /* --- Ground: warm cream and near-black, matching the deck's palette --- */
+  --color-ink: #16150f;
+  --color-ink-soft: #2a2820;
+  /* #6b6858 measured 4.49:1 against --color-paper-soft — just under the
+     4.5:1 WCAG AA floor for small text (Lighthouse's color-contrast audit
+     caught it in the footer, PHASE-10-12-IMPLEMENTATION-PLAN.md §6.3).
+     Darkened to clear it with headroom (5.53:1) without reading as a
+     different color from the original. */
+  --color-ink-muted: #5f5a49;
+  --color-paper: #f7f1de;
+  --color-paper-soft: #efe6c9;
+  --color-line: #e2d8b8;
 
-  /* --- Primary accent: oxblood. #7a1f2b measures 10.2:1 on white, 9.04:1
-     on --color-paper — an academic/publishing red, not a startup orange.
-     --color-signal-deep (#6e1c27) is the hover/press state. --- */
-  --color-signal: #7a1f2b;
-  --color-signal-deep: #6e1c27;
-  --color-signal-wash: #f4e4e2;
+  /* --- Accent: KNEST green. Darkened from the deck's poster green for
+     text-safe contrast; see note above. --- */
+  --color-signal: #0f7538;
+  --color-signal-deep: #0a5a2a;
+  --color-signal-wash: #e7f3ea;
 
-  /* --- Secondary accent: brass, for ecosystem/data surfaces — a seal-and-
-     ledger color, distinct from oxblood's "do this" register. #7d5f18
-     measures 5.96:1 on white, 5.28:1 on --color-paper. --- */
-  --color-archive: #7d5f18;
-  --color-archive-soft: #ece3c4;
+  /* --- Support: a muted sage-green for ecosystem/data surfaces, distinct
+     from the vivid brand accent --- */
+  --color-archive: #3f6b52;
+  --color-archive-soft: #e4eee8;
 
-  /* --- Status: independent of both accents. --- */
-  --color-positive: #15803d;
-  --color-caution: #92400e;
-  --color-critical: #b91c1c;
+  /* --- Status: positive reuses the brand green — "good" and "on-brand"
+     are the same colour here, which is the point --- */
+  --color-positive: #0f7538;
+  --color-caution: #a86400;
+  --color-critical: #b3261e;
 
   /* --- Type ---
-     Display: Fraunces, a variable serif with real optical-size and weight
-     range — the editorial, considered face that actually differentiates
-     this from a sans-only SaaS template. Text: unchanged, Instrument Sans
-     was already right and stays neutral against the new palette. Fraunces'
-     own italic now covers the sparing narrative-accent role a separate
-     third typeface (first Caveat, then Instrument Serif) covered before —
-     one fewer typeface in the system reads more considered, not less. */
-  --font-display: var(--font-display-family), Georgia, 'Times New Roman', serif;
+     Display: a heavy condensed poster face, matching the deck's headline
+     treatment (ANTON has one weight; that weight already reads as "black").
+     Text: unchanged, a neutral face the brand deck doesn't specify.
+     Accent: a handwritten/marker face for the sparing aside-style touches
+     seen on the deck's cover and closing slide ("Nurturing Entrepreneurship
+     & Student Talent", "Innovate & Lead") — reserved for the homepage
+     narrative (Phase 8), not the utilitarian screens already built. */
+  --font-display: var(--font-display-family), ui-sans-serif, system-ui, sans-serif;
   --font-text: var(--font-text-family), ui-sans-serif, system-ui, sans-serif;
-  --font-accent: var(--font-display-family), Georgia, serif;
+  --font-accent: var(--font-accent-family), cursive;
   --font-mono: ui-monospace, 'SF Mono', Menlo, monospace;
 
-  --text-hero: clamp(2.75rem, 1.2rem + 7vw, 7.25rem);
-  --text-display: clamp(2.25rem, 1.2rem + 4.4vw, 4.5rem);
-  --text-title: clamp(1.6rem, 1.2rem + 1.8vw, 2.5rem);
-  --text-heading: clamp(1.25rem, 1.1rem + 0.7vw, 1.5rem);
+  --text-hero: clamp(2.75rem, 1.2rem + 7vw, 8rem);
+  --text-display: clamp(2.25rem, 1.2rem + 4.4vw, 5rem);
+  --text-title: clamp(1.6rem, 1.2rem + 1.8vw, 2.75rem);
+  --text-heading: clamp(1.25rem, 1.1rem + 0.7vw, 1.6rem);
   --text-body: clamp(1rem, 0.97rem + 0.15vw, 1.125rem);
   --text-small: 0.875rem;
   --text-micro: 0.75rem;
@@ -68,14 +72,12 @@
   /* --- Space: 8pt --- */
   --spacing: 0.5rem;
 
-  /* --- Radius: three, no more — smaller than the "soft SaaS card" pass,
-     matching a more editorial, less rounded-app-UI language. --- */
+  /* --- Radius: three, no more --- */
   --radius-sm: 0.25rem;
-  --radius-md: 0.375rem;
-  --radius-lg: 0.625rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 1rem;
 
-  /* --- Elevation: two levels, kept subtle rather than the softer/bigger
-     "floating card" shadows — an institutional surface sits flatter. --- */
-  --shadow-raised: 0 1px 2px rgb(13 19 33 / 0.05), 0 3px 8px rgb(13 19 33 / 0.05);
-  --shadow-floating: 0 2px 4px rgb(13 19 33 / 0.06), 0 12px 28px rgb(13 19 33 / 0.12);
+  /* --- Elevation: two levels --- */
+  --shadow-raised: 0 1px 2px rgb(22 21 15 / 0.06), 0 4px 12px rgb(22 21 15 / 0.05);
+  --shadow-floating: 0 2px 4px rgb(22 21 15 / 0.06), 0 16px 40px rgb(22 21 15 / 0.12);
 }
