@@ -86,6 +86,16 @@ export function SiteHeader({ signedIn = false }: { signedIn?: boolean }) {
         </nav>
 
         <div className="hidden items-center gap-4 lg:flex">
+          <Link
+            href="/search"
+            aria-label="Search"
+            className="flex size-11 items-center justify-center text-[var(--color-ink-soft)] hover:text-[var(--color-signal)]"
+          >
+            <svg aria-hidden viewBox="0 0 20 20" fill="none" className="size-5" stroke="currentColor" strokeWidth="1.75">
+              <circle cx="8.5" cy="8.5" r="6" />
+              <path d="M17 17l-4-4" strokeLinecap="round" />
+            </svg>
+          </Link>
           {signedIn ? (
             <ButtonLink href="/dashboard" size="sm">
               Dashboard
@@ -138,6 +148,12 @@ export function SiteHeader({ signedIn = false }: { signedIn?: boolean }) {
           className="fixed inset-x-0 bottom-0 top-16 z-50 flex flex-col bg-[var(--color-paper)] lg:hidden"
         >
           <nav aria-label="Main" className="flex flex-1 flex-col gap-1 overflow-y-auto px-6 py-6">
+            <Link
+              href="/search"
+              className="border-b border-[var(--color-line)] py-4 font-[family-name:var(--font-display)] text-[length:var(--text-heading)] uppercase"
+            >
+              Search
+            </Link>
             {NAV.map((item) => (
               <Link
                 key={item.href}
