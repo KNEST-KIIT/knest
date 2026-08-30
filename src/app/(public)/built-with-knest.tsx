@@ -1,4 +1,5 @@
 import { EmptyState, Heading, LinkCard, Tag } from '@/components/ui'
+import { STARTUPS_EMPTY } from '@/lib/empty-state-copy'
 import { listStartups } from '@/server/content/startups'
 import type { Homepage, Startup } from '@/payload/payload-types'
 
@@ -17,11 +18,7 @@ export async function BuiltWithKnest({ homepage }: { homepage: Homepage }) {
   return (
     <div>
       {startups.length === 0 ? (
-        <EmptyState
-          heading="THE FIRST GENERATION IS BEING BUILT."
-          body="KNEST's first ventures are taking shape now. Their stories will be here. If you'd like one of them to be yours, this is the moment to start."
-          size="default"
-        />
+        <EmptyState {...STARTUPS_EMPTY} size="default" />
       ) : (
         <>
           <Heading as="h2" size="display">

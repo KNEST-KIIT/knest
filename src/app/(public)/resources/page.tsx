@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import { EmptyState, Heading, LinkCard, LiveRegion, Section, Tag } from '@/components/ui'
+import { resultSummary } from '@/lib/result-summary'
+import { RESOURCES_EMPTY } from '@/lib/empty-state-copy'
 import { listResources, type ResourceFilters as Filters } from '@/server/content/resources'
 import { ResourceFilters } from './filters'
 
@@ -18,15 +20,13 @@ const FORMAT_LABELS: Record<string, string> = {
   worksheet: 'Worksheet',
 }
 
-function resultSummary(count: number, hasFilters: boolean): string {
-  if (count === 0) return hasFilters ? 'No resources match that combination.' : 'Resources are on the way.'
-  return `${count} resource${count === 1 ? '' : 's'}${hasFilters ? ' match your filters' : ''}.`
-}
-
 async function ResourcesList({ filters }: { filters: Filters }) {
   const resources = await listResources(filters)
   const hasFilters = Object.values(filters).some(Boolean)
-  const summary = resultSummary(resources.length, hasFilters)
+  const summary = resultSummary(resources.length, 'resource', {
+    hasFilters,
+    emptyNoFilters: RESOURCES_EMPTY.heading,
+  })
 
   if (resources.length === 0 && hasFilters) {
     return (
@@ -41,10 +41,7 @@ async function ResourcesList({ filters }: { filters: Filters }) {
     return (
       <>
         <LiveRegion message={summary} />
-        <EmptyState
-          heading="Resources are on the way."
-          body="Guides, templates and playbooks for each stage are being written."
-        />
+        <EmptyState {...RESOURCES_EMPTY} />
       </>
     )
   }

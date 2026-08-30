@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Heading } from '@/components/ui'
+import { Heading, LiveRegion } from '@/components/ui'
 
 const OPTIONS = [
   {
@@ -86,6 +86,10 @@ export function JourneySelector({ signedIn }: { signedIn: boolean }) {
         <div className="flex items-center">
           {option ? (
             <div className="w-full rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-[var(--color-paper-soft)] p-8">
+              {/* The reveal replaces the "pick one" prompt with no page
+                  reload — a screen reader user needs this announced the
+                  same way a filter-count change already is elsewhere. */}
+              <LiveRegion message={option.response} />
               <p className="text-[length:var(--text-heading)] text-[var(--color-ink)]">{option.response}</p>
               <Link
                 href={destinationFor(option.href)}

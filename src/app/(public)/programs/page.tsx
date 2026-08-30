@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import { EmptyState, Heading, LinkCard, LiveRegion, Section } from '@/components/ui'
 import { formatDate } from '@/lib/dates'
+import { resultSummary } from '@/lib/result-summary'
+import { PROGRAMS_EMPTY } from '@/lib/empty-state-copy'
 import { listPrograms, type ProgramFilters as Filters } from '@/server/content/programs'
 import { ProgramFilters } from './filters'
 import { ProgramStatusBadge } from './program-status-badge'
@@ -9,11 +11,6 @@ import { ProgramStatusBadge } from './program-status-badge'
 export const metadata: Metadata = {
   title: 'Programs',
   description: 'Every program is built for a particular stage. Start with where you actually are.',
-}
-
-function resultSummary(count: number, hasFilters: boolean): string {
-  if (count === 0) return hasFilters ? 'No programs match that combination.' : 'No programs yet.'
-  return `${count} program${count === 1 ? '' : 's'}${hasFilters ? ' match your filters' : ''}.`
 }
 
 async function ProgramsList({ filters }: { filters: Filters }) {
@@ -24,7 +21,7 @@ async function ProgramsList({ filters }: { filters: Filters }) {
   // "6 programs" next to the filter bar — and specified it be announced via
   // aria-live, since a client-side filter navigation updates the DOM without
   // a full page reload a screen reader would otherwise narrate on its own).
-  const summary = resultSummary(programs.length, hasFilters)
+  const summary = resultSummary(programs.length, 'program', { hasFilters, emptyNoFilters: 'No programs yet.' })
 
   if (programs.length === 0 && hasFilters) {
     return (
@@ -42,10 +39,7 @@ async function ProgramsList({ filters }: { filters: Filters }) {
     return (
       <>
         <LiveRegion message={summary} />
-        <EmptyState
-          heading="Programs are being finalised."
-          body="Applications open soon. Create an account and we'll tell you first."
-        />
+        <EmptyState {...PROGRAMS_EMPTY} />
       </>
     )
   }

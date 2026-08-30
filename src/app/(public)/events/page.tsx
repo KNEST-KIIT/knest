@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import { EmptyState, Heading, LinkCard, LiveRegion, Section, Tag } from '@/components/ui'
 import { formatEventTime } from '@/lib/dates'
+import { resultSummary } from '@/lib/result-summary'
+import { EVENTS_EMPTY } from '@/lib/empty-state-copy'
 import { listUpcomingEvents, type EventFilters as Filters } from '@/server/content/events'
 import { EventFilters } from './filters'
 
@@ -20,15 +22,13 @@ const TYPE_LABELS: Record<string, string> = {
   office_hours: 'Office hours',
 }
 
-function resultSummary(count: number, hasFilters: boolean): string {
-  if (count === 0) return hasFilters ? 'No events match that combination.' : 'Nothing scheduled right now.'
-  return `${count} event${count === 1 ? '' : 's'}${hasFilters ? ' match your filters' : ''}.`
-}
-
 async function EventsList({ filters }: { filters: Filters }) {
   const events = await listUpcomingEvents(filters)
   const hasFilters = Object.values(filters).some(Boolean)
-  const summary = resultSummary(events.length, hasFilters)
+  const summary = resultSummary(events.length, 'event', {
+    hasFilters,
+    emptyNoFilters: EVENTS_EMPTY.heading,
+  })
 
   if (events.length === 0 && hasFilters) {
     return (
@@ -43,10 +43,7 @@ async function EventsList({ filters }: { filters: Filters }) {
     return (
       <>
         <LiveRegion message={summary} />
-        <EmptyState
-          heading="Nothing scheduled right now."
-          body="New sessions, workshops and talks are added regularly. Create an account and we'll let you know."
-        />
+        <EmptyState {...EVENTS_EMPTY} />
       </>
     )
   }

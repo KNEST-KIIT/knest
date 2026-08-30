@@ -1,5 +1,6 @@
 import { EmptyState, Heading, LinkCard } from '@/components/ui'
 import { formatDate } from '@/lib/dates'
+import { RESOURCES_EMPTY } from '@/lib/empty-state-copy'
 import { listApplicationsForUser } from '@/server/applications/actions'
 import { getProgramById } from '@/server/content/programs'
 import { listRecommendedResources } from '@/server/content/resources'
@@ -78,11 +79,7 @@ export async function FounderDashboard({ user }: { user: SessionUser }) {
           Resources for your stage
         </Heading>
         {resources.length === 0 ? (
-          <EmptyState
-            className="mt-6"
-            heading="Resources are on the way."
-            body="Guides, templates and playbooks for each stage are being written."
-          />
+          <EmptyState className="mt-6" {...RESOURCES_EMPTY} />
         ) : (
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {resources.map((resource) => {

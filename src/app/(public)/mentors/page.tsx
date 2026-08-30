@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Suspense } from 'react'
 import { Avatar, EmptyState, Heading, LinkCard, LiveRegion, Section } from '@/components/ui'
+import { resultSummary } from '@/lib/result-summary'
+import { MENTORS_EMPTY } from '@/lib/empty-state-copy'
 import { EXPERTISE_OPTIONS } from '@/payload/fields/taxonomy'
 import { listMentors, type MentorFilters as Filters } from '@/server/content/mentors'
 import { NeedSelect } from './need-select'
@@ -16,16 +18,15 @@ function expertiseLabel(value: string): string {
   return EXPERTISE_OPTIONS.find((o) => o.value === value)?.label ?? value
 }
 
-function resultSummary(count: number, expertise: string | undefined): string {
-  if (count === 0) {
-    return expertise ? `No mentors listed for ${expertiseLabel(expertise)} yet.` : 'No mentors yet.'
-  }
-  return `${count} mentor${count === 1 ? '' : 's'}${expertise ? ` for ${expertiseLabel(expertise)}` : ''}.`
-}
-
 async function MentorsList({ filters }: { filters: Filters }) {
   const mentors = await listMentors(filters)
-  const summary = resultSummary(mentors.length, filters.expertise)
+  const label = filters.expertise ? expertiseLabel(filters.expertise) : undefined
+  const summary = resultSummary(mentors.length, 'mentor', {
+    hasFilters: Boolean(filters.expertise),
+    emptyNoFilters: 'No mentors yet.',
+    emptyWithFilters: label ? `No mentors listed for ${label} yet.` : undefined,
+    qualifier: label ? `for ${label}` : undefined,
+  })
 
   if (mentors.length === 0 && filters.expertise) {
     return (
@@ -43,10 +44,7 @@ async function MentorsList({ filters }: { filters: Filters }) {
     return (
       <>
         <LiveRegion message={summary} />
-        <EmptyState
-          heading="OUR MENTOR NETWORK IS FORMING."
-          body="We're bringing together founders, operators and investors who want to help. If that's you, we'd like to hear from you."
-        />
+        <EmptyState {...MENTORS_EMPTY} />
       </>
     )
   }

@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { EmptyState, Heading, LinkCard, Section, Tag } from '@/components/ui'
 import { formatEventTime } from '@/lib/dates'
+import { STARTUPS_EMPTY } from '@/lib/empty-state-copy'
 import { listUpcomingEvents } from '@/server/content/events'
 import { listFeaturedStartups } from '@/server/content/startups'
 import { listFounderArticles } from '@/server/content/articles'
@@ -70,11 +71,7 @@ export default async function InvestPage() {
           Startups from the ecosystem
         </Heading>
         {startups.length === 0 ? (
-          <EmptyState
-            className="mt-6"
-            heading="THE FIRST GENERATION IS BEING BUILT."
-            body="KNEST's first ventures are taking shape now. Their stories will be here."
-          />
+          <EmptyState className="mt-6" {...STARTUPS_EMPTY} />
         ) : (
           <div className="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {startups.map((startup) => (

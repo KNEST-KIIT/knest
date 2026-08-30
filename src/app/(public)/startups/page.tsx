@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import { EmptyState, Heading, LinkCard, LiveRegion, Section, Tag } from '@/components/ui'
+import { resultSummary } from '@/lib/result-summary'
+import { STARTUPS_EMPTY } from '@/lib/empty-state-copy'
 import { listStartups, type StartupFilters as Filters } from '@/server/content/startups'
 import { StartupFilters } from './filters'
 
@@ -9,15 +11,10 @@ export const metadata: Metadata = {
   description: "KNEST's ventures, and the arc each one has walked so far.",
 }
 
-function resultSummary(count: number, hasFilters: boolean): string {
-  if (count === 0) return hasFilters ? 'No startups match that combination.' : 'No startups yet.'
-  return `${count} startup${count === 1 ? '' : 's'}${hasFilters ? ' match your filters' : ''}.`
-}
-
 async function StartupsList({ filters }: { filters: Filters }) {
   const startups = await listStartups(filters)
   const hasFilters = Object.values(filters).some(Boolean)
-  const summary = resultSummary(startups.length, hasFilters)
+  const summary = resultSummary(startups.length, 'startup', { hasFilters, emptyNoFilters: 'No startups yet.' })
 
   if (startups.length === 0 && hasFilters) {
     return (
@@ -32,10 +29,7 @@ async function StartupsList({ filters }: { filters: Filters }) {
     return (
       <>
         <LiveRegion message={summary} />
-        <EmptyState
-          heading="THE FIRST GENERATION IS BEING BUILT."
-          body="KNEST's first ventures are taking shape now. Their stories will be here. If you'd like one of them to be yours, this is the moment to start."
-        />
+        <EmptyState {...STARTUPS_EMPTY} />
       </>
     )
   }
