@@ -116,3 +116,12 @@ identical but incompatible types.
 Targets AWS: ECS Fargate behind an ALB, RDS Postgres, S3 + CloudFront for media, SES
 for email, secrets in Secrets Manager. `next.config.ts` uses `output: 'standalone'`.
 Infrastructure-as-code is intentionally not in this repo yet.
+
+`pnpm build` runs a `postbuild` step that copies `.next/static` (and `public/`, if
+present) into `.next/standalone/` — Next's standalone output does not include these
+by default (see [the `output` config docs](https://nextjs.org/docs/app/api-reference/config/next-config-js/output)),
+and skipping the copy serves pages with no CSS and no client JS. Run the container
+with `node .next/standalone/server.js` (`pnpm start:standalone`), not `next start`/
+`pnpm start` — `next start` prints a warning that it's incompatible with `output:
+'standalone'` and, verified live, does not read the same runtime environment the
+standalone `server.js` does.

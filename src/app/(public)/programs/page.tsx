@@ -55,7 +55,7 @@ async function ProgramsList({ filters }: { filters: Filters }) {
         {programs.map((program) => (
           <LinkCard key={program.id} href={`/programs/${program.slug}`} label={`View ${program.title}`}>
             <ProgramStatusBadge status={program.applicationStatus} />
-            <Heading as="h3" size="heading" className="mt-4">
+            <Heading as="h2" size="heading" className="mt-4">
               {program.title}
             </Heading>
             <p className="mt-2 text-[length:var(--text-small)] text-[var(--color-ink-soft)]">{program.tagline}</p>

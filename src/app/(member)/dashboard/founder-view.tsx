@@ -26,7 +26,7 @@ export async function FounderDashboard({ user }: { user: SessionUser }) {
           Your applications
         </Heading>
         {applications.length === 0 ? (
-          <EmptyState
+          <EmptyState headingLevel="h3"
             className="mt-6"
             heading="Nothing here yet"
             body="You haven't applied to anything yet. When you do, you'll be able to track it here."
@@ -56,7 +56,7 @@ export async function FounderDashboard({ user }: { user: SessionUser }) {
           Your program
         </Heading>
         {!program ? (
-          <EmptyState
+          <EmptyState headingLevel="h3"
             className="mt-6"
             heading="Your program will appear here once you're accepted."
             body="Track where your applications stand any time from the list above."
@@ -79,7 +79,7 @@ export async function FounderDashboard({ user }: { user: SessionUser }) {
           Resources for your stage
         </Heading>
         {resources.length === 0 ? (
-          <EmptyState className="mt-6" {...RESOURCES_EMPTY} />
+          <EmptyState headingLevel="h3" className="mt-6" {...RESOURCES_EMPTY} />
         ) : (
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {resources.map((resource) => {

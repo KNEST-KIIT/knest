@@ -42,7 +42,7 @@ async function StartupsList({ filters }: { filters: Filters }) {
         {startups.map((startup) => (
           <LinkCard key={startup.id} href={`/startups/${startup.slug}`} label={`View ${startup.name}`}>
             {startup.stage && <Tag tone="signal">{startup.stage}</Tag>}
-            <Heading as="h3" size="heading" className="mt-4">
+            <Heading as="h2" size="heading" className="mt-4">
               {startup.name}
             </Heading>
             <p className="mt-2 text-[length:var(--text-small)] text-[var(--color-ink-soft)]">{startup.tagline}</p>

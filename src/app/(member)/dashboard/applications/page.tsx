@@ -30,7 +30,7 @@ export default async function ApplicationsPage() {
           {rows.map(({ application, programTitle, programSlug }) => (
             <Card key={application.id} className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <Heading as="h3" size="heading">
+                <Heading as="h2" size="heading">
                   {programTitle}
                 </Heading>
                 <p className="mt-1 text-[length:var(--text-small)] text-[var(--color-ink-muted)]">

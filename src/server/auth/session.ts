@@ -21,11 +21,24 @@ import { sessions } from '@/db/schema'
 
 const SESSION_MAX_AGE_SECONDS = 30 * 24 * 60 * 60
 
-/** Matches Auth.js v5's own cookie naming, including the __Secure- prefix. */
+/**
+ * Matches Auth.js v5's own cookie naming, including the __Secure- prefix.
+ *
+ * Auth.js decides useSecureCookies from AUTH_URL's protocol when AUTH_URL
+ * is set (@auth/core's createActionURL — verified by reading its source:
+ * `config.useSecureCookies ?? url.protocol === "https:"`, and `url` there
+ * comes from AUTH_URL/NEXTAUTH_URL first), NOT from NODE_ENV. Deciding by
+ * NODE_ENV alone — the previous version of this function — diverges from
+ * that the moment AUTH_URL is an http:// URL in a production build (this
+ * repo's own .env.example sets exactly that for local use), which sets a
+ * cookie auth() then can never find: login silently breaks. Verified live
+ * by running a real `pnpm build && pnpm start` and signing in — auth()
+ * returned null until this matched Auth.js's own signal.
+ */
 export function sessionCookieName(): string {
-  return process.env.NODE_ENV === 'production'
-    ? '__Secure-authjs.session-token'
-    : 'authjs.session-token'
+  const envUrl = process.env.AUTH_URL ?? process.env.NEXTAUTH_URL
+  const secure = envUrl ? envUrl.startsWith('https://') : process.env.NODE_ENV === 'production'
+  return secure ? '__Secure-authjs.session-token' : 'authjs.session-token'
 }
 
 export async function createDatabaseSession(userId: string): Promise<void> {

@@ -43,7 +43,7 @@ export default async function InvestPage() {
           Upcoming demo days
         </Heading>
         {demoDays.length === 0 ? (
-          <EmptyState
+          <EmptyState headingLevel="h3"
             className="mt-6"
             heading="No demo days scheduled yet."
             body="When a cohort is ready to show its work, it'll be listed here first."
@@ -71,7 +71,7 @@ export default async function InvestPage() {
           Startups from the ecosystem
         </Heading>
         {startups.length === 0 ? (
-          <EmptyState className="mt-6" {...STARTUPS_EMPTY} />
+          <EmptyState headingLevel="h3" className="mt-6" {...STARTUPS_EMPTY} />
         ) : (
           <div className="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {startups.map((startup) => (
@@ -92,7 +92,7 @@ export default async function InvestPage() {
           Founder stories
         </Heading>
         {articles.length === 0 ? (
-          <EmptyState
+          <EmptyState headingLevel="h3"
             className="mt-6"
             heading="No founder stories published yet."
             body="As ventures move through KNEST, the people behind them will be featured here."

@@ -57,7 +57,7 @@ async function ResourcesList({ filters }: { filters: Filters }) {
           return (
             <LinkCard key={resource.id} href={href} label={`View ${resource.title}`}>
               <Tag tone="archive">{FORMAT_LABELS[resource.format]}</Tag>
-              <Heading as="h3" size="heading" className="mt-4">
+              <Heading as="h2" size="heading" className="mt-4">
                 {resource.title}
               </Heading>
               <p className="mt-2 text-[length:var(--text-small)] text-[var(--color-ink-soft)]">{resource.summary}</p>

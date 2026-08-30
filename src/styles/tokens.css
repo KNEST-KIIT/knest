@@ -21,7 +21,12 @@
   /* --- Ground: warm cream and near-black, matching the deck's palette --- */
   --color-ink: #16150f;
   --color-ink-soft: #2a2820;
-  --color-ink-muted: #6b6858;
+  /* #6b6858 measured 4.49:1 against --color-paper-soft — just under the
+     4.5:1 WCAG AA floor for small text (Lighthouse's color-contrast audit
+     caught it in the footer, PHASE-10-12-IMPLEMENTATION-PLAN.md §6.3).
+     Darkened to clear it with headroom (5.53:1) without reading as a
+     different color from the original. */
+  --color-ink-muted: #5f5a49;
   --color-paper: #f7f1de;
   --color-paper-soft: #efe6c9;
   --color-line: #e2d8b8;

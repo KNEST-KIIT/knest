@@ -56,7 +56,7 @@ async function EventsList({ filters }: { filters: Filters }) {
         {events.map((event) => (
           <LinkCard key={event.id} href={`/events/${event.slug}`} label={`View ${event.title}`}>
             <Tag tone="archive">{TYPE_LABELS[event.eventType ?? 'workshop']}</Tag>
-            <Heading as="h3" size="heading" className="mt-4">
+            <Heading as="h2" size="heading" className="mt-4">
               {event.title}
             </Heading>
             <p className="mt-2 text-[length:var(--text-small)] text-[var(--color-ink-soft)]">{event.summary}</p>

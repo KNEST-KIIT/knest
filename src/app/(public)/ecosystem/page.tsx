@@ -52,7 +52,7 @@ export default async function EcosystemPage() {
           Where it happens
         </Heading>
         {infrastructure.length === 0 ? (
-          <EmptyState
+          <EmptyState headingLevel="h3"
             className="mt-6"
             heading="Spaces are being documented."
             body="KNEST's physical spaces — co-working, studios, maker labs — will be listed here as they're photographed and confirmed."
@@ -83,7 +83,7 @@ export default async function EcosystemPage() {
           Partners
         </Heading>
         {partners.length === 0 ? (
-          <EmptyState
+          <EmptyState headingLevel="h3"
             className="mt-6"
             heading="Partnerships are still forming."
             body="KNEST is building relationships with industry, government and academic partners. They'll be listed here as they're confirmed."

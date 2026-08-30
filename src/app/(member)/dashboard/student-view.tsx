@@ -50,7 +50,7 @@ export async function StudentDashboard({ user }: { user: SessionUser }) {
           What&rsquo;s coming up
         </Heading>
         {events.length === 0 ? (
-          <EmptyState
+          <EmptyState headingLevel="h3"
             className="mt-6"
             heading="Nothing on your calendar yet."
             body="New sessions, workshops and talks are added regularly."
@@ -74,7 +74,7 @@ export async function StudentDashboard({ user }: { user: SessionUser }) {
           Worth reading
         </Heading>
         {resources.length === 0 ? (
-          <EmptyState className="mt-6" {...RESOURCES_EMPTY} />
+          <EmptyState headingLevel="h3" className="mt-6" {...RESOURCES_EMPTY} />
         ) : (
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {resources.map((resource) => {

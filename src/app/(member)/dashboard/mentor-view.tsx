@@ -24,7 +24,7 @@ export async function MentorDashboard({ user }: { user: SessionUser }) {
           Your profile
         </Heading>
         {!mentor ? (
-          <EmptyState
+          <EmptyState headingLevel="h3"
             className="mt-6"
             heading="Your mentor profile is with our team."
             body="Mentor profiles are reviewed before they go live. We'll let you know once yours is published."
@@ -54,7 +54,7 @@ export async function MentorDashboard({ user }: { user: SessionUser }) {
           Programs you support
         </Heading>
         {programs.length === 0 ? (
-          <EmptyState
+          <EmptyState headingLevel="h3"
             className="mt-6"
             heading="Not attached to a program yet."
             body="When KNEST connects you to a program, it'll appear here."
@@ -76,7 +76,7 @@ export async function MentorDashboard({ user }: { user: SessionUser }) {
           Upcoming
         </Heading>
         {events.length === 0 ? (
-          <EmptyState
+          <EmptyState headingLevel="h3"
             className="mt-6"
             heading="Nothing on your calendar yet."
             body="Here's what's coming up at KNEST once new sessions are scheduled."

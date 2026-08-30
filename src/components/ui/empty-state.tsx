@@ -16,12 +16,15 @@ export function EmptyState({
   action,
   size = 'default',
   className,
+  headingLevel = 'h2',
 }: {
   heading: string
   body: string
   action?: React.ReactNode
   size?: 'default' | 'compact'
   className?: string
+  /** Defaults to h2: on every page that uses this, the empty state stands in for the h2 a populated list would otherwise show first (spec §46 — this is a first-class, frequently-seen surface, not an afterthought). Override when nesting under a section that already has its own h2. */
+  headingLevel?: 'h2' | 'h3'
 }) {
   return (
     <div
@@ -33,7 +36,7 @@ export function EmptyState({
         className,
       )}
     >
-      <Heading as="h3" size={size === 'compact' ? 'heading' : 'title'} className="tracking-tight">
+      <Heading as={headingLevel} size={size === 'compact' ? 'heading' : 'title'} className="tracking-tight">
         {heading}
       </Heading>
       <p className="mt-4 max-w-[46ch] text-[var(--color-ink-soft)]">{body}</p>

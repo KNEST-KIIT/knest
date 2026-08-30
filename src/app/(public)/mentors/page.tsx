@@ -57,7 +57,7 @@ async function MentorsList({ filters }: { filters: Filters }) {
         {mentors.map((mentor) => (
           <LinkCard key={mentor.id} href={`/mentors/${mentor.slug}`} label={`View ${mentor.name}`}>
             <Avatar name={mentor.name} src={typeof mentor.photo === 'object' ? mentor.photo?.url : null} size="lg" />
-            <Heading as="h3" size="heading" className="mt-4">
+            <Heading as="h2" size="heading" className="mt-4">
               {mentor.name}
             </Heading>
             <p className="mt-1 text-[length:var(--text-small)] text-[var(--color-ink-soft)]">
