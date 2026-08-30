@@ -4,7 +4,7 @@ import { and, desc, eq } from 'drizzle-orm'
 import { db } from '@/db/client'
 import { applicationAnswers, applicationDocuments, applications, users } from '@/db/schema'
 import { requireUserOrThrow, UnauthorizedError } from '@/server/auth/guards'
-import { notify } from '@/server/notifications/send'
+import { sendNotificationEmail, writeNotification } from '@/server/notifications/send'
 import { applicationReceivedTemplate } from '@/server/notifications/templates'
 import { generateStorageKey, putFile } from '@/server/storage'
 import { getApplicationProgram, getApplicationProgramBySlug } from './program-questions'
@@ -25,6 +25,12 @@ export async function getApplicationStatusForUser(userId: string, programId: num
  * Idempotent: returns the existing application (draft or otherwise) if the
  * user already started one, rather than erroring — "start" from the program
  * page and "continue" from the dashboard both land here safely.
+ *
+ * Atomic by construction (PHASE-5-6-RETROSPECTIVE.md §4 / PHASE-7-9-
+ * RETROSPECTIVE.md §1): the insert leans on the unique index
+ * (userId, programId) via onConflictDoNothing() rather than a
+ * check-then-insert — two concurrent requests can no longer both pass a
+ * check before either commits. Only the (rare) conflict case re-queries.
  */
 export async function startApplication(
   programSlug: string,
@@ -40,18 +46,20 @@ export async function startApplication(
     return { ok: false, error: `Applications for this program closed on ${program.applicationDeadline}.` }
   }
 
-  const existing = await db.query.applications.findFirst({
-    where: and(eq(applications.userId, user.id), eq(applications.programId, program.id)),
-  })
-  if (existing) return { ok: true, applicationId: existing.id }
-
   const [created] = await db
     .insert(applications)
     .values({ userId: user.id, programId: program.id })
+    .onConflictDoNothing({ target: [applications.userId, applications.programId] })
     .returning({ id: applications.id })
 
-  if (!created) return { ok: false, error: 'We couldn’t start that application.' }
-  return { ok: true, applicationId: created.id }
+  if (created) return { ok: true, applicationId: created.id }
+
+  const existing = await db.query.applications.findFirst({
+    where: and(eq(applications.userId, user.id), eq(applications.programId, program.id)),
+    columns: { id: true },
+  })
+  if (!existing) return { ok: false, error: 'We couldn’t start that application.' }
+  return { ok: true, applicationId: existing.id }
 }
 
 /** Ownership check only — callers add their own status check where it matters (draft-only writes vs. read access to any status). */
@@ -151,6 +159,14 @@ export async function submitApplication(applicationId: string): Promise<ActionRe
 
   const program = await getApplicationProgram(application.programId)
   if (!program) return { ok: false, error: 'That program no longer exists.' }
+  // Two independent "is this still open" signals exist on a program; both
+  // are checked here now, matching what startApplication already checks —
+  // a staff member closing applicationStatus mid-cohort (with no deadline
+  // set) previously blocked new applicants but not an existing draft from
+  // submitting (PHASE-7-9-RETROSPECTIVE.md §1).
+  if (program.applicationStatus !== 'open') {
+    return { ok: false, error: 'Applications for this program aren’t open right now.' }
+  }
   if (program.applicationDeadline && new Date(program.applicationDeadline) < new Date()) {
     return {
       ok: false,
@@ -185,21 +201,33 @@ export async function submitApplication(applicationId: string): Promise<ActionRe
     }
   }
 
-  await db
-    .update(applications)
-    .set({ status: 'submitted', submittedAt: new Date(), updatedAt: new Date() })
-    .where(eq(applications.id, applicationId))
-
+  // Status update and the notification's DB write commit together
+  // (PHASE-7-9-RETROSPECTIVE.md §1) — a crash between the two previously
+  // left the application marked submitted with no corresponding row for
+  // the dashboard to show. The email send stays outside the transaction:
+  // it already tolerates failure on its own (sendNotificationEmail never
+  // throws) and must not hold a DB transaction open on a network call.
   const { subject, text } = applicationReceivedTemplate(program.title)
-  await notify({
+  const notifyInput = {
     userId: sessionUser.id,
-    type: 'application_received',
+    type: 'application_received' as const,
     title: `We've got your application to ${program.title}`,
     body: `We'll be in touch. You can track its status any time.`,
     href: '/dashboard/applications',
     applicationId,
     email: { subject, text },
+  }
+
+  await db.transaction(async (tx) => {
+    await tx
+      .update(applications)
+      .set({ status: 'submitted', submittedAt: new Date(), updatedAt: new Date() })
+      .where(eq(applications.id, applicationId))
+
+    await writeNotification(tx, notifyInput)
   })
+
+  await sendNotificationEmail(sessionUser.id, notifyInput.email)
 
   return { ok: true }
 }

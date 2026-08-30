@@ -4,8 +4,8 @@ import { and, desc, eq } from 'drizzle-orm'
 import { db } from '@/db/client'
 import { applicationAnswers, applicationDocuments, applications, auditLogs, users } from '@/db/schema'
 import type { applicationStatus } from '@/db/schema'
-import { requireAdminArea } from '@/server/auth/guards'
-import { notify } from '@/server/notifications/send'
+import { requireAdminArea, requireStaffOrThrow } from '@/server/auth/guards'
+import { sendNotificationEmail, writeNotification } from '@/server/notifications/send'
 import { applicationStatusChangedTemplate } from '@/server/notifications/templates'
 import { getApplicationProgram } from './program-questions'
 import { isLegalTransition } from './transitions'
@@ -52,12 +52,20 @@ export async function getApplicationForReview(applicationId: string) {
   return { application, applicant: application.user, program, answers, documents }
 }
 
+/**
+ * Called only from src/app/api/admin/applications/[id]/status/route.ts — a
+ * route handler, so this uses requireStaffOrThrow (throws, caught at the API
+ * boundary) rather than requireAdminArea (calls notFound(), correct for a
+ * page component but not for a route — PHASE-7-9-RETROSPECTIVE.md §1,
+ * carried over unfixed from PHASE-5-6-RETROSPECTIVE.md §1). Verified live:
+ * a non-staff request now gets a JSON 403 instead of an empty-body 404.
+ */
 export async function changeApplicationStatus(
   applicationId: string,
   newStatus: Status,
   note?: string,
 ): Promise<ActionResult> {
-  const staff = await requireAdminArea('applications')
+  const staff = await requireStaffOrThrow('applications')
 
   const application = await db.query.applications.findFirst({ where: eq(applications.id, applicationId) })
   if (!application) return { ok: false, error: 'That application doesn’t exist.' }
@@ -69,37 +77,49 @@ export async function changeApplicationStatus(
     }
   }
 
-  const terminal = newStatus === 'accepted' || newStatus === 'rejected'
-  await db
-    .update(applications)
-    .set({
-      status: newStatus,
-      decisionAt: terminal ? new Date() : application.decisionAt,
-      decisionNote: note ?? application.decisionNote,
-      updatedAt: new Date(),
-    })
-    .where(eq(applications.id, applicationId))
-
-  await db.insert(auditLogs).values({
-    actorUserId: staff.id,
-    action: 'application_status_changed',
-    entityType: 'application',
-    entityId: applicationId,
-    before: { status: application.status },
-    after: { status: newStatus, note: note ?? null },
-  })
-
   const program = await getApplicationProgram(application.programId)
   const { subject, text } = applicationStatusChangedTemplate(program?.title ?? 'your program', newStatus)
-  await notify({
+  const notifyInput = {
     userId: application.userId,
-    type: 'application_status_changed',
+    type: 'application_status_changed' as const,
     title: subject,
     body: text,
     href: '/dashboard/applications',
     applicationId,
     email: { subject, text },
+  }
+
+  // Status update, audit log insert, and the notification's DB write commit
+  // together (PHASE-7-9-RETROSPECTIVE.md §1) — previously a crash between
+  // any two of these left either a status change with no audit trail, or an
+  // application already marked with its new status while the client that
+  // triggered it saw an error. The email send stays outside the transaction
+  // for the same reason as submitApplication's.
+  const terminal = newStatus === 'accepted' || newStatus === 'rejected'
+  await db.transaction(async (tx) => {
+    await tx
+      .update(applications)
+      .set({
+        status: newStatus,
+        decisionAt: terminal ? new Date() : application.decisionAt,
+        decisionNote: note ?? application.decisionNote,
+        updatedAt: new Date(),
+      })
+      .where(eq(applications.id, applicationId))
+
+    await tx.insert(auditLogs).values({
+      actorUserId: staff.id,
+      action: 'application_status_changed',
+      entityType: 'application',
+      entityId: applicationId,
+      before: { status: application.status },
+      after: { status: newStatus, note: note ?? null },
+    })
+
+    await writeNotification(tx, notifyInput)
   })
+
+  await sendNotificationEmail(application.userId, notifyInput.email)
 
   return { ok: true }
 }
