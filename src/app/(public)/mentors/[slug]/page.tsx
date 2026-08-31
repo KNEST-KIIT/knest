@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { Avatar, Heading, Tag } from '@/components/ui'
+import { Avatar, Container, Heading, Tag } from '@/components/ui'
 import { EXPERTISE_OPTIONS } from '@/payload/fields/taxonomy'
 import { getMentorBySlug } from '@/server/content/mentors'
 import { AvailabilityBadge } from '../availability-badge'
@@ -30,7 +30,7 @@ export default async function MentorDetailPage({ params }: { params: Promise<{ s
   if (!mentor) notFound()
 
   return (
-    <div className="mx-auto w-full max-w-[720px] px-6 py-16 md:px-10">
+    <Container size="reading" className="py-16">
       <div className="flex items-start gap-6">
         <Avatar name={mentor.name} src={typeof mentor.photo === 'object' ? mentor.photo?.url : null} size="lg" />
         <div>
@@ -66,6 +66,6 @@ export default async function MentorDetailPage({ params }: { params: Promise<{ s
           Connect on LinkedIn
         </a>
       )}
-    </div>
+    </Container>
   )
 }

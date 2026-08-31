@@ -120,10 +120,18 @@
   .prose-knest > * + * {
     margin-top: 1em;
   }
+  /*
+   * No font-weight. The display face ships one weight (400) that already
+   * reads as black, so asking for 700 makes the browser synthesize a bold
+   * that has no font file behind it and thicken the strokes algorithmically
+   * — the faux-bold that heading.tsx documents and was stripped from 24 of
+   * its 35 call sites. The CMS rich-text path was still doing it, so
+   * editor-authored headings rendered visibly heavier and muddier than the
+   * identical headings on the same page that come from <Heading>.
+   */
   .prose-knest h2,
   .prose-knest h3 {
     font-family: var(--font-display);
-    font-weight: 700;
     text-transform: uppercase;
     color: var(--color-ink);
     margin-top: 1.5em;

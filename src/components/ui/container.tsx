@@ -20,17 +20,28 @@ export function Container({
 }: {
   children: React.ReactNode
   className?: string
-  /** `narrow` is for reading — long-form and single-column forms. */
-  size?: 'default' | 'narrow'
+  /**
+   * `narrow` is for constrained layouts that are still a page — a filtered
+   * index, a two-column form. `reading` is the long-form measure: a single
+   * column of prose someone reads top to bottom.
+   *
+   * `reading` was not a size here, so the six long-form pages that needed one
+   * each wrote `mx-auto w-full max-w-[720px] px-6 py-16 md:px-10` inline
+   * instead — the same hand-copied string this component was extracted to
+   * delete, re-grown at a fourth measure and one gutter step short of the
+   * rest of the app. They now go through here, so the value lives in one
+   * place and the `lg` gutter step applies to them too.
+   */
+  size?: 'default' | 'narrow' | 'reading'
 }) {
+  const measure = {
+    default: 'max-w-[1280px]',
+    narrow: 'max-w-[880px]',
+    reading: 'max-w-[720px]',
+  }[size]
+
   return (
-    <div
-      className={cn(
-        'mx-auto w-full px-6 md:px-10 lg:px-12',
-        size === 'narrow' ? 'max-w-[880px]' : 'max-w-[1280px]',
-        className,
-      )}
-    >
+    <div className={cn('mx-auto w-full px-6 md:px-10 lg:px-12', measure, className)}>
       {children}
     </div>
   )

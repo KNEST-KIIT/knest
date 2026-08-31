@@ -1,8 +1,8 @@
-import { Skeleton } from '@/components/ui'
+import { Container, Skeleton } from '@/components/ui'
 
 export default function Loading() {
   return (
-    <div className="mx-auto w-full max-w-[720px] px-6 py-16 md:px-10">
+    <Container size="reading" className="py-16">
       <div className="flex items-start gap-6">
         <Skeleton className="size-20 rounded-full" />
         <div className="flex-1">
@@ -11,6 +11,6 @@ export default function Loading() {
         </div>
       </div>
       <Skeleton className="mt-8 h-24 w-full" />
-    </div>
+    </Container>
   )
 }

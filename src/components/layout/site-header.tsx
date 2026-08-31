@@ -82,7 +82,13 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
                 href={item.href}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'relative rounded-[var(--radius-sm)] px-3 py-2 text-[length:var(--text-small)]',
+                  // `px-3 py-2` gave a 38px-tall target on an 18px line —
+                  // under the 44px floor every other control in the app is
+                  // built to (button.tsx sizes, the footer's Privacy/Terms
+                  // row, this header's own icon and menu buttons). `h-11`
+                  // states the same number the rest of the app states.
+                  'relative flex h-11 items-center rounded-[var(--radius-sm)] px-3',
+                  'text-[length:var(--text-small)]',
                   'transition-colors duration-[var(--duration-instant)] hover:text-[var(--color-signal)]',
                   active && 'text-[var(--color-signal)]',
                 )}
@@ -157,7 +163,7 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
             <>
               <Link
                 href="/login"
-                className="rounded-[var(--radius-sm)] px-3 py-2 text-[length:var(--text-small)] transition-colors duration-[var(--duration-instant)] hover:text-[var(--color-signal)]"
+                className="flex h-11 items-center rounded-[var(--radius-sm)] px-3 text-[length:var(--text-small)] transition-colors duration-[var(--duration-instant)] hover:text-[var(--color-signal)]"
               >
                 Log in
               </Link>
@@ -213,56 +219,70 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
             transition={{ duration: duration.base, ease: ease.entrance }}
             className="fixed inset-x-0 bottom-0 top-16 z-50 flex flex-col bg-[var(--color-paper)] lg:hidden"
           >
-            <motion.nav
-              aria-label="Main"
-              className="flex flex-1 flex-col overflow-y-auto px-6 py-4"
-              initial="hidden"
-              animate="visible"
-              variants={{ visible: { transition: { staggerChildren: stagger.tight, delayChildren: 0.06 } } }}
-            >
-              {[{ href: '/search', label: 'Search' }, ...NAV].map((item) => (
-                <motion.div
-                  key={item.href}
-                  variants={{ hidden: { opacity: 0, x: -12 }, visible: { opacity: 1, x: 0 } }}
-                >
-                  <Link
-                    href={item.href}
-                    aria-current={pathname.startsWith(item.href) ? 'page' : undefined}
-                    className={cn(
-                      'flex items-center justify-between border-b border-[var(--color-line)] py-4',
-                      'font-[family-name:var(--font-display)] text-[length:var(--text-heading)] uppercase',
-                      pathname.startsWith(item.href) && 'text-[var(--color-signal)]',
-                    )}
+            {/*
+              Both blocks below run through Container for the same reason the
+              header bar above does. They had hardcoded `px-6`, which matches
+              Container only below `md`: from 768px up the bar steps to
+              `md:px-10` and the panel did not, so the menu that drops out of
+              the header sat 16px to its left — the wordmark and the nav item
+              directly beneath it visibly disagreed on where the page begins.
+            */}
+            <Container className="flex flex-1 flex-col overflow-y-auto py-4">
+              <motion.nav
+                aria-label="Main"
+                className="flex flex-col"
+                initial="hidden"
+                animate="visible"
+                variants={{ visible: { transition: { staggerChildren: stagger.tight, delayChildren: 0.06 } } }}
+              >
+                {[{ href: '/search', label: 'Search' }, ...NAV].map((item) => (
+                  <motion.div
+                    key={item.href}
+                    variants={{ hidden: { opacity: 0, x: -12 }, visible: { opacity: 1, x: 0 } }}
                   >
-                    {item.label}
-                    <svg aria-hidden viewBox="0 0 16 16" className="size-4 opacity-40" fill="none" stroke="currentColor" strokeWidth="1.75">
-                      <path d="M6 3l5 5-5 5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </Link>
-                </motion.div>
-              ))}
-            </motion.nav>
-            {/* Pinned inside the safe area so it clears the home indicator. */}
-            <div className="flex flex-col gap-3 border-t border-[var(--color-line)] px-6 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-              {signedIn ? (
-                <ButtonLink
-                  href="/dashboard"
-                  size="lg"
-                  fullWidth
-                  aria-label={unreadCount > 0 ? `Dashboard — ${unreadCount} unread notification${unreadCount === 1 ? '' : 's'}` : undefined}
-                >
-                  Dashboard{unreadCount > 0 && ` (${unreadCount > 9 ? '9+' : unreadCount})`}
-                </ButtonLink>
-              ) : (
-                <>
-                  <ButtonLink href="/signup" size="lg" fullWidth>
-                    Start building
+                    <Link
+                      href={item.href}
+                      aria-current={pathname.startsWith(item.href) ? 'page' : undefined}
+                      className={cn(
+                        'flex items-center justify-between border-b border-[var(--color-line)] py-4',
+                        'font-[family-name:var(--font-display)] text-[length:var(--text-heading)] uppercase',
+                        pathname.startsWith(item.href) && 'text-[var(--color-signal)]',
+                      )}
+                    >
+                      {item.label}
+                      <svg aria-hidden viewBox="0 0 16 16" className="size-4 opacity-40" fill="none" stroke="currentColor" strokeWidth="1.75">
+                        <path d="M6 3l5 5-5 5" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </Link>
+                  </motion.div>
+                ))}
+              </motion.nav>
+            </Container>
+            {/* Pinned inside the safe area so it clears the home indicator.
+                The border sits on the outer element so it still spans the
+                full width; Container inside aligns the buttons with the nav. */}
+            <div className="border-t border-[var(--color-line)] py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+              <Container className="flex flex-col gap-3">
+                {signedIn ? (
+                  <ButtonLink
+                    href="/dashboard"
+                    size="lg"
+                    fullWidth
+                    aria-label={unreadCount > 0 ? `Dashboard — ${unreadCount} unread notification${unreadCount === 1 ? '' : 's'}` : undefined}
+                  >
+                    Dashboard{unreadCount > 0 && ` (${unreadCount > 9 ? '9+' : unreadCount})`}
                   </ButtonLink>
-                  <ButtonLink href="/login" variant="secondary" size="lg" fullWidth>
-                    Log in
-                  </ButtonLink>
-                </>
-              )}
+                ) : (
+                  <>
+                    <ButtonLink href="/signup" size="lg" fullWidth>
+                      Start building
+                    </ButtonLink>
+                    <ButtonLink href="/login" variant="secondary" size="lg" fullWidth>
+                      Log in
+                    </ButtonLink>
+                  </>
+                )}
+              </Container>
             </div>
           </motion.div>
         )}

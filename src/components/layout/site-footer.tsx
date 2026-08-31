@@ -43,7 +43,13 @@ export function SiteFooter() {
             <Link
               href="/"
               aria-label="KNEST — home"
-              className="-mx-2 inline-flex h-11 items-center px-2 text-[26px] transition-opacity duration-[var(--duration-instant)] hover:opacity-70"
+              // `h-11` centres a 26px wordmark in a 44px target, which put
+              // the glyphs 9px below the "Explore"/"KNEST"/"Get involved"
+              // headings starting at the top of the same grid row — the four
+              // columns of the footer began at four different heights. The
+              // negative margins pull the box back so the target stays 44px
+              // and the type lines up with its neighbours in both axes.
+              className="-mx-2 -mt-2 inline-flex h-11 items-center px-2 text-[26px] transition-opacity duration-[var(--duration-instant)] hover:opacity-70"
             >
               <KnestWordmark />
             </Link>
@@ -59,12 +65,24 @@ export function SiteFooter() {
               <h2 className="text-[length:var(--text-micro)] font-semibold uppercase tracking-[0.14em] text-[var(--color-ink-muted)]">
                 {column.heading}
               </h2>
-              <ul className="mt-5 flex flex-col gap-3.5">
+              {/*
+                These were 18px-tall targets — the whole of the site's
+                secondary navigation sitting under both the 44px bar the rest
+                of the app is built to and WCAG 2.5.8's 24px floor. (The
+                Privacy/Terms row below already had the fix; these three
+                columns were missed.) Each link is now a 44px row and the
+                list's gap comes out, so the text keeps roughly the rhythm it
+                had while the target grows around it. `-mx-2 px-2` widens the
+                target and gives the focus ring something to sit on without
+                moving the text off the column edge — the same trick the
+                wordmark above uses.
+              */}
+              <ul className="mt-2 flex flex-col">
                 {column.links.map((link) => (
                   <li key={link.href + link.label}>
                     <Link
                       href={link.href}
-                      className="text-[length:var(--text-small)] text-[var(--color-ink-soft)] transition-colors duration-[var(--duration-instant)] hover:text-[var(--color-signal)]"
+                      className="-mx-2 flex min-h-11 items-center rounded-[var(--radius-sm)] px-2 text-[length:var(--text-small)] text-[var(--color-ink-soft)] transition-colors duration-[var(--duration-instant)] hover:text-[var(--color-signal)]"
                     >
                       {link.label}
                     </Link>

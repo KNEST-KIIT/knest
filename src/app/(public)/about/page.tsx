@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { Heading } from '@/components/ui'
+import { Container, Heading } from '@/components/ui'
 
 export const metadata: Metadata = {
   title: 'About',
@@ -40,7 +40,7 @@ const FIVE_YEAR_GOALS = [
 
 export default function AboutPage() {
   return (
-    <div className="mx-auto w-full max-w-[720px] px-6 py-16 md:px-10">
+    <Container size="reading" className="py-16">
       <p className="text-[length:var(--text-micro)] uppercase tracking-[0.2em] text-[var(--color-ink-muted)]">
         About
       </p>
@@ -164,6 +164,6 @@ export default function AboutPage() {
           </Link>
         </div>
       </section>
-    </div>
+    </Container>
   )
 }

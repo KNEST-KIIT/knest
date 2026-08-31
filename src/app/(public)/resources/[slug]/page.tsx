@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { ButtonLink, Heading, Tag } from '@/components/ui'
+import { ButtonLink, Container, Heading, Tag } from '@/components/ui'
 import { RichText } from '@/components/content/rich-text'
 import { getResourceBySlug } from '@/server/content/resources'
 import { track } from '@/server/analytics/track'
@@ -32,7 +32,7 @@ export default async function ResourceDetailPage({ params }: { params: Promise<{
   await track('resource_view', { resourceId: resource.id })
 
   return (
-    <div className="mx-auto w-full max-w-[720px] px-6 py-16 md:px-10">
+    <Container size="reading" className="py-16">
       <Tag tone="archive">{FORMAT_LABELS[resource.format]}</Tag>
       <Heading as="h1" size="display" className="mt-4">
         {resource.title}
@@ -53,6 +53,6 @@ export default async function ResourceDetailPage({ params }: { params: Promise<{
           </ButtonLink>
         </div>
       )}
-    </div>
+    </Container>
   )
 }

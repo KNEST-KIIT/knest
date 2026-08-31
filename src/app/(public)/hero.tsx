@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'motion/react'
-import { ButtonLink, Container } from '@/components/ui'
+import { ButtonLink, Container, Heading } from '@/components/ui'
 import { duration, ease, stagger, travel } from '@/lib/motion'
 import type { Homepage } from '@/payload/payload-types'
 
@@ -26,7 +26,7 @@ export function Hero({ homepage }: { homepage: Homepage }) {
   return (
     <div className="relative flex min-h-[88vh] flex-col justify-center py-24">
       <Container>
-        <h1 className="font-[family-name:var(--font-display)] text-[length:var(--text-hero)] uppercase leading-[0.9] tracking-[-0.03em]">
+        <Heading as="h1" size="hero">
           <span className="sr-only">{homepage.heroHeadline}</span>
           <motion.span
             aria-hidden
@@ -62,7 +62,7 @@ export function Hero({ homepage }: { homepage: Homepage }) {
               </span>
             ))}
           </motion.span>
-        </h1>
+        </Heading>
 
         <motion.p
           data-reveal
