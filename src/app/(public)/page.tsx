@@ -39,7 +39,7 @@ export default async function HomePage() {
 
           case 'problem':
             return (
-              <Section key={key} className="mx-auto max-w-[68ch]">
+              <Section key={key} measure="prose">
                 <Heading as="h2" size="title">
                   {homepage.problemHeading}
                 </Heading>
@@ -79,7 +79,7 @@ export default async function HomePage() {
 
           case 'knest':
             return (
-              <Section key={key} className="mx-auto max-w-[68ch]">
+              <Section key={key} measure="prose">
                 <Heading as="h2" size="title">
                   {homepage.knestHeading}
                 </Heading>

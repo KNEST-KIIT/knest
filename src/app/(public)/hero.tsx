@@ -17,7 +17,13 @@ export function Hero({ homepage }: { homepage: Homepage }) {
         />
       </div>
       
-      <div className="relative z-20 container mx-auto px-6 md:px-10">
+      {/* Tailwind's `container` sets a different max-width at each breakpoint
+          (…1280 at xl, 1536 at 2xl), while the header, footer and every
+          Section are a flat 1280. From 1536px up the hero was therefore 256px
+          wider than the chrome around it, putting its headline 128px left of
+          the logo directly above it — measured 40 vs 168 at 1536, and 232 vs
+          360 at 1920. The flat measure is what the rest of the page uses. */}
+      <div className="relative z-20 mx-auto w-full max-w-[1280px] px-6 md:px-10">
         <div className="max-w-4xl">
           <RevealHeading 
             size="title" 
