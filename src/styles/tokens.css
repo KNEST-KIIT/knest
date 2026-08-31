@@ -26,6 +26,20 @@
   --color-paper-soft: #ede4c9;
   --color-line: #ddd0a8;
 
+  /* --- The inverted ground: the same two roles as `paper` and `line`, for
+     the bands that run dark (the journey timeline, the footer).
+
+     These were referenced nine times before they were defined, which does
+     not fail loudly — an undefined custom property resolves to nothing, so
+     `bg-[var(--color-paper-invert)]` became a transparent background and the
+     journey section rendered on the cream page instead of the dark band it
+     was written for. Its heading, set in `--color-paper`, was then cream on
+     cream: contrast 1:1, the text invisible on the homepage. Defining them
+     is the fix; the token test in src/styles/tokens.test.ts is what stops it
+     happening again. --- */
+  --color-paper-invert: #0d1321;
+  --color-line-invert: rgb(255 255 255 / 0.16);
+
   /* --- Primary accent: oxblood. #7a1f2b measures 10.2:1 on white, 9.04:1
      on --color-paper — an academic/publishing red, not a startup orange.
      --color-signal-deep (#6e1c27) is the hover/press state. --- */
@@ -65,8 +79,25 @@
   --text-small: 0.875rem;
   --text-micro: 0.75rem;
 
-  /* --- Space: 8pt --- */
-  --spacing: 0.5rem;
+  /* --- Space ---
+     `--spacing` is Tailwind v4's *base unit*, not a step on a scale: every
+     spacing and sizing utility in the app is a multiple of it. Setting it to
+     0.5rem to express an 8pt grid doubled the entire scale, so a class no
+     longer meant what it said — `h-11` rendered at 88px, `p-4` at 32px,
+     `gap-12` at 96px, `md:px-10` at 80px.
+
+     That is not cosmetic. The journey section's `md:grid-cols-10` row got a
+     96px column gap: ten columns plus nine gaps needed 864px inside a 674px
+     container, so every column computed to 0px and the homepage scrolled
+     sideways at tablet width (918px of content in an 834px viewport). It is
+     also why the header, the hero and the sections each began at a
+     different left edge — they use different padding utilities, and every
+     one of them was silently doubled.
+
+     Back to Tailwind's default 4px unit, so a class means what it says. An
+     8pt rhythm is still available, and still used, by picking even steps:
+     `p-2` is 8px, `gap-6` is 24px, `py-16` is 64px. */
+  --spacing: 0.25rem;
 
   /* --- Radius: three, no more — smaller than the "soft SaaS card" pass,
      matching a more editorial, less rounded-app-UI language. --- */

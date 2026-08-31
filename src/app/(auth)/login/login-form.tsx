@@ -69,7 +69,7 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
               <PasswordInput {...fieldProps} name="password" autoComplete="current-password" required />
             )}
           </Field>
-          <a href="/reset" className="mt-2 inline-block text-[length:var(--text-small)] text-[var(--color-signal)]">
+          <a href="/reset" className="inline-flex min-h-11 items-center text-[length:var(--text-small)] text-[var(--color-signal)]">
             Forgot your password?
           </a>
         </div>

@@ -164,7 +164,7 @@ export default async function HomePage() {
                   </ButtonLink>
                   <Link
                     href="/programs"
-                    className="text-[length:var(--text-small)] font-medium text-[var(--color-paper)] underline underline-offset-4"
+                    className="inline-flex h-11 items-center text-[length:var(--text-small)] font-medium text-[var(--color-paper)] underline underline-offset-4"
                   >
                     Browse programs
                   </Link>

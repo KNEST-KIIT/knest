@@ -17,9 +17,12 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         className="flex min-h-dvh items-center justify-center bg-[var(--color-paper-soft)] px-6 py-16"
       >
         <div className="w-full max-w-[420px]">
+          {/* A 28px target, and the only way back out of the auth screens.
+              `min-h-11` grows it to 44px without moving the wordmark. */}
           <Link
             href="/"
-            className="mb-8 block text-center font-[family-name:var(--font-display)] text-lg uppercase tracking-[0.12em]"
+            aria-label="KNEST — home"
+            className="mb-8 flex min-h-11 items-center justify-center font-[family-name:var(--font-display)] text-lg uppercase tracking-[0.12em]"
           >
             KNEST
           </Link>

@@ -6,7 +6,10 @@ export function Logo({ className = '' }: { className?: string }) {
     <div className={`flex items-center select-none ${className}`}>
       <Image
         src="/logo.jpg"
-        alt="KNEST Logo"
+        /* Empty on purpose: every use of this sits inside a link or heading
+           that already carries the name, and a described image inside a
+           labelled link is announced twice. */
+        alt=""
         width={150}
         height={150}
         className="h-10 w-auto object-contain mix-blend-multiply drop-shadow-sm"

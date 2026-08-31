@@ -80,7 +80,7 @@ export function JourneySelector({ signedIn }: { signedIn: boolean }) {
       <div className="mt-10 grid gap-6 lg:grid-cols-[1fr_1fr]">
         <motion.div layout role="radiogroup" aria-label="Where are you right now?" className="flex flex-col gap-3">
           {OPTIONS.map((opt, i) => (
-            <motion.button layout initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: i * 0.1 }}
+            <motion.button layout data-reveal initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: i * 0.1 }}
               key={opt.label}
               type="button"
               role="radio"
@@ -122,6 +122,7 @@ export function JourneySelector({ signedIn }: { signedIn: boolean }) {
           ) : (
             <motion.p 
               key="empty"
+              data-reveal
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}

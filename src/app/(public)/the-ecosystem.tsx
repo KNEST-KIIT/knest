@@ -9,7 +9,7 @@ export async function TheEcosystem() {
 
   return (
     <section className="relative py-32 px-6 md:px-10 mx-auto max-w-7xl">
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[var(--color-paper-soft)] to-transparent opacity-50 pointer-events-none -z-10 rounded-[var(--radius-xl)]"></div>
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[var(--color-paper-soft)] to-transparent opacity-50 pointer-events-none -z-10 rounded-[var(--radius-lg)]"></div>
       
       <div className="text-center md:text-left flex flex-col md:flex-row gap-12 md:gap-24 items-center">
         <div className="flex-1 max-w-xl">

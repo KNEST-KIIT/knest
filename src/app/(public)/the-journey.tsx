@@ -2,7 +2,7 @@
 
 import { useRef } from 'react'
 import Link from 'next/link'
-import { motion, useScroll, useTransform } from 'framer-motion'
+import { motion, useScroll, useTransform, type Variants } from 'framer-motion'
 import { Heading } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import { STAGE_OPTIONS } from '@/payload/fields/taxonomy'
@@ -68,7 +68,11 @@ export function TheJourney({ allPrograms }: { allPrograms: Program[] }) {
           <Heading as="h2" size="display" className="tracking-tight text-[var(--color-paper)]">
             The Trajectory
           </Heading>
-          <p className="mt-8 text-[length:var(--text-title)] font-light text-[var(--color-ink-soft)]">
+          {/* `--color-ink-soft` is a colour for text *on* paper; this section
+              runs on the inverted ground, so it measured 1.49:1 against it.
+              `--color-paper` at 70% is the muted-on-dark tone the footer
+              already uses for the same job, and measures 8.3:1. */}
+          <p className="mt-8 text-[length:var(--text-title)] font-light text-[var(--color-paper)]/70">
             Nobody builds a scalable venture in one leap. Here is the exact path, and the infrastructure we deploy at every single stage.
           </p>
         </div>
@@ -86,9 +90,16 @@ export function TheJourney({ allPrograms }: { allPrograms: Program[] }) {
             <motion.div 
               key={stage.value} 
               className="grid grid-cols-1 md:grid-cols-10 gap-8 md:gap-12 items-center group relative pl-16 md:pl-0"
+              data-reveal
               initial="hidden"
               whileInView="visible"
-              viewport={{ once: false, margin: "-200px" }}
+              // `once: false` re-ran the reveal in reverse every time a stage
+              // left the viewport, so scrolling back up to re-read one dropped
+              // it to 40% opacity and full greyscale again — the six stages
+              // grey themselves out behind you as you move down the page, and
+              // any stage you return to is unreadable until you scroll away
+              // and back. A reveal is an entrance, not a scroll-linked dimmer.
+              viewport={{ once: true, margin: "-200px" }}
               variants={{
                 hidden: { opacity: 0.4, filter: 'grayscale(100%)' },
                 visible: { opacity: 1, filter: 'grayscale(0%)', transition: { duration: 0.8 } }
@@ -108,10 +119,16 @@ export function TheJourney({ allPrograms }: { allPrograms: Program[] }) {
               <div className="md:col-span-2 text-left md:text-right md:pr-12 pt-8 md:pt-0">
                 <motion.span 
                   className="font-[family-name:var(--font-display)] text-[80px] md:text-[120px] font-bold leading-none block bg-clip-text" 
+                  /* `WebkitTextStroke` is a real CSS property Motion passes
+                     straight through to style, but it is not in Motion's
+                     `Variant` type, so this file failed `pnpm typecheck` on
+                     both keyframes — on the branch tip, before any of this
+                     work. The cast is what the type does not cover; the shape
+                     is still checked against `Variants` on assignment. */
                   variants={{
                     hidden: { color: 'transparent', WebkitTextStroke: '1px rgba(255,255,255,0.05)', textShadow: 'none' },
                     visible: { color: 'var(--color-signal)', WebkitTextStroke: '0px transparent', textShadow: '0 0 60px rgba(122, 31, 43, 0.4)' }
-                  }}
+                  } as Variants}
                   transition={{ duration: 0.8, ease: "easeOut" }}
                 >
                   0{index + 1}
@@ -124,6 +141,7 @@ export function TheJourney({ allPrograms }: { allPrograms: Program[] }) {
                   <motion.img 
                     src={content.image} 
                     alt={stage.label} 
+                    data-reveal
                     className="w-full h-full object-cover"
                     variants={{
                       hidden: { scale: 1.05, opacity: 0.4, filter: 'grayscale(100%)' },
@@ -136,6 +154,7 @@ export function TheJourney({ allPrograms }: { allPrograms: Program[] }) {
                 {/* Content */}
                 <div className={cn("py-4 md:py-8", index % 2 !== 0 ? "md:order-1 md:pr-8" : "md:pl-8")}>
                   <motion.div
+                    data-reveal
                     className="relative p-6 md:p-10 rounded-[var(--radius-lg)] bg-[var(--color-ink)]/60 backdrop-blur-xl border border-[var(--color-line-invert)]/20 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] overflow-hidden group/content"
                     variants={{
                       hidden: { opacity: 0, x: index % 2 !== 0 ? -20 : 20 },

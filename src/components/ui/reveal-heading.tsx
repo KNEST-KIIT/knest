@@ -29,6 +29,7 @@ export function RevealHeading({
           <span key={i} className="block overflow-hidden">
             <motion.span
               className="block"
+              data-reveal
               initial={{ y: '100%' }}
               animate={isInView ? { y: '0%' } : { y: '100%' }}
               transition={{ duration: 0.8, delay: delay + i * 0.1, ease: [0.16, 1, 0.3, 1] }}

@@ -62,7 +62,12 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
       )}
     >
       <div className="mx-auto flex h-[4.5rem] w-full max-w-[1280px] items-center justify-between px-6 md:px-10">
-        <Link href="/" className="flex items-baseline gap-2">
+        {/* The link carries the accessible name so a screen reader hears the
+            destination ("KNEST — home") rather than the asset ("KNEST Logo"),
+            and `h-11` brings a 40px target up to the 44px the rest of the
+            header uses. `items-baseline` did nothing here — the link holds a
+            single image, which has no baseline to align to. */}
+        <Link href="/" aria-label="KNEST — home" className="flex h-11 items-center gap-2">
           <Logo />
         </Link>
 
@@ -75,7 +80,9 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
                 href={item.href}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'border-b-2 py-1 text-[length:var(--text-small)] font-medium transition-colors',
+                  // `py-1` gave a 40px-tall target. `h-11` states the same
+                  // 44px the header's own icon and menu buttons already use.
+                  'flex h-11 items-center border-b-2 text-[length:var(--text-small)] font-medium transition-colors',
                   active
                     ? 'border-[var(--color-signal)] text-[var(--color-ink)]'
                     : 'border-transparent text-[var(--color-ink-soft)] hover:border-[var(--color-line)] hover:text-[var(--color-ink)]',
@@ -121,7 +128,10 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
               <ButtonLink href="/signup" size="sm">
                 Start building
               </ButtonLink>
-              <Link href="/login" className="text-[length:var(--text-small)]">
+              <Link
+                href="/login"
+                className="flex h-11 items-center rounded-[var(--radius-sm)] px-2 text-[length:var(--text-small)]"
+              >
                 Log in
               </Link>
             </>
@@ -163,7 +173,7 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
           id="mobile-nav"
           className="fixed inset-x-0 bottom-0 top-[4.5rem] z-50 flex flex-col bg-[var(--color-paper)] lg:hidden"
         >
-          <nav aria-label="Main" className="flex flex-1 flex-col gap-1 overflow-y-auto px-6 py-6">
+          <nav aria-label="Main" className="flex flex-1 flex-col gap-1 overflow-y-auto px-6 py-6 md:px-10">
             <Link
               href="/search"
               className="border-b border-[var(--color-line)] py-4 font-[family-name:var(--font-display)] text-[length:var(--text-heading)] font-bold"
@@ -181,7 +191,7 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
             ))}
           </nav>
           {/* Pinned inside the safe area so it clears the home indicator. */}
-          <div className="flex flex-col gap-3 border-t border-[var(--color-line)] px-6 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+          <div className="flex flex-col gap-3 border-t border-[var(--color-line)] px-6 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] md:px-10">
             {signedIn ? (
               <ButtonLink
                 href="/dashboard"
