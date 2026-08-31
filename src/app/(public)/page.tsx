@@ -119,7 +119,10 @@ export default async function HomePage() {
                             <h3 className="font-[family-name:var(--font-display)] text-xl font-semibold text-[var(--color-ink)] group-hover:text-[var(--color-signal)] transition-colors duration-300">
                               {item.label}
                             </h3>
-                            <div className="font-[family-name:var(--font-display)] text-3xl font-light text-[var(--color-ink-soft)] opacity-40 group-hover:opacity-100 group-hover:text-[var(--color-signal)] transition-all duration-300 transform group-hover:scale-105 group-hover:rotate-3 origin-center">
+                            {/* Was opacity-40, which put this at 2.23:1 — axe-core flagged it on
+                                two of the five cards. 60% keeps the numeral quiet at rest and
+                                still brightening on hover, at a ratio that passes. */}
+                            <div className="font-[family-name:var(--font-display)] text-3xl font-light text-[var(--color-ink-soft)] opacity-60 group-hover:opacity-100 group-hover:text-[var(--color-signal)] transition-all duration-300 transform group-hover:scale-105 group-hover:rotate-3 origin-center">
                               {String(i + 1).padStart(2, '0')}
                             </div>
                           </div>

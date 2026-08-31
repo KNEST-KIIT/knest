@@ -46,6 +46,14 @@
   --color-signal: #7a1f2b;
   --color-signal-deep: #6e1c27;
   --color-signal-wash: #f4e4e2;
+  /* The accent lightened for the inverted ground. Oxblood is built to carry
+     9:1 on parchment and cannot also work on the dark band — the journey's
+     stage numerals used it there and measured 1.77:1, the one violation
+     axe-core reported across the eleven public pages. This is the same hue
+     mixed toward paper until it clears 4.5:1 on --color-paper-invert, so the
+     numerals stay recognisably the brand red rather than becoming pink or
+     defaulting to plain cream. */
+  --color-signal-invert: #b0707a;
 
   /* --- Secondary accent: brass, for ecosystem/data surfaces — a seal-and-
      ledger color, distinct from oxblood's "do this" register. #7d5f18

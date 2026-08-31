@@ -127,7 +127,7 @@ export function TheJourney({ allPrograms }: { allPrograms: Program[] }) {
                      is still checked against `Variants` on assignment. */
                   variants={{
                     hidden: { color: 'transparent', WebkitTextStroke: '1px rgba(255,255,255,0.05)', textShadow: 'none' },
-                    visible: { color: 'var(--color-signal)', WebkitTextStroke: '0px transparent', textShadow: '0 0 60px rgba(122, 31, 43, 0.4)' }
+                    visible: { color: 'var(--color-signal-invert)', WebkitTextStroke: '0px transparent', textShadow: '0 0 60px rgba(122, 31, 43, 0.4)' }
                   } as Variants}
                   transition={{ duration: 0.8, ease: "easeOut" }}
                 >
