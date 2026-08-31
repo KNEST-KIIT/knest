@@ -33,6 +33,7 @@ export default async function EcosystemPage() {
   const [infrastructure, partners] = await Promise.all([listInfrastructure(), listPartners()])
 
   return (
+    <div><div className="w-full h-[40vh] relative overflow-hidden bg-black"><img src="/images/stage_mvp.jpg" alt="Hero" className="w-full h-full object-cover opacity-60" /></div>
     <Section>
       <Heading as="h1" size="display">
         How KNEST works.
@@ -117,5 +118,6 @@ export default async function EcosystemPage() {
         )}
       </div>
     </Section>
+    </div>
   )
 }

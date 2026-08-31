@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ButtonLink } from '@/components/ui'
+import { ButtonLink, Logo } from '@/components/ui'
 import { cn } from '@/lib/cn'
 
 const NAV = [
@@ -55,20 +55,15 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
   return (
     <header
       className={cn(
-        'sticky top-0 z-50 transition-[background-color,border-color] duration-200',
+        'sticky top-0 z-50 transition-all duration-500',
         scrolled || open
-          ? 'border-b border-[var(--color-line)] bg-[var(--color-paper)]/95 backdrop-blur-md'
-          : 'border-b border-transparent bg-[var(--color-paper)]/70 backdrop-blur-md',
+          ? 'border-b border-[var(--color-line)]/40 bg-[var(--color-paper)]/95 backdrop-blur-2xl shadow-[0_4px_30px_rgba(0,0,0,0.04)]'
+          : 'border-b border-transparent bg-gradient-to-b from-[var(--color-paper)] via-[var(--color-paper)]/80 to-transparent backdrop-blur-md',
       )}
     >
       <div className="mx-auto flex h-[4.5rem] w-full max-w-[1280px] items-center justify-between px-6 md:px-10">
         <Link href="/" className="flex items-baseline gap-2">
-          <span className="font-[family-name:var(--font-display)] text-lg font-semibold tracking-[-0.01em]">
-            KNEST
-          </span>
-          <span aria-hidden className="hidden text-[length:var(--text-micro)] uppercase tracking-[0.16em] text-[var(--color-ink-muted)] sm:inline">
-            KIIT
-          </span>
+          <Logo />
         </Link>
 
         <nav aria-label="Main" className="hidden items-center gap-7 lg:flex">

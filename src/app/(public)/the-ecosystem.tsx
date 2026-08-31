@@ -1,48 +1,60 @@
 import Link from 'next/link'
-import { Heading } from '@/components/ui'
+import { Reveal, RevealHeading } from '@/components/ui'
 import { TripleHelix } from '@/components/content/triple-helix'
 import { listPartners } from '@/server/content/partners'
+import { motion } from 'framer-motion'
 
-/**
- * THE ECOSYSTEM — signature experience 04 (CONTENT_SPEC.md §1.8). The real
- * Triple Helix diagram (shared with /ecosystem, not a duplicate) plus a
- * light pull of partners — Partners has no `featured` field (noted in
- * 7-9.8), so this shows the first few published partners rather than
- * inventing one.
- */
 export async function TheEcosystem() {
   const partners = await listPartners(6)
 
   return (
-    <div>
-      <Heading as="h2" size="display">
-        Nobody builds alone.
-      </Heading>
-      <p className="mt-4 max-w-[56ch] text-[var(--color-ink-soft)]">
-        KNEST connects students, founders, mentors, researchers, industry partners and investors
-        across KIIT. Your idea is one introduction away from someone who can help.
-      </p>
+    <section className="relative py-32 px-6 md:px-10 mx-auto max-w-7xl">
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[var(--color-paper-soft)] to-transparent opacity-50 pointer-events-none -z-10 rounded-[var(--radius-xl)]"></div>
+      
+      <div className="text-center md:text-left flex flex-col md:flex-row gap-12 md:gap-24 items-center">
+        <div className="flex-1 max-w-xl">
+          <RevealHeading size="display" className="tracking-tighter">
+            Nobody builds alone.
+          </RevealHeading>
+          <Reveal delay={0.2}>
+            <p className="mt-6 text-[length:var(--text-title)] text-[var(--color-ink-soft)] font-light leading-relaxed">
+              KNEST connects students, founders, mentors, researchers, industry partners and investors
+              across KIIT. Your idea is one introduction away from someone who can help.
+            </p>
+          </Reveal>
+          
+          <Reveal delay={0.4}>
+            <Link
+              href="/ecosystem"
+              className="mt-10 inline-flex items-center px-8 py-4 rounded-full bg-[var(--color-ink)] text-white hover:bg-[var(--color-signal)] transition-colors duration-300 font-medium text-[length:var(--text-small)]"
+            >
+              See the full ecosystem
+              <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+            </Link>
+          </Reveal>
+        </div>
 
-      <div className="mt-10">
-        <TripleHelix />
+        <div className="flex-1 w-full relative">
+          <Reveal delay={0.6}>
+            <div className="relative z-10 scale-90 md:scale-100 origin-center">
+              <TripleHelix />
+            </div>
+          </Reveal>
+        </div>
       </div>
 
       {partners.length > 0 && (
-        <div className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-4">
-          {partners.map((partner) => (
-            <span key={partner.id} className="text-[length:var(--text-small)] text-[var(--color-ink-muted)]">
-              {partner.name}
-            </span>
-          ))}
-        </div>
+        <Reveal delay={0.8} className="mt-24 pt-12 border-t border-[var(--color-line)]">
+          <p className="text-[length:var(--text-micro)] text-[var(--color-ink-muted)] uppercase tracking-widest font-semibold mb-8 text-center md:text-left">Selected Partners</p>
+          <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-12 gap-y-8">
+            {partners.map((partner) => (
+              <span key={partner.id} className="text-[length:var(--text-body)] text-[var(--color-ink-soft)] hover:text-[var(--color-ink)] transition-colors duration-300 font-medium">
+                {partner.name}
+              </span>
+            ))}
+          </div>
+        </Reveal>
       )}
-
-      <Link
-        href="/ecosystem"
-        className="mt-8 inline-flex items-center text-[length:var(--text-small)] font-medium text-[var(--color-signal)]"
-      >
-        See the full ecosystem →
-      </Link>
-    </div>
+    </section>
   )
 }

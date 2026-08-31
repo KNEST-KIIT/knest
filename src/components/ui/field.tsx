@@ -60,10 +60,12 @@ export function Field({
 }
 
 const control =
-  'w-full bg-white border border-[var(--color-line)] rounded-[var(--radius-sm)] ' +
-  'px-4 text-[length:var(--text-body)] transition-colors ' +
+  'w-full bg-white/60 backdrop-blur-md border border-[var(--color-line)]/60 rounded-[var(--radius-md)] ' +
+  'px-4 text-[length:var(--text-body)] transition-all duration-300 ease-out shadow-sm ' +
+  'hover:border-[var(--color-archive)]/50 hover:bg-white hover:shadow-md ' +
+  'focus:border-[var(--color-signal)] focus:ring-4 focus:ring-[var(--color-signal)]/10 focus:outline-none focus:bg-white ' +
   'placeholder:text-[var(--color-ink-muted)] ' +
-  'aria-[invalid=true]:border-[var(--color-critical)] ' +
+  'aria-[invalid=true]:border-[var(--color-critical)] aria-[invalid=true]:ring-[var(--color-critical)]/20 ' +
   'disabled:bg-[var(--color-paper-soft)] disabled:cursor-not-allowed'
 
 export function Input({
@@ -87,8 +89,18 @@ export function Select({
   ...props
 }: React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (
-    <select className={cn(control, 'h-12 pr-10', className)} {...props}>
-      {children}
-    </select>
+    <div className={cn("relative group", className)}>
+      <select 
+        className={cn(control, 'appearance-none h-12 w-full pr-11 cursor-pointer')} 
+        {...props}
+      >
+        {children}
+      </select>
+      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-[var(--color-ink-muted)] group-hover:text-[var(--color-signal)] transition-colors duration-300">
+        <svg className="w-4 h-4 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+    </div>
   )
 }

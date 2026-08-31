@@ -79,6 +79,7 @@ async function main() {
 
   const { seedCms } = await import('./seed-cms')
   await seedCms()
+  
 
   console.log('\nNo startups, mentors, metrics or testimonials were seeded (spec §46).')
   await pool.end()

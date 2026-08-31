@@ -87,6 +87,7 @@ export default async function EventsPage({
   }
 
   return (
+    <div><div className="w-full h-[40vh] relative overflow-hidden bg-black"><img src="/images/hero_bg.jpg" alt="Hero" className="w-full h-full object-cover opacity-60" /></div>
     <Section>
       <Heading as="h1" size="display">
         What&rsquo;s on.
@@ -106,5 +107,6 @@ export default async function EventsPage({
         <EventsList filters={filters} />
       </div>
     </Section>
+    </div>
   )
 }

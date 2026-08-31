@@ -65,6 +65,7 @@ export default async function StartupsPage({
   const filters: Filters = { stage: params.stage, sector: params.sector }
 
   return (
+    <div><div className="w-full h-[40vh] relative overflow-hidden bg-black"><img src="/images/stage_scaling.jpg" alt="Hero" className="w-full h-full object-cover opacity-60" /></div>
     <Section>
       <Heading as="h1" size="display">
         Built with KNEST.
@@ -84,5 +85,6 @@ export default async function StartupsPage({
         <StartupsList filters={filters} />
       </div>
     </Section>
+    </div>
   )
 }

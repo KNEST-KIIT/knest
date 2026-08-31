@@ -86,6 +86,7 @@ export default async function ResourcesPage({
   const filters: Filters = { stage: params.stage, format: params.format }
 
   return (
+    <div><div className="w-full h-[40vh] relative overflow-hidden bg-black"><img src="/images/stage_exploring.jpg" alt="Hero" className="w-full h-full object-cover opacity-60" /></div>
     <Section>
       <Heading as="h1" size="display">
         Start where you are.
@@ -105,5 +106,6 @@ export default async function ResourcesPage({
         <ResourcesList filters={filters} />
       </div>
     </Section>
+    </div>
   )
 }

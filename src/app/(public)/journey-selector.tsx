@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { ButtonLink, Heading, LiveRegion } from '@/components/ui'
 
 const OPTIONS = [
@@ -77,9 +78,9 @@ export function JourneySelector({ signedIn }: { signedIn: boolean }) {
       </p>
 
       <div className="mt-10 grid gap-6 lg:grid-cols-[1fr_1fr]">
-        <div role="radiogroup" aria-label="Where are you right now?" className="flex flex-col gap-3">
+        <motion.div layout role="radiogroup" aria-label="Where are you right now?" className="flex flex-col gap-3">
           {OPTIONS.map((opt, i) => (
-            <button
+            <motion.button layout initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: i * 0.1 }}
               key={opt.label}
               type="button"
               role="radio"
@@ -92,13 +93,21 @@ export function JourneySelector({ signedIn }: { signedIn: boolean }) {
               }`}
             >
               {opt.label}
-            </button>
+            </motion.button>
           ))}
-        </div>
+        </motion.div>
 
         <div className="flex items-center">
+          <AnimatePresence mode="wait">
           {option ? (
-            <div className="w-full rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-[var(--color-paper-soft)] p-8 shadow-[var(--shadow-raised)]">
+            <motion.div 
+              key={selected}
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: -10 }}
+              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              className="w-full rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-[var(--color-paper-soft)] p-8 shadow-[var(--shadow-raised)]"
+            >
               {/* The reveal replaces the "pick one" prompt with no page
                   reload — a screen reader user needs this announced the
                   same way a filter-count change already is elsewhere. */}
@@ -109,12 +118,19 @@ export function JourneySelector({ signedIn }: { signedIn: boolean }) {
               <ButtonLink href={destinationFor(option.href)} className="mt-6">
                 {option.cta} →
               </ButtonLink>
-            </div>
+            </motion.div>
           ) : (
-            <p className="text-[length:var(--text-small)] text-[var(--color-ink-muted)]">
+            <motion.p 
+              key="empty"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="text-[length:var(--text-small)] text-[var(--color-ink-muted)]"
+            >
               Pick whichever feels true right now.
-            </p>
+            </motion.p>
           )}
+          </AnimatePresence>
         </div>
       </div>
     </div>

@@ -15,25 +15,12 @@ const SECTION_KEYS = [
 ] as const
 
 const PERSON_LINES = [
-  'Maybe you’ve had an idea.',
-  'Maybe you’ve noticed something that doesn’t work.',
-  'Maybe you’ve wondered why nobody has fixed it.',
-  'Maybe you’ve never thought of yourself as an entrepreneur.',
-  'You don’t need to.',
-  'Start with the question.',
+  'You just need an obsession.',
+  'You need to hate inefficiency.',
+  'You need to be willing to fail in public.',
+  'We will teach you the rest.',
 ]
 
-/**
- * Initialises the homepage global.
- *
- * The section list is a fixed set that an editor reorders and toggles but
- * cannot add to, so it has to exist before they open the page — an empty array
- * would leave them with nothing to arrange. Existing rows are preserved on
- * re-run so a real edit is never overwritten by a redeploy.
- *
- * Copy here is the default from CONTENT_SPEC.md. No startups, mentors, metrics
- * or testimonials are seeded (spec §46) — those sections ship empty and say so.
- */
 export async function seedCms() {
   const payload = await getPayload({ config })
   const existing = await payload.findGlobal({ slug: 'homepage', depth: 0 })
@@ -48,30 +35,23 @@ export async function seedCms() {
     slug: 'homepage',
     data: {
       sections,
-      heroHeadline: existing?.heroHeadline ?? 'WHAT IF YOU\nACTUALLY BUILT IT?',
-      heroSubhead:
-        existing?.heroSubhead ??
-        'Most ideas stay ideas. Not because they were bad — because nobody ever took the next step.',
-      heroPrimaryCta: existing?.heroPrimaryCta ?? 'Start your journey',
-      heroSecondaryCta: existing?.heroSecondaryCta ?? 'Explore programs',
-      problemHeading: existing?.problemHeading ?? 'THE HARDEST PART ISN’T THE IDEA.',
-      problemBody:
-        existing?.problemBody ??
-        'You’ve probably had one. In a lecture, on a commute, watching something work badly and thinking someone should fix this.\n\nThen the semester moved on.\n\nThe gap between noticing something and building something is where almost everything is lost. Not to a lack of talent. To a lack of a next step.',
-      personHeading: existing?.personHeading ?? 'YOU DON’T HAVE TO BE “AN ENTREPRENEUR” YET.',
-      personLines:
-        existing?.personLines?.length
-          ? existing.personLines
-          : PERSON_LINES.map((line) => ({ line })),
-      knestHeading: existing?.knestHeading ?? 'KNEST IS WHERE YOU FIND OUT WHAT HAPPENS NEXT.',
-      knestBody:
-        existing?.knestBody ??
-        'We’re KIIT’s innovation and entrepreneurship ecosystem: programs, mentors, workspace, industry access and a community of people building things — open to every student, at every stage, including the stage where you have nothing but a question.',
-      closingHeading: existing?.closingHeading ?? 'THERE IS SOMETHING YOU COULD BUILD.',
-      closingBody: existing?.closingBody ?? 'Let’s find out what it is.',
-      closingCta: existing?.closingCta ?? 'Start your journey',
+      heroHeadline: 'THE MOST DANGEROUS THING YOU CAN DO IS GRADUATE WITH JUST A DEGREE.',
+      heroSubhead: 'While everyone else is memorising the past, a quiet minority is busy building the future. The infrastructure, capital, and network you need are already here. The only thing missing is you.',
+      heroPrimaryCta: 'Stop spectating. Build.',
+      heroSecondaryCta: 'Explore programs',
+      problemHeading: 'THE HARDEST PART ISN\'T THE IDEA. IT\'S THE EXECUTION.',
+      problemBody: 'You\'ve probably had one. Sitting in a lecture, noticing a broken system, and thinking someone should fix it.\n\nThe gap between noticing and building is where 99% of potential is lost. Not to a lack of talent. To a lack of a next step. We are the next step.',
+      personHeading: 'YOU DON\'T HAVE TO BE \'AN ENTREPRENEUR\' YET.',
+      personLines: PERSON_LINES.map((line, i) => ({
+        id: String(i),
+        line,
+      })),
+      knestHeading: 'KNEST IS THE INFRASTRUCTURE FOR AMBITION.',
+      knestBody: 'We don\'t just run programs. We provide the capital, the makerspaces, the industry networks, and the intense, high-agency community you need to turn a prototype into a scalable venture.',
+      closingHeading: 'THE CAPITAL IS WAITING. THE LABS ARE OPEN.',
+      closingBody: 'You have a four-year window to build something that scales beyond your own time. Decide if you are a spectator or a founder.',
+      closingCta: 'Apply Now',
     },
   })
-
-  console.log(`✓ homepage initialised with ${sections.length} sections`)
+  console.log('Seeded homepage')
 }

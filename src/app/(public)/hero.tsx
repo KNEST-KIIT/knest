@@ -1,45 +1,57 @@
-import { ButtonLink, Heading } from '@/components/ui'
+import Link from 'next/link'
+import { ButtonLink } from '@/components/ui'
+import { Reveal, RevealHeading } from '@/components/ui'
 import type { Homepage } from '@/payload/payload-types'
 
-/**
- * WHAT IF? — signature experience 01 (CONTENT_SPEC.md §1.1). Type-only, no
- * stock photography, no decorative gradient wash — the restraint is the
- * point, and it's also what keeps this from reading like a generic SaaS
- * hero. The only motion is a one-time rise+fade on the headline; everything
- * else on the page after this renders in its final state immediately.
- */
 export function Hero({ homepage }: { homepage: Homepage }) {
   return (
-    <div className="flex min-h-[90vh] flex-col justify-center px-6 py-24 md:px-10">
-      <div className="mx-auto w-full max-w-[1280px]">
-        <p className="animate-rise-fade flex items-center gap-3 text-[length:var(--text-micro)] font-semibold uppercase tracking-[0.18em] text-[var(--color-signal)]">
-          <span aria-hidden className="h-px w-8 bg-[var(--color-signal)]" />
-          KIIT&rsquo;s innovation ecosystem
-        </p>
-
-        <Heading
-          as="h1"
-          size="hero"
-          className="animate-rise-fade mt-5 whitespace-pre-line"
-          style={{ animationDelay: '0.08s' }}
-        >
-          {homepage.heroHeadline}
-        </Heading>
-        <p
-          className="animate-rise-fade mt-6 max-w-[52ch] text-[length:var(--text-heading)] text-[var(--color-ink-soft)]"
-          style={{ animationDelay: '0.18s' }}
-        >
-          {homepage.heroSubhead}
-        </p>
-        <div className="animate-rise-fade mt-10 flex flex-wrap gap-4" style={{ animationDelay: '0.3s' }}>
-          <ButtonLink href="/signup" size="lg">
-            {homepage.heroPrimaryCta}
-          </ButtonLink>
-          {homepage.heroSecondaryCta && (
-            <ButtonLink href="/programs" variant="secondary" size="lg">
-              {homepage.heroSecondaryCta}
-            </ButtonLink>
+    <div className="relative min-h-[95vh] flex flex-col justify-center overflow-hidden bg-[var(--color-ink)]">
+      <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 bg-[var(--color-ink)]/70 mix-blend-multiply z-10"></div>
+        <div className="absolute inset-0 bg-gradient-to-tr from-[var(--color-ink)] via-[var(--color-ink)]/80 to-transparent z-10"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-[var(--color-signal)]/20 via-transparent to-transparent z-10 mix-blend-color-dodge"></div>
+        <img 
+          src="/images/hero_bg.jpg" 
+          alt="Knest Infrastructure" 
+          className="w-full h-full object-cover object-center opacity-70 scale-105 motion-safe:animate-[pulse_10s_ease-in-out_infinite_alternate]"
+        />
+      </div>
+      
+      <div className="relative z-20 container mx-auto px-6 md:px-10">
+        <div className="max-w-4xl">
+          <RevealHeading 
+            size="title" 
+            className="text-white text-5xl md:text-6xl lg:text-[72px] font-semibold tracking-tight leading-[1.1] md:leading-[1.05] drop-shadow-xl max-w-4xl"
+          >
+            {homepage.heroHeadline}
+          </RevealHeading>
+          
+          {homepage.heroSubhead && (
+            <Reveal delay={0.4}>
+              <p className="mt-8 max-w-2xl text-lg md:text-xl text-[var(--color-paper-soft)] font-light leading-relaxed">
+                {homepage.heroSubhead}
+              </p>
+            </Reveal>
           )}
+
+          <Reveal delay={0.6} className="mt-10 flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+            <ButtonLink href="/signup">
+              <span>{homepage.heroPrimaryCta}</span>
+              <svg className="ml-1 w-4 h-4 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+              </svg>
+            </ButtonLink>
+            
+            {homepage.heroSecondaryCta && (
+              <ButtonLink 
+                href="/programs" 
+                variant="secondary"
+                className="border-white/30 text-white hover:bg-white hover:text-[var(--color-ink)]"
+              >
+                {homepage.heroSecondaryCta}
+              </ButtonLink>
+            )}
+          </Reveal>
         </div>
       </div>
     </div>
