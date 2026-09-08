@@ -73,8 +73,13 @@ export default async function AdminApplicationsPage({
         Applications
       </Heading>
 
+      {/* Both selects had no accessible name — no label, no aria-label, and a
+          first option ("All programs") that is a value rather than a name. axe
+          reported it as a critical select-name violation; a screen reader
+          announced two unlabelled combo boxes. The filter row is deliberately
+          compact with no visible labels, so the name goes on the control. */}
       <form className="mt-6 flex flex-wrap gap-4" method="get">
-        <select name="program" defaultValue={params.program ?? ''} className="h-11 rounded-[var(--radius-sm)] border border-[var(--color-line)] bg-white px-3">
+        <select name="program" aria-label="Filter by program" defaultValue={params.program ?? ''} className="h-11 rounded-[var(--radius-sm)] border border-[var(--color-line)] bg-white px-3">
           <option value="">All programs</option>
           {programs.docs.map((p) => (
             <option key={p.id} value={p.id}>
@@ -82,7 +87,7 @@ export default async function AdminApplicationsPage({
             </option>
           ))}
         </select>
-        <select name="status" defaultValue={params.status ?? ''} className="h-11 rounded-[var(--radius-sm)] border border-[var(--color-line)] bg-white px-3">
+        <select name="status" aria-label="Filter by status" defaultValue={params.status ?? ''} className="h-11 rounded-[var(--radius-sm)] border border-[var(--color-line)] bg-white px-3">
           <option value="">All statuses</option>
           {Object.entries(STATUS_LABELS).map(([value, label]) => (
             <option key={value} value={value}>

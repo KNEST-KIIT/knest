@@ -15,7 +15,12 @@ export default async function OnboardingLayout({ children }: { children: React.R
       <SkipLink />
       <div className="min-h-dvh bg-[var(--color-paper)]">
         <header className="border-b border-[var(--color-line)] px-6 py-4">
-          <Link href="/" className="font-[family-name:var(--font-display)] text-base uppercase tracking-[0.12em]">
+          {/* A 20px target, and this flow's only exit. */}
+          <Link
+            href="/"
+            aria-label="KNEST — home"
+            className="-mx-2 inline-flex h-11 items-center rounded-[var(--radius-sm)] px-2 font-[family-name:var(--font-display)] text-base uppercase tracking-[0.12em]"
+          >
             KNEST
           </Link>
         </header>
