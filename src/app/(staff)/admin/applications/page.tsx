@@ -25,7 +25,12 @@ const COLUMNS: Column<Row>[] = [
   {
     header: 'Applicant',
     cell: (row) => (
-      <Link href={`/admin/applications/${row.application.id}`} className="font-medium text-[var(--color-signal)]">
+      // The row's primary action, and an 18px target until each row got a
+      // name to render — a defect that only exists once there are rows.
+      <Link
+        href={`/admin/applications/${row.application.id}`}
+        className="-my-3 flex min-h-11 items-center py-3 font-medium text-[var(--color-signal)]"
+      >
         {row.applicant.name ?? row.applicant.email}
       </Link>
     ),
@@ -41,7 +46,10 @@ const COLUMNS: Column<Row>[] = [
 function Card({ row }: { row: Row }) {
   return (
     <div className="flex flex-col gap-1">
-      <Link href={`/admin/applications/${row.application.id}`} className="font-medium text-[var(--color-signal)]">
+      <Link
+        href={`/admin/applications/${row.application.id}`}
+        className="-my-2 flex min-h-11 items-center py-2 font-medium text-[var(--color-signal)]"
+      >
         {row.applicant.name ?? row.applicant.email}
       </Link>
       <p className="text-[length:var(--text-small)] text-[var(--color-ink-muted)]">{row.programTitle}</p>

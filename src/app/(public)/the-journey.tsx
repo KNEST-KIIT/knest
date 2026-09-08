@@ -179,7 +179,10 @@ export function TheJourney({ allPrograms }: { allPrograms: Program[] }) {
                       </div>
                     ) : (
                       <div className="flex flex-col gap-5 pt-6 border-t border-[var(--color-line-invert)]/20">
-                        <h4 className="text-[10px] text-[var(--color-paper)]/40 uppercase tracking-[0.2em] font-bold">Available Infrastructure</h4>
+                        {/* paper/40 on this card measured 3.57:1 — it only became visible once
+                            programmes had content to list. /70 is the muted-on-dark
+                            tone used elsewhere in this section. */}
+                        <h4 className="text-[10px] text-[var(--color-paper)]/70 uppercase tracking-[0.2em] font-bold">Available Infrastructure</h4>
                         <ul className="flex flex-col gap-3">
                           {programs.slice(0, 3).map((program) => (
                             <li key={program.id}>
