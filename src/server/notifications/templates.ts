@@ -38,3 +38,51 @@ export function applicationStatusChangedTemplate(
     text: `${STATUS_BODY[status](program)}\n\nSee the full update at /dashboard/applications.`,
   }
 }
+
+/**
+ * Level decision copy.
+ *
+ * The same one-subject rule as applications, and for a sharper reason: a level
+ * is a judgement about the person's venture, so "Your level request was
+ * rejected" arriving in a lock-screen preview — in a lecture, on a bus — is
+ * exactly the harm STATUS_SUBJECT exists to prevent. One subject, outcome
+ * inside.
+ */
+export function levelDecisionTemplate(
+  approved: boolean,
+  levelLabel: string,
+  note: string | null,
+) {
+  const outcome = approved
+    ? `You're now at level ${levelLabel}. What that unlocks is listed on your dashboard.`
+    : `We're not moving you to ${levelLabel} yet. That's a decision about the evidence in this request, not about you or what you're building.`
+
+  return {
+    subject: 'Your founder level — an update',
+    text: note ? `${outcome}\n\n${note}` : outcome,
+  }
+}
+
+/** Sent to a lab's managers when someone asks for time. */
+export function labBookingRequestedTemplate(labName: string, founderName: string) {
+  return {
+    subject: `A booking request for ${labName}`,
+    text: `${founderName} has asked for time in ${labName}. Approve or decline it from your dashboard.`,
+  }
+}
+
+/** Sent to the founder once a lab manager decides. */
+export function labBookingDecisionTemplate(
+  approved: boolean,
+  labName: string,
+  when: string,
+  note: string | null,
+) {
+  const outcome = approved
+    ? `Your booking for ${labName} on ${when} is confirmed.`
+    : `Your booking request for ${labName} on ${when} wasn't approved.`
+  return {
+    subject: `Your booking for ${labName} — an update`,
+    text: note ? `${outcome}\n\n${note}` : outcome,
+  }
+}

@@ -2,6 +2,7 @@ import { notFound, redirect } from 'next/navigation'
 import type { Session } from 'next-auth'
 import { auth } from './index'
 import { canAccessArea, type AdminArea, type PlatformRole, type StaffRole } from './roles'
+import { UnauthorizedError } from './errors'
 
 export type SessionUser = Session['user']
 
@@ -70,12 +71,8 @@ export async function requireAdminArea(
  * For route handlers and server actions, which need a value back rather than a
  * redirect. Throws `UnauthorizedError`, caught at the API boundary.
  */
-export class UnauthorizedError extends Error {
-  constructor(readonly status: 401 | 403 = 401) {
-    super(status === 401 ? 'Not signed in' : 'Not permitted')
-    this.name = 'UnauthorizedError'
-  }
-}
+/** Re-exported so every existing `from '@/server/auth/guards'` import is unchanged. */
+export { UnauthorizedError } from './errors'
 
 export async function requireUserOrThrow(): Promise<SessionUser> {
   const user = await getSessionUser()

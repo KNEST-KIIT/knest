@@ -17,6 +17,11 @@ export const ADMIN_AREAS = {
   applications: ['program_manager', 'reviewer'],
   startups: ['startup_manager'],
   mentors: ['mentor_manager'],
+  // Deciding a founder's level is the same motion as reviewing an application
+  // — read the evidence, decide — so it lands with the same reviewers, plus
+  // the startup manager, who is the person who actually knows whether a
+  // venture is where it claims to be.
+  levels: ['program_manager', 'reviewer', 'startup_manager'],
   users: [],
   settings: [],
   // Cross-program, ecosystem-wide — super_admin only, same as users/settings.

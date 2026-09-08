@@ -10,6 +10,13 @@ declare module 'next-auth' {
       staffRole: StaffRole | null
       onboardingComplete: boolean
       journeyStage: JourneyStage | null
+      /**
+       * What KNEST has verified, 1–7. Separate from `journeyStage`, which is
+       * what the person told us. Re-read from the database on every session
+       * read like `staffRole`, so a granted level takes effect on the next
+       * request rather than when a token expires.
+       */
+      founderLevel: number
     } & DefaultSession['user']
   }
 }

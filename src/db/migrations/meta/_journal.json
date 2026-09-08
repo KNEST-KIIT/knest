@@ -43,6 +43,13 @@
       "when": 1788069534217,
       "tag": "0005_warm_outlaw_kid",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1788894064562,
+      "tag": "0006_spotty_blur",
+      "breakpoints": true
     }
   ]
 }

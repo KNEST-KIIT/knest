@@ -15,6 +15,9 @@ export const RATE_LIMITS = {
   passwordResetRequest: { capacity: 5, refillIntervalSeconds: 60 * 60 },
   applicationStart: { capacity: 10, refillIntervalSeconds: 60 * 60 },
   fileUpload: { capacity: 20, refillIntervalSeconds: 60 * 60 },
+  /** A level request is a considered thing, not something to spam a queue with. */
+  levelRequest: { capacity: 3, refillIntervalSeconds: 24 * 60 * 60 },
+  labBooking: { capacity: 10, refillIntervalSeconds: 24 * 60 * 60 },
 } as const satisfies Record<string, RateLimitConfig>
 
 /**

@@ -44,6 +44,7 @@ export const authConfig = {
           staffRole: true,
           onboardingCompletedAt: true,
           journeyStage: true,
+          founderLevel: true,
         },
       })
 
@@ -58,6 +59,7 @@ export const authConfig = {
           staffRole: row?.staffRole ?? null,
           onboardingComplete: row?.onboardingCompletedAt != null,
           journeyStage: row?.journeyStage ?? null,
+          founderLevel: row?.founderLevel ?? 1,
         },
       }
     },

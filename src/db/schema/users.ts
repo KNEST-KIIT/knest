@@ -59,8 +59,34 @@ export const users = appSchema.table(
     mentorAvailability: mentorAvailability('mentor_availability'),
 
     // --- Journey (spec §09) ---
+    /**
+     * Self-declared and freely re-editable, deliberately. Onboarding asks
+     * "Where are you right now?" and says there is no wrong answer; this drives
+     * recommendations and nothing else. It grants no access — see
+     * `founderLevel` below for the half that does.
+     */
     journeyStage: journeyStage('journey_stage'),
     onboardingCompletedAt: timestamp('onboarding_completed_at', {
+      mode: 'date',
+      withTimezone: true,
+    }),
+
+    // --- Level (granted, not claimed) ---
+    /**
+     * What KNEST has verified, as opposed to what the founder says. 1–7,
+     * matching the seven journey-stage names, granted only through an approved
+     * `level_requests` row. Capabilities are keyed off it in
+     * `src/server/founders/levels.ts`; level 3 is where lab booking unlocks.
+     *
+     * An integer rather than a Postgres enum because the entire point is
+     * ordered comparison — "level 3 and above" has to be expressible as
+     * `>= 3`. The seven-value `journey_stage` enum has no ordering helper
+     * anywhere in the codebase, and inventing one to rank an enum would be a
+     * worse version of a column that can already be compared.
+     */
+    founderLevel: integer('founder_level').notNull().default(1),
+    /** Null until the first grant; level 1 is where everyone starts, not something awarded. */
+    founderLevelGrantedAt: timestamp('founder_level_granted_at', {
       mode: 'date',
       withTimezone: true,
     }),

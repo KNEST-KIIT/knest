@@ -97,4 +97,40 @@ export const notificationType = appSchema.enum('notification_type', [
   'application_received',
   'application_status_changed',
   'application_deadline_reminder',
+  'level_request_received',
+  'level_decision',
+  'lab_booking_received',
+  'lab_booking_decision',
+])
+
+/**
+ * A founder's request to be moved up a level (spec §02 — levels are granted by
+ * KNEST, never self-declared).
+ *
+ * `withdrawn` is the founder's own exit from a pending request; the other two
+ * ends are staff decisions. There is no `needs_evidence` state on purpose: a
+ * request that is not good enough is rejected with a note, and the founder
+ * opens a new one. A request that can be sent back and forth indefinitely has
+ * no queue depth anyone can trust.
+ */
+export const levelRequestStatus = appSchema.enum('level_request_status', [
+  'pending',
+  'approved',
+  'rejected',
+  'withdrawn',
+])
+
+/**
+ * A booking of a KIIT lab.
+ *
+ * `requested` until the lab's own manager decides — KNEST does not own the labs
+ * it is brokering access to, so nothing is confirmed by the act of asking.
+ * `cancelled` is reachable by the founder before the slot, and by a manager
+ * after approving, which is why it is separate from `rejected`.
+ */
+export const labBookingStatus = appSchema.enum('lab_booking_status', [
+  'requested',
+  'approved',
+  'rejected',
+  'cancelled',
 ])
