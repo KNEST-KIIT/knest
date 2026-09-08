@@ -1,0 +1,128 @@
+/*
+ * KNEST's identity, applied to Payload's admin.
+ *
+ * Out of the box the CMS is stock Payload: neutral grey on white, Payload's
+ * own mark in the corner, its own typeface. Next to the public site — oxford
+ * ink, warm parchment, a serif display face — it reads as a third-party tool
+ * someone bolted on, which is exactly the impression an editor should not get
+ * of their own product.
+ *
+ * This does not restyle Payload's components. It re-points the small set of
+ * theme variables they already read, so every control keeps the behaviour and
+ * the spacing Payload ships and simply arrives in KNEST's colours. Anything
+ * Payload changes internally continues to work; only the palette is ours.
+ *
+ * Loaded after `@payloadcms/next/css` in (payload)/layout.tsx, so these win on
+ * order rather than on specificity or !important.
+ */
+
+:root,
+html[data-theme='light'] {
+  /* Ground and ink, straight from src/styles/tokens.css. */
+  --theme-bg: #f8f4e9;
+  --theme-input-bg: #ffffff;
+  --theme-text: #0d1321;
+  --theme-border-color: #ddd0a8;
+
+  /*
+   * Payload's elevation ramp runs 0 (page) to 1000 (max contrast) and every
+   * surface, border and muted label is picked from it. Rebuilt here as a
+   * parchment-to-ink ramp so cards, popovers and table stripes all land on the
+   * brand rather than on grey. The steps stay monotonic — Payload relies on
+   * that ordering for legibility, and inverting any of them breaks contrast in
+   * components this file never sees.
+   */
+  --theme-elevation-0: #ffffff;
+  --theme-elevation-50: #faf7ef;
+  --theme-elevation-100: #f3ecda;
+  --theme-elevation-150: #ede4c9;
+  --theme-elevation-200: #e4d8b8;
+  --theme-elevation-250: #ddd0a8;
+  --theme-elevation-300: #cdbf95;
+  --theme-elevation-350: #b9a97f;
+  --theme-elevation-400: #9d8e69;
+  --theme-elevation-450: #7f7358;
+  --theme-elevation-500: #675f4c;
+  --theme-elevation-550: #545067;
+  --theme-elevation-600: #43415a;
+  --theme-elevation-650: #3a3a55;
+  --theme-elevation-700: #33344f;
+  --theme-elevation-750: #2b3350;
+  --theme-elevation-800: #232a43;
+  --theme-elevation-850: #1b2136;
+  --theme-elevation-900: #141a2a;
+  --theme-elevation-950: #101524;
+  --theme-elevation-1000: #0d1321;
+
+  /* Oxblood, the same accent the public site uses for "do this". */
+  --theme-success-50: #f4e4e2;
+  --theme-success-100: #ecd0cd;
+  --theme-success-500: #7a1f2b;
+  --theme-success-600: #6e1c27;
+  --theme-success-900: #4d1319;
+
+  /* Status colours are independent of the accent, so a destructive action
+     never reads as a brand flourish. */
+  --theme-error-50: #fdeaea;
+  --theme-error-500: #b91c1c;
+  --theme-error-900: #7f1414;
+  --theme-warning-50: #fdf2e2;
+  --theme-warning-500: #92400e;
+  --theme-warning-900: #5c2708;
+
+  /* The text face the rest of the app uses. `--font-display-family` is
+     injected by next/font on <html>; the fallbacks matter because the admin
+     is a separate route group and can render before that variable resolves. */
+  --font-body: var(--font-text-family), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-display-family), Georgia, 'Times New Roman', serif;
+}
+
+/* Payload's dark theme keeps its own ramp — inverting the parchment would
+   produce a muddy brown. The accent and typeface still come across. */
+html[data-theme='dark'] {
+  --theme-success-500: #b0707a;
+  --theme-success-600: #c08a92;
+  --font-body: var(--font-text-family), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Headings take the display serif, matching the public site's voice. */
+.payload__modal-container h1,
+.dashboard h1,
+.collection-list h1,
+.doc-header h1,
+.nav__label,
+.step-nav {
+  font-family: var(--font-serif);
+}
+
+/* The dashboard's collection cards read as a flat list of names; a KNEST card
+   is a surface with an edge, like the ones on the public site. */
+.dashboard__card,
+.card {
+  border: 1px solid var(--theme-border-color);
+  border-radius: 0.625rem; /* --radius-lg */
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+.dashboard__card:hover,
+.card:hover {
+  border-color: var(--theme-elevation-400);
+  box-shadow: 0 1px 2px rgb(13 19 33 / 0.05), 0 3px 8px rgb(13 19 33 / 0.05);
+}
+
+/* Group headings in the sidebar and on the dashboard: these are the labels
+   that make "Programmes / Ecosystem / Content / Institution / System" read as
+   an information architecture rather than an alphabetical dump. */
+.nav-group__label,
+.dashboard__label {
+  font-family: var(--font-body);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.6875rem;
+  color: var(--theme-elevation-500);
+}
+
+/* Keyboard focus, matching globals.css rather than Payload's default. */
+.payload-admin :focus-visible {
+  outline: 2px solid var(--theme-success-500);
+  outline-offset: 2px;
+}

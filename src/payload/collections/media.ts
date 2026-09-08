@@ -3,6 +3,8 @@ import { canWrite, isAnyStaff } from '../access'
 
 export const Media: CollectionConfig = {
   slug: 'media',
+  labels: { singular: 'Media item', plural: 'Media' },
+  admin: { group: 'System' },
   access: {
     read: () => true,
     create: isAnyStaff,

@@ -12,7 +12,8 @@ import { slugField } from '../fields/slug'
 export const Infrastructure: CollectionConfig = {
   slug: 'infrastructure',
   versions: { drafts: true },
-  admin: { useAsTitle: 'name', defaultColumns: ['name', 'spaceType', '_status'] },
+  labels: { singular: 'Space', plural: 'Spaces' },
+  admin: { group: 'Institution', useAsTitle: 'name', defaultColumns: ['name', 'spaceType', '_status'] },
   access: {
     read: readPublished,
     create: canWrite('content'),

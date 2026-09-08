@@ -14,7 +14,8 @@ import { slugField } from '../fields/slug'
 export const Resources: CollectionConfig = {
   slug: 'resources',
   versions: { drafts: true },
-  admin: {
+  labels: { singular: 'Resource', plural: 'Resources' },
+  admin: { group: 'Content',
     useAsTitle: 'title',
     defaultColumns: ['title', 'format', 'stages', '_status'],
   },

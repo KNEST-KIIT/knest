@@ -16,6 +16,7 @@ export const Startups: CollectionConfig = {
   slug: 'startups',
   versions: { drafts: true },
   admin: {
+    group: 'Ecosystem',
     useAsTitle: 'name',
     defaultColumns: ['name', 'stage', 'cohort', '_status'],
     description: 'Public profiles. Nothing private belongs here.',

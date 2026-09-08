@@ -6,6 +6,9 @@ import type { ServerFunctionClient } from 'payload'
 import { requireStaff } from '@/server/auth/guards'
 import { importMap } from './admin/importMap'
 import '@payloadcms/next/css'
+// After Payload's own stylesheet, so the theme variables it defines are the
+// ones being re-pointed rather than fought with !important.
+import './knest-admin.css'
 
 const serverFunction: ServerFunctionClient = async function (args) {
   'use server'

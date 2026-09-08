@@ -5,7 +5,8 @@ import { slugField } from '../fields/slug'
 export const Partners: CollectionConfig = {
   slug: 'partners',
   versions: { drafts: true },
-  admin: { useAsTitle: 'name', defaultColumns: ['name', 'type', '_status'] },
+  labels: { singular: 'Partner', plural: 'Partners' },
+  admin: { group: 'Ecosystem', useAsTitle: 'name', defaultColumns: ['name', 'type', '_status'] },
   access: {
     read: readPublished,
     create: canWrite('content'),

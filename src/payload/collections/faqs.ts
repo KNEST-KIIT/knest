@@ -3,7 +3,8 @@ import { canWrite, readAlways } from '../access'
 
 export const Faqs: CollectionConfig = {
   slug: 'faqs',
-  admin: { useAsTitle: 'question', defaultColumns: ['question', 'category'] },
+  labels: { singular: 'FAQ', plural: 'FAQs' },
+  admin: { group: 'Content', useAsTitle: 'question', defaultColumns: ['question', 'category'] },
   access: {
     read: readAlways,
     create: canWrite('content'),

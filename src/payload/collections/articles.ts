@@ -6,7 +6,8 @@ import { slugField } from '../fields/slug'
 export const Articles: CollectionConfig = {
   slug: 'articles',
   versions: { drafts: true },
-  admin: { useAsTitle: 'title', defaultColumns: ['title', 'publishedAt', '_status'] },
+  labels: { singular: 'Article', plural: 'Articles' },
+  admin: { group: 'Content', useAsTitle: 'title', defaultColumns: ['title', 'publishedAt', '_status'] },
   access: {
     read: readPublished,
     create: canWrite('content'),

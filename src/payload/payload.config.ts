@@ -28,7 +28,17 @@ export default buildConfig({
   // mirror: real accounts live in app.users (spec §32).
   // No `meta.titleSuffix`: the root layout's title template already appends
   // "— KNEST", and setting both produces "Dashboard — KNEST — KNEST".
-  admin: { user: Staff.slug },
+  admin: {
+    user: Staff.slug,
+    // KNEST's own mark in place of Payload's, so an editor is not looking at
+    // another product's branding inside their own CMS.
+    components: {
+      graphics: {
+        Icon: '/src/payload/components/graphics#AdminIcon',
+        Logo: '/src/payload/components/graphics#AdminLogo',
+      },
+    },
+  },
   collections: [
     // Grouped by what an editor is actually doing, not alphabetically.
     Programs,

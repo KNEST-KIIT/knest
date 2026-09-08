@@ -13,7 +13,8 @@ import { slugField } from '../fields/slug'
 export const Founders: CollectionConfig = {
   slug: 'founders',
   versions: { drafts: true },
-  admin: { useAsTitle: 'name', defaultColumns: ['name', 'school', '_status'] },
+  labels: { singular: 'Founder', plural: 'Founders' },
+  admin: { group: 'Ecosystem', useAsTitle: 'name', defaultColumns: ['name', 'school', '_status'] },
   access: {
     read: readPublished,
     create: canWrite('startups'),

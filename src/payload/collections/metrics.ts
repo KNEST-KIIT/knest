@@ -11,7 +11,8 @@ import { canWrite, readAlways } from '../access'
  */
 export const Metrics: CollectionConfig = {
   slug: 'metrics',
-  admin: {
+  labels: { singular: 'Metric', plural: 'Metrics' },
+  admin: { group: 'Institution',
     useAsTitle: 'label',
     defaultColumns: ['label', 'value', 'asOf'],
     description: 'Only verifiable numbers. Every one needs a date and a source.',

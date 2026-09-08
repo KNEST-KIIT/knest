@@ -25,7 +25,8 @@ export const Staff: CollectionConfig = {
     disableLocalStrategy: true,
     strategies: [authJsStrategy],
   },
-  admin: { hidden: true, useAsTitle: 'email' },
+  labels: { singular: 'Staff account', plural: 'Staff accounts' },
+  admin: { group: 'System', hidden: true, useAsTitle: 'email' },
   access: {
     read: ({ req }) => isStaff(staffRoleOf(req.user)),
     create: () => false,

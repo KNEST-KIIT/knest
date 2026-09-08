@@ -10,7 +10,8 @@ import { canWrite, readAlways } from '../access'
  */
 export const Testimonials: CollectionConfig = {
   slug: 'testimonials',
-  admin: { useAsTitle: 'attribution', defaultColumns: ['attribution', 'role', 'consentGiven'] },
+  labels: { singular: 'Testimonial', plural: 'Testimonials' },
+  admin: { group: 'Institution', useAsTitle: 'attribution', defaultColumns: ['attribution', 'role', 'consentGiven'] },
   access: {
     read: readAlways,
     create: canWrite('content'),

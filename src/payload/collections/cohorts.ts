@@ -10,7 +10,8 @@ import { canWrite, readAlways } from '../access'
  */
 export const Cohorts: CollectionConfig = {
   slug: 'cohorts',
-  admin: {
+  labels: { singular: 'Cohort', plural: 'Cohorts' },
+  admin: { group: 'Programs & cohorts',
     useAsTitle: 'name',
     defaultColumns: ['name', 'program', 'startsAt', 'status'],
     description: 'One run of a program.',

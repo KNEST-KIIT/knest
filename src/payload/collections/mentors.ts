@@ -17,7 +17,8 @@ import { slugField } from '../fields/slug'
 export const Mentors: CollectionConfig = {
   slug: 'mentors',
   versions: { drafts: true },
-  admin: {
+  labels: { singular: 'Mentor', plural: 'Mentors' },
+  admin: { group: 'Ecosystem',
     useAsTitle: 'name',
     defaultColumns: ['name', 'title', 'organization', '_status'],
     description: 'Reviewed before publishing.',

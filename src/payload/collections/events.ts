@@ -12,7 +12,8 @@ import { slugField } from '../fields/slug'
 export const Events: CollectionConfig = {
   slug: 'events',
   versions: { drafts: true },
-  admin: {
+  labels: { singular: 'Event', plural: 'Events' },
+  admin: { group: 'Content',
     useAsTitle: 'title',
     defaultColumns: ['title', 'startsAt', 'eventType', '_status'],
   },

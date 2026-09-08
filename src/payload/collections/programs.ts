@@ -23,6 +23,7 @@ export const Programs: CollectionConfig = {
   slug: 'programs',
   versions: { drafts: true },
   admin: {
+    group: 'Programs & cohorts',
     useAsTitle: 'title',
     defaultColumns: ['title', 'stage', 'applicationStatus', 'nextCohortStart', '_status'],
     description: 'Structured paths from idea to venture.',
