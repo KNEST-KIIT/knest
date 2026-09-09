@@ -24,7 +24,7 @@ export async function BuiltWithKnest({ homepage }: { homepage: Homepage }) {
           <Heading as="h2" size="display">
             Built with KNEST.
           </Heading>
-          <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {startups.slice(0, 6).map((startup) => (
               <LinkCard key={startup.id} href={`/startups/${startup.slug}`} label={`View ${startup.name}`}>
                 {startup.stage && <Tag tone="signal">{startup.stage}</Tag>}

@@ -62,8 +62,8 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
       )}
     >
       <div className="mx-auto flex h-[4.5rem] w-full max-w-[1280px] items-center justify-between px-6 md:px-10">
-        <Link href="/" className="flex items-baseline gap-2">
-          <Logo />
+        <Link href="/" className="flex items-center gap-2 group focus-visible:outline-[var(--color-signal)]">
+          <Logo size="md" />
         </Link>
 
         <nav aria-label="Main" className="hidden items-center gap-7 lg:flex">

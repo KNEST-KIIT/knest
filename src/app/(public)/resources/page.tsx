@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import { EmptyState, Heading, LinkCard, LiveRegion, Section, Tag } from '@/components/ui'
+import { PageHeader } from '@/components/layout/page-header'
 import { resultSummary } from '@/lib/result-summary'
 import { RESOURCES_EMPTY } from '@/lib/empty-state-copy'
 import { listResources, type ResourceFilters as Filters } from '@/server/content/resources'
@@ -8,7 +9,7 @@ import { ResourceFilters } from './filters'
 
 export const metadata: Metadata = {
   title: 'Resources',
-  description: 'Guides, templates and playbooks for each stage — start with where you actually are.',
+  description: 'Guides, templates, and playbooks for each stage of building a venture at KNEST.',
 }
 
 const FORMAT_LABELS: Record<string, string> = {
@@ -49,26 +50,42 @@ async function ResourcesList({ filters }: { filters: Filters }) {
   return (
     <>
       <LiveRegion message={summary} />
-      <p className="mb-4 text-[length:var(--text-small)] text-[var(--color-ink-muted)]">{summary}</p>
+      <p className="mb-6 font-mono text-xs uppercase tracking-wider text-[var(--color-ink-muted)]">
+        Showing {summary}
+      </p>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {resources.map((resource) => {
           const hosted = Boolean(resource.body)
           const href = hosted ? `/resources/${resource.slug}` : resource.externalUrl || '#'
           return (
             <LinkCard key={resource.id} href={href} label={`View ${resource.title}`}>
-              <Tag tone="archive">{FORMAT_LABELS[resource.format]}</Tag>
-              <Heading as="h2" size="heading" className="mt-4">
+              <div className="flex items-center justify-between border-b border-[var(--color-line)] pb-3">
+                <Tag tone="archive">{FORMAT_LABELS[resource.format] ?? resource.format}</Tag>
+                {resource.stages && resource.stages.length > 0 && (
+                  <span className="font-mono text-xs uppercase tracking-wider text-[var(--color-ink-muted)]">
+                    {resource.stages[0]}
+                  </span>
+                )}
+              </div>
+
+              <Heading as="h2" size="heading" className="mt-4 font-[family-name:var(--font-display)] text-2xl font-bold text-[var(--color-ink)]">
                 {resource.title}
               </Heading>
-              <p className="mt-2 text-[length:var(--text-small)] text-[var(--color-ink-soft)]">{resource.summary}</p>
-              {resource.readingMinutes && (
-                <p className="mt-4 text-[length:var(--text-small)] text-[var(--color-ink-muted)]">
-                  {resource.readingMinutes} min read
-                </p>
-              )}
-              <span className="mt-4 inline-block text-[length:var(--text-small)] font-medium text-[var(--color-signal)]">
-                {hosted ? 'Read →' : 'Visit →'}
-              </span>
+
+              <p className="mt-2 text-sm text-[var(--color-ink-soft)] font-light leading-relaxed line-clamp-2">
+                {resource.summary}
+              </p>
+
+              <div className="mt-6 flex items-center justify-between border-t border-[var(--color-line)]/60 pt-4 text-xs font-mono text-[var(--color-ink-muted)]">
+                {resource.readingMinutes ? (
+                  <span>{resource.readingMinutes} min read</span>
+                ) : (
+                  <span>Interactive Resource</span>
+                )}
+                <span className="font-bold uppercase tracking-widest text-[var(--color-signal)]">
+                  {hosted ? 'Read Guide →' : 'Access Tool →'}
+                </span>
+              </div>
             </LinkCard>
           )
         })}
@@ -86,26 +103,27 @@ export default async function ResourcesPage({
   const filters: Filters = { stage: params.stage, format: params.format }
 
   return (
-    <div><div className="w-full h-[40vh] relative overflow-hidden bg-black"><img src="/images/stage_exploring.jpg" alt="Hero" className="w-full h-full object-cover opacity-60" /></div>
-    <Section>
-      <Heading as="h1" size="display">
-        Start where you are.
-      </Heading>
-      <p className="mt-4 max-w-[52ch] text-[var(--color-ink-soft)]">
-        &ldquo;I have an idea&rdquo; leads to validation material. &ldquo;I am raising&rdquo; leads to
-        fundraising material. Filter by stage, not by guessing what to search for.
-      </p>
+    <div>
+      <PageHeader
+        kicker="Tactical Repository"
+        title="Start Where You Are."
+        description="Filter by where you are in the journey. 'I have an idea' leads to validation frameworks; 'I am raising' leads to investor pitch templates."
+        imageSrc="/images/stage_01_exploring.jpg"
+        imageAlt="KNEST Resources"
+        badgeText="Playbooks · Financial Models · Decks"
+      />
 
-      <div className="mt-10">
-        <Suspense>
-          <ResourceFilters />
-        </Suspense>
-      </div>
+      <Section className="py-8 md:py-10">
+        <div className="border-b border-[var(--color-line)] pb-5">
+          <Suspense>
+            <ResourceFilters />
+          </Suspense>
+        </div>
 
-      <div className="mt-10">
-        <ResourcesList filters={filters} />
-      </div>
-    </Section>
+        <div className="mt-6">
+          <ResourcesList filters={filters} />
+        </div>
+      </Section>
     </div>
   )
 }

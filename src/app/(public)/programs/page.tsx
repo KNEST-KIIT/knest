@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
-import { EmptyState, Heading, LinkCard, LiveRegion, Section } from '@/components/ui'
+import { EmptyState, Heading, LinkCard, LiveRegion, Section, Tag } from '@/components/ui'
+import { PageHeader } from '@/components/layout/page-header'
 import { formatDate } from '@/lib/dates'
 import { resultSummary } from '@/lib/result-summary'
 import { PROGRAMS_EMPTY } from '@/lib/empty-state-copy'
@@ -10,17 +11,12 @@ import { ProgramStatusBadge } from './program-status-badge'
 
 export const metadata: Metadata = {
   title: 'Programs',
-  description: 'Every program is built for a particular stage. Start with where you actually are.',
+  description: 'Stage-gated venture creation programs at KNEST. Start with where you actually are.',
 }
 
 async function ProgramsList({ filters }: { filters: Filters }) {
   const programs = await listPrograms(filters)
   const hasFilters = Object.values(filters).some(Boolean)
-
-  // A visible, announced result count (UX_WIREFRAMES.md §3 specified this —
-  // "6 programs" next to the filter bar — and specified it be announced via
-  // aria-live, since a client-side filter navigation updates the DOM without
-  // a full page reload a screen reader would otherwise narrate on its own).
   const summary = resultSummary(programs.length, 'program', { hasFilters, emptyNoFilters: 'No programs yet.' })
 
   if (programs.length === 0 && hasFilters) {
@@ -46,25 +42,37 @@ async function ProgramsList({ filters }: { filters: Filters }) {
 
   return (
     <>
-      {/* The visible summary is normal document content, read on a linear
-          pass same as any text; the LiveRegion alongside it exists so that a
-          filter change is announced even when focus hasn't moved here. */}
       <LiveRegion message={summary} />
-      <p className="mb-4 text-[length:var(--text-small)] text-[var(--color-ink-muted)]">{summary}</p>
+      <p className="mb-6 font-mono text-xs uppercase tracking-wider text-[var(--color-ink-muted)]">
+        Showing {summary}
+      </p>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {programs.map((program) => (
           <LinkCard key={program.id} href={`/programs/${program.slug}`} label={`View ${program.title}`}>
-            <ProgramStatusBadge status={program.applicationStatus} />
-            <Heading as="h2" size="heading" className="mt-4">
+            <div className="flex items-center justify-between border-b border-[var(--color-line)] pb-3">
+              <ProgramStatusBadge status={program.applicationStatus} />
+              {program.stage && program.stage.length > 0 && (
+                <span className="font-mono text-[11px] uppercase tracking-wider text-[var(--color-signal)] font-semibold">
+                  {program.stage[0]}
+                </span>
+              )}
+            </div>
+
+            <Heading as="h2" size="heading" className="mt-4 font-[family-name:var(--font-display)] text-2xl font-bold text-[var(--color-ink)]">
               {program.title}
             </Heading>
-            <p className="mt-2 text-[length:var(--text-small)] text-[var(--color-ink-soft)]">{program.tagline}</p>
-            <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-[length:var(--text-small)] text-[var(--color-ink-muted)]">
-              {program.duration && <span>{program.duration}</span>}
-              {program.nextCohortStart && <span>Next: {formatDate(program.nextCohortStart)}</span>}
+            
+            <p className="mt-2 text-sm text-[var(--color-ink-soft)] font-light line-clamp-2 leading-relaxed">
+              {program.tagline}
+            </p>
+
+            <div className="mt-6 flex flex-wrap gap-x-4 gap-y-1 border-t border-[var(--color-line)]/60 pt-4 text-xs text-[var(--color-ink-muted)] font-mono">
+              {program.duration && <span>Duration: {program.duration}</span>}
+              {program.nextCohortStart && <span>Cohort: {formatDate(program.nextCohortStart)}</span>}
             </div>
-            <span className="mt-4 inline-block text-[length:var(--text-small)] font-medium text-[var(--color-signal)]">
-              View program →
+
+            <span className="mt-4 inline-flex items-center gap-1 text-xs font-bold uppercase tracking-widest text-[var(--color-signal)]">
+              View Program Details →
             </span>
           </LinkCard>
         ))}
@@ -88,24 +96,27 @@ export default async function ProgramsPage({
   }
 
   return (
-    <Section>
-      <Heading as="h1" size="display">
-        Find where you fit.
-      </Heading>
-      <p className="mt-4 max-w-[52ch] text-[var(--color-ink-soft)]">
-        Every program is built for a particular stage. Start with where you actually are, not
-        where you think you should be.
-      </p>
+    <div>
+      <PageHeader
+        kicker="Venture Curriculum"
+        title="Find Where You Fit."
+        description="Every program is engineered for a specific stage of venture development. Start with where you actually are, not where you think you should be."
+        imageSrc="/images/stage_01_exploring.jpg"
+        imageAlt="KNEST Programs"
+        badgeText="Experiential Learning · Stage-Gated Curriculum"
+      />
 
-      <div className="mt-10">
-        <Suspense>
-          <ProgramFilters />
-        </Suspense>
-      </div>
+      <Section className="py-8 md:py-10">
+        <div className="border-b border-[var(--color-line)] pb-5">
+          <Suspense>
+            <ProgramFilters />
+          </Suspense>
+        </div>
 
-      <div className="mt-10">
-        <ProgramsList filters={filters} />
-      </div>
-    </Section>
+        <div className="mt-6">
+          <ProgramsList filters={filters} />
+        </div>
+      </Section>
+    </div>
   )
 }

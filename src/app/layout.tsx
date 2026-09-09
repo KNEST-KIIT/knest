@@ -7,6 +7,11 @@ export const metadata: Metadata = {
   description:
     "KNEST is KIIT's innovation and entrepreneurship ecosystem: programs, mentors, workspace and community for students building things — at every stage, including the stage where you have nothing but a question.",
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'),
+  icons: {
+    icon: '/images/knest_icon.png',
+    shortcut: '/images/knest_icon.png',
+    apple: '/images/knest_icon.png',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

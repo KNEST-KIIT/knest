@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import type { AuthStrategy } from 'payload'
 import { db } from '@/db/client'
 import { users } from '@/db/schema'
@@ -43,9 +43,27 @@ export const authJsStrategy: AuthStrategy = {
     // payload, so revoking staff access takes effect on the next request.
     if (!row || !row.isActive || !row.staffRole) return { user: null }
 
+    // Payload's preferences and relational fields require a real row in the
+    // database for foreign keys to work (e.g. `payload_preferences_rels`).
+    // We create a shadow record using a fast raw SQL upsert so it doesn't
+    // slow down every admin request.
+    try {
+      await db.execute(
+        sql`
+          INSERT INTO "cms"."staff" (id, email, name, staff_role, created_at, updated_at)
+          VALUES (${row.id}, ${row.email}, ${row.name || ''}, ${row.staffRole}, NOW(), NOW())
+          ON CONFLICT (id) DO UPDATE SET 
+            email = EXCLUDED.email, 
+            name = EXCLUDED.name, 
+            staff_role = EXCLUDED.staff_role,
+            updated_at = NOW();
+        `
+      )
+    } catch (err) {
+      console.error('[authJsStrategy] Failed to sync shadow staff record:', err)
+    }
+
     // Payload's generated Staff type requires these timestamps. They are the
-    // real ones from app.users rather than placeholders, so anything Payload
-    // displays about this account is accurate.
     return {
       user: {
         id: row.id,

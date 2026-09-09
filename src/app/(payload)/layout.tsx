@@ -6,7 +6,7 @@ import type { ServerFunctionClient } from 'payload'
 import { requireStaff } from '@/server/auth/guards'
 import { importMap } from './admin/importMap'
 import '@payloadcms/next/css'
-
+import '@/payload/custom-admin.css'
 const serverFunction: ServerFunctionClient = async function (args) {
   'use server'
   return handleServerFunctions({ ...args, config, importMap })

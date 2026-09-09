@@ -90,19 +90,19 @@ export default async function MentorsPage({
         You already know what you&rsquo;re stuck on. Start there, not with a directory of photos.
       </p>
 
-      <div className="mt-10 max-w-[420px]">
+      <div className="mt-6 max-w-[420px]">
         <Suspense>
           <NeedSelect />
         </Suspense>
       </div>
 
-      <div className="mt-10">
+      <div className="mt-6">
         <MentorsList filters={filters} />
       </div>
 
       <div
         id="become-a-mentor"
-        className="mt-16 scroll-mt-24 rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-[var(--color-paper-soft)] p-8"
+        className="mt-10 scroll-mt-24 rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-[var(--color-paper-soft)] p-6 md:p-8"
       >
         <Heading as="h2" size="heading">
           Are you a mentor?

@@ -38,7 +38,7 @@ export default async function InvestPage() {
         ahead. This page shows both, honestly.
       </p>
 
-      <div className="mt-16">
+      <div className="mt-10">
         <Heading as="h2" size="title">
           Upcoming demo days
         </Heading>
@@ -66,7 +66,7 @@ export default async function InvestPage() {
         )}
       </div>
 
-      <div className="mt-16">
+      <div className="mt-10">
         <Heading as="h2" size="title">
           Startups from the ecosystem
         </Heading>
@@ -87,7 +87,7 @@ export default async function InvestPage() {
         )}
       </div>
 
-      <div className="mt-16">
+      <div className="mt-10">
         <Heading as="h2" size="title">
           Founder stories
         </Heading>
@@ -123,7 +123,7 @@ export default async function InvestPage() {
         )}
       </div>
 
-      <div className="mt-16 rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-[var(--color-paper-soft)] p-8">
+      <div className="mt-10 rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-[var(--color-paper-soft)] p-6 md:p-8">
         <Heading as="h2" size="heading">
           Want to talk?
         </Heading>
@@ -133,7 +133,7 @@ export default async function InvestPage() {
         </p>
         <Link
           href="/about#contact"
-          className="mt-6 inline-flex h-14 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-signal)] px-6 font-medium text-white hover:bg-[var(--color-signal-deep)]"
+          className="mt-6 inline-flex h-12 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-signal)] px-6 font-medium text-white hover:bg-[var(--color-signal-deep)]"
         >
           Get in touch
         </Link>

@@ -17,7 +17,7 @@ export function Section({
     <section
       id={id}
       className={cn(
-        'px-6 py-[72px] md:px-10 md:py-32',
+        'px-6 py-10 md:px-10 md:py-16',
         inverted && 'bg-[var(--color-ink)] text-[var(--color-paper)]',
         className,
       )}

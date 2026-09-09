@@ -1,4 +1,4 @@
-﻿import { getPayload } from 'payload'
+import { getPayload } from 'payload'
 import config from '@/payload/payload.config'
 
 export async function seedDummy() {
@@ -25,6 +25,35 @@ export async function seedDummy() {
         data: {
           title: prog.title,
           slug: prog.slug,
+          tagline: prog.description,
+          whoItsFor: {
+            root: {
+              type: 'root',
+              format: '',
+              indent: 0,
+              version: 1,
+              children: [
+                {
+                  children: [
+                    {
+                      detail: 0,
+                      format: 0,
+                      mode: 'normal',
+                      style: '',
+                      text: 'This program is for early stage founders.',
+                      type: 'text',
+                      version: 1
+                    }
+                  ],
+                  direction: 'ltr',
+                  format: '',
+                  indent: 0,
+                  type: 'paragraph',
+                  version: 1
+                }
+              ]
+            }
+          },
           stage: [prog.stage],
           publishedAt: new Date().toISOString(),
           status: 'published',

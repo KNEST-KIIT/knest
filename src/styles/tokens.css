@@ -25,6 +25,8 @@
   --color-paper: #f8f4e9;
   --color-paper-soft: #ede4c9;
   --color-line: #ddd0a8;
+  --color-paper-invert: #0d1321;
+  --color-line-invert: rgba(255, 255, 255, 0.15);
 
   /* --- Primary accent: oxblood. #7a1f2b measures 10.2:1 on white, 9.04:1
      on --color-paper — an academic/publishing red, not a startup orange.
