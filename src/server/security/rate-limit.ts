@@ -18,6 +18,13 @@ export const RATE_LIMITS = {
   /** A level request is a considered thing, not something to spam a queue with. */
   levelRequest: { capacity: 3, refillIntervalSeconds: 24 * 60 * 60 },
   labBooking: { capacity: 10, refillIntervalSeconds: 24 * 60 * 60 },
+  /**
+   * Generous, because the endpoint is open to signed-out visitors on the
+   * homepage and a real person clicking around the journey selector should
+   * never hit it. It exists to stop a script writing rows all day, not to
+   * ration honest use.
+   */
+  analyticsTrack: { capacity: 60, refillIntervalSeconds: 60 * 60 },
 } as const satisfies Record<string, RateLimitConfig>
 
 /**

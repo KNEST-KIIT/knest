@@ -1,6 +1,6 @@
 'use server'
 
-import { and, desc, eq } from 'drizzle-orm'
+import { and, count, desc, eq, ilike, inArray, or } from 'drizzle-orm'
 import { db } from '@/db/client'
 import { applicationAnswers, applicationDocuments, applications, auditLogs, users } from '@/db/schema'
 import type { applicationStatus } from '@/db/schema'
@@ -14,27 +14,73 @@ import type { ActionResult } from './actions'
 
 type Status = (typeof applicationStatus.enumValues)[number]
 
-export async function listApplicationsForReview(filters: { programId?: number; status?: Status }) {
+/**
+ * Deliberately modest, and the reason this got a limit at all: the query had
+ * none, so the review screen loaded every application there had ever been and
+ * degraded quietly as the number grew. There was also no way to find one
+ * person by name — a reviewer looking for "Aditi" had to read the list.
+ *
+ * Not exported: this file is `'use server'`, where every export becomes a
+ * callable server action, so only async functions may leave it.
+ */
+const APPLICATIONS_PER_PAGE = 25
+
+export async function listApplicationsForReview(filters: {
+  programId?: number
+  status?: Status
+  q?: string
+  page?: number
+}) {
   await requireAdminArea('applications')
 
+  const page = Math.max(1, Math.trunc(filters.page ?? 1))
   const conditions = []
   if (filters.programId) conditions.push(eq(applications.programId, filters.programId))
   if (filters.status) conditions.push(eq(applications.status, filters.status))
 
-  const rows = await db.query.applications.findMany({
-    where: conditions.length > 0 ? and(...conditions) : undefined,
-    orderBy: [desc(applications.submittedAt)],
-    with: { user: { columns: { id: true, name: true, email: true } } },
-  })
+  // Searching by applicant means joining to users. `findMany` with a `where`
+  // on a relation is not something Drizzle's query API expresses, so the
+  // matching ids are resolved first and the list is then filtered by them.
+  if (filters.q) {
+    const term = `%${filters.q}%`
+    const matches = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(or(ilike(users.email, term), ilike(users.name, term)))
+      .limit(500)
+    if (matches.length === 0) {
+      return { rows: [], page, total: 0, pageCount: 1 }
+    }
+    conditions.push(inArray(applications.userId, matches.map((match) => match.id)))
+  }
+
+  const where = conditions.length > 0 ? and(...conditions) : undefined
+
+  const [rows, [total]] = await Promise.all([
+    db.query.applications.findMany({
+      where,
+      orderBy: [desc(applications.submittedAt)],
+      with: { user: { columns: { id: true, name: true, email: true } } },
+      limit: APPLICATIONS_PER_PAGE,
+      offset: (page - 1) * APPLICATIONS_PER_PAGE,
+    }),
+    db.select({ value: count() }).from(applications).where(where),
+  ])
 
   // One batched lookup for every program referenced, not one per row (§5.2).
   const programs = await getProgramTitlesByIds([...new Set(rows.map((row) => row.programId))])
 
-  return rows.map((row) => ({
-    application: row,
-    applicant: row.user,
-    programTitle: programs.get(row.programId)?.title ?? 'Unknown program',
-  }))
+  const totalCount = total?.value ?? 0
+  return {
+    rows: rows.map((row) => ({
+      application: row,
+      applicant: row.user,
+      programTitle: programs.get(row.programId)?.title ?? 'Unknown program',
+    })),
+    page,
+    total: totalCount,
+    pageCount: Math.max(1, Math.ceil(totalCount / APPLICATIONS_PER_PAGE)),
+  }
 }
 
 export async function getApplicationForReview(applicationId: string) {

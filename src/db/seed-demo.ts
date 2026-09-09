@@ -780,6 +780,27 @@ async function seedLevelsAndBookings(
     if (manager) demoUserIds.set(person.email, manager.id)
   }
 
+  /* ---- a mentor signup with no profile yet, so that queue is not empty ---- */
+  // The demo mentors on the public directory are CMS records with no account
+  // behind them. This is the other half: someone who signed up as a mentor,
+  // finished onboarding, was told "your profile is with our team", and is
+  // waiting. Without one, the queue that keeps that promise shows nothing.
+  await db
+    .insert(users)
+    .values({
+      email: 'kavya.mentor.demo@knest.local',
+      name: `Kavya Nair ${DEMO_MARKER}`,
+      platformRole: 'mentor',
+      school: 'KIIT School of Management',
+      passwordHash,
+      onboardingCompletedAt: new Date(Date.now() - 4 * 86_400_000),
+      emailVerified: new Date(),
+    })
+    .onConflictDoUpdate({
+      target: users.email,
+      set: { name: `Kavya Nair ${DEMO_MARKER}`, passwordHash },
+    })
+
   /* ---- levels, so the ladder has people on more than one rung ---- */
   const GRANTED: { email: string; level: number }[] = [
     { email: 'aditi.demo@knest.local', level: 3 },
@@ -863,7 +884,7 @@ async function seedLevelsAndBookings(
       },
     ])
   }
-  console.log(`✓ founder levels, 1 open level request, 3 lab bookings (two clashing, on purpose), ${LAB_MANAGERS.length} lab manager accounts`)
+  console.log(`✓ founder levels, 1 open level request, 3 lab bookings (two clashing, on purpose), ${LAB_MANAGERS.length} lab manager accounts, 1 mentor awaiting a profile`)
 }
 
 /**

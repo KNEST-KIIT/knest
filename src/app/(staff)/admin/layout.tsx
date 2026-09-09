@@ -25,6 +25,8 @@ const NAV = [
   { href: '/admin/applications', label: 'Applications', area: 'applications' },
   { href: '/admin/levels', label: 'Levels', area: 'levels' },
   { href: '/admin/members', label: 'Members', area: 'users' },
+  { href: '/admin/mentors', label: 'Mentors', area: 'mentors' },
+  { href: '/admin/audit', label: 'Audit', area: 'users' },
   { href: '/admin/analytics', label: 'Analytics', area: 'analytics' },
 ] as const
 

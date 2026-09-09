@@ -70,6 +70,8 @@ const ROLES = [
       '/admin/applications',
       '/admin/levels',
       '/admin/members',
+      '/admin/mentors',
+      '/admin/audit',
       '/admin/analytics',
     ],
   },

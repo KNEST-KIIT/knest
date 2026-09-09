@@ -1,10 +1,11 @@
 'use server'
 
-import { and, count, eq, gte, isNotNull, isNull } from 'drizzle-orm'
+import { and, count, eq, gte, isNotNull } from 'drizzle-orm'
 import { db } from '@/db/client'
 import { applications, eventRegistrations, labBookings, levelRequests, users } from '@/db/schema'
 import { requireStaff } from '@/server/auth/guards'
 import { canAccessArea } from '@/server/auth/roles'
+import { getContentClient } from '@/server/content/payload-client'
 
 /**
  * The staff dashboard's numbers.
@@ -34,6 +35,36 @@ export type Overview = {
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000
 
+/**
+ * How many onboarded mentors have no linked profile.
+ *
+ * Two lookups rather than a join, because the two halves live in schemas that
+ * are deliberately kept apart (spec §32): Payload owns `cms`, Drizzle owns
+ * `app`, and there is no foreign key between them to join on.
+ */
+async function countMentorsAwaitingProfile(onboardedCount: number): Promise<number> {
+  if (onboardedCount === 0) return 0
+
+  const mentorAccounts = await db.query.users.findMany({
+    where: and(eq(users.platformRole, 'mentor'), isNotNull(users.onboardingCompletedAt)),
+    columns: { id: true },
+    limit: 500,
+  })
+  if (mentorAccounts.length === 0) return 0
+
+  const payload = await getContentClient()
+  const profiles = await payload.find({
+    collection: 'mentors',
+    depth: 0,
+    limit: 500,
+    overrideAccess: false,
+    where: { userId: { in: mentorAccounts.map((mentor) => mentor.id) } },
+  })
+  const linked = new Set(profiles.docs.map((doc) => doc.userId).filter(Boolean) as string[])
+
+  return mentorAccounts.filter((mentor) => !linked.has(mentor.id)).length
+}
+
 export async function getStaffOverview(): Promise<Overview> {
   const staff = await requireStaff()
   const since = new Date(Date.now() - THIRTY_DAYS_MS)
@@ -46,7 +77,7 @@ export async function getStaffOverview(): Promise<Overview> {
     [pendingLevels],
     [pendingBookings],
     [upcomingRegistrations],
-    [mentorsAwaiting],
+    [mentorsOnboarded],
   ] = await Promise.all([
     db.select({ value: count() }).from(users),
     db.select({ value: count() }).from(users).where(gte(users.createdAt, since)),
@@ -64,20 +95,20 @@ export async function getStaffOverview(): Promise<Overview> {
       .from(labBookings)
       .where(eq(labBookings.status, 'requested')),
     db.select({ value: count() }).from(eventRegistrations),
-    // Mentors who finished onboarding and have no published profile yet. The
-    // product tells them "your profile is with our team"; until now no screen
-    // showed staff that queue, so the promise had nobody keeping it.
+    // Mentors who finished onboarding, whether or not they have a profile.
+    // Which of them are still waiting is answered below, against the CMS.
     db
       .select({ value: count() })
       .from(users)
-      .where(
-        and(
-          eq(users.platformRole, 'mentor'),
-          isNotNull(users.onboardingCompletedAt),
-          isNull(users.staffRole),
-        ),
-      ),
+      .where(and(eq(users.platformRole, 'mentor'), isNotNull(users.onboardingCompletedAt))),
   ])
+
+  // "Has a profile" lives in `cms.mentors.userId`, not in `app.users`, so the
+  // real number needs both. An earlier version counted mentors with no
+  // `staffRole`, which is a different question entirely and answered it wrong.
+  const mentorsWaiting = canAccessArea(staff.staffRole, 'mentors')
+    ? await countMentorsAwaitingProfile(mentorsOnboarded?.value ?? 0)
+    : 0
 
   const attention: AttentionItem[] = [
     {
@@ -94,8 +125,8 @@ export async function getStaffOverview(): Promise<Overview> {
     },
     {
       label: 'Mentors waiting on a profile',
-      count: mentorsAwaiting?.value ?? 0,
-      href: '/admin/members?platformRole=mentor',
+      count: mentorsWaiting,
+      href: '/admin/mentors',
       area: 'mentors',
     },
   ]
