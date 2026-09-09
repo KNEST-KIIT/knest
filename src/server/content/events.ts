@@ -15,51 +15,61 @@ export type EventFilters = {
  */
 
 export async function listEvents(filters: EventFilters = {}) {
-  const payload = await getContentClient()
+  try {
+    const payload = await getContentClient()
 
-  const where: Where = { and: [] }
-  const and = where.and as Where[]
-  if (filters.eventType) and.push({ eventType: { equals: filters.eventType } })
-  if (filters.format) and.push({ format: { equals: filters.format } })
-  if (filters.stage) and.push({ relevantStages: { equals: filters.stage } })
+    const where: Where = { and: [] }
+    const and = where.and as Where[]
+    if (filters.eventType) and.push({ eventType: { equals: filters.eventType } })
+    if (filters.format) and.push({ format: { equals: filters.format } })
+    if (filters.stage) and.push({ relevantStages: { equals: filters.stage } })
 
-  const result = await payload.find({
-    collection: 'events',
-    where: and.length > 0 ? where : undefined,
-    depth: 1,
-    limit: 100,
-    sort: 'startsAt',
-    overrideAccess: false,
-  })
+    const result = await payload.find({
+      collection: 'events',
+      where: and.length > 0 ? where : undefined,
+      depth: 1,
+      limit: 100,
+      sort: 'startsAt',
+      overrideAccess: false,
+    })
 
-  return result.docs
+    return result?.docs || []
+  } catch (error) {
+    console.warn('Could not fetch events:', error)
+    return []
+  }
 }
 
 /** Only events that haven't started yet — the list a visitor actually wants to see. */
 export async function listUpcomingEvents(filters: EventFilters = {}) {
-  const payload = await getContentClient()
+  try {
+    const payload = await getContentClient()
 
-  const where: Where = { and: [{ startsAt: { greater_than: new Date().toISOString() } }] }
-  const and = where.and as Where[]
-  if (filters.eventType) and.push({ eventType: { equals: filters.eventType } })
-  if (filters.format) and.push({ format: { equals: filters.format } })
-  if (filters.stage) and.push({ relevantStages: { equals: filters.stage } })
+    const where: Where = { and: [{ startsAt: { greater_than: new Date().toISOString() } }] }
+    const and = where.and as Where[]
+    if (filters.eventType) and.push({ eventType: { equals: filters.eventType } })
+    if (filters.format) and.push({ format: { equals: filters.format } })
+    if (filters.stage) and.push({ relevantStages: { equals: filters.stage } })
 
-  const result = await payload.find({
-    collection: 'events',
-    where,
-    depth: 1,
-    limit: 100,
-    sort: 'startsAt',
-    overrideAccess: false,
-  })
+    const result = await payload.find({
+      collection: 'events',
+      where,
+      depth: 1,
+      limit: 100,
+      sort: 'startsAt',
+      overrideAccess: false,
+    })
 
-  return result.docs
+    return result?.docs || []
+  } catch (error) {
+    console.warn('Could not fetch upcoming events:', error)
+    return []
+  }
 }
 
 export async function getEventById(id: number): Promise<Event | null> {
-  const payload = await getContentClient()
   try {
+    const payload = await getContentClient()
     return await payload.findByID({ collection: 'events', id, depth: 1, overrideAccess: false })
   } catch {
     return null
@@ -67,17 +77,22 @@ export async function getEventById(id: number): Promise<Event | null> {
 }
 
 export async function getEventBySlug(slug: string): Promise<Event | null> {
-  const payload = await getContentClient()
+  try {
+    const payload = await getContentClient()
 
-  const result = await payload.find({
-    collection: 'events',
-    where: { slug: { equals: slug } },
-    depth: 2,
-    limit: 1,
-    overrideAccess: false,
-  })
+    const result = await payload.find({
+      collection: 'events',
+      where: { slug: { equals: slug } },
+      depth: 2,
+      limit: 1,
+      overrideAccess: false,
+    })
 
-  return result.docs[0] ?? null
+    return result?.docs?.[0] ?? null
+  } catch (error) {
+    console.warn('Could not fetch event by slug:', error)
+    return null
+  }
 }
 
 /** Events matching a stage/interest set, for dashboard recommendations (7-9.9). Falls back to any upcoming event if nothing matches — a near-match beats an empty dashboard. */

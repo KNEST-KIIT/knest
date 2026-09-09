@@ -15,8 +15,12 @@ export type SessionUser = Session['user']
  */
 
 export async function getSessionUser(): Promise<SessionUser | null> {
-  const session = await auth()
-  return session?.user ?? null
+  try {
+    const session = await auth()
+    return session?.user ?? null
+  } catch (error) {
+    return null
+  }
 }
 
 /** Requires any signed-in user. Redirects to login, preserving the destination. */

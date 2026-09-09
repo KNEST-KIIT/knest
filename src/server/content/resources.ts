@@ -8,40 +8,50 @@ export type ResourceFilters = {
 }
 
 export async function listResources(filters: ResourceFilters = {}) {
-  const payload = await getContentClient()
+  try {
+    const payload = await getContentClient()
 
-  const where: Where = { and: [] }
-  const and = where.and as Where[]
-  if (filters.stage) and.push({ stages: { equals: filters.stage } })
-  if (filters.format) and.push({ format: { equals: filters.format } })
+    const where: Where = { and: [] }
+    const and = where.and as Where[]
+    if (filters.stage) and.push({ stages: { equals: filters.stage } })
+    if (filters.format) and.push({ format: { equals: filters.format } })
 
-  const result = await payload.find({
-    collection: 'resources',
-    where: and.length > 0 ? where : undefined,
-    depth: 1,
-    limit: 100,
-    sort: '-createdAt',
-    overrideAccess: false,
-  })
+    const result = await payload.find({
+      collection: 'resources',
+      where: and.length > 0 ? where : undefined,
+      depth: 1,
+      limit: 100,
+      sort: '-createdAt',
+      overrideAccess: false,
+    })
 
-  return result.docs
+    return result?.docs || []
+  } catch (error) {
+    console.warn('Could not fetch resources:', error)
+    return []
+  }
 }
 
 export async function getResourceBySlug(slug: string): Promise<Resource | null> {
-  const payload = await getContentClient()
+  try {
+    const payload = await getContentClient()
 
-  const result = await payload.find({
-    collection: 'resources',
-    // Hosted-only: an externally-hosted resource (body empty, externalUrl set)
-    // never gets a /resources/[slug] route — its card links straight out —
-    // so this excludes it here rather than the page having to redirect.
-    where: { and: [{ slug: { equals: slug } }, { body: { exists: true } }] },
-    depth: 1,
-    limit: 1,
-    overrideAccess: false,
-  })
+    const result = await payload.find({
+      collection: 'resources',
+      // Hosted-only: an externally-hosted resource (body empty, externalUrl set)
+      // never gets a /resources/[slug] route — its card links straight out —
+      // so this excludes it here rather than the page having to redirect.
+      where: { and: [{ slug: { equals: slug } }, { body: { exists: true } }] },
+      depth: 1,
+      limit: 1,
+      overrideAccess: false,
+    })
 
-  return result.docs[0] ?? null
+    return result?.docs?.[0] ?? null
+  } catch (error) {
+    console.warn('Could not fetch resource by slug:', error)
+    return null
+  }
 }
 
 /** Resources matching a stage, for dashboard recommendations (7-9.9). */
