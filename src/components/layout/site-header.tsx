@@ -54,110 +54,117 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
   }, [open])
 
   return (
-    <header
-      className={cn(
-        'sticky top-0 z-50 transition-all duration-500',
-        scrolled || open
-          ? 'border-b border-[var(--color-line)]/40 bg-[var(--color-paper)]/95 backdrop-blur-2xl shadow-[0_4px_30px_rgba(0,0,0,0.04)]'
-          : 'border-b border-transparent bg-gradient-to-b from-[var(--color-paper)] via-[var(--color-paper)]/80 to-transparent backdrop-blur-md',
-      )}
-    >
-      <div className="mx-auto flex h-[4.5rem] w-full max-w-[1280px] items-center justify-between px-6 md:px-10">
-        <Link href="/" className="mr-4 flex shrink-0 items-baseline gap-2" aria-label="KNEST home">
-          <Logo />
-        </Link>
-
-        <nav aria-label="Main" className="hidden items-center gap-5 lg:flex xl:gap-7">
-          {NAV.map((item) => {
-            const active = pathname.startsWith(item.href)
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={active ? 'page' : undefined}
-                className={cn(
-                  'border-b-2 py-1 text-[length:var(--text-small)] font-medium transition-colors',
-                  active
-                    ? 'border-[var(--color-signal)] text-[var(--color-ink)]'
-                    : 'border-transparent text-[var(--color-ink-soft)] hover:border-[var(--color-line)] hover:text-[var(--color-ink)]',
-                )}
-              >
-                {item.label}
-              </Link>
-            )
-          })}
-        </nav>
-
-        <div className="hidden shrink-0 items-center gap-3 lg:flex xl:gap-4">
-          <Link
-            href="/search"
-            aria-label="Search"
-            className="flex size-11 items-center justify-center text-[var(--color-ink-soft)] hover:text-[var(--color-signal)]"
-          >
-            <svg aria-hidden viewBox="0 0 20 20" fill="none" className="size-5" stroke="currentColor" strokeWidth="1.75">
-              <circle cx="8.5" cy="8.5" r="6" />
-              <path d="M17 17l-4-4" strokeLinecap="round" />
-            </svg>
+    <>
+      <header
+        className={cn(
+          'sticky top-0 z-50 transition-all duration-500',
+          scrolled || open
+            ? 'border-b border-[var(--color-line)]/40 bg-[var(--color-paper)]/95 backdrop-blur-2xl shadow-[0_4px_30px_rgba(0,0,0,0.04)]'
+            : 'border-b border-transparent bg-gradient-to-b from-[var(--color-paper)] via-[var(--color-paper)]/80 to-transparent backdrop-blur-md',
+        )}
+      >
+        <div className="mx-auto flex h-[4.5rem] w-full max-w-[1280px] items-center justify-between px-6 md:px-10">
+          <Link href="/" className="mr-4 flex shrink-0 items-baseline gap-2" aria-label="KNEST home">
+            <Logo />
           </Link>
-          {signedIn ? (
-            <div className="relative">
-              <ButtonLink
-                href="/dashboard"
-                size="sm"
-                aria-label={unreadCount > 0 ? `Dashboard — ${unreadCount} unread notification${unreadCount === 1 ? '' : 's'}` : undefined}
-              >
-                Dashboard
-              </ButtonLink>
-              {unreadCount > 0 && (
-                <span
-                  aria-hidden
-                  className="absolute -right-1.5 -top-1.5 flex size-4 items-center justify-center rounded-full bg-[var(--color-signal)] text-[9px] font-medium text-white"
+
+          <nav aria-label="Main" className="hidden items-center gap-5 lg:flex xl:gap-7">
+            {NAV.map((item) => {
+              const active = pathname.startsWith(item.href)
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-current={active ? 'page' : undefined}
+                  className={cn(
+                    'border-b-2 py-1 text-[length:var(--text-small)] font-medium transition-colors',
+                    active
+                      ? 'border-[var(--color-signal)] text-[var(--color-ink)]'
+                      : 'border-transparent text-[var(--color-ink-soft)] hover:border-[var(--color-line)] hover:text-[var(--color-ink)]',
+                  )}
                 >
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
-              )}
-            </div>
-          ) : (
-            <>
-              <ButtonLink href="/signup" size="sm">
-                Start building
-              </ButtonLink>
-              <Link href="/login" className="whitespace-nowrap text-[length:var(--text-small)]">
-                Log in
-              </Link>
-            </>
-          )}
+                  {item.label}
+                </Link>
+              )
+            })}
+          </nav>
+
+          <div className="hidden shrink-0 items-center gap-3 lg:flex xl:gap-4">
+            <Link
+              href="/search"
+              aria-label="Search"
+              className="flex size-11 items-center justify-center text-[var(--color-ink-soft)] hover:text-[var(--color-signal)]"
+            >
+              <svg aria-hidden viewBox="0 0 20 20" fill="none" className="size-5" stroke="currentColor" strokeWidth="1.75">
+                <circle cx="8.5" cy="8.5" r="6" />
+                <path d="M17 17l-4-4" strokeLinecap="round" />
+              </svg>
+            </Link>
+            {signedIn ? (
+              <div className="relative">
+                <ButtonLink
+                  href="/dashboard"
+                  size="sm"
+                  aria-label={unreadCount > 0 ? `Dashboard — ${unreadCount} unread notification${unreadCount === 1 ? '' : 's'}` : undefined}
+                >
+                  Dashboard
+                </ButtonLink>
+                {unreadCount > 0 && (
+                  <span
+                    aria-hidden
+                    className="absolute -right-1.5 -top-1.5 flex size-4 items-center justify-center rounded-full bg-[var(--color-signal)] text-[9px] font-medium text-white"
+                  >
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </div>
+            ) : (
+              <>
+                <ButtonLink href="/signup" size="sm">
+                  Start building
+                </ButtonLink>
+                <Link href="/login" className="whitespace-nowrap text-[length:var(--text-small)]">
+                  Log in
+                </Link>
+              </>
+            )}
+          </div>
+
+          <button
+            ref={toggleRef}
+            type="button"
+            className="-mr-2 flex size-11 items-center justify-center lg:hidden"
+            aria-expanded={open}
+            aria-controls="mobile-nav"
+            onClick={() => setOpen((v) => !v)}
+          >
+            <span className="sr-only">{open ? 'Close menu' : 'Open menu'}</span>
+            <span aria-hidden className="flex w-6 flex-col gap-1.5">
+              <span
+                className={cn(
+                  'h-0.5 w-full bg-[var(--color-ink)] transition-transform',
+                  open && 'translate-y-2 rotate-45',
+                )}
+              />
+              <span
+                className={cn('h-0.5 w-full bg-[var(--color-ink)] transition-opacity', open && 'opacity-0')}
+              />
+              <span
+                className={cn(
+                  'h-0.5 w-full bg-[var(--color-ink)] transition-transform',
+                  open && '-translate-y-2 -rotate-45',
+                )}
+              />
+            </span>
+          </button>
         </div>
+      </header>
 
-        <button
-          ref={toggleRef}
-          type="button"
-          className="-mr-2 flex size-11 items-center justify-center lg:hidden"
-          aria-expanded={open}
-          aria-controls="mobile-nav"
-          onClick={() => setOpen((v) => !v)}
-        >
-          <span className="sr-only">{open ? 'Close menu' : 'Open menu'}</span>
-          <span aria-hidden className="flex w-6 flex-col gap-1.5">
-            <span
-              className={cn(
-                'h-0.5 w-full bg-[var(--color-ink)] transition-transform',
-                open && 'translate-y-2 rotate-45',
-              )}
-            />
-            <span
-              className={cn('h-0.5 w-full bg-[var(--color-ink)] transition-opacity', open && 'opacity-0')}
-            />
-            <span
-              className={cn(
-                'h-0.5 w-full bg-[var(--color-ink)] transition-transform',
-                open && '-translate-y-2 -rotate-45',
-              )}
-            />
-          </span>
-        </button>
-      </div>
-
+      {/* Deliberately a sibling of <header>, not a child. The header carries
+          a backdrop-filter, and a backdrop-filter establishes a containing
+          block for fixed-position descendants — so inside it this panel
+          resolved `top-[4.5rem] bottom-0` against the 73px-tall header and
+          rendered 0px high. Tapping the menu opened nothing at all. */}
       {open && (
         <div
           ref={panelRef}
@@ -205,6 +212,6 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
           </div>
         </div>
       )}
-    </header>
+    </>
   )
 }
