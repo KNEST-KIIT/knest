@@ -3,8 +3,10 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { EmptyState, Heading, LinkCard, Tag } from '@/components/ui'
 import { RichText } from '@/components/content/rich-text'
+import { Testimonials } from '@/components/content/testimonials'
 import { formatDate } from '@/lib/dates'
 import { getProgramBySlug, listProgramCohortsWithStartups } from '@/server/content/programs'
+import { listTestimonials } from '@/server/content/testimonials'
 import { track } from '@/server/analytics/track'
 import { ApplyCta } from './apply-cta'
 import { ProgramStatusBadge } from '../program-status-badge'
@@ -30,7 +32,10 @@ export default async function ProgramDetailPage({ params }: { params: Promise<{ 
   if (!program) notFound()
   await track('program_view', { programId: program.id })
 
-  const cohortsWithStartups = await listProgramCohortsWithStartups(program.id)
+  const [cohortsWithStartups, testimonials] = await Promise.all([
+    listProgramCohortsWithStartups(program.id),
+    listTestimonials({ programId: program.id, limit: 3 }),
+  ])
   const allStartups = cohortsWithStartups.flatMap((c) => c.startups)
   const mentors = (program.mentors ?? []).filter((m) => typeof m === 'object')
   const faqs = program.faqs ?? []
@@ -145,6 +150,8 @@ export default async function ProgramDetailPage({ params }: { params: Promise<{ 
               </div>
             </section>
           )}
+
+          <Testimonials testimonials={testimonials} heading="What people who did it say" />
 
           {program.requirements && (
             <section>

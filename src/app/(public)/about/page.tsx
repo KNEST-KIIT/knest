@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ButtonLink, Card, Heading, Section } from '@/components/ui'
 import { PageHero } from '@/components/layout/page-hero'
+import { Testimonials } from '@/components/content/testimonials'
+import { listTestimonials } from '@/server/content/testimonials'
 
 export const metadata: Metadata = {
   title: 'About',
@@ -89,7 +91,9 @@ const FIVE_YEAR_GOALS = [
   { figure: 'Alumni-led', label: 'a founder network deep enough to sustain itself' },
 ]
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const testimonials = await listTestimonials({ limit: 3 })
+
   return (
     <>
       <PageHero
@@ -248,6 +252,12 @@ export default function AboutPage() {
           here as each appointment is confirmed. We would rather name nobody than name a placeholder.
         </p>
       </Section>
+
+      {testimonials.length > 0 && (
+        <Section padding="tight" className="border-t border-[var(--color-line)]">
+          <Testimonials testimonials={testimonials} heading="In their words" />
+        </Section>
+      )}
 
       <Section padding="tight" className="border-t border-[var(--color-line)]">
         <Heading as="h2" size="title">

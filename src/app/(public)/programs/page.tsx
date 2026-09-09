@@ -208,6 +208,9 @@ export default async function ProgramsPage({
             <ButtonLink href="/mentors" variant="secondary">
               Find a mentor
             </ButtonLink>
+            <ButtonLink href="/faq" variant="secondary">
+              Read the questions
+            </ButtonLink>
           </div>
         </div>
       </Section>

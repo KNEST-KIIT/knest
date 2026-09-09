@@ -18,6 +18,7 @@ const COLUMNS = [
       { href: '/ecosystem#infrastructure', label: 'Infrastructure' },
       { href: '/ecosystem#partners', label: 'Partners' },
       { href: '/mentors', label: 'Mentors' },
+      { href: '/faq', label: 'Questions' },
       { href: '/about#contact', label: 'Contact' },
     ],
   },

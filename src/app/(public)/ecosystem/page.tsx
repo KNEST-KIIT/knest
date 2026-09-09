@@ -3,8 +3,10 @@ import Link from 'next/link'
 import { ButtonLink, Card, EmptyState, Heading, Section, Tag } from '@/components/ui'
 import { PageHero } from '@/components/layout/page-hero'
 import { TripleHelix } from '@/components/content/triple-helix'
+import { MetricsBand } from '@/components/content/metrics-band'
 import { partnerTypeLabel, spaceTypeLabel } from '@/lib/labels'
 import { listInfrastructure } from '@/server/content/infrastructure'
+import { listMetrics } from '@/server/content/metrics'
 import { listPartners } from '@/server/content/partners'
 
 export const metadata: Metadata = {
@@ -91,7 +93,11 @@ const SYNERGY = [
 ]
 
 export default async function EcosystemPage() {
-  const [infrastructure, partners] = await Promise.all([listInfrastructure(), listPartners()])
+  const [infrastructure, partners, metrics] = await Promise.all([
+    listInfrastructure(),
+    listPartners(),
+    listMetrics(),
+  ])
 
   return (
     <>
@@ -123,6 +129,16 @@ export default async function EcosystemPage() {
           <TripleHelix />
         </div>
       </Section>
+
+      {metrics.length > 0 && (
+        <Section padding="tight" className="border-t border-[var(--color-line)]">
+          <MetricsBand metrics={metrics} heading="Where things actually stand" />
+          <p className="mt-6 max-w-[58ch] text-[length:var(--text-small)] text-[var(--color-ink-muted)]">
+            Each figure is dated because a number without a date is a number you cannot check. When one
+            of these moves, the date moves with it.
+          </p>
+        </Section>
+      )}
 
       <Section padding="tight" className="border-t border-[var(--color-line)]">
         <Heading as="h2" size="title">

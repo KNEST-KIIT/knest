@@ -543,6 +543,45 @@ Format: what's here · why it's empty · what to do meanwhile.
 
 ---
 
+## 9a. Where each CMS collection surfaces
+
+Added during the public-site content pass, after an audit found three collections
+that a content admin could fill in and never see anywhere on the site. Every
+collection now has exactly one place it is read from, and this table is the record
+of which — a new collection without a row here is a collection nobody will ever
+read.
+
+| Collection | Renders on |
+|---|---|
+| Programs | `/programs`, `/programs/[slug]`, dashboard recommendations |
+| Startups | `/startups`, `/startups/[slug]`, `/invest`, homepage |
+| Events | `/events`, `/events/[slug]`, `/invest` (demo days), dashboards |
+| Resources | `/resources`, `/resources/[slug]`, dashboard recommendations |
+| Mentors | `/mentors`, `/mentors/[slug]`, program pages, mentor dashboard |
+| Infrastructure | `/ecosystem#infrastructure` |
+| Partners | `/ecosystem#partners`, homepage |
+| Articles | `/invest` (founder stories) |
+| Founders | `/startups/[slug]` |
+| Cohorts | `/programs/[slug]` |
+| **FAQs** | **`/faq`, grouped by category** |
+| **Metrics** | **`/ecosystem`, each figure shown with its `asOf` date** |
+| **Testimonials** | **`/about`, and `/programs/[slug]` filtered to that program** |
+
+**Metrics render their `asOf`, never their `source`.** The collection describes
+`source` as an internal note; it exists so a figure can be traced by staff, not so
+it can be printed under the number. `asOf` is public, because a number without a
+date is the thing §46 exists to prevent.
+
+**Testimonials are filtered on `consentGiven` in the query**, not at the call site.
+A required checkbox is still a boolean that can be false, and this is the one field
+where getting it wrong publishes a named quote nobody agreed to.
+
+**Both render nothing when empty** — no "coming soon" placeholder. An empty
+testimonials section makes no promise to anyone, unlike an empty startups list,
+where the absence is itself the story worth telling (§8).
+
+---
+
 ## 10. Navigation & footer
 
 **Nav:** `KNEST` · Programs · Startups · Ecosystem · Events · Resources · About · **START BUILDING** · Log in
