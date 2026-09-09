@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { SkipLink } from '@/components/layout/skip-link'
 import { requireStaff } from '@/server/auth/guards'
+import { canAccessArea } from '@/server/auth/roles'
 
 /**
  * A custom shell for operational views that don't fit inside Payload's own
@@ -9,8 +10,27 @@ import { requireStaff } from '@/server/auth/guards'
  * be seamlessly integrated would be more misleading than an honest "you're in
  * a different part of the admin area" with a link back to the CMS.
  */
+/**
+ * Only what this person can actually open.
+ *
+ * The Analytics link used to render for every staff role, but
+ * `ADMIN_AREAS.analytics` is empty — super_admin only — so a reviewer or a
+ * program manager clicking it got a 404 from a link the app had just shown
+ * them. Rendering is not access control (spec §31); `requireAdminArea` still
+ * enforces every one of these server-side. This only stops the shell offering
+ * doors that are locked.
+ */
+const NAV = [
+  { href: '/admin/overview', label: 'Overview', area: null },
+  { href: '/admin/applications', label: 'Applications', area: 'applications' },
+  { href: '/admin/levels', label: 'Levels', area: 'levels' },
+  { href: '/admin/members', label: 'Members', area: 'users' },
+  { href: '/admin/analytics', label: 'Analytics', area: 'analytics' },
+] as const
+
 export default async function StaffLayout({ children }: { children: React.ReactNode }) {
-  await requireStaff()
+  const staff = await requireStaff()
+  const visible = NAV.filter((item) => item.area === null || canAccessArea(staff.staffRole, item.area))
 
   return (
     <>
@@ -22,18 +42,21 @@ export default async function StaffLayout({ children }: { children: React.ReactN
               grows to the 44px the rest of the app is built to. */}
           <div className="flex items-center gap-4">
             <Link
-              href="/admin/applications"
+              href="/admin/overview"
               className="-mx-2 flex h-11 items-center rounded-[var(--radius-sm)] px-2 font-[family-name:var(--font-display)] text-base uppercase tracking-[0.12em]"
             >
               KNEST Admin
             </Link>
-            <nav aria-label="Admin" className="flex gap-1 text-[length:var(--text-small)]">
-              <Link href="/admin/applications" className="flex h-11 items-center rounded-[var(--radius-sm)] px-2">
-                Applications
-              </Link>
-              <Link href="/admin/analytics" className="flex h-11 items-center rounded-[var(--radius-sm)] px-2">
-                Analytics
-              </Link>
+            <nav aria-label="Admin" className="flex flex-wrap gap-1 text-[length:var(--text-small)]">
+              {visible.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="flex h-11 items-center rounded-[var(--radius-sm)] px-2"
+                >
+                  {item.label}
+                </Link>
+              ))}
             </nav>
           </div>
           <Link

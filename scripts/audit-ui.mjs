@@ -51,7 +51,13 @@ const ROLES = [
   {
     label: 'staff',
     email: process.env.AUDIT_STAFF_EMAIL ?? 'admin@knest.local',
-    pages: ['/admin/applications', '/admin/analytics'],
+    pages: [
+      '/admin/overview',
+      '/admin/applications',
+      '/admin/levels',
+      '/admin/members',
+      '/admin/analytics',
+    ],
   },
 ]
 const AUDIT_PASSWORD = process.env.SEED_PASSWORD ?? 'knest-dev-password'

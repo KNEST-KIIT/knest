@@ -6,7 +6,7 @@ import { levelRequests, users } from '@/db/schema'
 import { track } from '@/server/analytics/track'
 import { requireUserOrThrow } from '@/server/auth/guards'
 import { RATE_LIMITS, enforceRateLimit } from '@/server/security/rate-limit'
-import { MAX_LEVEL, levelDefinition } from './levels'
+import { MAX_LEVEL } from './levels'
 import { isLegalTransition } from './transitions'
 
 export type ActionResult = { ok: true } | { ok: false; error: string }
@@ -116,10 +116,4 @@ export async function listLevelRequestsForUser(userId: string) {
     orderBy: [desc(levelRequests.createdAt)],
     limit: 10,
   })
-}
-
-/** The next rung, or null at the top — used for "ask to move up" copy. */
-export function nextLevelFor(currentLevel: number) {
-  if (currentLevel >= MAX_LEVEL) return null
-  return levelDefinition(currentLevel + 1)
 }

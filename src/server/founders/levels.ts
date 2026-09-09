@@ -166,6 +166,11 @@ const CAPABILITY_NAMES: Record<Capability, string> = {
   mentor_others: 'Mentoring founders',
 }
 
+/** The human name for a capability — for anywhere a list of them is shown to a person. */
+export function capabilityLabel(capability: Capability): string {
+  return CAPABILITY_NAMES[capability]
+}
+
 export function capabilityDeniedMessage(error: CapabilityError): string {
   const required = levelDefinition(error.requiredLevel)
   const current = levelDefinition(error.currentLevel)
@@ -182,4 +187,10 @@ export function capabilityDeniedMessage(error: CapabilityError): string {
 export function requireCapability(level: number, capability: Capability): void {
   if (hasCapability(level, capability)) return
   throw new CapabilityError(capability, levelRequiredFor(capability), level)
+}
+
+/** The next rung up, or null at the top — for "ask to move up" copy. */
+export function nextLevel(currentLevel: number): LevelDefinition | null {
+  if (currentLevel >= MAX_LEVEL) return null
+  return levelDefinition(currentLevel + 1)
 }
