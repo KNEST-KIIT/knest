@@ -3,20 +3,11 @@ import { notFound } from 'next/navigation'
 import { Avatar, Heading, Tag } from '@/components/ui'
 import { RichText } from '@/components/content/rich-text'
 import { formatEventTime } from '@/lib/dates'
+import { eventTypeLabel, formatLabel } from '@/lib/labels'
 import { getEventBySlug } from '@/server/content/events'
 import { getRegistrationCount, getRegistrationStatus } from '@/server/events/actions'
 import { getSessionUser } from '@/server/auth/guards'
 import { RegisterButton } from './register-button'
-
-const TYPE_LABELS: Record<string, string> = {
-  workshop: 'Workshop',
-  talk: 'Talk',
-  ideation: 'Ideation session',
-  demo_day: 'Demo day',
-  networking: 'Networking',
-  hackathon: 'Hackathon',
-  office_hours: 'Office hours',
-}
 
 export async function generateMetadata({
   params,
@@ -44,7 +35,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
   return (
     <div className="mx-auto w-full max-w-[1280px] px-6 py-16 md:px-10">
       <div className="max-w-[68ch]">
-        <Tag tone="archive">{TYPE_LABELS[event.eventType ?? 'workshop']}</Tag>
+        <Tag tone="archive">{eventTypeLabel(event.eventType ?? 'workshop')}</Tag>
         <Heading as="h1" size="display" className="mt-4">
           {event.title}
         </Heading>
@@ -52,6 +43,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
         <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-[length:var(--text-small)] text-[var(--color-ink-muted)]">
           <span>{formatEventTime(event.startsAt)}</span>
           {event.location && <span>{event.location}</span>}
+          {event.format && <span>{formatLabel(event.format)}</span>}
           {event.capacity && <span>{registeredCount} of {event.capacity} spots taken</span>}
         </div>
       </div>

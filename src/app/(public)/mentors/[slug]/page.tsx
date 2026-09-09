@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { Avatar, Heading, Tag } from '@/components/ui'
-import { EXPERTISE_OPTIONS } from '@/payload/fields/taxonomy'
+import Link from 'next/link'
+import { Avatar, ButtonLink, Heading, Tag } from '@/components/ui'
+import { expertiseLabel } from '@/lib/labels'
 import { getMentorBySlug } from '@/server/content/mentors'
 import { AvailabilityBadge } from '../availability-badge'
 
@@ -18,10 +19,6 @@ export async function generateMetadata({
     title: mentor.name,
     description: mentor.bio ?? `${mentor.name}, mentor at KNEST.`,
   }
-}
-
-function expertiseLabel(value: string): string {
-  return EXPERTISE_OPTIONS.find((o) => o.value === value)?.label ?? value
 }
 
 export default async function MentorDetailPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -57,15 +54,29 @@ export default async function MentorDetailPage({ params }: { params: Promise<{ s
       </div>
 
       {mentor.linkedinUrl && (
-        <a
-          href={mentor.linkedinUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-8 inline-flex h-14 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-signal)] px-6 font-medium text-white hover:bg-[var(--color-signal-deep)]"
-        >
-          Connect on LinkedIn
-        </a>
+        <div className="mt-8">
+          <ButtonLink href={mentor.linkedinUrl} target="_blank" rel="noopener noreferrer" size="lg">
+            Connect on LinkedIn ↗
+          </ButtonLink>
+        </div>
       )}
+
+      <div className="mt-12 rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-[var(--color-paper-soft)] p-6">
+        <Heading as="h2" size="heading">
+          Before you write
+        </Heading>
+        <p className="mt-3 text-[length:var(--text-small)] text-[var(--color-ink-soft)]">
+          Lead with the specific thing you are stuck on and what you have already tried. A mentor can
+          answer that in one reply. &ldquo;Can I pick your brain?&rdquo; usually goes unanswered — not
+          out of rudeness, but because there is nothing in it to answer.
+        </p>
+      </div>
+
+      <p className="mt-10 text-[length:var(--text-small)]">
+        <Link href="/mentors" className="underline underline-offset-2">
+          ← All mentors
+        </Link>
+      </p>
     </div>
   )
 }

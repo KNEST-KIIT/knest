@@ -2,7 +2,7 @@
 
 import { useRef } from 'react'
 import Link from 'next/link'
-import { motion, useScroll, useTransform } from 'framer-motion'
+import { motion, useScroll, useTransform, type Variants } from 'framer-motion'
 import { Heading } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import { STAGE_OPTIONS } from '@/payload/fields/taxonomy'
@@ -108,10 +108,14 @@ export function TheJourney({ allPrograms }: { allPrograms: Program[] }) {
               <div className="md:col-span-2 text-left md:text-right md:pr-12 pt-8 md:pt-0">
                 <motion.span 
                   className="font-[family-name:var(--font-display)] text-[80px] md:text-[120px] font-bold leading-none block bg-clip-text" 
+                  // WebkitTextStroke is a real animatable CSS property but is
+                  // absent from framer-motion's `Variant` type, which broke
+                  // `pnpm typecheck` (and `next build` with it). The cast keeps
+                  // the animation exactly as authored.
                   variants={{
                     hidden: { color: 'transparent', WebkitTextStroke: '1px rgba(255,255,255,0.05)', textShadow: 'none' },
                     visible: { color: 'var(--color-signal)', WebkitTextStroke: '0px transparent', textShadow: '0 0 60px rgba(122, 31, 43, 0.4)' }
-                  }}
+                  } as Variants}
                   transition={{ duration: 0.8, ease: "easeOut" }}
                 >
                   0{index + 1}

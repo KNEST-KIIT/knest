@@ -2,17 +2,9 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { ButtonLink, Heading, Tag } from '@/components/ui'
 import { RichText } from '@/components/content/rich-text'
+import { resourceFormatLabel } from '@/lib/labels'
 import { getResourceBySlug } from '@/server/content/resources'
 import { track } from '@/server/analytics/track'
-
-const FORMAT_LABELS: Record<string, string> = {
-  guide: 'Guide',
-  template: 'Template',
-  playbook: 'Playbook',
-  video: 'Video',
-  article: 'Article',
-  worksheet: 'Worksheet',
-}
 
 export async function generateMetadata({
   params,
@@ -33,7 +25,7 @@ export default async function ResourceDetailPage({ params }: { params: Promise<{
 
   return (
     <div className="mx-auto w-full max-w-[720px] px-6 py-16 md:px-10">
-      <Tag tone="archive">{FORMAT_LABELS[resource.format]}</Tag>
+      <Tag tone="archive">{resourceFormatLabel(resource.format)}</Tag>
       <Heading as="h1" size="display" className="mt-4">
         {resource.title}
       </Heading>

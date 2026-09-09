@@ -9,6 +9,7 @@ import { cn } from '@/lib/cn'
 const NAV = [
   { href: '/programs', label: 'Programs' },
   { href: '/startups', label: 'Startups' },
+  { href: '/mentors', label: 'Mentors' },
   { href: '/ecosystem', label: 'Ecosystem' },
   { href: '/events', label: 'Events' },
   { href: '/resources', label: 'Resources' },
@@ -62,11 +63,11 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
       )}
     >
       <div className="mx-auto flex h-[4.5rem] w-full max-w-[1280px] items-center justify-between px-6 md:px-10">
-        <Link href="/" className="flex items-baseline gap-2">
+        <Link href="/" className="mr-4 flex shrink-0 items-baseline gap-2" aria-label="KNEST home">
           <Logo />
         </Link>
 
-        <nav aria-label="Main" className="hidden items-center gap-7 lg:flex">
+        <nav aria-label="Main" className="hidden items-center gap-5 lg:flex xl:gap-7">
           {NAV.map((item) => {
             const active = pathname.startsWith(item.href)
             return (
@@ -87,7 +88,7 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
           })}
         </nav>
 
-        <div className="hidden items-center gap-4 lg:flex">
+        <div className="hidden shrink-0 items-center gap-3 lg:flex xl:gap-4">
           <Link
             href="/search"
             aria-label="Search"
@@ -121,7 +122,7 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
               <ButtonLink href="/signup" size="sm">
                 Start building
               </ButtonLink>
-              <Link href="/login" className="text-[length:var(--text-small)]">
+              <Link href="/login" className="whitespace-nowrap text-[length:var(--text-small)]">
                 Log in
               </Link>
             </>

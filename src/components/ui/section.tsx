@@ -1,23 +1,47 @@
 import { cn } from '@/lib/cn'
 import { Heading } from './heading'
 
-/** Page-section rhythm: 128px desktop, 72px mobile, set in one place. */
+/**
+ * Page-section rhythm: 128px desktop, 72px mobile, set in one place.
+ *
+ * Vertical spacing is a `padding` prop rather than something a caller
+ * overrides through `className`, because `cn` is a plain join with no
+ * tailwind-merge behind it: passing `py-16` would leave *both* `py-16` and
+ * `py-[72px]` on the element and let whichever Tailwind happened to emit
+ * last decide the layout. A named prop cannot half-apply.
+ *
+ * - `default` — the standard rhythm between sections of a page.
+ * - `tight` — stacked content sections that would otherwise drift apart.
+ * - `top` — the first section under a `PageHero`, which already carries its
+ *   own generous space above.
+ * - `none` — the caller is doing its own spacing.
+ */
+const PADDING = {
+  default: 'py-[72px] md:py-32',
+  tight: 'py-16 md:py-24',
+  top: 'pb-16 pt-8 md:pb-24 md:pt-10',
+  none: '',
+} as const
+
 export function Section({
   className,
   children,
   inverted,
   id,
+  padding = 'default',
 }: {
   className?: string
   children: React.ReactNode
   inverted?: boolean
   id?: string
+  padding?: keyof typeof PADDING
 }) {
   return (
     <section
       id={id}
       className={cn(
-        'px-6 py-[72px] md:px-10 md:py-32',
+        'px-6 md:px-10',
+        PADDING[padding],
         inverted && 'bg-[var(--color-ink)] text-[var(--color-paper)]',
         className,
       )}

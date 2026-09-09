@@ -16,7 +16,8 @@
 ## 0. Official source material
 
 Sourced from KNEST's official pitch deck (School of Innovation & Entrepreneurial
-Leadership, KIIT Deemed to be University), added after Phase 4. Where this section and
+Leadership, KIIT Deemed to be University), added after Phase 4 and revised against a
+newer revision of that deck during the public-site content pass. Where this section and
 the narrative voice built in Phase 0 differ, they are not in conflict — they are
 different registers for different surfaces. The narrative voice (§1, "WHAT IF YOU
 ACTUALLY BUILT IT?") is how KNEST talks to a prospective student. This section is
@@ -28,11 +29,16 @@ matter of fact.
 **S**tudent **T**alent. Worth stating once, plainly, on `/about` — not necessarily on
 the homepage, where the emotional register comes first.
 
-**Official mission statement (verbatim):**
+**Official mission statement (verbatim, current deck revision):**
 
 > "To establish a university-anchored ecosystem where ideas are transformed into
-> responsible enterprises and institutions through disciplined experimentation, applied
-> learning, and ethical leadership."
+> impact-driven enterprises through disciplined experimentation, applied learning, and
+> ethical leadership."
+
+> **Changed.** The earlier deck read "responsible enterprises and institutions". The
+> newer revision reads "impact-driven enterprises", and that is what `/about` renders.
+> Both are KNEST's own words; if the older wording is the one that is meant to stand,
+> change it here first and the page follows.
 
 **Official tagline:** `INNOVATION READY . ENTERPRISE READY . MARKET READY` — a strong
 candidate for a footer strapline or an `/about` sub-head; the deck sets it in caps with
@@ -55,7 +61,13 @@ Leydesdorff's Triple Helix model, 1995) — three pillars reinforcing each other
 
 - **KIIT University** — policy and infrastructure
 - **Schools of KIIT** — innovation and research
-- **Corporate partners** — market access and capital
+- **Alumni & corporate partners** — market access, mentorship and capital
+
+The newer deck revision widens the third pillar from "corporate partners" to include
+alumni, and devotes a slide to why: alumni are the bridge between a student venture and
+the wider ecosystem, bringing real problems, market gaps that matter, a sounding board
+and practical handholding. That slide is the source for `/ecosystem`'s "The alumni
+effect" section.
 
 This is the right shape for the `/ecosystem` page's structural diagram (Phase 9,
 signature experience 04) — not a KNEST invention to visualise, but KNEST's own account
@@ -69,6 +81,25 @@ for the homepage:
 | School of Innovation & Entrepreneurial Leadership | Entrepreneurial leadership, venture development, innovation education, startup mentorship |
 | KIIT Kareer School | Career guidance, startup careers, industry connections, alumni engagement |
 | Other KIIT schools | Identifying founder mindset early, lab access, operational support, physical space |
+
+**The ecosystem framework** (source for `/ecosystem`'s "What sits inside it"). The deck
+maps everything KNEST runs onto six domains: Innovation (design thinking, problem
+solving, interdisciplinary learning), Entrepreneurship (mentorship, startup support,
+business development), Funding (government schemes, CSR, investors), Commercialisation
+(IPR, technology transfer, industry), Societal impact (jobs through startups,
+technology, sustainable development) and Academic excellence (teaching, research,
+projects).
+
+**The academic anchor.** The School of Innovation & Entrepreneurial Leadership runs the
+AICTE-approved MBA in Innovation, Entrepreneurship & Venture Development (`sld.kiit.ac.in/mba`),
+built on mentorship by founders, incubation support, opportunity access and action-based
+learning. Named on `/about` under "Who runs it".
+
+**The named contact.** The deck closes with one person: Ms Sujata Acharya,
+`sujata.acharya@kiit.ac.in`. She is the only individual it names, which is why `/about`'s
+team section lists her as the first point of contact and describes every other role by
+function rather than inventing names for them (§46 applies to people as much as to
+metrics).
 
 **Named infrastructure** (already reflected in the Infrastructure CMS collection's
 `spaceType` options): flexible co-working space (10,000–15,000 sq ft), modular startup

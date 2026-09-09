@@ -172,11 +172,14 @@ export default async function ProgramDetailPage({ params }: { params: Promise<{ 
             </section>
           )}
 
-          <section>
+          {/* The whole block is mobile-only: on a large screen the sticky
+              aside already carries the apply CTA, and this rendered as a
+              "Ready?" heading with nothing underneath it. */}
+          <section className="lg:hidden">
             <Heading as="h2" size="title">
               Ready?
             </Heading>
-            <div className="mt-4 max-w-[360px] lg:hidden">
+            <div className="mt-4 max-w-[360px]">
               <ApplyCta program={program} />
             </div>
           </section>

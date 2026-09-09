@@ -3,15 +3,20 @@
  * hand-typed independently at every call site (three of them byte-for-byte
  * identical) before being centralized here (PHASE-7-9-RETROSPECTIVE.md §2).
  * A future copy edit touches this file, not every page that renders it.
+ *
+ * All five headings are sentence case. Two of them were set in capitals,
+ * from the era when `Heading` uppercased its own text — it no longer does,
+ * so those two shouted while the other three did not, on pages a visitor
+ * sees side by side.
  */
 
 export const STARTUPS_EMPTY = {
-  heading: 'THE FIRST GENERATION IS BEING BUILT.',
+  heading: 'The first generation is being built.',
   body: "KNEST's first ventures are taking shape now. Their stories will be here. If you'd like one of them to be yours, this is the moment to start.",
 }
 
 export const MENTORS_EMPTY = {
-  heading: 'OUR MENTOR NETWORK IS FORMING.',
+  heading: 'Our mentor network is forming.',
   body: "We're bringing together founders, operators and investors who want to help. If that's you, we'd like to hear from you.",
 }
 

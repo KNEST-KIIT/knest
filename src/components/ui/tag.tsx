@@ -24,7 +24,9 @@ export function Tag({
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-[var(--radius-sm)] px-2.5 py-1',
+        // w-fit: `inline-flex` still stretches inside a flex column,
+        // which turned every card's status pill into a full-width bar.
+        'inline-flex w-fit items-center rounded-[var(--radius-sm)] px-2.5 py-1',
         'text-[length:var(--text-micro)] font-semibold uppercase tracking-[0.08em]',
         tones[tone],
         className,

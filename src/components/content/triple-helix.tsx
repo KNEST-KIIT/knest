@@ -1,7 +1,7 @@
 const PILLARS = [
   { label: 'KIIT University', role: 'Policy and infrastructure' },
   { label: 'Schools of KIIT', role: 'Innovation and research' },
-  { label: 'Corporate partners', role: 'Market access and capital' },
+  { label: 'Alumni & corporate partners', role: 'Market access, mentorship and capital' },
 ] as const
 
 /**

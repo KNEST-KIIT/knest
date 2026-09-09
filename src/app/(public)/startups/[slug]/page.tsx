@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Avatar, Heading, Tag, Timeline } from '@/components/ui'
 import { formatDate } from '@/lib/dates'
+import { sectorLabel, stageLabel } from '@/lib/labels'
 import { getStartupBySlug } from '@/server/content/startups'
 import { track } from '@/server/analytics/track'
 import { StoryArc } from './story-arc'
@@ -41,10 +42,10 @@ export default async function StartupDetailPage({ params }: { params: Promise<{ 
     <div className="mx-auto w-full max-w-[1280px] px-6 py-16 md:px-10">
       <div className="max-w-[68ch]">
         <div className="flex flex-wrap items-center gap-3">
-          {startup.stage && <Tag tone="signal">{startup.stage}</Tag>}
+          {startup.stage && <Tag tone="signal">{stageLabel(startup.stage)}</Tag>}
           {sectors.map((sector) => (
             <Tag key={sector} tone="archive">
-              {sector}
+              {sectorLabel(sector)}
             </Tag>
           ))}
         </div>

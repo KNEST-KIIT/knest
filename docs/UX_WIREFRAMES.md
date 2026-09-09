@@ -172,6 +172,26 @@ Full-bleed inverted panel (ink ground, paper type). Signal-orange primary CTA.
 shareable, back-button correct, and they survive a refresh. No client-side filter
 state. Result count is live and announced via `aria-live="polite"`.
 
+**A filter has to earn its render** (`src/lib/facets.ts`, added in the public-site
+content pass). Every listing previously drew its full filter bar unconditionally, over
+collections that ship empty — `/programs` offered five dropdowns above zero programs.
+Three rules now decide what appears, and they apply to `/programs`, `/startups`,
+`/events`, `/resources` and the "I need help with" selector on `/mentors` alike:
+
+1. Below six results there are no filters at all. Scanning is faster than filtering,
+   and the whole set is already on screen.
+2. A facet needs at least two distinct values present in the real data. One value
+   filters nothing; zero values is a dropdown of dead options.
+3. A facet already active in the URL is always shown, whatever the first two rules
+   say — otherwise a shared or bookmarked filtered link traps the visitor in a view
+   with no visible way out.
+
+Which facets a page *offers* is a separate, editorial decision, made per page rather
+than by listing every field a collection happens to have: `/programs` offers stage,
+audience and application status (sector and format were dropped — a KNEST program is
+stage-shaped, and format is in-person for effectively all of them), `/events` offers
+type and format (stage drives dashboard recommendations, not browsing).
+
 Grid: 3 columns desktop / 2 tablet / 1 mobile. Status badge is the first element in
 the card because "can I apply right now" is the first question asked.
 
