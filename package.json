@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "postbuild": "cp -r .next/static .next/standalone/.next/static && ([ -d public ] && cp -r public .next/standalone/public || true)",
+    "postbuild": "node -e \"const fs=require('fs'); if (fs.existsSync('.next/standalone')) { fs.cpSync('.next/static', '.next/standalone/.next/static', {recursive: true, force: true}); if (fs.existsSync('public')) fs.cpSync('public', '.next/standalone/public', {recursive: true, force: true}); }\"",
     "start": "next start",
     "start:standalone": "node .next/standalone/server.js",
     "lint": "next lint",
