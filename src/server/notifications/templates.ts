@@ -63,11 +63,18 @@ export function levelDecisionTemplate(
   }
 }
 
-/** Sent to a lab's managers when someone asks for time. */
-export function labBookingRequestedTemplate(labName: string, founderName: string) {
+/**
+ * Sent to a lab's managers when someone asks for time.
+ *
+ * The one template here whose subject may say what it is about: a manager is
+ * not the subject of the decision, so there is no outcome to keep off a lock
+ * screen, and a queue notification that does not name the room is useless to
+ * someone who runs three of them.
+ */
+export function labBookingRequestedTemplate(labName: string, founderName: string, when: string) {
   return {
     subject: `A booking request for ${labName}`,
-    text: `${founderName} has asked for time in ${labName}. Approve or decline it from your dashboard.`,
+    text: `${founderName} has asked for ${labName} on ${when}. Approve or decline it at /dashboard/labs/manage.`,
   }
 }
 

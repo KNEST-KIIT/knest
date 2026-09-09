@@ -1,8 +1,12 @@
 import { getPayload } from 'payload'
+import { hash } from 'bcryptjs'
 import { eq } from 'drizzle-orm'
 import config from '@/payload/payload.config'
 import { db } from './client'
+import { campusMoment, slotsForDay } from '@/server/labs/hours'
 import { applications, applicationAnswers } from './schema/applications'
+import { levelRequests } from './schema/founders'
+import { labBookings } from './schema/labs'
 import { users } from './schema/users'
 
 /**
@@ -358,11 +362,104 @@ const PARTNERS = [
   { slug: 'tcs-bbsr', name: 'TCS Bhubaneswar', type: 'industry', description: 'Industry mentorship and pilot opportunities.' },
 ]
 
+/** Weekdays 09:00–18:00, the shape most of these spaces actually keep. */
+const WEEKDAY_HOURS = ['1', '2', '3', '4', '5'].map((weekday) => ({
+  weekday,
+  opensAt: '09:00',
+  closesAt: '18:00',
+}))
+
+/**
+ * The two lab managers the demo signs in as.
+ *
+ * Professors in other KIIT schools: no `staffRole`, no admin console, and a
+ * queue at `/dashboard/labs/manage` scoped to the spaces that name them. Two
+ * of them rather than one, with no space in common, because "scoped to what
+ * you manage" proves nothing until you can log in as the other person and
+ * watch the queue change.
+ */
+const LAB_MANAGERS = [
+  { email: 'prof.mishra.demo@kiit.ac.in', name: 'Dr Anjali Mishra' },
+  { email: 'prof.das.demo@kiit.ac.in', name: 'Dr Subrat Das' },
+] as const
+const [LAB_MANAGER, OTHER_LAB_MANAGER] = LAB_MANAGERS
+
 const INFRASTRUCTURE = [
   { slug: 'coworking-17', name: 'Innovation Hall', spaceType: 'coworking', summary: 'Ninety desks, open to any KIIT student with an idea.', location: 'Campus 17, Ground floor', capacity: 90, equipment: ['Standing desks', 'Bookable meeting pods', '24/7 access'] },
-  { slug: 'maker-lab', name: 'Maker Lab', spaceType: 'maker_lab', summary: 'Prototyping for hardware teams.', location: 'Campus 15, Block B', capacity: 25, equipment: ['3D printers', 'Laser cutter', 'Electronics bench', 'CNC router'] },
-  { slug: 'studio', name: 'Content Studio', spaceType: 'digital_studio', summary: 'For teams making their first demo video or pitch recording.', location: 'Campus 17, First floor', capacity: 6, equipment: ['Lighting rig', 'Audio booth', 'Teleprompter'] },
+  {
+    slug: 'maker-lab',
+    name: 'Maker Lab',
+    spaceType: 'maker_lab',
+    summary: 'Prototyping for hardware teams.',
+    location: 'Campus 15, Block B',
+    capacity: 25,
+    equipment: ['3D printers', 'Laser cutter', 'Electronics bench', 'CNC router'],
+    booking: {
+      owningSchool: 'School of Mechanical Engineering',
+      minimumLevel: 3,
+      slotMinutes: 60,
+      maxAdvanceDays: 30,
+      openHours: WEEKDAY_HOURS,
+      managers: [LAB_MANAGER],
+    },
+  },
+  {
+    slug: 'studio',
+    name: 'Content Studio',
+    spaceType: 'digital_studio',
+    summary: 'For teams making their first demo video or pitch recording.',
+    location: 'Campus 17, First floor',
+    capacity: 6,
+    equipment: ['Lighting rig', 'Audio booth', 'Teleprompter'],
+    booking: {
+      minimumLevel: 3,
+      slotMinutes: 120,
+      maxAdvanceDays: 21,
+      // Half days, and closed at the weekend — a second shape, so the slot
+      // picker is not demonstrated against one uniform grid.
+      openHours: ['1', '3', '5'].map((weekday) => ({ weekday, opensAt: '10:00', closesAt: '16:00' })),
+      managers: [LAB_MANAGER],
+    },
+  },
   { slug: 'cabins', name: 'Founder Cabins', spaceType: 'founder_cabin', summary: 'Six private cabins, allocated per cohort.', location: 'Campus 17, Second floor', capacity: 6, equipment: ['Private desk space', 'Whiteboard wall'] },
+  {
+    slug: 'bio-instrumentation-lab',
+    name: 'Bio-Instrumentation Lab',
+    spaceType: 'maker_lab',
+    summary: 'Wet bench and imaging, shared with the School of Biotechnology.',
+    location: 'Campus 11, Block D',
+    capacity: 12,
+    equipment: ['Fume hood', 'Centrifuge', 'Fluorescence microscope', 'Autoclave'],
+    booking: {
+      owningSchool: 'School of Biotechnology',
+      // Higher than the platform's floor: the school that owns a wet lab gets
+      // to set its own bar, which is why `minimumLevel` is per-space.
+      minimumLevel: 4,
+      slotMinutes: 90,
+      maxAdvanceDays: 14,
+      openHours: ['2', '4'].map((weekday) => ({ weekday, opensAt: '09:00', closesAt: '17:30' })),
+      managers: [LAB_MANAGER],
+    },
+  },
+  {
+    slug: 'robotics-lab',
+    name: 'Robotics & Drone Lab',
+    spaceType: 'maker_lab',
+    summary: 'A netted flight cage and two arm cells, for teams building things that move.',
+    location: 'Campus 14, Ground floor',
+    capacity: 15,
+    equipment: ['Netted flight cage', 'Six-axis arm', 'Motion capture rig', 'Battery station'],
+    booking: {
+      owningSchool: 'School of Computer Engineering',
+      minimumLevel: 3,
+      slotMinutes: 60,
+      maxAdvanceDays: 45,
+      openHours: WEEKDAY_HOURS,
+      // Deliberately a different manager: the demo needs one space this
+      // account cannot see, or "scoped to what you manage" proves nothing.
+      managers: [OTHER_LAB_MANAGER],
+    },
+  },
 ]
 
 const FAQS = [
@@ -532,8 +629,9 @@ export async function seedDemo() {
   }
   console.log(`✓ ${RESOURCES.length} resources`)
 
+  const spaceIds = new Map<string, number>()
   for (const i of INFRASTRUCTURE) {
-    await upsertBy(payload, 'infrastructure', 'slug', i.slug, {
+    const doc = await upsertBy(payload, 'infrastructure', 'slug', i.slug, {
       name: i.name,
       summary: i.summary,
       spaceType: i.spaceType,
@@ -541,9 +639,14 @@ export async function seedDemo() {
       capacity: i.capacity,
       equipment: i.equipment.map((item) => ({ item })),
       description: richText(`${i.summary} Available to KNEST members.`),
+      // Spread rather than always-set, so a space with no `booking` block stays
+      // exactly what it was: showcase only, `bookable` false.
+      ...(i.booking ? { bookable: true, ...i.booking } : {}),
     })
+    spaceIds.set(i.slug, Number(doc.id))
   }
-  console.log(`✓ ${INFRASTRUCTURE.length} infrastructure spaces`)
+  const bookableCount = INFRASTRUCTURE.filter((i) => i.booking).length
+  console.log(`✓ ${INFRASTRUCTURE.length} infrastructure spaces (${bookableCount} bookable)`)
 
   // The faqs collection has no slug field, so these are keyed on the question
   // text — which is unique here and is what an editor would search on anyway.
@@ -568,6 +671,13 @@ export async function seedDemo() {
     { email: 'nisha.demo@knest.local', name: 'Nisha Rao', program: 'ignition', status: 'waitlisted' as const },
   ]
 
+  const demoUserIds = new Map<string, string>()
+  // The demo accounts get the same development password as `db:seed`'s two,
+  // because the demo is signed into as a founder and as a lab manager, not just
+  // read over their shoulder. Hashed once and reused: bcrypt at cost 12 is slow
+  // on purpose, and nine of them in a loop is a noticeable wait.
+  const demoPasswordHash = await hash(process.env.SEED_PASSWORD ?? 'knest-dev-password', 12)
+
   let created = 0
   for (const a of APPLICANTS) {
     const [user] = await db
@@ -577,12 +687,17 @@ export async function seedDemo() {
         name: `${a.name} ${DEMO_MARKER}`,
         platformRole: 'student',
         journeyStage: 'idea',
+        passwordHash: demoPasswordHash,
         onboardingCompletedAt: new Date(),
         emailVerified: new Date(),
       })
-      .onConflictDoUpdate({ target: users.email, set: { name: `${a.name} ${DEMO_MARKER}` } })
+      .onConflictDoUpdate({
+        target: users.email,
+        set: { name: `${a.name} ${DEMO_MARKER}`, passwordHash: demoPasswordHash },
+      })
       .returning()
     if (!user) continue
+    demoUserIds.set(a.email, user.id)
 
     const programId = Number(programIds.get(a.program))
     const existing = await db.select().from(applications).where(eq(applications.userId, user.id))
@@ -618,11 +733,159 @@ export async function seedDemo() {
   }
   console.log(`✓ ${APPLICANTS.length} applications across 7 statuses (${created} new)`)
 
+  await seedLevelsAndBookings(demoUserIds, spaceIds, demoPasswordHash)
+
   console.log(
     '\nDemo content seeded. Nothing a visitor reads is marked; the demo ' +
       `applicant accounts carry "${DEMO_MARKER}" so they can be cleaned up.\n` +
       'Remove all of it with: pnpm db:seed:demo --clear',
   )
+}
+
+/**
+ * Founder levels, the lab manager, and enough bookings to show the flow.
+ *
+ * None of this is demonstrable otherwise: with every account at level 1 the
+ * ladder has nothing on it, the booking form refuses everyone, and both queues
+ * are empty. So the demo needs a founder who has been granted level 3, one
+ * still asking, a manager to answer them, and a slot already held.
+ *
+ * The held slot matters most. It is the only way to show the exclusion
+ * constraint doing its job — approve a second request for the same hour and
+ * Postgres refuses it, which is the difference between this and the
+ * count-then-insert race in the events code.
+ */
+async function seedLevelsAndBookings(
+  demoUserIds: Map<string, string>,
+  spaceIds: Map<string, number>,
+  passwordHash: string,
+) {
+  /* ---- the lab managers: KIIT professors, deliberately not staff ---- */
+  for (const person of LAB_MANAGERS) {
+    const [manager] = await db
+      .insert(users)
+      .values({
+        email: person.email,
+        name: `${person.name} ${DEMO_MARKER}`,
+        platformRole: 'other',
+        passwordHash,
+        onboardingCompletedAt: new Date(),
+        emailVerified: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: users.email,
+        set: { name: `${person.name} ${DEMO_MARKER}`, passwordHash },
+      })
+      .returning()
+    if (manager) demoUserIds.set(person.email, manager.id)
+  }
+
+  /* ---- levels, so the ladder has people on more than one rung ---- */
+  const GRANTED: { email: string; level: number }[] = [
+    { email: 'aditi.demo@knest.local', level: 3 },
+    { email: 'fatima.demo@knest.local', level: 4 },
+    { email: 'lea.demo@knest.local', level: 5 },
+  ]
+  for (const grant of GRANTED) {
+    const userId = demoUserIds.get(grant.email)
+    if (!userId) continue
+    await db
+      .update(users)
+      .set({ founderLevel: grant.level, founderLevelGrantedAt: new Date(Date.now() - 9 * 86_400_000) })
+      .where(eq(users.id, userId))
+  }
+
+  /* ---- one request still waiting, so the staff queue is not empty ---- */
+  const asker = demoUserIds.get('rohit.demo@knest.local')
+  if (asker) {
+    const open = await db
+      .select()
+      .from(levelRequests)
+      .where(eq(levelRequests.userId, asker))
+    if (open.length === 0) {
+      await db.insert(levelRequests).values({
+        userId: asker,
+        requestedLevel: 2,
+        evidence:
+          'We shipped a working prototype of the campus lost-and-found app and forty students in Hall 7 are using it week to week. Asking for a founder profile so the mentors we are talking to can see what we are actually building.',
+      })
+    }
+  }
+
+  /* ---- bookings, on slots the space genuinely offers ---- */
+  const makerLabId = spaceIds.get('maker-lab')
+  const holder = demoUserIds.get('fatima.demo@knest.local')
+  const asker2 = demoUserIds.get('aditi.demo@knest.local')
+  const rival = demoUserIds.get('lea.demo@knest.local')
+  if (!makerLabId || !holder || !asker2 || !rival) return
+
+  const slots = nextOpenSlots(WEEKDAY_HOURS, 60, 3)
+  if (slots.length < 2) return
+
+  const existing = await db.select().from(labBookings).where(eq(labBookings.labId, makerLabId))
+  if (existing.length === 0) {
+    await db.insert(labBookings).values([
+      {
+        // Already approved: this is the row the exclusion constraint defends.
+        userId: holder,
+        labId: makerLabId,
+        startsAt: slots[0]!.startsAt,
+        endsAt: slots[0]!.endsAt,
+        purpose: 'Printing the third revision of the sensor housing and fitting the new board.',
+        status: 'approved' as const,
+        decidedAt: new Date(),
+        decisionNote: 'Fine — the resin printer is free that morning.',
+      },
+      {
+        // Waiting, so the manager queue has a decision to make on camera.
+        userId: asker2,
+        labId: makerLabId,
+        startsAt: slots[1]!.startsAt,
+        endsAt: slots[1]!.endsAt,
+        purpose:
+          'Calibrating the leaf-disease model against real samples from the Balasore interviews. Need the imaging bench and about an hour.',
+        status: 'requested' as const,
+      },
+      {
+        // Deliberately the same slot as the approved one above. Perfectly
+        // legal to ask for — only approved rows participate in the exclusion
+        // constraint — and approving it is what makes Postgres refuse and the
+        // manager see "That slot was just taken." There is no other way to
+        // demonstrate that the booking system is race-free rather than merely
+        // untested.
+        userId: rival,
+        labId: makerLabId,
+        startsAt: slots[0]!.startsAt,
+        endsAt: slots[0]!.endsAt,
+        purpose:
+          'Cutting acrylic for the vending prototype ahead of the pilot at Campus 6. An hour on the laser cutter is all we need.',
+        status: 'requested' as const,
+      },
+    ])
+  }
+  console.log(`✓ founder levels, 1 open level request, 3 lab bookings (two clashing, on purpose), ${LAB_MANAGERS.length} lab manager accounts`)
+}
+
+/**
+ * The next `count` slots a space offers, starting two days out.
+ *
+ * Two days rather than tomorrow so a demo run in the evening does not seed a
+ * booking that is already in the past by the morning.
+ */
+function nextOpenSlots(
+  openHours: { weekday: string; opensAt: string; closesAt: string }[],
+  slotMinutes: number,
+  count: number,
+) {
+  const found: { startsAt: Date; endsAt: Date }[] = []
+  for (let offset = 2; offset < 30 && found.length < count; offset += 1) {
+    const day = campusMoment(new Date(Date.now() + offset * 86_400_000))
+    for (const slot of slotsForDay(openHours, slotMinutes, day.year, day.month, day.day)) {
+      if (found.length >= count) break
+      found.push({ startsAt: slot.startsAt, endsAt: slot.endsAt })
+    }
+  }
+  return found
 }
 
 /** Removes only what this file created — matched on the marker, never a blanket truncate. */

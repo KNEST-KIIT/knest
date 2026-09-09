@@ -2,6 +2,7 @@
 
 import { and, desc, eq } from 'drizzle-orm'
 import { db } from '@/db/client'
+import { isUniqueViolation } from '@/server/db/errors'
 import { levelRequests, users } from '@/db/schema'
 import { track } from '@/server/analytics/track'
 import { requireUserOrThrow } from '@/server/auth/guards'
@@ -67,6 +68,8 @@ export async function requestLevelUp(input: {
     // 23505 is the partial unique index doing its job. The index is the truth;
     // this branch only exists to turn it into a sentence. Checking first and
     // then inserting is the shape that races (PHASE-5-6-RETROSPECTIVE.md §4).
+    // The code has to be dug out of `cause`: Drizzle wraps driver errors, and
+    // an in-line `'code' in error` test here silently never matched.
     if (isUniqueViolation(error)) {
       return {
         ok: false,
@@ -75,10 +78,6 @@ export async function requestLevelUp(input: {
     }
     throw error
   }
-}
-
-function isUniqueViolation(error: unknown): boolean {
-  return typeof error === 'object' && error !== null && 'code' in error && error.code === '23505'
 }
 
 /** The founder's own exit from a pending request. Staff never mark something withdrawn. */

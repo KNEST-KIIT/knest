@@ -1,8 +1,10 @@
 import type { Metadata } from 'next'
 import { Section, Heading } from '@/components/ui'
 import { requireOnboardedUser } from '@/server/auth/guards'
+import { listSpacesManagedBy } from '@/server/content/infrastructure'
 import { listNotificationsForUser } from '@/server/notifications/actions'
 import { NotificationsList } from './notifications-list'
+import { Standing } from './standing'
 import { StudentDashboard } from './student-view'
 import { FounderDashboard } from './founder-view'
 import { MentorDashboard } from './mentor-view'
@@ -29,13 +31,23 @@ export default async function DashboardPage() {
         ? `Thanks for being here${firstName ? `, ${firstName}` : ''}.`
         : `Welcome back${firstName ? `, ${firstName}` : ''}.`
 
-  const notifications = await listNotificationsForUser(user.id)
+  const [notifications, managedSpaces] = await Promise.all([
+    listNotificationsForUser(user.id),
+    // A lab manager is identified by their email being on a space's manager
+    // list, not by a role, so this is the only way to know whether to offer
+    // them their queue.
+    listSpacesManagedBy(user.email ?? ''),
+  ])
 
   return (
     <Section>
       <Heading as="h1" size="display">
         {greeting}
       </Heading>
+
+      <div className="mt-8">
+        <Standing level={user.founderLevel} manages={managedSpaces.length > 0} />
+      </div>
 
       {notifications.length > 0 && (
         <div className="mt-8">

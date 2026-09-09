@@ -913,6 +913,41 @@ export interface Infrastructure {
       }[]
     | null;
   images?: (number | Media)[] | null;
+  /**
+   * Leave blank for KNEST’s own spaces. Fill it in for a lab that belongs to another school — founders need to know whose room they are asking for.
+   */
+  owningSchool?: string | null;
+  /**
+   * Off until this space has managers who will actually answer requests. Nothing below applies while it is off.
+   */
+  bookable?: boolean | null;
+  /**
+   * Matched against the signed-in account’s email. They see this space’s queue at /dashboard/labs/manage — no admin console access, and nothing else on the platform changes for them.
+   */
+  managers?:
+    | {
+        email: string;
+        name?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Level 3 (Validation) is the platform default.
+   */
+  minimumLevel?: number | null;
+  slotMinutes?: number | null;
+  maxAdvanceDays?: number | null;
+  /**
+   * Campus wall-clock time (IST). A day with no row here cannot be booked at all, so an empty list closes the space.
+   */
+  openHours?:
+    | {
+        weekday: '1' | '2' | '3' | '4' | '5' | '6' | '0';
+        opensAt: string;
+        closesAt: string;
+        id?: string | null;
+      }[]
+    | null;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -1427,6 +1462,26 @@ export interface InfrastructureSelect<T extends boolean = true> {
         id?: T;
       };
   images?: T;
+  owningSchool?: T;
+  bookable?: T;
+  managers?:
+    | T
+    | {
+        email?: T;
+        name?: T;
+        id?: T;
+      };
+  minimumLevel?: T;
+  slotMinutes?: T;
+  maxAdvanceDays?: T;
+  openHours?:
+    | T
+    | {
+        weekday?: T;
+        opensAt?: T;
+        closesAt?: T;
+        id?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
   _status?: T;

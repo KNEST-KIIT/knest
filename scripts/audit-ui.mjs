@@ -46,7 +46,21 @@ const ROLES = [
   {
     label: 'member',
     email: process.env.AUDIT_MEMBER_EMAIL ?? 'student@knest.local',
-    pages: ['/dashboard', '/dashboard/events', '/dashboard/applications', '/onboarding'],
+    pages: [
+      '/dashboard',
+      '/dashboard/events',
+      '/dashboard/applications',
+      '/dashboard/level',
+      '/dashboard/labs',
+      '/onboarding',
+    ],
+  },
+  {
+    // A KIIT professor who manages a lab: no staff role, and the one route
+    // that exists only for them.
+    label: 'lab manager',
+    email: process.env.AUDIT_LAB_MANAGER_EMAIL ?? 'prof.mishra.demo@kiit.ac.in',
+    pages: ['/dashboard/labs/manage'],
   },
   {
     label: 'staff',
