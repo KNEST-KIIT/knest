@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
+import Link from 'next/link'
 import { ButtonLink, Heading, Tag } from '@/components/ui'
 import { RichText } from '@/components/content/rich-text'
 import { resourceFormatLabel } from '@/lib/labels'
@@ -45,6 +46,11 @@ export default async function ResourceDetailPage({ params }: { params: Promise<{
           </ButtonLink>
         </div>
       )}
+      <p className="mt-16 text-[length:var(--text-small)]">
+        <Link href="/resources" className="underline underline-offset-2">
+          &larr; All resources
+        </Link>
+      </p>
     </div>
   )
 }

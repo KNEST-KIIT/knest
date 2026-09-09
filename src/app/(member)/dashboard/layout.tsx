@@ -3,6 +3,7 @@ import { SiteHeader } from '@/components/layout/site-header'
 import { SkipLink } from '@/components/layout/skip-link'
 import { requireUser } from '@/server/auth/guards'
 import { countUnread } from '@/server/notifications/actions'
+import { DashboardNav } from './dashboard-nav'
 
 /**
  * Only requireUser() here, not requireOnboardedUser(): applying (/apply)
@@ -21,6 +22,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <>
       <SkipLink />
       <SiteHeader signedIn unreadCount={unreadCount} />
+      <DashboardNav />
       <main id="main">{children}</main>
       <SiteFooter />
     </>

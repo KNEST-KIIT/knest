@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
+import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ButtonLink, Field, Heading, Input, PasswordInput } from '@/components/ui'
 import { Button } from '@/components/ui/button'
@@ -104,9 +105,9 @@ export function SignupForm({ googleEnabled }: { googleEnabled: boolean }) {
 
       <p className="mt-6 text-center text-[length:var(--text-small)]">
         Already have one?{' '}
-        <a href="/login" className="font-medium text-[var(--color-signal)]">
+        <Link href="/login" className="font-medium text-[var(--color-signal)]">
           Log in.
-        </a>
+        </Link>
       </p>
     </div>
   )

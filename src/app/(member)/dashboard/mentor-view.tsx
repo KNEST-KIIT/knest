@@ -1,14 +1,10 @@
 import { Avatar, EmptyState, Heading, LinkCard, Tag } from '@/components/ui'
 import { formatEventTime } from '@/lib/dates'
-import { EXPERTISE_OPTIONS } from '@/payload/fields/taxonomy'
+import { expertiseLabel } from '@/lib/labels'
 import { getMentorByUserId } from '@/server/content/mentors'
 import { listProgramsByMentor } from '@/server/content/programs'
 import { listUpcomingEvents } from '@/server/content/events'
 import type { SessionUser } from '@/server/auth/guards'
-
-function expertiseLabel(value: string): string {
-  return EXPERTISE_OPTIONS.find((o) => o.value === value)?.label ?? value
-}
 
 export async function MentorDashboard({ user }: { user: SessionUser }) {
   const mentor = await getMentorByUserId(user.id)

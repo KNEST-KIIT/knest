@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
+import Link from 'next/link'
 import { EmptyState, Heading, LinkCard, Tag } from '@/components/ui'
 import { RichText } from '@/components/content/rich-text'
 import { formatDate } from '@/lib/dates'
@@ -191,6 +192,11 @@ export default async function ProgramDetailPage({ params }: { params: Promise<{ 
           </div>
         </aside>
       </div>
+      <p className="mt-16 text-[length:var(--text-small)]">
+        <Link href="/programs" className="underline underline-offset-2">
+          &larr; All programs
+        </Link>
+      </p>
     </div>
   )
 }

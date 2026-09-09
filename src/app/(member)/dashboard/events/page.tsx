@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { ButtonLink, Card, EmptyState, Heading, Section } from '@/components/ui'
 import { formatEventTime } from '@/lib/dates'
+import { REGISTRATIONS_EMPTY } from '@/lib/empty-state-copy'
 import { requireUser } from '@/server/auth/guards'
 import { listRegisteredEventsForUser } from '@/server/events/actions'
 
@@ -14,18 +15,14 @@ export default async function DashboardEventsPage() {
   const past = rows.filter((r) => r.event && new Date(r.event.startsAt) <= new Date())
 
   return (
-    <Section>
+    <Section padding="tight">
       <Heading as="h1" size="display">
         Your events
       </Heading>
 
       {rows.length === 0 ? (
         <div className="mt-8">
-          <EmptyState
-            heading="Nothing here yet"
-            body="You haven't registered for anything yet. When you do, you'll be able to track it here."
-            action={<ButtonLink href="/events">Browse events</ButtonLink>}
-          />
+          <EmptyState {...REGISTRATIONS_EMPTY} action={<ButtonLink href="/events">Browse events</ButtonLink>} />
         </div>
       ) : (
         <div className="mt-8 flex flex-col gap-8">

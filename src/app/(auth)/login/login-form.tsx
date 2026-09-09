@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
+import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ButtonLink, Field, Heading, Input, PasswordInput } from '@/components/ui'
 import { Button } from '@/components/ui/button'
@@ -42,6 +43,9 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
       <Heading as="h1" size="title">
         Welcome back.
       </Heading>
+      <p className="mt-3 text-[length:var(--text-small)] text-[var(--color-ink-soft)]">
+        Pick up where you left off — applications, registrations and everything you have saved.
+      </p>
 
       {googleEnabled && (
         <>
@@ -69,9 +73,9 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
               <PasswordInput {...fieldProps} name="password" autoComplete="current-password" required />
             )}
           </Field>
-          <a href="/reset" className="mt-2 inline-block text-[length:var(--text-small)] text-[var(--color-signal)]">
+          <Link href="/reset" className="mt-2 inline-block text-[length:var(--text-small)] text-[var(--color-signal)]">
             Forgot your password?
-          </a>
+          </Link>
         </div>
 
         {error && (
@@ -87,9 +91,9 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
 
       <p className="mt-6 text-center text-[length:var(--text-small)]">
         New to KNEST?{' '}
-        <a href="/signup" className="font-medium text-[var(--color-signal)]">
+        <Link href="/signup" className="font-medium text-[var(--color-signal)]">
           Start your journey.
-        </a>
+        </Link>
       </p>
     </div>
   )

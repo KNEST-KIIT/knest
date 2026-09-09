@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Heading } from '@/components/ui'
+import Link from 'next/link'
+import { ButtonLink, Heading } from '@/components/ui'
 
 export function VerifyConfirm({ email, token }: { email: string; token: string }) {
   const [state, setState] = useState<'checking' | 'ok' | 'error'>('checking')
@@ -25,7 +26,16 @@ export function VerifyConfirm({ email, token }: { email: string; token: string }
   }, [email, token])
 
   if (state === 'checking') {
-    return <p className="text-[length:var(--text-small)] text-[var(--color-ink-muted)]">Confirming…</p>
+    return (
+      <div>
+        <Heading as="h1" size="title">
+          Confirming your email.
+        </Heading>
+        <p className="mt-3 text-[length:var(--text-small)] text-[var(--color-ink-muted)]" role="status">
+          One moment.
+        </p>
+      </div>
+    )
   }
 
   if (state === 'error') {
@@ -35,9 +45,9 @@ export function VerifyConfirm({ email, token }: { email: string; token: string }
           That link has expired.
         </Heading>
         <p className="mt-3 text-[length:var(--text-small)] text-[var(--color-ink-soft)]">
-          <a href="/verify" className="font-medium text-[var(--color-signal)]">
+          <Link href="/verify" className="font-medium text-[var(--color-signal)]">
             Request a new one.
-          </a>
+          </Link>
         </p>
       </div>
     )
@@ -49,11 +59,13 @@ export function VerifyConfirm({ email, token }: { email: string; token: string }
         Email confirmed.
       </Heading>
       <p className="mt-3 text-[length:var(--text-small)] text-[var(--color-ink-soft)]">
-        You&rsquo;re all set.{' '}
-        <a href="/dashboard" className="font-medium text-[var(--color-signal)]">
-          Go to your dashboard.
-        </a>
+        You&rsquo;re all set. Your account is verified and everything is open to you.
       </p>
+      <div className="mt-6">
+        <ButtonLink href="/dashboard" size="lg" fullWidth>
+          Go to your dashboard
+        </ButtonLink>
+      </div>
     </div>
   )
 }

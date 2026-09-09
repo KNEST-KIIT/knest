@@ -32,7 +32,7 @@ export default async function DashboardPage() {
   const notifications = await listNotificationsForUser(user.id)
 
   return (
-    <Section>
+    <Section padding="tight">
       <Heading as="h1" size="display">
         {greeting}
       </Heading>

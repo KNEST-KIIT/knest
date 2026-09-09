@@ -42,3 +42,23 @@ export function searchEmpty(query: string) {
     body: 'Try a shorter phrase, or browse programs, events and resources.',
   }
 }
+
+/**
+ * The member area's own empty states. "Nothing here yet" was hand-typed in
+ * three places with three slightly different bodies, and said nothing about
+ * what would eventually be there or how to get it.
+ */
+export const APPLICATIONS_EMPTY = {
+  heading: 'No applications yet.',
+  body: 'Every program you apply to appears here — draft or submitted — with where it stands and what happens next. Nothing is submitted until you say so.',
+}
+
+export const REGISTRATIONS_EMPTY = {
+  heading: 'Nothing booked yet.',
+  body: 'Events you register for land here, upcoming first, so you can find the room and the time without digging back through your email.',
+}
+
+export const REVIEW_QUEUE_EMPTY = {
+  heading: 'Nothing in the queue.',
+  body: 'No application matches this filter. Widen it, or check back once the current cohort opens.',
+}

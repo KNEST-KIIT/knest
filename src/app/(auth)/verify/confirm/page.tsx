@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { VerifyConfirm } from './verify-confirm'
 import { Heading } from '@/components/ui'
 
@@ -18,9 +19,10 @@ export default async function VerifyConfirmPage({
           That link is invalid.
         </Heading>
         <p className="mt-3 text-[length:var(--text-small)] text-[var(--color-ink-soft)]">
-          <a href="/verify" className="font-medium text-[var(--color-signal)]">
+          It may have expired, or the address may be wrong.{' '}
+          <Link href="/verify" className="font-medium text-[var(--color-signal)]">
             Request a new one.
-          </a>
+          </Link>
         </p>
       </div>
     )

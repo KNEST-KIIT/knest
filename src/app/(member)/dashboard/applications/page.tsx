@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { ButtonLink, Card, EmptyState, Heading, Section } from '@/components/ui'
 import { formatDate } from '@/lib/dates'
+import { APPLICATIONS_EMPTY } from '@/lib/empty-state-copy'
 import { requireUser } from '@/server/auth/guards'
 import { listApplicationsForUser } from '@/server/applications/actions'
 import { ApplicationStatusBadge } from './status-badge'
@@ -12,18 +13,14 @@ export default async function ApplicationsPage() {
   const rows = await listApplicationsForUser(user.id)
 
   return (
-    <Section>
+    <Section padding="tight">
       <Heading as="h1" size="display">
         Your applications
       </Heading>
 
       {rows.length === 0 ? (
         <div className="mt-8">
-          <EmptyState
-            heading="Nothing here yet"
-            body="You haven't applied to anything yet. When you do, you'll be able to track it here."
-            action={<ButtonLink href="/programs">Browse programs</ButtonLink>}
-          />
+          <EmptyState {...APPLICATIONS_EMPTY} action={<ButtonLink href="/programs">Browse programs</ButtonLink>} />
         </div>
       ) : (
         <div className="mt-8 flex flex-col gap-4">

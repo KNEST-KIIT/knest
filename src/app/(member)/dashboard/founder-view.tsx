@@ -1,6 +1,6 @@
 import { EmptyState, Heading, LinkCard } from '@/components/ui'
 import { formatDate } from '@/lib/dates'
-import { RESOURCES_EMPTY } from '@/lib/empty-state-copy'
+import { APPLICATIONS_EMPTY, RESOURCES_EMPTY } from '@/lib/empty-state-copy'
 import { listApplicationsForUser } from '@/server/applications/actions'
 import { getProgramById } from '@/server/content/programs'
 import { listRecommendedResources } from '@/server/content/resources'
@@ -26,11 +26,7 @@ export async function FounderDashboard({ user }: { user: SessionUser }) {
           Your applications
         </Heading>
         {applications.length === 0 ? (
-          <EmptyState headingLevel="h3"
-            className="mt-6"
-            heading="Nothing here yet"
-            body="You haven't applied to anything yet. When you do, you'll be able to track it here."
-          />
+          <EmptyState headingLevel="h3" className="mt-6" {...APPLICATIONS_EMPTY} />
         ) : (
           <div className="mt-6 flex flex-col gap-3">
             {applications.map(({ application, programTitle, programSlug }) => (

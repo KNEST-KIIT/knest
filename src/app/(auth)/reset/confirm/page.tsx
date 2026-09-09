@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { ResetConfirmForm } from './reset-confirm-form'
 import { Heading } from '@/components/ui'
 
@@ -19,9 +20,9 @@ export default async function ResetConfirmPage({
         </Heading>
         <p className="mt-3 text-[length:var(--text-small)] text-[var(--color-ink-soft)]">
           It may have expired, or the address may be wrong.{' '}
-          <a href="/reset" className="font-medium text-[var(--color-signal)]">
+          <Link href="/reset" className="font-medium text-[var(--color-signal)]">
             Request a new one.
-          </a>
+          </Link>
         </p>
       </div>
     )

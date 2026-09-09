@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Heading } from '@/components/ui'
+import { EmptyState, Heading } from '@/components/ui'
 import { requireAdminArea } from '@/server/auth/guards'
 import { FUNNEL_EVENTS, getActivatedBuildersCount, getEventCounts, type FunnelStage } from '@/server/analytics/funnel'
 
@@ -38,9 +38,20 @@ export default async function AnalyticsPage() {
       <Heading as="h1" size="title">
         Analytics
       </Heading>
+      <p className="mt-3 max-w-[62ch] text-[length:var(--text-small)] text-[var(--color-ink-soft)]">
+        Counted server-side from KNEST&rsquo;s own event log — no third-party analytics, nothing sent
+        anywhere else. These are lifetime totals, not a date range.
+      </p>
 
       {totalEvents === 0 ? (
-        <p className="mt-6 text-[var(--color-ink-soft)]">No activity tracked yet.</p>
+        <div className="mt-8">
+          <EmptyState
+            headingLevel="h2"
+            size="compact"
+            heading="No activity tracked yet."
+            body="Counts appear here as people use the site — a page viewed, a search run, an application started. The log starts from the day tracking went live, not before."
+          />
+        </div>
       ) : (
         <>
           <div className="mt-8 rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-white p-6">

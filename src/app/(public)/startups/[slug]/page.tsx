@@ -117,6 +117,11 @@ export default async function StartupDetailPage({ params }: { params: Promise<{ 
           </aside>
         )}
       </div>
+      <p className="mt-16 text-[length:var(--text-small)]">
+        <Link href="/startups" className="underline underline-offset-2">
+          &larr; All startups
+        </Link>
+      </p>
     </div>
   )
 }

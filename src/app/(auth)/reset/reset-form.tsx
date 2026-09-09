@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Field, Heading, Input } from '@/components/ui'
+import Link from 'next/link'
+import { ButtonLink, Field, Heading, Input } from '@/components/ui'
 import { Button } from '@/components/ui/button'
 
 export function ResetForm() {
@@ -30,8 +31,14 @@ export function ResetForm() {
           Check your email.
         </Heading>
         <p className="mt-3 text-[length:var(--text-small)] text-[var(--color-ink-soft)]">
-          If there&rsquo;s an account for that address, the link is on its way. Check your inbox.
+          If there&rsquo;s an account for that address, the link is on its way. It expires in an hour.
+          Check spam if it hasn&rsquo;t arrived in a few minutes.
         </p>
+        <div className="mt-6">
+          <ButtonLink href="/login" variant="secondary" fullWidth>
+            Back to log in
+          </ButtonLink>
+        </div>
       </div>
     )
   }
@@ -53,6 +60,13 @@ export function ResetForm() {
           {pending ? 'Sending…' : 'Send reset link'}
         </Button>
       </form>
+
+      <p className="mt-6 text-center text-[length:var(--text-small)]">
+        Remembered it?{' '}
+        <Link href="/login" className="font-medium text-[var(--color-signal)]">
+          Log in.
+        </Link>
+      </p>
     </div>
   )
 }

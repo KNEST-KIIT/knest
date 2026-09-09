@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { EXPERTISE_OPTIONS, SECTOR_OPTIONS } from '@/payload/fields/taxonomy'
-import { Field, Heading, Input, MultiSelect, SingleSelect, Textarea } from '@/components/ui'
+import { Button, Field, Heading, Input, MultiSelect, SingleSelect, Textarea } from '@/components/ui'
 import type { JourneyStage, PlatformRole } from '@/server/auth/roles'
 import { recommend } from '@/server/onboarding/recommend'
 import { GOALS, JOURNEY_STAGES, MENTOR_AVAILABILITY, PLATFORM_ROLES } from '@/server/onboarding/validation'
@@ -347,19 +347,21 @@ export function OnboardingFlow({ initial, stagePrefill }: Props) {
           <strong>Why this: </strong>
           {result.reason}
         </p>
-        <button
-          type="button"
-          disabled={pending}
-          onClick={async () => {
-            setPending(true)
-            await postStep('complete')
-            router.push('/dashboard')
-            router.refresh()
-          }}
-          className="mt-6 inline-flex h-12 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-signal)] px-6 font-medium text-white hover:bg-[var(--color-signal-deep)] disabled:opacity-50"
-        >
-          {pending ? 'Finishing…' : result.cta}
-        </button>
+        <div className="mt-6">
+          <Button
+            type="button"
+            size="lg"
+            disabled={pending}
+            onClick={async () => {
+              setPending(true)
+              await postStep('complete')
+              router.push('/dashboard')
+              router.refresh()
+            }}
+          >
+            {pending ? 'Finishing…' : result.cta}
+          </Button>
+        </div>
       </div>
 
       <button type="button" onClick={() => setIndex(0)} className="mt-6 text-[length:var(--text-small)] text-[var(--color-signal)]">

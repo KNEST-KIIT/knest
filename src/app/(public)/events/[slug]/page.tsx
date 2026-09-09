@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { Avatar, Heading, Tag } from '@/components/ui'
+import Link from 'next/link'
+import { Avatar, ButtonLink, Heading, Tag } from '@/components/ui'
 import { RichText } from '@/components/content/rich-text'
 import { formatEventTime } from '@/lib/dates'
 import { eventTypeLabel, formatLabel } from '@/lib/labels'
@@ -95,20 +96,26 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
         <aside>
           <div className="sticky top-24 rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-white p-6 shadow-[var(--shadow-raised)]">
             {event.registrationUrl ? (
-              <a
+              <ButtonLink
                 href={event.registrationUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex h-14 w-full items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-signal)] px-6 font-medium text-white hover:bg-[var(--color-signal-deep)]"
+                size="lg"
+                fullWidth
               >
-                Register
-              </a>
+                Register ↗
+              </ButtonLink>
             ) : (
               <RegisterButton eventId={event.id} slug={slug} initiallyRegistered={initiallyRegistered} full={full} />
             )}
           </div>
         </aside>
       </div>
+      <p className="mt-16 text-[length:var(--text-small)]">
+        <Link href="/events" className="underline underline-offset-2">
+          &larr; All events
+        </Link>
+      </p>
     </div>
   )
 }

@@ -1,5 +1,4 @@
-import Link from 'next/link'
-import { Heading } from '@/components/ui'
+import { ButtonLink, Heading } from '@/components/ui'
 
 /**
  * The single-action hero card (CONTENT_SPEC.md §5) — one visual shape reused
@@ -37,12 +36,9 @@ export function NextStepCard({
           {reason}
         </p>
       )}
-      <Link
-        href={actionHref}
-        className="mt-6 inline-flex h-12 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-signal)] px-6 text-[length:var(--text-small)] font-medium text-white hover:bg-[var(--color-signal-deep)]"
-      >
-        {actionLabel}
-      </Link>
+      <div className="mt-6">
+        <ButtonLink href={actionHref}>{actionLabel}</ButtonLink>
+      </div>
     </div>
   )
 }

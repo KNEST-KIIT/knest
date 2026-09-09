@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Field, Heading, PasswordInput } from '@/components/ui'
@@ -50,9 +51,9 @@ export function ResetConfirmForm({ email, token }: { email: string; token: strin
         {error && (
           <p role="alert" className="text-[length:var(--text-small)] text-[var(--color-critical)]">
             {error}{' '}
-            <a href="/reset" className="font-medium text-[var(--color-signal)]">
+            <Link href="/reset" className="font-medium text-[var(--color-signal)]">
               Request a new link.
-            </a>
+            </Link>
           </p>
         )}
 
