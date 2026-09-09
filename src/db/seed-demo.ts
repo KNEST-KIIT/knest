@@ -1,9 +1,11 @@
 import { getPayload } from 'payload'
 import { hash } from 'bcryptjs'
-import { eq } from 'drizzle-orm'
+import { eq, inArray, like, or } from 'drizzle-orm'
 import config from '@/payload/payload.config'
 import { db } from './client'
 import { campusMoment, slotsForDay } from '@/server/labs/hours'
+import { analyticsEvents } from './schema/analytics'
+import { auditLogs } from './schema/notifications'
 import { applications, applicationAnswers } from './schema/applications'
 import { levelRequests } from './schema/founders'
 import { labBookings } from './schema/labs'
@@ -734,6 +736,7 @@ export async function seedDemo() {
   console.log(`✓ ${APPLICANTS.length} applications across 7 statuses (${created} new)`)
 
   await seedLevelsAndBookings(demoUserIds, spaceIds, demoPasswordHash)
+  await seedAnalytics(demoUserIds)
 
   console.log(
     '\nDemo content seeded. Nothing a visitor reads is marked; the demo ' +
@@ -909,6 +912,100 @@ function nextOpenSlots(
   return found
 }
 
+/**
+ * A coherent event stream behind the demo accounts.
+ *
+ * The analytics screen reports conversion along the path from landing to a
+ * submitted application. On a database with no events it correctly reports
+ * nothing, and on a development database it reports whatever a browser
+ * happened to do — which is not a funnel, it is test noise.
+ *
+ * So these events mirror what the demo accounts have actually already done:
+ * every applicant here has a real application row at a real status, and the
+ * events emitted are the ones that journey would have fired. Nothing is
+ * invented that the seeded data does not already assert; the anonymous
+ * top-of-funnel rows are the one addition, and they exist so the first step
+ * has something for the later steps to be a share of.
+ *
+ * Every row is stamped with a `demo-` session id — not a user-visible field —
+ * so `--clear` removes exactly these and nothing that really happened.
+ */
+const DEMO_SESSION_PREFIX = 'demo-'
+
+async function seedAnalytics(demoUserIds: Map<string, string>) {
+  const existing = await db
+    .select({ id: analyticsEvents.id })
+    .from(analyticsEvents)
+    .where(like(analyticsEvents.sessionId, `${DEMO_SESSION_PREFIX}%`))
+    .limit(1)
+  if (existing.length > 0) return
+
+  const session = () => `${DEMO_SESSION_PREFIX}${crypto.randomUUID()}`
+  const ago = (days: number) => new Date(Date.now() - days * 86_400_000)
+  const rows: {
+    userId?: string
+    sessionId: string
+    event: string
+    props?: Record<string, unknown>
+    createdAt: Date
+  }[] = []
+
+  // Anonymous visitors who looked and left. The wide top of any real funnel,
+  // and the reason the steps below have a denominator.
+  for (let i = 0; i < 180; i += 1) {
+    const sessionId = session()
+    const day = 1 + (i % 27)
+    rows.push({ sessionId, event: 'landing_view', createdAt: ago(day) })
+    if (i % 3 === 0) {
+      rows.push({ sessionId, event: 'journey_selector_choice', createdAt: ago(day) })
+    }
+    if (i % 4 === 0) {
+      rows.push({ sessionId, event: 'program_view', props: { programId: 1 }, createdAt: ago(day) })
+    }
+    if (i % 9 === 0) {
+      rows.push({
+        sessionId,
+        event: 'search_query',
+        props: { query: ['lab access', 'ignition', 'mentors', 'funding'][i % 4], resultCount: 3 },
+        createdAt: ago(day),
+      })
+    }
+  }
+
+  // Every seeded account, each firing exactly the steps its own rows imply.
+  // The mentor and the two lab managers signed up and onboarded but never
+  // applied to anything, which is true of them and is what puts a real
+  // drop-off between "finished onboarding" and "started an application"
+  // rather than a column of 100%s.
+  let day = 24
+  for (const [, userId] of demoUserIds) {
+    const sessionId = session()
+    day = Math.max(2, day - 2)
+    rows.push({ userId, sessionId, event: 'landing_view', createdAt: ago(day + 1) })
+    rows.push({ userId, sessionId, event: 'signup', createdAt: ago(day) })
+    rows.push({ userId, sessionId, event: 'onboarding_completed', createdAt: ago(day) })
+    rows.push({ userId, sessionId, event: 'program_view', props: { programId: 1 }, createdAt: ago(day) })
+
+    const [application] = await db
+      .select({ status: applications.status })
+      .from(applications)
+      .where(eq(applications.userId, userId))
+      .limit(1)
+    if (!application) continue
+
+    rows.push({ userId, sessionId, event: 'application_start', createdAt: ago(day - 1) })
+    if (application.status !== 'draft') {
+      rows.push({ userId, sessionId, event: 'application_submit', createdAt: ago(day - 1) })
+    }
+    if (application.status === 'accepted') {
+      rows.push({ userId, sessionId, event: 'application_accepted', createdAt: ago(1) })
+    }
+  }
+
+  await db.insert(analyticsEvents).values(rows)
+  console.log(`✓ ${rows.length} analytics events, so the funnel has a shape`)
+}
+
 /** Removes only what this file created — matched on the marker, never a blanket truncate. */
 export async function clearDemo() {
   const payload = await getPayload({ config })
@@ -931,11 +1028,52 @@ export async function clearDemo() {
     console.log(`✓ removed ${res.docs?.length ?? 0} from ${collection}`)
   }
 
-  const demoUsers = await db.select().from(users)
+  // Before the users, because `analytics_events.user_id` is ON DELETE SET
+  // NULL: removing the accounts first would leave these rows behind as
+  // ownerless demo data nothing could then identify.
+  const events = await db
+    .delete(analyticsEvents)
+    .where(like(analyticsEvents.sessionId, `${DEMO_SESSION_PREFIX}%`))
+    .returning({ id: analyticsEvents.id })
+  console.log(`✓ removed ${events.length} demo analytics events`)
+
+  const allUsers = await db.select().from(users)
+  const demoUsers = allUsers.filter((u) => u.name?.includes(DEMO_MARKER))
+  const demoIds = demoUsers.map((u) => u.id)
+
+  if (demoIds.length > 0) {
+    // Everything a demo account touched has to go before the account itself,
+    // and in this order, because two of these foreign keys are ON DELETE
+    // RESTRICT rather than CASCADE — deliberately, since a decision whose
+    // decider has vanished is a worse record than no decision at all. That
+    // was invisible until demo accounts started making decisions: a lab
+    // manager who has approved a booking is an `audit_logs.actor_user_id`,
+    // and the first `--clear` after that failed outright.
+    //
+    // A row here is demo data by construction. A demo account can only act on
+    // the demo world, so an audit entry naming one as its actor is a record
+    // of something this file set up.
+    const demoApplications = await db
+      .select({ id: applications.id })
+      .from(applications)
+      .where(inArray(applications.userId, demoIds))
+    const subjects = [...demoIds, ...demoApplications.map((row) => row.id)]
+
+    const auditRows = await db
+      .delete(auditLogs)
+      .where(or(inArray(auditLogs.actorUserId, demoIds), inArray(auditLogs.entityId, subjects)))
+      .returning({ id: auditLogs.id })
+    console.log(`✓ removed ${auditRows.length} audit entries from demo activity`)
+
+    // Both carry a `decided_by_user_id` that RESTRICTs, so they cannot wait
+    // for the account cascade.
+    await db.delete(labBookings).where(inArray(labBookings.userId, demoIds))
+    await db.delete(levelRequests).where(inArray(levelRequests.userId, demoIds))
+    await db.delete(applications).where(inArray(applications.userId, demoIds))
+  }
+
   let removed = 0
   for (const u of demoUsers) {
-    if (!u.name?.includes(DEMO_MARKER)) continue
-    await db.delete(applications).where(eq(applications.userId, u.id))
     await db.delete(users).where(eq(users.id, u.id))
     removed += 1
   }

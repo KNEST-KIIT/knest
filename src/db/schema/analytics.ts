@@ -27,5 +27,13 @@ export const analyticsEvents = appSchema.table(
   (table) => [
     index('analytics_events_event_idx').on(table.event),
     index('analytics_events_user_idx').on(table.userId),
+    /**
+     * Every funnel query counts one event over one period, and `createdAt`
+     * had no index at all — the analytics page had no time dimension partly
+     * because asking for one meant a sequential scan of the whole table.
+     * Event first, since it is always an equality match and the timestamp is
+     * always a range.
+     */
+    index('analytics_events_event_created_idx').on(table.event, table.createdAt),
   ],
 )

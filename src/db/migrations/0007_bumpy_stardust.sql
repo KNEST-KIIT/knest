@@ -1,0 +1,1 @@
+CREATE INDEX "analytics_events_event_created_idx" ON "app"."analytics_events" USING btree ("event","created_at");
