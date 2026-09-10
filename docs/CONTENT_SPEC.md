@@ -560,10 +560,10 @@ read.
 | Mentors | `/mentors`, `/mentors/[slug]`, program pages, mentor dashboard |
 | Infrastructure | `/ecosystem#infrastructure` |
 | Partners | `/ecosystem#partners`, homepage |
-| Articles | `/invest` (founder stories) |
+| Articles | **`/stories`, `/stories/[slug]`**, `/invest`, and the venture's own `/startups/[slug]` |
 | Founders | `/startups/[slug]` |
 | Cohorts | `/programs/[slug]` |
-| **FAQs** | **`/faq`, grouped by category** |
+| **FAQs** | **`/faq`, grouped by category — and `/search`, matched on the question** |
 | **Metrics** | **`/ecosystem`, each figure shown with its `asOf` date** |
 | **Testimonials** | **`/about`, and `/programs/[slug]` filtered to that program** |
 
@@ -575,6 +575,20 @@ date is the thing §46 exists to prevent.
 **Testimonials are filtered on `consentGiven` in the query**, not at the call site.
 A required checkbox is still a boolean that can be false, and this is the one field
 where getting it wrong publishes a named quote nobody agreed to.
+
+**Articles needed a route, not just a link.** The collection has a slug, a
+required rich-text body, an author, a hero image and its own SEO fields, and no
+page rendered any of it: `/invest` listed founder stories but pointed each card at
+the linked startup, because there was nowhere else to send it. A collection with
+SEO fields and no URL is a collection whose author's work cannot be read.
+
+**FAQs are searchable on the question, not the answer.** The answer is Lexical
+JSON, and a `contains` over it would match the editor's own node names as readily
+as the prose. The answer is still what a result *shows*, flattened to plain text —
+a search result that repeats the question back helps nobody decide whether to
+click. Each result links to `/faq#faq-<id>`, and a small client enhancement expands
+the targeted question: browsers do **not** do this on their own, which was measured
+rather than assumed.
 
 **Both render nothing when empty** — no "coming soon" placeholder. An empty
 testimonials section makes no promise to anyone, unlike an empty startups list,

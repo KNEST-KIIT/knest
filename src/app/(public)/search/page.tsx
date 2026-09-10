@@ -17,6 +17,7 @@ const TYPE_LABELS: Record<SearchResultType, string> = {
   startup: 'Startup',
   event: 'Event',
   resource: 'Resource',
+  faq: 'Question',
 }
 
 /** Where a visitor who searched and found nothing should go instead — the four things worth browsing whole. */

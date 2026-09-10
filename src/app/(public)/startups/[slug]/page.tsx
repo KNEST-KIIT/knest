@@ -1,9 +1,10 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { Avatar, Heading, Tag, Timeline } from '@/components/ui'
+import { Avatar, Heading, LinkCard, Tag, Timeline } from '@/components/ui'
 import { formatDate } from '@/lib/dates'
 import { sectorLabel, stageLabel } from '@/lib/labels'
+import { listArticlesForStartup } from '@/server/content/articles'
 import { getStartupBySlug } from '@/server/content/startups'
 import { track } from '@/server/analytics/track'
 import { StoryArc } from './story-arc'
@@ -28,6 +29,8 @@ export default async function StartupDetailPage({ params }: { params: Promise<{ 
   const startup = await getStartupBySlug(slug)
   if (!startup) notFound()
   await track('startup_view', { startupId: startup.id })
+
+  const articles = await listArticlesForStartup(startup.id)
 
   const founders = (startup.founders ?? []).filter((f) => typeof f === 'object')
   const cohort = typeof startup.cohort === 'object' ? startup.cohort : null
@@ -78,6 +81,28 @@ export default async function StartupDetailPage({ params }: { params: Promise<{ 
       <div className="mt-12 grid gap-12 lg:grid-cols-[1fr_320px]">
         <div className="flex flex-col gap-12">
           <StoryArc story={startup.story} />
+
+          {articles.length > 0 && (
+            <section>
+              <Heading as="h2" size="heading">
+                Written up
+              </Heading>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                {articles.map((article) => (
+                  <LinkCard
+                    key={article.id}
+                    href={`/stories/${article.slug}`}
+                    label={`Read ${article.title}`}
+                  >
+                    <p className="font-medium">{article.title}</p>
+                    <p className="mt-1 text-[length:var(--text-small)] text-[var(--color-ink-soft)]">
+                      {article.summary}
+                    </p>
+                  </LinkCard>
+                ))}
+              </div>
+            </section>
+          )}
 
           {achievements.length > 0 && (
             <section>

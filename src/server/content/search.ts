@@ -1,6 +1,7 @@
 import { getContentClient } from './payload-client'
+import { lexicalToPlainText } from '@/lib/lexical-text'
 
-export type SearchResultType = 'program' | 'startup' | 'event' | 'resource'
+export type SearchResultType = 'program' | 'startup' | 'event' | 'resource' | 'faq'
 
 export type SearchResult = {
   type: SearchResultType
@@ -23,6 +24,12 @@ export type SearchResult = {
  * PLAN.md §4.5/§4.6); a name-substring search over a small, staff-curated
  * directory would be a second, worse way to find the same thing the
  * expertise filter already does well.
+ *
+ * FAQs are included, and matched on `question` only: the answer is a Lexical
+ * rich-text field, and a `contains` over its JSON would match the editor's
+ * own node names as readily as the prose. The answer is still what the
+ * result *shows* — flattened to plain text — because a result that repeats
+ * the question back is no help in deciding whether to click it.
  */
 export async function search(query: string): Promise<SearchResult[]> {
   const trimmed = query.trim()
@@ -30,7 +37,7 @@ export async function search(query: string): Promise<SearchResult[]> {
 
   const payload = await getContentClient()
 
-  const [programs, startups, events, resources] = await Promise.all([
+  const [programs, startups, events, resources, faqs] = await Promise.all([
     payload.find({
       collection: 'programs',
       where: { or: [{ title: { contains: trimmed } }, { tagline: { contains: trimmed } }] },
@@ -61,6 +68,14 @@ export async function search(query: string): Promise<SearchResult[]> {
       depth: 0,
       limit: 20,
       sort: '-createdAt',
+      overrideAccess: false,
+    }),
+    payload.find({
+      collection: 'faqs',
+      where: { question: { contains: trimmed } },
+      depth: 0,
+      limit: 20,
+      sort: 'order',
       overrideAccess: false,
     }),
   ])
@@ -98,6 +113,14 @@ export async function search(query: string): Promise<SearchResult[]> {
       // Hosted-only, same as /resources' own card links (7-9.4) — an
       // external-only resource has no /resources/[slug] route.
       href: r.body ? `/resources/${r.slug}` : r.externalUrl || '#',
+    })),
+    ...faqs.docs.map((f) => ({
+      type: 'faq' as const,
+      id: f.id,
+      title: f.question,
+      summary: lexicalToPlainText(f.answer),
+      // FAQs have no page of their own; each is an anchor on /faq.
+      href: `/faq#faq-${f.id}`,
     })),
   ]
 

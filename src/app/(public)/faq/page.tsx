@@ -3,6 +3,7 @@ import { ButtonLink, EmptyState, Heading, Section } from '@/components/ui'
 import { PageHero } from '@/components/layout/page-hero'
 import { RichText } from '@/components/content/rich-text'
 import { listFaqsByCategory } from '@/server/content/faqs'
+import { OpenTargetedFaq } from './open-targeted'
 
 export const metadata: Metadata = {
   title: 'Questions',
@@ -28,6 +29,8 @@ export default async function FaqPage() {
         lede="Including the questions people feel slightly stupid asking. Nobody here started out knowing this, and asking early is cheaper than guessing."
       />
 
+      <OpenTargetedFaq />
+
       <Section padding="top">
         {groups.length === 0 ? (
           <EmptyState
@@ -43,8 +46,11 @@ export default async function FaqPage() {
                   {group.label}
                 </Heading>
                 <div className="mt-6 max-w-[68ch] divide-y divide-[var(--color-line)] border-y border-[var(--color-line)]">
+                  {/* The id is the anchor a search result links to; the
+                      OpenTargetedFaq enhancement above expands whichever one
+                      the fragment names. */}
                   {group.faqs.map((faq) => (
-                    <details key={faq.id} className="group py-5">
+                    <details key={faq.id} id={`faq-${faq.id}`} className="group scroll-mt-24 py-5">
                       <summary className="flex cursor-pointer list-none items-start justify-between gap-4 font-medium marker:content-none">
                         {faq.question}
                         <span

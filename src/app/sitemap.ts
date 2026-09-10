@@ -4,6 +4,7 @@ import { listStartups } from '@/server/content/startups'
 import { listUpcomingEvents } from '@/server/content/events'
 import { listResources } from '@/server/content/resources'
 import { listMentors } from '@/server/content/mentors'
+import { listArticles } from '@/server/content/articles'
 
 const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
 
@@ -19,6 +20,7 @@ const STATIC_ROUTES: { path: string; priority: number; changeFrequency: Metadata
   { path: '/about', priority: 0.7, changeFrequency: 'monthly' },
   { path: '/invest', priority: 0.6, changeFrequency: 'monthly' },
   { path: '/faq', priority: 0.6, changeFrequency: 'monthly' },
+  { path: '/stories', priority: 0.7, changeFrequency: 'weekly' },
   { path: '/search', priority: 0.3, changeFrequency: 'yearly' },
   { path: '/privacy', priority: 0.2, changeFrequency: 'yearly' },
   { path: '/terms', priority: 0.2, changeFrequency: 'yearly' },
@@ -35,12 +37,13 @@ const STATIC_ROUTES: { path: string; priority: number; changeFrequency: Metadata
  * sitemap is generated server-side with no visitor attached.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [programs, startups, events, resources, mentors] = await Promise.all([
+  const [programs, startups, events, resources, mentors, articles] = await Promise.all([
     listPrograms(),
     listStartups(),
     listUpcomingEvents(),
     listResources(),
     listMentors(),
+    listArticles(),
   ])
 
   const entries: MetadataRoute.Sitemap = STATIC_ROUTES.map((route) => ({
@@ -66,6 +69,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   add('/startups', startups, 0.7)
   add('/events', events, 0.7)
   add('/mentors', mentors, 0.6)
+  add('/stories', articles, 0.6)
   // An externally-hosted resource has no page of its own — its card links
   // straight out — so only hosted ones belong here.
   add('/resources', resources.filter((r) => Boolean(r.body)), 0.6)

@@ -163,6 +163,7 @@ export default async function InvestPage() {
             className="mt-8"
             heading="No founder stories published yet."
             body="As ventures move through KNEST, the people behind them are written up here — what they tried, what failed, and what they would do differently."
+            action={<ButtonLink href="/stories" variant="secondary">See all stories</ButtonLink>}
           />
         ) : (
           <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -171,20 +172,19 @@ export default async function InvestPage() {
               return (
                 <LinkCard
                   key={article.id}
-                  href={startup ? `/startups/${startup.slug}` : '/startups'}
+                  href={`/stories/${article.slug}`}
                   label={`Read ${startup?.name ?? article.title}'s story`}
                 >
-                  <Heading as="h3" size="heading">
+                  {startup && <Tag tone="signal">{startup.name}</Tag>}
+                  <Heading as="h3" size="heading" className={startup ? 'mt-4' : undefined}>
                     {article.title}
                   </Heading>
                   <p className="mt-2 text-[length:var(--text-small)] text-[var(--color-ink-soft)]">
                     {article.summary}
                   </p>
-                  {startup && (
-                    <span className="mt-4 inline-block text-[length:var(--text-small)] font-medium text-[var(--color-signal)]">
-                      Read {startup.name}&rsquo;s story →
-                    </span>
-                  )}
+                  <span className="mt-4 inline-block text-[length:var(--text-small)] font-medium text-[var(--color-signal)]">
+                    Read the story →
+                  </span>
                 </LinkCard>
               )
             })}
