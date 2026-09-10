@@ -39,22 +39,22 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
 
   return (
     <div>
-      <div className="mb-6">
-        <span className="inline-block text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-signal)] mb-1.5">
-          Founder & Operator Gateway
+      <div className="mb-5">
+        <span className="inline-block text-[9.5px] font-bold uppercase tracking-[0.2em] text-[var(--color-signal)] mb-1">
+          Founder Portal
         </span>
-        <h1 className="font-[family-name:var(--font-display)] text-2xl sm:text-3xl font-bold tracking-tight text-[var(--color-ink)]">
+        <h1 className="font-[family-name:var(--font-display)] text-xl sm:text-2xl font-bold tracking-tight text-[var(--color-ink)]">
           Welcome back.
         </h1>
-        <p className="mt-1.5 text-sm text-[var(--color-ink-soft)] leading-relaxed">
-          Access your venture dashboard, mentorship sessions, and resources.
+        <p className="mt-1 text-xs text-[var(--color-ink-soft)] leading-relaxed">
+          Sign in to access your venture dashboard and resources.
         </p>
       </div>
 
       {googleEnabled && (
         <>
-          <ButtonLink href="/api/auth/signin/google" variant="secondary" fullWidth className="mt-4">
-            <svg className="size-4 mr-1.5" viewBox="0 0 24 24">
+          <ButtonLink href="/api/auth/signin/google" variant="secondary" fullWidth className="mt-3.5 h-9 text-xs">
+            <svg className="size-3.5 mr-1.5" viewBox="0 0 24 24">
               <path
                 fill="currentColor"
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -74,7 +74,7 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
             </svg>
             Continue with Google
           </ButtonLink>
-          <div className="my-5 flex items-center gap-4 text-xs uppercase tracking-wider text-[var(--color-ink-muted)]">
+          <div className="my-4 flex items-center gap-3 text-[10px] uppercase tracking-wider text-[var(--color-ink-muted)]">
             <span className="h-px flex-1 bg-[var(--color-line)]" />
             or with email
             <span className="h-px flex-1 bg-[var(--color-line)]" />
@@ -82,7 +82,7 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
         </>
       )}
 
-      <form onSubmit={onSubmit} className="mt-5 flex flex-col gap-4 sm:gap-5" noValidate>
+      <form onSubmit={onSubmit} className="mt-4 flex flex-col gap-3.5" noValidate>
         <Field label="Email address">
           {(fieldProps) => (
             <Input 
@@ -109,18 +109,18 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
               />
             )}
           </Field>
-          <div className="mt-2 flex justify-end">
+          <div className="mt-1.5 flex justify-end">
             <a 
               href="/reset" 
-              className="text-xs font-medium text-[var(--color-signal)] hover:underline hover:text-[var(--color-signal-deep)] transition-colors"
+              className="text-[11px] font-medium text-[var(--color-signal)] hover:underline hover:text-[var(--color-signal-deep)] transition-colors"
             >
-              Forgot your password?
+              Forgot password?
             </a>
           </div>
         </div>
 
         {error && (
-          <div role="alert" className="p-3.5 rounded-lg bg-red-50 border border-red-200 text-xs font-medium text-[var(--color-critical)] flex items-start gap-2">
+          <div role="alert" className="p-3 rounded-lg bg-red-50 border border-red-200 text-xs font-medium text-[var(--color-critical)] flex items-start gap-2">
             <svg className="size-4 shrink-0 mt-0.5 text-[var(--color-critical)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
               <circle cx="12" cy="12" r="10" />
               <line x1="12" y1="8" x2="12" y2="12" />
@@ -132,27 +132,27 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
 
         <Button 
           type="submit" 
-          size="lg" 
+          size="md" 
           fullWidth 
           disabled={pending}
-          className="mt-2 text-sm font-semibold tracking-wide uppercase bg-gradient-to-r from-[var(--color-signal)] to-[#5a141e] hover:from-[#8f2433] hover:to-[var(--color-signal)] shadow-md hover:shadow-lg transition-all duration-300"
+          className="mt-1 h-10 text-xs font-bold tracking-widest uppercase bg-gradient-to-r from-[var(--color-signal)] to-[#5a141e] hover:from-[#8f2433] hover:to-[var(--color-signal)] shadow-sm hover:shadow transition-all duration-200"
         >
           {pending ? (
             <span className="inline-flex items-center gap-2">
-              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+              <svg className="animate-spin -ml-1 mr-2 h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
               Authenticating…
             </span>
           ) : (
-            'Log In to Dashboard →'
+            'Log In →'
           )}
         </Button>
       </form>
 
-      <div className="mt-8 pt-6 border-t border-[var(--color-line)]/60 text-center">
-        <p className="text-sm text-[var(--color-ink-soft)]">
+      <div className="mt-6 pt-4 border-t border-[var(--color-line)]/50 text-center">
+        <p className="text-xs text-[var(--color-ink-soft)]">
           New to KNEST?{' '}
           <a href="/signup" className="font-semibold text-[var(--color-signal)] hover:underline transition-all">
             Start your journey →

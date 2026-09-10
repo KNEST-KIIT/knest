@@ -33,25 +33,25 @@ export function Field({
   const describedBy = [errorId, hintId].filter(Boolean).join(' ') || undefined
 
   return (
-    <div className="flex flex-col gap-2">
-      <label htmlFor={id} className="text-[length:var(--text-small)] font-medium">
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor={id} className="text-xs font-semibold uppercase tracking-wider text-[var(--color-ink-soft)]">
         {label}
         {/* Optional fields are marked; required ones are not. Most fields are
             required, so marking the exception is quieter than marking the rule. */}
         {optional && (
-          <span className="ml-1 font-normal text-[var(--color-ink-muted)]">(optional)</span>
+          <span className="ml-1 text-[11px] font-normal normal-case text-[var(--color-ink-muted)]">(optional)</span>
         )}
       </label>
 
       {children({ id, 'aria-describedby': describedBy, 'aria-invalid': Boolean(error) })}
 
       {hint && !error && (
-        <p id={hintId} className="text-[length:var(--text-small)] text-[var(--color-ink-muted)]">
+        <p id={hintId} className="text-xs text-[var(--color-ink-muted)]">
           {hint}
         </p>
       )}
       {error && (
-        <p id={errorId} className="text-[length:var(--text-small)] text-[var(--color-critical)]">
+        <p id={errorId} className="text-xs text-[var(--color-critical)] font-medium">
           {error}
         </p>
       )}
@@ -60,10 +60,10 @@ export function Field({
 }
 
 const control =
-  'w-full bg-white/60 backdrop-blur-md border border-[var(--color-line)]/60 rounded-[var(--radius-md)] ' +
-  'px-4 text-[length:var(--text-body)] transition-all duration-300 ease-out shadow-sm ' +
-  'hover:border-[var(--color-archive)]/50 hover:bg-white hover:shadow-md ' +
-  'focus:border-[var(--color-signal)] focus:ring-4 focus:ring-[var(--color-signal)]/10 focus:outline-none focus:bg-white ' +
+  'w-full bg-white/80 backdrop-blur-md border border-[var(--color-line)]/70 rounded-lg ' +
+  'px-3.5 text-sm text-[var(--color-ink)] transition-all duration-200 ease-out shadow-[0_1px_2px_rgba(0,0,0,0.03)] ' +
+  'hover:border-[var(--color-archive)]/60 hover:bg-white ' +
+  'focus:border-[var(--color-signal)] focus:ring-2 focus:ring-[var(--color-signal)]/15 focus:outline-none focus:bg-white ' +
   'placeholder:text-[var(--color-ink-muted)] ' +
   'aria-[invalid=true]:border-[var(--color-critical)] aria-[invalid=true]:ring-[var(--color-critical)]/20 ' +
   'disabled:bg-[var(--color-paper-soft)] disabled:cursor-not-allowed'
@@ -73,14 +73,14 @@ export function Input({
   ref,
   ...props
 }: React.InputHTMLAttributes<HTMLInputElement> & { ref?: React.Ref<HTMLInputElement> }) {
-  return <input ref={ref} className={cn(control, 'h-12', className)} {...props} />
+  return <input ref={ref} className={cn(control, 'h-10', className)} {...props} />
 }
 
 export function Textarea({
   className,
   ...props
 }: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea className={cn(control, 'min-h-32 py-3 leading-relaxed', className)} {...props} />
+  return <textarea className={cn(control, 'min-h-28 py-2.5 leading-relaxed', className)} {...props} />
 }
 
 export function Select({
@@ -91,7 +91,7 @@ export function Select({
   return (
     <div className={cn("relative group", className)}>
       <select 
-        className={cn(control, 'appearance-none h-12 w-full pr-11 cursor-pointer')} 
+        className={cn(control, 'appearance-none h-10 w-full pr-10 cursor-pointer')} 
         {...props}
       >
         {children}
