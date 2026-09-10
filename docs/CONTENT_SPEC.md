@@ -492,6 +492,27 @@ Footer: *You're receiving this because you have a KNEST account. Manage what we 
 
 > **Status subjects are deliberately identical.** A subject line that reveals the
 > outcome delivers a rejection in a notification preview, in public, with no context.
+> Locked down by a test (`src/server/email/templates.test.ts`), because a future
+> edit making the subject "clearer" would look like a kindness and would not be one.
+
+**Every email carries the footer and a sign-off**, added by `emailLayout` rather
+than by each template remembering to. §7 opens by saying these are signed by a
+person; they were all unsigned, and the footer line above existed in this document
+and in no template.
+
+**Links in email are absolute.** The application emails pointed at bare paths
+(`/dashboard/applications`), which resolve in a browser and are not links at all in
+an inbox — the recipient read the path and had nothing to click.
+
+**The in-app notification body is not the email text.** Templates return both:
+`body` is the one sentence a notification card shows, `text` is that sentence plus
+the link, sign-off and footer. Passing the email text into a notification row puts
+"You're receiving this because you have a KNEST account" inside the dashboard.
+
+**Not implemented:** the *Deadline* and *Event reminder* rows above. Both are
+time-triggered rather than event-triggered, so they need a scheduled job the
+platform does not have yet. The copy stands; nothing sends it, and no template
+exists for it — an unused template is just a second place for the copy to rot.
 
 ---
 

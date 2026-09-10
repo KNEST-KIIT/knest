@@ -1,4 +1,5 @@
 import type { applicationStatus } from '@/db/schema'
+import { emailLayout, emailUrl } from '@/server/email/templates'
 
 /**
  * Application email copy, CONTENT_SPEC.md §7 verbatim.
@@ -6,13 +7,24 @@ import type { applicationStatus } from '@/db/schema'
  * Every status change uses the SAME subject line. A subject that revealed the
  * outcome would deliver a rejection — or an acceptance — in a lock-screen
  * notification preview, in public, before the applicant chose to open it.
+ *
+ * Each template returns `body` and `text` separately, and they are not
+ * interchangeable. `body` is the single sentence the in-app notification
+ * shows; `text` is the same sentence wrapped in the email's link, sign-off
+ * and footer. The status caller previously passed the email text straight
+ * into the notification row, so once the footer existed the dashboard would
+ * have shown "You're receiving this because you have a KNEST account" inside
+ * a notification card.
  */
 const STATUS_SUBJECT = (program: string) => `Your application to ${program} — an update`
 
 export function applicationReceivedTemplate(program: string) {
   return {
     subject: `We've got your application to ${program}`,
-    text: `Thanks for applying to ${program}. Your application is in and our team will read it. We'll be in touch by the date shown on your dashboard.\n\nYou can track its status any time from /dashboard/applications.`,
+    body: `We'll be in touch. You can track its status any time.`,
+    text: emailLayout(
+      `Thanks for applying to ${program}. Your application is in and our team will read it. We'll be in touch by the date shown on your dashboard.\n\nYou can track its status any time:\n${emailUrl('/dashboard/applications')}`,
+    ),
   }
 }
 
@@ -33,8 +45,11 @@ export function applicationStatusChangedTemplate(
   program: string,
   status: (typeof applicationStatus.enumValues)[number],
 ) {
+  const body = STATUS_BODY[status](program)
+
   return {
     subject: STATUS_SUBJECT(program),
-    text: `${STATUS_BODY[status](program)}\n\nSee the full update at /dashboard/applications.`,
+    body,
+    text: emailLayout(`${body}\n\nSee the full update:\n${emailUrl('/dashboard/applications')}`),
   }
 }

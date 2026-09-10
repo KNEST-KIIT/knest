@@ -81,12 +81,17 @@ export async function changeApplicationStatus(
   }
 
   const program = await getApplicationProgram(application.programId)
-  const { subject, text } = applicationStatusChangedTemplate(program?.title ?? 'your program', newStatus)
+  // `body` for the in-app row, `text` for the email — the two are not the
+  // same string: the email carries a link, a sign-off and the account footer.
+  const { subject, body, text } = applicationStatusChangedTemplate(
+    program?.title ?? 'your program',
+    newStatus,
+  )
   const notifyInput = {
     userId: application.userId,
     type: 'application_status_changed' as const,
     title: subject,
-    body: text,
+    body,
     href: '/dashboard/applications',
     applicationId,
     email: { subject, text },
