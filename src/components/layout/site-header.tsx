@@ -62,42 +62,51 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
       )}
     >
       <div className="mx-auto flex h-[4.5rem] w-full max-w-[1280px] items-center justify-between px-6 md:px-10">
-        <Link href="/" className="flex items-center gap-2 group focus-visible:outline-[var(--color-signal)]">
-          <Logo size="md" />
-        </Link>
+        {/* Left: Brand Logo & Navigation balanced together */}
+        <div className="flex items-center gap-8 lg:gap-10 xl:gap-12">
+          <Link
+            href="/"
+            className="flex items-center group focus-visible:outline-[var(--color-signal)] shrink-0"
+            aria-label="KNEST Home"
+          >
+            <Logo size="md" />
+          </Link>
 
-        <nav aria-label="Main" className="hidden items-center gap-7 lg:flex">
-          {NAV.map((item) => {
-            const active = pathname.startsWith(item.href)
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={active ? 'page' : undefined}
-                className={cn(
-                  'border-b-2 py-1 text-[length:var(--text-small)] font-medium transition-colors',
-                  active
-                    ? 'border-[var(--color-signal)] text-[var(--color-ink)]'
-                    : 'border-transparent text-[var(--color-ink-soft)] hover:border-[var(--color-line)] hover:text-[var(--color-ink)]',
-                )}
-              >
-                {item.label}
-              </Link>
-            )
-          })}
-        </nav>
+          <nav aria-label="Main" className="hidden items-center gap-5 lg:gap-6 xl:gap-7 lg:flex">
+            {NAV.map((item) => {
+              const active = pathname.startsWith(item.href)
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-current={active ? 'page' : undefined}
+                  className={cn(
+                    'relative inline-flex items-center h-9 px-1 text-sm font-medium transition-colors',
+                    active
+                      ? 'text-[var(--color-ink)] font-semibold after:absolute after:bottom-0 after:inset-x-0 after:h-0.5 after:bg-[var(--color-signal)]'
+                      : 'text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]',
+                  )}
+                >
+                  {item.label}
+                </Link>
+              )
+            })}
+          </nav>
+        </div>
 
-        <div className="hidden items-center gap-4 lg:flex">
+        {/* Right: Search, Log In, and Start Building CTA */}
+        <div className="hidden items-center gap-2.5 sm:gap-3.5 lg:flex shrink-0">
           <Link
             href="/search"
             aria-label="Search"
-            className="flex size-11 items-center justify-center text-[var(--color-ink-soft)] hover:text-[var(--color-signal)]"
+            className="flex size-9 items-center justify-center rounded-lg text-[var(--color-ink-soft)] hover:text-[var(--color-signal)] hover:bg-black/[0.04] transition-colors"
           >
-            <svg aria-hidden viewBox="0 0 20 20" fill="none" className="size-5" stroke="currentColor" strokeWidth="1.75">
+            <svg aria-hidden viewBox="0 0 20 20" fill="none" className="size-4.5" stroke="currentColor" strokeWidth="1.75">
               <circle cx="8.5" cy="8.5" r="6" />
               <path d="M17 17l-4-4" strokeLinecap="round" />
             </svg>
           </Link>
+
           {signedIn ? (
             <div className="relative">
               <ButtonLink
@@ -118,12 +127,15 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
             </div>
           ) : (
             <>
-              <ButtonLink href="/signup" size="sm">
-                Start building
-              </ButtonLink>
-              <Link href="/login" className="text-[length:var(--text-small)]">
+              <Link
+                href="/login"
+                className="inline-flex items-center h-9 px-3 text-sm font-medium text-[var(--color-ink-soft)] hover:text-[var(--color-ink)] transition-colors rounded-lg hover:bg-black/[0.04]"
+              >
                 Log in
               </Link>
+              <ButtonLink href="/signup" size="sm" className="whitespace-nowrap">
+                Start building
+              </ButtonLink>
             </>
           )}
         </div>
@@ -131,7 +143,7 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
         <button
           ref={toggleRef}
           type="button"
-          className="-mr-2 flex size-11 items-center justify-center lg:hidden"
+          className="-mr-2 flex size-10 items-center justify-center rounded-lg text-[var(--color-ink)] hover:bg-black/[0.04] transition-colors lg:hidden"
           aria-expanded={open}
           aria-controls="mobile-nav"
           onClick={() => setOpen((v) => !v)}
