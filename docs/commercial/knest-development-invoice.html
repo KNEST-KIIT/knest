@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KNEST — Development Invoice</title>
+<style>
+@page { size: A4; margin: 14mm 13mm 16mm; }
+* { box-sizing: border-box; }
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body {
+  margin: 0;
+  background: #fff;
+  color: #1a1a1a;
+  font: 400 10.2px/1.55 "Inter", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+.sheet { max-width: 190mm; margin: 0 auto; padding: 10mm 6mm 14mm; }
+@media print { .sheet { padding: 0; max-width: none; } }
+
+h1, h2, h3 { font-family: "Fraunces", Georgia, "Times New Roman", serif; font-weight: 600; margin: 0; }
+h1 { font-size: 26px; letter-spacing: -0.01em; line-height: 1.1; }
+h2 { font-size: 13.5px; letter-spacing: 0.01em; margin: 22px 0 8px; padding-bottom: 5px; border-bottom: 1.5px solid #1a1a1a; }
+h3 { font-size: 11.5px; margin: 14px 0 5px; }
+p { margin: 0 0 8px; }
+a { color: #76232f; text-decoration: none; }
+.muted { color: #6b6558; }
+.small { font-size: 9.2px; line-height: 1.5; }
+.sig { color: #76232f; }
+
+/* masthead */
+.masthead { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px;
+  border-bottom: 2.5px solid #1a1a1a; padding-bottom: 12px; }
+.masthead .vendor { max-width: 62%; }
+.vendor .name { font-family: "Fraunces", Georgia, serif; font-size: 15px; font-weight: 600; }
+.vendor .tag { font-size: 9.2px; letter-spacing: 0.08em; text-transform: uppercase; color: #76232f; margin-top: 2px; }
+.vendor .lines { margin-top: 7px; font-size: 9.2px; line-height: 1.55; color: #6b6558; }
+.doctype { text-align: right; }
+.doctype .kind { font-size: 9.2px; letter-spacing: 0.22em; text-transform: uppercase; color: #6b6558; }
+.doctype h1 { margin-top: 2px; }
+.doctype .for { font-size: 9.5px; color: #6b6558; margin-top: 3px; }
+
+/* meta strip */
+.meta { display: flex; gap: 0; margin-top: 14px; border: 1px solid #ded9cd; }
+.meta > div { flex: 1; padding: 8px 10px; border-right: 1px solid #ded9cd; }
+.meta > div:last-child { border-right: 0; }
+.meta .k { font-size: 8.2px; letter-spacing: 0.12em; text-transform: uppercase; color: #6b6558; }
+.meta .v { font-size: 10.5px; font-weight: 600; margin-top: 2px; }
+.meta .v.hi { color: #76232f; }
+
+/* parties */
+.parties { display: flex; gap: 14px; margin-top: 14px; }
+.parties > div { flex: 1; border-top: 1px solid #ded9cd; padding-top: 8px; }
+.parties .k { font-size: 8.2px; letter-spacing: 0.12em; text-transform: uppercase; color: #6b6558; margin-bottom: 4px; }
+.parties .who { font-weight: 600; font-size: 11px; }
+.parties .sub { font-size: 9.2px; color: #6b6558; }
+.parties .lines { font-size: 9.2px; color: #6b6558; margin-top: 4px; line-height: 1.55; }
+
+/* scope table */
+table.scope { width: 100%; border-collapse: collapse; margin-top: 6px; }
+table.scope td { padding: 5px 6px; vertical-align: top; border-bottom: 1px solid #efece4; }
+table.scope thead th {
+  font-size: 8.2px; letter-spacing: 0.12em; text-transform: uppercase; color: #6b6558;
+  text-align: left; padding: 0 6px 5px; border-bottom: 1.5px solid #1a1a1a; font-weight: 500;
+}
+table.scope thead th.amt { text-align: right; }
+td.num { width: 7%; color: #a6a397; font-size: 9.2px; padding-top: 6px; }
+td.amt { width: 17%; text-align: right; white-space: nowrap; font-weight: 600; }
+.item { display: block; font-weight: 600; font-size: 10.2px; }
+.detail { display: block; font-size: 8.9px; line-height: 1.45; color: #6b6558; margin-top: 1px; }
+tr.section td { background: #f6f4ee; border-bottom: 1px solid #ded9cd; padding: 7px 6px 6px; }
+tr.section { break-after: avoid; page-break-after: avoid; }
+.sec-title { font-family: "Fraunces", Georgia, serif; font-weight: 600; font-size: 11.5px; letter-spacing: 0.01em; }
+.sec-note { font-size: 8.9px; color: #6b6558; margin-left: 8px; }
+tr.subtotal td { font-size: 9.2px; color: #6b6558; border-bottom: 1.5px solid #ded9cd; padding-top: 5px; padding-bottom: 7px; }
+tr.subtotal td.amt { color: #1a1a1a; }
+tr { break-inside: avoid; page-break-inside: avoid; }
+
+/* total */
+.total { margin-top: 14px; display: flex; justify-content: flex-end; }
+.total .box { min-width: 62%; }
+.total .row { display: flex; justify-content: space-between; padding: 5px 10px; font-size: 10.2px; }
+.total .row.grand {
+  background: #1a1a1a; color: #f6f4ee; padding: 11px 10px; margin-top: 4px; align-items: baseline;
+}
+.total .row.grand .lbl { font-family: "Fraunces", Georgia, serif; font-size: 12.5px; }
+.total .row.grand .val { font-family: "Fraunces", Georgia, serif; font-size: 19px; font-weight: 600; }
+.words { margin-top: 6px; text-align: right; font-size: 9.2px; color: #6b6558; font-style: italic; }
+
+/* generic blocks */
+.cols { display: flex; gap: 18px; margin-top: 6px; }
+.cols > div { flex: 1; }
+.kv { display: flex; font-size: 9.4px; padding: 2.5px 0; border-bottom: 1px dotted #e4e0d6; }
+.kv .k { width: 42%; color: #6b6558; }
+.kv .v { flex: 1; font-weight: 500; }
+ul.tight { margin: 4px 0 8px; padding-left: 15px; }
+ul.tight li { font-size: 9.4px; line-height: 1.5; margin-bottom: 3px; }
+table.grid { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 9.4px; }
+table.grid th {
+  text-align: left; font-size: 8.2px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: #6b6558; font-weight: 500; padding: 0 8px 5px 0; border-bottom: 1.5px solid #1a1a1a;
+}
+table.grid td { padding: 5px 8px 5px 0; border-bottom: 1px solid #efece4; vertical-align: top; }
+table.grid td.r, table.grid th.r { text-align: right; padding-right: 0; }
+.callout { border-left: 2.5px solid #76232f; background: #faf8f3; padding: 8px 11px; margin: 8px 0; font-size: 9.4px; line-height: 1.55; }
+.note { font-size: 8.9px; color: #6b6558; line-height: 1.5; }
+.sign { display: flex; gap: 40px; margin-top: 26px; break-inside: avoid; }
+.sign > div { flex: 1; }
+.sign .line { border-bottom: 1px solid #1a1a1a; height: 34px; }
+.sign .cap { font-size: 8.6px; color: #6b6558; margin-top: 4px; }
+footer.doc { margin-top: 20px; padding-top: 8px; border-top: 1px solid #ded9cd;
+  display: flex; justify-content: space-between; font-size: 8.4px; color: #a6a397; }
+.pagebreak { break-before: page; page-break-before: always; }
+</style>
+</head>
+<body><div class="sheet">
+
+<div class="masthead">
+  <div class="vendor">
+    <div class="name">«Your Name / Studio Name»</div>
+    <div class="tag">Product engineering & design</div>
+    <div class="lines">
+      «Street address»<br>«City, State — PIN»<br>India<br>
+      «you@example.com» · «+91 XXXXX XXXXX»<br>
+      PAN «PAN» · «GSTIN — delete this line if unregistered»
+    </div>
+  </div>
+  <div class="doctype">
+    <div class="kind">Tax Invoice</div>
+    <h1>Invoice</h1>
+    <div class="for">Design &amp; development of the KNEST platform</div>
+  </div>
+</div>
+
+<div class="meta">
+  <div><div class="k">Invoice no.</div><div class="v">KNEST/2026-27/001</div></div>
+  <div><div class="k">Invoice date</div><div class="v">10 September 2026</div></div>
+  <div><div class="k">Payment due</div><div class="v">25 September 2026</div></div>
+  <div><div class="k">Amount due</div><div class="v hi">₹98,200</div></div>
+</div>
+
+
+<div class="parties">
+  <div>
+    <div class="k">Billed to</div>
+    <div class="who">KNEST</div>
+    <div class="sub">KIIT Nest — Innovation & Entrepreneurship Ecosystem</div>
+    <div class="lines">Kalinga Institute of Industrial Technology<br>Patia, Bhubaneswar, Odisha — 751024<br>India<br>Attn: «Name, Designation»</div>
+  </div>
+  <div>
+    <div class="k">Engagement</div>
+    <div class="lines" style="margin-top:0"><strong style="color:#1a1a1a">KNEST digital platform — build &amp; launch</strong><br>
+   Public website, member portal and staff operations console over one shared
+   account and content model.<br><br>
+   <span style="color:#1a1a1a;font-weight:600">Status:</span> delivered, deployed and in production.<br>
+   <span style="color:#1a1a1a;font-weight:600">Basis:</span> fixed price, charged module by module.</div>
+  </div>
+</div>
+
+<h2>Scope of work &amp; charges</h2>
+<p class="note" style="margin-bottom:8px">
+  Each line below is a delivered, working module. Charges are fixed per module,
+  not hourly, and no single module exceeds ₹5,000. Amounts are in Indian Rupees.
+</p>
+
+<table class="scope">
+  <thead>
+    <tr><th>#</th><th>Module &amp; deliverable</th><th class="amt">Amount (₹)</th></tr>
+  </thead>
+  <tbody>
+        <tr class="section">
+          <td colspan="3">
+            <span class="sec-title">Foundation & Design System</span>
+            <span class="sec-note">The base the rest of the platform is built on.</span>
+          </td>
+        </tr>
+          <tr>
+            <td class="num">01</td>
+            <td><span class="item">Project foundation</span><span class="detail">Application framework, code standards, type safety, build and release pipeline.</span></td>
+            <td class="amt">₹2,000</td>
+          </tr>
+          <tr>
+            <td class="num">02</td>
+            <td><span class="item">Database architecture</span><span class="detail">Two separate stores in one database — editorial content kept apart from operational records — so the CMS never becomes the backend.</span></td>
+            <td class="amt">₹2,400</td>
+          </tr>
+          <tr>
+            <td class="num">03</td>
+            <td><span class="item">Database schema, migrations & seed tooling</span><span class="detail">8 schema modules, 6 versioned migrations, and seeding scripts for first-run and demo data.</span></td>
+            <td class="amt">₹2,200</td>
+          </tr>
+          <tr>
+            <td class="num">04</td>
+            <td><span class="item">Design system</span><span class="detail">Colour palette, typography scale, spacing, borders and motion rules, expressed as reusable design tokens.</span></td>
+            <td class="amt">₹2,800</td>
+          </tr>
+          <tr>
+            <td class="num">05</td>
+            <td><span class="item">Interface component library</span><span class="detail">20 reusable components — buttons, cards, form fields, tables, badges, timelines, empty and loading states.</span></td>
+            <td class="amt">₹3,200</td>
+          </tr>
+          <tr>
+            <td class="num">06</td>
+            <td><span class="item">Site-wide layout</span><span class="detail">Responsive header, mobile navigation drawer, footer and keyboard skip-navigation, consistent across all pages.</span></td>
+            <td class="amt">₹2,400</td>
+          </tr>
+        <tr class="subtotal">
+          <td></td>
+          <td>Subtotal — Foundation & Design System</td>
+          <td class="amt">₹15,000</td>
+        </tr>
+        <tr class="section">
+          <td colspan="3">
+            <span class="sec-title">Accounts & Access Control</span>
+            <span class="sec-note">One account per person; one login for the whole platform.</span>
+          </td>
+        </tr>
+          <tr>
+            <td class="num">07</td>
+            <td><span class="item">Authentication core</span><span class="detail">Sign-in system backed by server-side sessions that can be revoked instantly — removing someone locks them out on their next request.</span></td>
+            <td class="amt">₹2,800</td>
+          </tr>
+          <tr>
+            <td class="num">08</td>
+            <td><span class="item">Sign-up & sign-in</span><span class="detail">Account creation and password sign-in with industry-standard password hashing.</span></td>
+            <td class="amt">₹2,200</td>
+          </tr>
+          <tr>
+            <td class="num">09</td>
+            <td><span class="item">Email verification</span><span class="detail">Verification link issue, expiry and confirmation.</span></td>
+            <td class="amt">₹1,600</td>
+          </tr>
+          <tr>
+            <td class="num">10</td>
+            <td><span class="item">Password reset</span><span class="detail">Reset request and secure confirmation flow.</span></td>
+            <td class="amt">₹1,600</td>
+          </tr>
+          <tr>
+            <td class="num">11</td>
+            <td><span class="item">Roles & permissions</span><span class="detail">Staff / member separation, protected routes, and permissions re-checked from the database on every request.</span></td>
+            <td class="amt">₹2,400</td>
+          </tr>
+          <tr>
+            <td class="num">12</td>
+            <td><span class="item">Account screens</span><span class="detail">Six screens — sign in, sign up, verify, verification confirmation, reset request, reset confirmation.</span></td>
+            <td class="amt">₹2,400</td>
+          </tr>
+        <tr class="subtotal">
+          <td></td>
+          <td>Subtotal — Accounts & Access Control</td>
+          <td class="amt">₹13,000</td>
+        </tr>
+        <tr class="section">
+          <td colspan="3">
+            <span class="sec-title">Content Management System</span>
+            <span class="sec-note">Everything on the public site is editable by KNEST staff without a developer.</span>
+          </td>
+        </tr>
+          <tr>
+            <td class="num">13</td>
+            <td><span class="item">CMS setup & staff console</span><span class="detail">Admin console mounted inside the application, with staff signing in using the same single account as the rest of the platform.</span></td>
+            <td class="amt">₹3,000</td>
+          </tr>
+          <tr>
+            <td class="num">14</td>
+            <td><span class="item">Content types — Programs, Cohorts, Startups, Founders</span><span class="detail">Fields, relationships, validation and editor layout for four content types.</span></td>
+            <td class="amt">₹2,400</td>
+          </tr>
+          <tr>
+            <td class="num">15</td>
+            <td><span class="item">Content types — Mentors, Events, Partners, Infrastructure</span><span class="detail">Fields, relationships, validation and editor layout for four content types.</span></td>
+            <td class="amt">₹2,200</td>
+          </tr>
+          <tr>
+            <td class="num">16</td>
+            <td><span class="item">Content types — Resources, Articles, FAQs, Media library</span><span class="detail">Four content types including rich-text authoring and the image/media library.</span></td>
+            <td class="amt">₹2,000</td>
+          </tr>
+          <tr>
+            <td class="num">17</td>
+            <td><span class="item">Content types — Metrics, Testimonials, Staff, Homepage settings</span><span class="detail">Three content types plus site-wide homepage settings.</span></td>
+            <td class="amt">₹1,600</td>
+          </tr>
+          <tr>
+            <td class="num">18</td>
+            <td><span class="item">Content delivery layer</span><span class="detail">11 typed data services that read published content for the public site, with safe fallbacks so a database hiccup degrades gracefully instead of erroring.</span></td>
+            <td class="amt">₹2,800</td>
+          </tr>
+        <tr class="subtotal">
+          <td></td>
+          <td>Subtotal — Content Management System</td>
+          <td class="amt">₹14,000</td>
+        </tr>
+        <tr class="section">
+          <td colspan="3">
+            <span class="sec-title">Public Website</span>
+            <span class="sec-note">The public front door — discover, self-locate, apply.</span>
+          </td>
+        </tr>
+          <tr>
+            <td class="num">19</td>
+            <td><span class="item">Homepage</span><span class="detail">Hero, the triple-helix ecosystem model, live counters that read real data, and calls to action.</span></td>
+            <td class="amt">₹3,000</td>
+          </tr>
+          <tr>
+            <td class="num">20</td>
+            <td><span class="item">Programs</span><span class="detail">Programme listing with filters, plus an individual page for every programme.</span></td>
+            <td class="amt">₹2,000</td>
+          </tr>
+          <tr>
+            <td class="num">21</td>
+            <td><span class="item">Startups</span><span class="detail">Startup directory, plus an individual profile page for every startup.</span></td>
+            <td class="amt">₹1,800</td>
+          </tr>
+          <tr>
+            <td class="num">22</td>
+            <td><span class="item">Mentors</span><span class="detail">Mentor directory, plus an individual profile page for every mentor.</span></td>
+            <td class="amt">₹1,800</td>
+          </tr>
+          <tr>
+            <td class="num">23</td>
+            <td><span class="item">Events</span><span class="detail">Event listing, plus an individual page for every event.</span></td>
+            <td class="amt">₹1,800</td>
+          </tr>
+          <tr>
+            <td class="num">24</td>
+            <td><span class="item">Resources & Articles</span><span class="detail">Resource listing and formatted long-form article pages.</span></td>
+            <td class="amt">₹2,000</td>
+          </tr>
+          <tr>
+            <td class="num">25</td>
+            <td><span class="item">About, Ecosystem & Invest pages</span><span class="detail">Three editorial pages covering the organisation, the ecosystem and the investor-facing pitch.</span></td>
+            <td class="amt">₹2,200</td>
+          </tr>
+          <tr>
+            <td class="num">26</td>
+            <td><span class="item">Site-wide search</span><span class="detail">One search across programmes, startups, mentors, events and resources.</span></td>
+            <td class="amt">₹1,600</td>
+          </tr>
+        <tr class="subtotal">
+          <td></td>
+          <td>Subtotal — Public Website</td>
+          <td class="amt">₹16,200</td>
+        </tr>
+        <tr class="section">
+          <td colspan="3">
+            <span class="sec-title">Member Experience</span>
+            <span class="sec-note">What a student, founder or mentor actually uses after signing up.</span>
+          </td>
+        </tr>
+          <tr>
+            <td class="num">27</td>
+            <td><span class="item">Guided onboarding</span><span class="detail">A short intake that places a person at their real stage and recommends the programmes that fit.</span></td>
+            <td class="amt">₹2,800</td>
+          </tr>
+          <tr>
+            <td class="num">28</td>
+            <td><span class="item">Application system</span><span class="detail">Applications with question sets configured per programme — staff can change the questions without a code change.</span></td>
+            <td class="amt">₹3,200</td>
+          </tr>
+          <tr>
+            <td class="num">29</td>
+            <td><span class="item">Application lifecycle</span><span class="detail">Draft, submit and review states with server-side validation, so an incomplete or tampered application cannot be submitted.</span></td>
+            <td class="amt">₹2,400</td>
+          </tr>
+          <tr>
+            <td class="num">30</td>
+            <td><span class="item">Document uploads</span><span class="detail">Cloud file storage with real file-type verification, not just a trusted file extension.</span></td>
+            <td class="amt">₹2,200</td>
+          </tr>
+          <tr>
+            <td class="num">31</td>
+            <td><span class="item">Member dashboard</span><span class="detail">Journey status, application progress and registered events in one place.</span></td>
+            <td class="amt">₹2,200</td>
+          </tr>
+          <tr>
+            <td class="num">32</td>
+            <td><span class="item">Event registration</span><span class="detail">Register and cancel, with capacity respected.</span></td>
+            <td class="amt">₹1,200</td>
+          </tr>
+          <tr>
+            <td class="num">33</td>
+            <td><span class="item">Notification centre</span><span class="detail">In-app notifications with read state, delivered as applications and events progress.</span></td>
+            <td class="amt">₹1,800</td>
+          </tr>
+        <tr class="subtotal">
+          <td></td>
+          <td>Subtotal — Member Experience</td>
+          <td class="amt">₹15,800</td>
+        </tr>
+        <tr class="section">
+          <td colspan="3">
+            <span class="sec-title">Administration & Operations</span>
+            <span class="sec-note">The tools KNEST staff run the programmes with.</span>
+          </td>
+        </tr>
+          <tr>
+            <td class="num">34</td>
+            <td><span class="item">Application review console</span><span class="detail">Reviewer queue with filters and a full applicant detail view.</span></td>
+            <td class="amt">₹2,800</td>
+          </tr>
+          <tr>
+            <td class="num">35</td>
+            <td><span class="item">Review decisions & audit trail</span><span class="detail">Status changes with permitted transitions enforced and every decision recorded against a reviewer.</span></td>
+            <td class="amt">₹2,000</td>
+          </tr>
+          <tr>
+            <td class="num">36</td>
+            <td><span class="item">Controlled document access</span><span class="detail">Reviewers can open applicant documents; nobody else can, and access is not guessable by URL.</span></td>
+            <td class="amt">₹1,200</td>
+          </tr>
+          <tr>
+            <td class="num">37</td>
+            <td><span class="item">Analytics dashboard</span><span class="detail">Activity tracking plus an application funnel — how many people start, complete and are accepted.</span></td>
+            <td class="amt">₹2,400</td>
+          </tr>
+        <tr class="subtotal">
+          <td></td>
+          <td>Subtotal — Administration & Operations</td>
+          <td class="amt">₹8,400</td>
+        </tr>
+        <tr class="section">
+          <td colspan="3">
+            <span class="sec-title">Quality, Security & Launch</span>
+            <span class="sec-note">The work that makes it safe to put in front of the public.</span>
+          </td>
+        </tr>
+          <tr>
+            <td class="num">38</td>
+            <td><span class="item">Transactional email</span><span class="detail">Delivery setup and message templates for verification, reset and notification mail.</span></td>
+            <td class="amt">₹1,800</td>
+          </tr>
+          <tr>
+            <td class="num">39</td>
+            <td><span class="item">Security hardening</span><span class="detail">Content security policy, browser security headers, and rate limiting on every sensitive route.</span></td>
+            <td class="amt">₹2,200</td>
+          </tr>
+          <tr>
+            <td class="num">40</td>
+            <td><span class="item">Accessibility</span><span class="detail">WCAG 2.1 AA conformance pass — contrast, keyboard operation, focus handling, screen-reader labelling and reduced-motion support.</span></td>
+            <td class="amt">₹2,600</td>
+          </tr>
+          <tr>
+            <td class="num">41</td>
+            <td><span class="item">Automated tests & flow verification</span><span class="detail">Unit tests over the rules that must not break, plus scripted end-to-end verification of the auth and application flows.</span></td>
+            <td class="amt">₹1,800</td>
+          </tr>
+          <tr>
+            <td class="num">42</td>
+            <td><span class="item">Performance & search visibility</span><span class="detail">Image pipeline, load-time tuning, page metadata and social preview cards.</span></td>
+            <td class="amt">₹1,400</td>
+          </tr>
+          <tr>
+            <td class="num">43</td>
+            <td><span class="item">Brand & interface polish</span><span class="detail">Official KNEST logo integration and the final visual pass across every screen.</span></td>
+            <td class="amt">₹2,000</td>
+          </tr>
+          <tr>
+            <td class="num">44</td>
+            <td><span class="item">Production deployment & go-live</span><span class="detail">Build configuration, environment and secret setup, database provisioning, migration run and launch.</span></td>
+            <td class="amt">₹2,800</td>
+          </tr>
+          <tr>
+            <td class="num">45</td>
+            <td><span class="item">Handover documentation</span><span class="detail">Architecture, content-editing and operations documentation written into the repository.</span></td>
+            <td class="amt">₹1,200</td>
+          </tr>
+        <tr class="subtotal">
+          <td></td>
+          <td>Subtotal — Quality, Security & Launch</td>
+          <td class="amt">₹15,800</td>
+        </tr></tbody>
+</table>
+
+<div class="total">
+  <div class="box">
+    <div class="row"><span>Subtotal (45 modules)</span><span>₹98,200</span></div>
+    <div class="row muted"><span>Discount</span><span>— </span></div>
+    <div class="row muted"><span>GST</span><span>Not applicable</span></div>
+    <div class="row grand"><span class="lbl">Total payable</span><span class="val">₹98,200</span></div>
+  </div>
+</div>
+<div class="words">Rupees Ninety-Eight Thousand Two Hundred Only</div>
+
+<div class="pagebreak"></div>
+
+<h2>What this invoice includes</h2>
+<div class="cols">
+  <div>
+    <h3>Delivered with the build</h3>
+    <ul class="tight">
+      <li>Full source code and ownership, handed over in the KNEST repository.</li>
+      <li>Production deployment, configured and live.</li>
+      <li>Database provisioning, schema migrations and first-run seed data.</li>
+      <li>Staff admin console with content editing for every public content type.</li>
+      <li>Architecture, content-editing and operations documentation.</li>
+      <li>One handover walkthrough for KNEST staff.</li>
+      <li>30 days of post-launch defect support from the invoice date, at no charge.</li>
+    </ul>
+  </div>
+  <div>
+    <h3>Not included in this invoice</h3>
+    <ul class="tight">
+      <li>Domain name — being provided and paid for by KNEST.</li>
+      <li>Hosting, database, storage and email costs, billed by those providers directly to KNEST.</li>
+      <li>Content writing, photography and data entry.</li>
+      <li>Third-party licences or paid plugins, should any be added later.</li>
+      <li>New modules or features beyond the 45 listed, which are quoted separately.</li>
+      <li>Ongoing maintenance after the 30-day defect window — covered by the separate annual maintenance proposal.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="callout">
+  <strong>Deployment note.</strong> The platform is deployed and running. The domain
+  is supplied by KNEST — once the DNS records are pointed as documented in the
+  handover notes, the site serves on the KNEST domain with HTTPS. Connecting the
+  domain is included; purchasing and renewing it is not.
+</div>
+
+<h2>Payment</h2>
+<div class="cols">
+  <div>
+    <h3>Bank transfer / UPI</h3>
+    
+<div class="kv"><span class="k">Account holder</span><span class="v">«Account holder name»</span></div>
+<div class="kv"><span class="k">Bank &amp; branch</span><span class="v">«Bank name, Branch»</span></div>
+<div class="kv"><span class="k">Account number</span><span class="v">«Account number»</span></div>
+<div class="kv"><span class="k">IFSC</span><span class="v">«IFSC»</span></div>
+<div class="kv"><span class="k">UPI</span><span class="v">«upi-id@bank»</span></div>
+  </div>
+  <div>
+    <h3>Terms</h3>
+    <ul class="tight">
+      <li>Payable within 15 days of the invoice date.</li>
+      <li>Please quote invoice number <strong>KNEST/2026-27/001</strong> in the transfer reference.</li>
+      <li>GST is not applicable — supplier is not registered under GST. <span class="note">(Delete this line and add a GST row above if registered.)</span></li>
+      <li>Tax deducted at source, if any, may be deducted at the applicable rate against the PAN above.</li>
+      <li>Source code and deployment credentials transfer to KNEST on receipt of full payment.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="sign">
+  <div><div class="line"></div><div class="cap">For «Your Name / Studio Name» — authorised signatory</div></div>
+  <div><div class="line"></div><div class="cap">For and on behalf of KNEST — accepted</div></div>
+</div>
+
+<footer class="doc">
+  <span>Invoice KNEST/2026-27/001 · ₹98,200</span>
+  <span>This is a computer-generated invoice.</span>
+</footer>
+</div></body>
+</html>
