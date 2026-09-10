@@ -13,6 +13,11 @@ import { fileURLToPath } from 'node:url'
 
 const OUT_DIR = path.dirname(fileURLToPath(import.meta.url))
 
+/** Enhancement hours bundled into the AMC fee. */
+const AMC_HOURS = 16
+/** Rate for enhancement work beyond the bundled hours. */
+const AMC_HOURLY = 700
+
 /* ------------------------------------------------------------------ parties */
 
 const VENDOR = {
@@ -49,89 +54,121 @@ const BANK = {
 const DEV_SECTIONS = [
   {
     title: 'Foundation & Design System',
-    note: 'The base the rest of the platform is built on.',
+    note: 'The base both platforms are built on.',
     items: [
-      ['Project foundation', 'Application framework, code standards, type safety, build and release pipeline.', 2000],
-      ['Database architecture', 'Two separate stores in one database — editorial content kept apart from operational records — so the CMS never becomes the backend.', 2400],
-      ['Database schema, migrations & seed tooling', '8 schema modules, 6 versioned migrations, and seeding scripts for first-run and demo data.', 2200],
-      ['Design system', 'Colour palette, typography scale, spacing, borders and motion rules, expressed as reusable design tokens.', 2800],
-      ['Interface component library', '20 reusable components — buttons, cards, form fields, tables, badges, timelines, empty and loading states.', 3200],
-      ['Site-wide layout', 'Responsive header, mobile navigation drawer, footer and keyboard skip-navigation, consistent across all pages.', 2400],
+      ['Project foundation', 'Next.js 16 App Router on TypeScript strict mode, with the code standards, type generation and build pipeline the rest of the work depends on.', 2000],
+      ['Data architecture', 'One PostgreSQL database split into two schemas — editorial content kept apart from operational records — so the CMS never becomes the backend.', 2400],
+      ['Schema, migrations & seed tooling', '8 schema modules, versioned migrations and seeding scripts for first-run and demo data.', 2200],
+      ['Design system & token pipeline', 'Colour, typography, spacing, border and motion rules built as design tokens, so both platforms look like one product.', 2800],
+      ['Component library & application shell', '20 shared components — buttons, forms, tables, badges, timelines, empty and loading states — plus the responsive header, mobile drawer and footer.', 3200],
     ],
   },
   {
-    title: 'Accounts & Access Control',
-    note: 'One account per person; one login for the whole platform.',
+    title: 'Identity, Accounts & Access',
+    note: 'One account per person, opening both the ecosystem platform and lab booking.',
     items: [
-      ['Authentication core', 'Sign-in system backed by server-side sessions that can be revoked instantly — removing someone locks them out on their next request.', 2800],
-      ['Sign-up & sign-in', 'Account creation and password sign-in with industry-standard password hashing.', 2200],
-      ['Email verification', 'Verification link issue, expiry and confirmation.', 1600],
-      ['Password reset', 'Reset request and secure confirmation flow.', 1600],
-      ['Roles & permissions', 'Staff / member separation, protected routes, and permissions re-checked from the database on every request.', 2400],
-      ['Account screens', 'Six screens — sign in, sign up, verify, verification confirmation, reset request, reset confirmation.', 2400],
+      ['Authentication & session management', 'Auth.js v5 with revocable server-side sessions, password hashing and Google sign-in — removing someone locks them out on their next request, not whenever a token expires.', 3200],
+      ['Account lifecycle flows', 'Email verification and password reset end to end: token issue, expiry, single use and confirmation.', 2400],
+      ['Roles & authorisation', 'Student, founder, mentor, lab staff and admin roles, with permissions re-read from the database on every request and admin routes hidden rather than merely refused.', 2600],
+      ['Account screens', 'Six screens over one shared form, validation and error layer.', 2000],
     ],
   },
   {
-    title: 'Content Management System',
-    note: 'Everything on the public site is editable by KNEST staff without a developer.',
+    title: 'Content Management',
+    note: 'Everything public is editable by KNEST staff without a developer.',
     items: [
-      ['CMS setup & staff console', 'Admin console mounted inside the application, with staff signing in using the same single account as the rest of the platform.', 3000],
-      ['Content types — Programs, Cohorts, Startups, Founders', 'Fields, relationships, validation and editor layout for four content types.', 2400],
-      ['Content types — Mentors, Events, Partners, Infrastructure', 'Fields, relationships, validation and editor layout for four content types.', 2200],
-      ['Content types — Resources, Articles, FAQs, Media library', 'Four content types including rich-text authoring and the image/media library.', 2000],
-      ['Content types — Metrics, Testimonials, Staff, Homepage settings', 'Three content types plus site-wide homepage settings.', 1600],
-      ['Content delivery layer', '11 typed data services that read published content for the public site, with safe fallbacks so a database hiccup degrades gracefully instead of erroring.', 2800],
+      ['Payload CMS 3 staff console', 'Admin console mounted inside the application, with staff signing in on the same single account as the rest of the platform.', 3000],
+      ['Programme & venture content types', 'Programs, Cohorts, Startups, Founders and Mentors — fields, relationships, validation and editor layout.', 2800],
+      ['Editorial & site content types', 'Events, Resources, Articles, FAQs, Partners, Infrastructure, Metrics, Testimonials, Staff, the media library and site-wide homepage settings.', 3000],
+      ['Content delivery layer', '11 typed services that read published content for the public site, with fallbacks so a database hiccup degrades gracefully instead of erroring.', 2600],
     ],
   },
   {
     title: 'Public Website',
     note: 'The public front door — discover, self-locate, apply.',
     items: [
-      ['Homepage', 'Hero, the triple-helix ecosystem model, live counters that read real data, and calls to action.', 3000],
-      ['Programs', 'Programme listing with filters, plus an individual page for every programme.', 2000],
-      ['Startups', 'Startup directory, plus an individual profile page for every startup.', 1800],
-      ['Mentors', 'Mentor directory, plus an individual profile page for every mentor.', 1800],
-      ['Events', 'Event listing, plus an individual page for every event.', 1800],
-      ['Resources & Articles', 'Resource listing and formatted long-form article pages.', 2000],
-      ['About, Ecosystem & Invest pages', 'Three editorial pages covering the organisation, the ecosystem and the investor-facing pitch.', 2200],
+      ['Homepage', 'Hero, the triple-helix ecosystem model, counters that read real data rather than invented numbers, and calls to action.', 2800],
+      ['Programme pages', 'Listing with filters, plus an individual page for every programme.', 2000],
+      ['Ecosystem directories', 'Startup and mentor listings, each with individual profile pages.', 2200],
+      ['Events & resources', 'Event and resource listings, event detail pages and long-form article rendering.', 2200],
+      ['About, Ecosystem & Invest pages', 'Three editorial pages covering the organisation, the ecosystem and the investor-facing pitch.', 1800],
       ['Site-wide search', 'One search across programmes, startups, mentors, events and resources.', 1600],
     ],
   },
   {
-    title: 'Member Experience',
-    note: 'What a student, founder or mentor actually uses after signing up.',
+    title: 'Member Experience & Applications',
+    note: 'What a student, founder or mentor uses after signing up.',
     items: [
-      ['Guided onboarding', 'A short intake that places a person at their real stage and recommends the programmes that fit.', 2800],
-      ['Application system', 'Applications with question sets configured per programme — staff can change the questions without a code change.', 3200],
-      ['Application lifecycle', 'Draft, submit and review states with server-side validation, so an incomplete or tampered application cannot be submitted.', 2400],
-      ['Document uploads', 'Cloud file storage with real file-type verification, not just a trusted file extension.', 2200],
-      ['Member dashboard', 'Journey status, application progress and registered events in one place.', 2200],
-      ['Event registration', 'Register and cancel, with capacity respected.', 1200],
-      ['Notification centre', 'In-app notifications with read state, delivered as applications and events progress.', 1800],
+      ['Guided onboarding & recommendation', 'A short intake that places a person at their real stage and recommends the programmes that actually fit.', 2600],
+      ['Application engine', 'Question sets configured per programme, so staff add or change a question without a code change or a new release.', 3000],
+      ['Application lifecycle & review states', 'Draft, submit and review states with server-side validation and only permitted transitions, so an incomplete or tampered application cannot be submitted.', 2600],
+      ['Member dashboard & event registration', 'Journey status, application progress, registered events, and event registration with capacity respected.', 2400],
+      ['Notification centre', 'In-app and email notifications with read state, raised as applications, events and bookings progress.', 1800],
     ],
   },
   {
-    title: 'Administration & Operations',
-    note: 'The tools KNEST staff run the programmes with.',
+    title: 'KIIT Lab Booking Platform',
+    note: 'Founders book real lab time across KIIT; lab staff approve, attend and verify it.',
     items: [
-      ['Application review console', 'Reviewer queue with filters and a full applicant detail view.', 2800],
-      ['Review decisions & audit trail', 'Status changes with permitted transitions enforced and every decision recorded against a reviewer.', 2000],
-      ['Controlled document access', 'Reviewers can open applicant documents; nobody else can, and access is not guessable by URL.', 1200],
-      ['Analytics dashboard', 'Activity tracking plus an application funnel — how many people start, complete and are accepted.', 2400],
+      ['Lab & facility registry', 'Every bookable lab across KIIT — department, equipment, capacity, operating hours and the staff who run it — maintained by lab heads themselves.', 2400],
+      ['Availability calendar & slot engine', 'Bookable slots generated from each lab’s operating hours, with double-booking made impossible at the database level, and blackout dates for holidays, exams and maintenance.', 3000],
+      ['Booking request flow', 'A founder picks a lab, sees live availability, chooses a slot and states purpose, headcount and equipment needed.', 2600],
+      ['Lab-head approval console', 'A request queue per lab, with approve, reject with a reason, or propose an alternative slot — and a record of who decided what, and when.', 2800],
+      ['Lab assistant assignment & roster', 'An approved slot gets a named assistant, who sees their own upcoming duty schedule rather than being told on the day.', 2200],
+      ['Booking ticket & signed QR pass', 'Approval issues a ticket carrying a cryptographically signed QR code, tied to that booking, that slot and that person — a screenshot of somebody else’s pass does not work.', 2600],
+      ['Two-sided QR check-in and check-out', 'The student pass is scanned by the assigned lab staff, and the staff pass is scanned by the student. Both sides are recorded, so attendance is proved from both directions and neither party can claim it alone.', 2800],
+      ['Lab utilisation reporting', 'Bookings, attendance, no-shows and hours used, per lab and per department — the numbers KIIT needs to justify the facilities.', 2000],
     ],
   },
   {
-    title: 'Quality, Security & Launch',
-    note: 'The work that makes it safe to put in front of the public.',
+    title: 'Staff Operations & Analytics',
+    note: 'The tools KNEST staff run programmes and reviews with.',
     items: [
-      ['Transactional email', 'Delivery setup and message templates for verification, reset and notification mail.', 1800],
-      ['Security hardening', 'Content security policy, browser security headers, and rate limiting on every sensitive route.', 2200],
-      ['Accessibility', 'WCAG 2.1 AA conformance pass — contrast, keyboard operation, focus handling, screen-reader labelling and reduced-motion support.', 2600],
-      ['Automated tests & flow verification', 'Unit tests over the rules that must not break, plus scripted end-to-end verification of the auth and application flows.', 1800],
-      ['Performance & search visibility', 'Image pipeline, load-time tuning, page metadata and social preview cards.', 1400],
-      ['Brand & interface polish', 'Official KNEST logo integration and the final visual pass across every screen.', 2000],
-      ['Production deployment & go-live', 'Build configuration, environment and secret setup, database provisioning, migration run and launch.', 2800],
-      ['Handover documentation', 'Architecture, content-editing and operations documentation written into the repository.', 1200],
+      ['Application review console', 'Reviewer queue with filters, full applicant detail, decisions with permitted transitions, and an audit trail against every reviewer.', 3000],
+      ['Document handling', 'Uploads to Amazon S3 with real file-type verification, and retrieval that is access-controlled rather than merely an unguessable link.', 2200],
+      ['Analytics dashboard', 'Activity tracking and the application funnel — how many people start, complete and are accepted.', 2200],
+    ],
+  },
+  {
+    title: 'Progressive Web App',
+    note: 'Installable on a phone, and usable in a lab basement with no signal.',
+    items: [
+      ['PWA packaging', 'Web app manifest, icon and splash sets, and home-screen install on both Android and iOS — no app store, no review queue, no separate build to maintain.', 2000],
+      ['Offline shell & background sync', 'A service worker caching the app shell, an offline fallback, and queued actions that sync once signal returns instead of being lost.', 2400],
+      ['Mobile camera QR scanning', 'In-browser camera scanning for lab check-in and check-out, built to work on the patchy Wi-Fi found in most lab buildings.', 2200],
+    ],
+  },
+  {
+    title: 'Security & Anti-Abuse',
+    note: 'The platform holds applicant documents and gates physical lab access.',
+    items: [
+      ['Cloudflare Turnstile', 'Invisible bot protection on sign-up, sign-in, password reset, application submit and booking request, verified server-side so the check cannot be skipped by calling the API directly.', 2400],
+      ['Rate limiting & abuse controls', 'Per-route token buckets on every sensitive endpoint, sized per route and enforced in the database rather than per server instance.', 1800],
+      ['Browser hardening', 'Content Security Policy, HSTS, and clickjacking, MIME-sniffing and referrer-leak protection, verified in report-only mode before being enforced.', 1800],
+      ['Upload safety', 'Magic-byte file verification rather than trusted extensions, type and size allow-lists, private storage, and nothing user-uploaded ever served as executable content.', 1800],
+      ['Secrets, encryption & audit logging', 'AWS Secrets Manager, least-privilege IAM roles, encryption at rest on RDS and S3, TLS in transit, and an audit log of every privileged action.', 2400],
+    ],
+  },
+  {
+    title: 'Cloud Infrastructure & Deployment',
+    note: 'Named services, provisioned, configured and live.',
+    items: [
+      ['AWS Amplify Hosting', 'Git-connected CI/CD with server-side rendering, per-branch preview environments, atomic deploys and one-click rollback.', 2400],
+      ['Amazon RDS for PostgreSQL 16', 'Instance provisioning, parameter and storage configuration, encryption, automated backups and point-in-time recovery.', 2400],
+      ['Amazon S3 & CloudFront', 'Private buckets for applicant documents, CDN delivery for public media, lifecycle rules and signed access.', 2000],
+      ['Amazon SES', 'Transactional mail with domain verification and the SPF, DKIM and DMARC records that keep KNEST mail out of spam folders.', 1800],
+      ['Cloudflare edge', 'DNS on the KNEST-supplied domain, TLS, WAF rules and DDoS protection sitting in front of everything.', 1800],
+      ['Amazon CloudWatch', 'Log aggregation, error and uptime alarms, and alert routing, so a failure is noticed before a user reports it.', 1600],
+    ],
+  },
+  {
+    title: 'Quality Assurance & Handover',
+    note: 'What makes it safe to put in front of students, staff and the public.',
+    items: [
+      ['Accessibility', 'WCAG 2.1 AA pass across both platforms — contrast, keyboard operation, focus handling, screen-reader labelling and reduced-motion support.', 2200],
+      ['Automated tests & flow verification', 'Unit tests over the rules that must not break, plus scripted end-to-end verification of the auth, application and booking flows.', 1800],
+      ['Performance & search visibility', 'Image pipeline, load-time tuning, page metadata and social preview cards.', 1600],
+      ['Documentation, training & handover', 'Architecture, content editing and lab operations documentation, plus a walkthrough for KNEST staff and lab heads.', 1800],
     ],
   },
 ]
@@ -140,38 +177,45 @@ const DEV_SECTIONS = [
 
 const AMC_SECTIONS = [
   {
-    title: 'Platform Upkeep & Security',
-    note: 'Keeping what is live healthy, current and safe.',
+    title: 'Cloud Infrastructure Operations',
+    note: 'Running the named AWS and Cloudflare services the platform sits on.',
     items: [
-      ['Dependency & framework updates', 'Scheduled quarterly update cycle across the application framework, CMS, database layer and libraries, each verified before release.', 3200],
-      ['Security patch management', 'Monitoring of security advisories affecting the stack, impact triage, and out-of-cycle patching for anything critical.', 3600],
-      ['Database maintenance', 'Migration runs, index and vacuum health, storage growth review and data integrity checks.', 2400],
-      ['Backup verification & restore drills', 'Two documented restore drills a year, proving the backups actually restore rather than assuming it.', 2400],
-      ['Uptime & error monitoring', 'Availability and error-rate monitoring with alert triage, and a written note on anything that caused downtime.', 2400],
+      ['AWS Amplify Hosting operations', 'Build pipeline health, deployments and rollbacks, preview environments, and framework runtime upgrades as Amplify deprecates older ones.', 3200],
+      ['Amazon RDS administration', 'Automated backups and point-in-time recovery verified by real restore drills, plus parameter tuning, storage growth review, index and vacuum health, and minor-version upgrades.', 3200],
+      ['S3, CloudFront & SES operations', 'Storage lifecycle rules, CDN cache and invalidation, and mail deliverability — bounce and complaint rates, DKIM and DMARC monitoring.', 2400],
+      ['Cloudflare edge management', 'DNS records, TLS renewal, WAF rule tuning against real traffic, and review of anything the DDoS protection stops.', 2400],
+      ['CloudWatch monitoring & incident response', 'Alarm tuning, log retention, alert triage, and a written note on anything that caused downtime.', 3000],
     ],
   },
   {
-    title: 'Module Support',
-    note: 'Ongoing support, per module, for the platform as delivered.',
+    title: 'Security & Compliance',
+    note: 'The platform holds student data and gates physical access to labs.',
     items: [
-      ['Accounts & access', 'Account recovery, role and permission changes, sign-in issues, staff onboarding and offboarding.', 1800],
-      ['Content management', 'Adjustments to content types and fields, editor assistance, and support for the staff who publish.', 2400],
+      ['Security patch management', 'Advisory monitoring across Next.js, Payload, PostgreSQL, the AWS services and every dependency, with impact triage and out-of-cycle patching for anything critical.', 3400],
+      ['Anti-abuse tuning', 'Cloudflare Turnstile and rate-limit thresholds adjusted against real traffic, so genuine students are not blocked and bots still are.', 1800],
+      ['Credential & access management', 'IAM and Secrets Manager rotation, staff access reviews, and prompt offboarding when lab staff or admins change.', 2000],
+      ['Annual security review', 'Dependency audit, AWS and Cloudflare configuration review, and a written findings report with a prioritised remediation list.', 2800],
+    ],
+  },
+  {
+    title: 'Application Support',
+    note: 'Ongoing support per module, across both platforms.',
+    items: [
+      ['Accounts, roles & CMS support', 'Account recovery, role and permission changes, content-type and field adjustments, and support for the staff who publish.', 2600],
       ['Public website content operations', 'New sections, page updates and layout adjustments within the existing design system.', 2400],
-      ['Applications & review workflow', 'Question-set updates ahead of each intake cycle, reviewer workflow adjustments and cycle-open support.', 2800],
-      ['Events & notifications', 'Event flow and notification/email template adjustments.', 1600],
-      ['Analytics', 'Funnel and report definition updates as the programmes change.', 1200],
-      ['Media & storage', 'Object-storage lifecycle management and image pipeline upkeep.', 1200],
+      ['Applications & review workflow', 'Question-set updates ahead of each intake cycle, reviewer workflow changes, and cycle-open support when volume spikes.', 2800],
+      ['Lab booking operations', 'Lab and slot configuration, term calendars and blackout dates for holidays, exams and maintenance, assistant rosters, and onboarding new labs as they come online.', 3000],
+      ['QR ticketing & PWA upkeep', 'Scanner compatibility as Android, iOS and browser releases change camera and service-worker behaviour, plus install and offline behaviour.', 2400],
+      ['Notifications, email & analytics', 'Template changes, notification rules, and funnel and report definition updates as programmes change.', 1800],
     ],
   },
   {
     title: 'Service Level & Included Changes',
     note: 'Response commitments and a bundled budget for small changes.',
     items: [
-      ['Bug resolution', 'Unlimited Priority 1 and Priority 2 defect fixes within the response times set out below, at no additional charge.', 3200],
-      ['Included change budget', '12 engineering hours a year for small enhancements — copy, fields, filters, layout tweaks, report changes. Unused hours do not carry over.', 3200],
-      ['Release & deployment support', 'Deployments, rollbacks, environment configuration and credential rotation.', 1600],
-      ['Annual performance & accessibility audit', 'One full audit a year against performance and WCAG 2.1 AA targets, with a written report and a remediation list.', 1800],
-      ['Training refresher & documentation upkeep', 'One refresher session a year for staff editors and reviewers, plus documentation kept current.', 1200],
+      ['Defect resolution', 'Unlimited Priority 1 and Priority 2 defect fixes within the response times set out below, at no additional charge.', 3200],
+      ['Included change budget', `${AMC_HOURS} engineering hours a year for small enhancements — copy, fields, filters, layout tweaks, report changes. Unused hours do not carry over.`, 3200],
+      ['Annual audit, documentation & training', 'One accessibility and performance audit a year with a written report, documentation kept current, and a refresher session for staff editors, reviewers and lab heads.', 2400],
     ],
   },
 ]
@@ -183,8 +227,13 @@ const inr = (n) => '₹' + n.toLocaleString('en-IN')
 const total = (sections) =>
   sections.reduce((s, sec) => s + sec.items.reduce((t, [, , amt]) => t + amt, 0), 0)
 
-const DEV_TOTAL = total(DEV_SECTIONS)
+const DEV_GROSS = total(DEV_SECTIONS)
+/** Institutional concession, agreed with KNEST. Set to 0 to invoice full scope. */
+const DEV_DISCOUNT = 25000
+const DEV_TOTAL = DEV_GROSS - DEV_DISCOUNT
 const AMC_TOTAL = total(AMC_SECTIONS)
+const DEV_COUNT = DEV_SECTIONS.reduce((n, s) => n + s.items.length, 0)
+const AMC_COUNT = AMC_SECTIONS.reduce((n, s) => n + s.items.length, 0)
 
 const scopeTable = (sections) => {
   let n = 0
@@ -381,7 +430,7 @@ const bankBlock = () => `
 const invoice = shell(
   'KNEST — Development Invoice',
   `
-${masthead('Tax Invoice', 'Invoice', 'Design &amp; development of the KNEST platform')}
+${masthead('Tax Invoice', 'Invoice', 'Design &amp; development — KNEST platform &amp; KIIT Lab Booking')}
 
 <div class="meta">
   <div><div class="k">Invoice no.</div><div class="v">KNEST/2026-27/001</div></div>
@@ -392,17 +441,19 @@ ${masthead('Tax Invoice', 'Invoice', 'Design &amp; development of the KNEST plat
 
 ${partiesBlock(
   'Engagement',
-  `<strong style="color:#1a1a1a">KNEST digital platform — build &amp; launch</strong><br>
-   Public website, member portal and staff operations console over one shared
-   account and content model.<br><br>
+  `<strong style="color:#1a1a1a">KNEST digital platform + KIIT Lab Booking — build &amp; launch</strong><br>
+   Public website, member portal, staff operations console and the KIIT lab
+   booking platform, over one shared account and content model, delivered as an
+   installable progressive web app.<br><br>
    <span style="color:#1a1a1a;font-weight:600">Status:</span> delivered, deployed and in production.<br>
    <span style="color:#1a1a1a;font-weight:600">Basis:</span> fixed price, charged module by module.`,
 )}
 
 <h2>Scope of work &amp; charges</h2>
 <p class="note" style="margin-bottom:8px">
-  Each line below is a delivered, working module. Charges are fixed per module,
-  not hourly, and no single module exceeds ${inr(5000)}. Amounts are in Indian Rupees.
+  Each line below is a discrete, working module — no line repeats work charged
+  under another. Charges are fixed per module, not hourly, and no single module
+  exceeds ${inr(5000)}. Amounts are in Indian Rupees.
 </p>
 
 <table class="scope">
@@ -414,8 +465,8 @@ ${partiesBlock(
 
 <div class="total">
   <div class="box">
-    <div class="row"><span>Subtotal (45 modules)</span><span>${inr(DEV_TOTAL)}</span></div>
-    <div class="row muted"><span>Discount</span><span>— </span></div>
+    <div class="row"><span>Scope subtotal (${DEV_COUNT} modules)</span><span>${inr(DEV_GROSS)}</span></div>
+    <div class="row sig"><span>Less: KNEST institutional concession</span><span>− ${inr(DEV_DISCOUNT)}</span></div>
     <div class="row muted"><span>GST</span><span>Not applicable</span></div>
     <div class="row grand"><span class="lbl">Total payable</span><span class="val">${inr(DEV_TOTAL)}</span></div>
   </div>
@@ -424,17 +475,42 @@ ${partiesBlock(
 
 <div class="pagebreak"></div>
 
+<h2>Technology &amp; infrastructure delivered</h2>
+<p class="note" style="margin-bottom:6px">
+  Named so KNEST knows exactly what it now owns and operates. All AWS resources
+  are provisioned in the Asia Pacific (Mumbai) region, <code>ap-south-1</code>, and
+  sit in KNEST-owned accounts — nothing is held under a supplier account.
+</p>
+<table class="grid">
+  <thead><tr><th style="width:26%">Layer</th><th style="width:34%">Service</th><th>What it does here</th></tr></thead>
+  <tbody>
+    <tr><td>Application</td><td>Next.js 16 · React 19 · TypeScript</td><td>Public site, member portal, lab booking and staff console in one codebase</td></tr>
+    <tr><td>Content</td><td>Payload CMS 3</td><td>Staff-editable content for every public content type</td></tr>
+    <tr><td>Hosting</td><td>AWS Amplify Hosting</td><td>CI/CD from Git, server-side rendering, preview environments, rollback</td></tr>
+    <tr><td>Database</td><td>Amazon RDS for PostgreSQL 16</td><td>Content, accounts, applications, bookings and audit records</td></tr>
+    <tr><td>Files &amp; media</td><td>Amazon S3 + Amazon CloudFront</td><td>Private applicant documents; CDN delivery for public media</td></tr>
+    <tr><td>Email</td><td>Amazon SES</td><td>Verification, reset, notification and booking mail, with SPF/DKIM/DMARC</td></tr>
+    <tr><td>DNS, TLS &amp; edge</td><td>Cloudflare</td><td>DNS on the KNEST domain, TLS, WAF rules, DDoS protection</td></tr>
+    <tr><td>Bot protection</td><td>Cloudflare Turnstile</td><td>Invisible challenge on sign-up, sign-in, reset, apply and booking</td></tr>
+    <tr><td>Secrets &amp; access</td><td>AWS Secrets Manager + IAM</td><td>Credential storage and least-privilege service roles</td></tr>
+    <tr><td>Monitoring</td><td>Amazon CloudWatch</td><td>Logs, error and uptime alarms, alert routing</td></tr>
+    <tr><td>Mobile</td><td>Progressive Web App</td><td>Installable on Android and iOS, offline shell, camera QR scanning</td></tr>
+  </tbody>
+</table>
+
 <h2>What this invoice includes</h2>
 <div class="cols">
   <div>
     <h3>Delivered with the build</h3>
     <ul class="tight">
       <li>Full source code and ownership, handed over in the KNEST repository.</li>
-      <li>Production deployment, configured and live.</li>
-      <li>Database provisioning, schema migrations and first-run seed data.</li>
+      <li>All AWS and Cloudflare resources provisioned in KNEST-owned accounts, with credentials handed over.</li>
+      <li>Production deployment on AWS Amplify, configured and live.</li>
+      <li>RDS provisioning, schema migrations, backups enabled and first-run seed data.</li>
       <li>Staff admin console with content editing for every public content type.</li>
-      <li>Architecture, content-editing and operations documentation.</li>
-      <li>One handover walkthrough for KNEST staff.</li>
+      <li>Lab-head and lab-assistant consoles, with the QR pass and scanning flow working end to end.</li>
+      <li>Architecture, content-editing and lab-operations documentation.</li>
+      <li>One handover walkthrough for KNEST staff and one for lab heads.</li>
       <li>30 days of post-launch defect support from the invoice date, at no charge.</li>
     </ul>
   </div>
@@ -442,20 +518,24 @@ ${partiesBlock(
     <h3>Not included in this invoice</h3>
     <ul class="tight">
       <li>Domain name — being provided and paid for by KNEST.</li>
-      <li>Hosting, database, storage and email costs, billed by those providers directly to KNEST.</li>
-      <li>Content writing, photography and data entry.</li>
+      <li>AWS charges — Amplify, RDS, S3, CloudFront, SES, Secrets Manager and CloudWatch — billed by AWS directly to KNEST.</li>
+      <li>Cloudflare charges, if KNEST moves beyond the free plan.</li>
+      <li>Content writing, photography, lab equipment data and bulk data entry.</li>
+      <li>Physical QR signage, scanner hardware or tablets for lab desks.</li>
       <li>Third-party licences or paid plugins, should any be added later.</li>
-      <li>New modules or features beyond the 45 listed, which are quoted separately.</li>
+      <li>New modules or features beyond the ${DEV_COUNT} listed, which are quoted separately.</li>
       <li>Ongoing maintenance after the 30-day defect window — covered by the separate annual maintenance proposal.</li>
     </ul>
   </div>
 </div>
 
 <div class="callout">
-  <strong>Deployment note.</strong> The platform is deployed and running. The domain
-  is supplied by KNEST — once the DNS records are pointed as documented in the
-  handover notes, the site serves on the KNEST domain with HTTPS. Connecting the
-  domain is included; purchasing and renewing it is not.
+  <strong>Deployment &amp; domain.</strong> The platform runs on AWS Amplify Hosting
+  against Amazon RDS, behind Cloudflare. The domain is supplied and paid for by
+  KNEST — once its nameservers are pointed at Cloudflare as documented in the
+  handover notes, the site serves on the KNEST domain over HTTPS with the WAF and
+  Turnstile active. Configuring DNS, TLS and the edge rules is included in the
+  charges above; buying and renewing the domain is not.
 </div>
 
 <h2>Payment</h2>
@@ -496,7 +576,7 @@ const AMC_MONTH = AMC_TOTAL / 12
 const amc = shell(
   'KNEST — Annual Maintenance Proposal',
   `
-${masthead('Proposal', 'Annual Maintenance', 'KNEST digital platform — 12-month support &amp; maintenance')}
+${masthead('Proposal', 'Annual Maintenance', 'KNEST platform + KIIT Lab Booking — 12-month support &amp; maintenance')}
 
 <div class="meta">
   <div><div class="k">Proposal no.</div><div class="v">KNEST/AMC/2026-27/001</div></div>
@@ -516,22 +596,30 @@ ${partiesBlock(
 
 <h2>Why this contract exists</h2>
 <p>
-  The platform is live, holds real applicant data and is the public face of KNEST.
-  Software of this kind does not stand still: browsers change, security advisories
-  are published against the libraries it depends on, intake cycles bring new
-  programmes and new questions, and databases need looking after. This contract
-  covers that ongoing work at a fixed annual fee, so KNEST is not negotiating a
-  price every time something needs attention.
+  What is live is not one website. It is a public platform holding real applicant
+  documents, and a booking system that decides who gets physical access to KIIT
+  labs — running across nine AWS services and Cloudflare. Software of that shape
+  does not stand still. Security advisories are published against its dependencies,
+  AWS deprecates runtimes, Android and iOS releases break camera and offline
+  behaviour in progressive web apps, intake cycles bring new programmes and new
+  questions, new labs come online each term, and databases need looking after.
+</p>
+<p>
+  This contract covers all of it at a fixed annual fee, so KNEST is not negotiating
+  a price every time something needs attention — and so there is a named person
+  accountable when a student cannot get into a lab at nine in the morning.
 </p>
 <p class="note">
-  The fee is ${Math.round((AMC_TOTAL / DEV_TOTAL) * 100)}% of the development cost —
-  within the customary 15–40% band for annual maintenance on a platform of this size.
+  The fee is ${Math.round((AMC_TOTAL / DEV_GROSS) * 100)}% of the ${inr(DEV_GROSS)}
+  delivered scope — within the customary 15–40% band for annual maintenance on a
+  platform of this size, and it covers both platforms, not just the website.
 </p>
 
 <h2>Scope of maintenance &amp; charges</h2>
 <p class="note" style="margin-bottom:8px">
-  Priced module by module, on the same basis as the development invoice. No single
-  line exceeds ${inr(5000)}. Amounts are in Indian Rupees, for the full 12-month term.
+  Priced by coverage area on the same basis as the development invoice, with no
+  area repeating another. No single line exceeds ${inr(5000)}. Amounts are in
+  Indian Rupees, for the full 12-month term.
 </p>
 
 <table class="scope">
@@ -543,13 +631,13 @@ ${partiesBlock(
 
 <div class="total">
   <div class="box">
-    <div class="row"><span>Subtotal (17 coverage areas)</span><span>${inr(AMC_TOTAL)}</span></div>
+    <div class="row"><span>Subtotal (${AMC_COUNT} coverage areas)</span><span>${inr(AMC_TOTAL)}</span></div>
     <div class="row muted"><span>GST</span><span>Not applicable</span></div>
     <div class="row grand"><span class="lbl">Annual maintenance fee</span><span class="val">${inr(AMC_TOTAL)}</span></div>
   </div>
 </div>
 <div class="words">
-  Rupees Thirty-Eight Thousand Four Hundred Only &nbsp;·&nbsp; ${inr(AMC_MONTH)} per month equivalent
+  Rupees Forty-Eight Thousand Only &nbsp;·&nbsp; ${inr(AMC_MONTH)} per month equivalent
 </div>
 
 <div class="pagebreak"></div>
@@ -562,7 +650,7 @@ ${partiesBlock(
   <tbody>
     <tr>
       <td><strong>P1 — Critical</strong></td>
-      <td>Site down, sign-in broken, applications cannot be submitted, or a data/security incident.</td>
+      <td>Site down, sign-in broken, applications cannot be submitted, lab check-in or QR scanning failing at the lab door, or a data/security incident.</td>
       <td class="r">4 business hours</td>
       <td class="r">1 business day</td>
     </tr>
@@ -580,7 +668,7 @@ ${partiesBlock(
     </tr>
     <tr>
       <td><strong>P4 — Change</strong></td>
-      <td>Enhancements drawn from the included 12-hour annual change budget.</td>
+      <td>Enhancements drawn from the included ${AMC_HOURS}-hour annual change budget.</td>
       <td class="r">3 business days</td>
       <td class="r">Scheduled, by agreement</td>
     </tr>
@@ -622,46 +710,54 @@ ${partiesBlock(
   <div>
     <h3>Charged separately</h3>
     <ul class="tight">
-      <li>Enhancement work beyond the included 12 hours a year, at <strong>₹700 per hour</strong>, estimated and approved in writing before work starts.</li>
+      <li>Enhancement work beyond the included ${AMC_HOURS} hours a year, at <strong>${inr(AMC_HOURLY)} per hour</strong>, estimated and approved in writing before work starts.</li>
       <li>New modules or significant features — quoted per module, on the same basis as the development invoice.</li>
       <li>Visual redesign or rebranding beyond the existing design system.</li>
-      <li>Migration to a different hosting provider or platform.</li>
+      <li>Migration off AWS Amplify or RDS to a different provider or architecture.</li>
+      <li>Scanner hardware, tablets or printed QR signage for lab desks.</li>
       <li>Content writing, photography, data entry and bulk data imports.</li>
     </ul>
   </div>
   <div>
     <h3>Not covered</h3>
     <ul class="tight">
-      <li>Third-party service fees and licences — hosting, database, storage, email.</li>
+      <li>AWS and Cloudflare service charges, billed by those providers directly to KNEST.</li>
       <li>Domain registration and renewal, which KNEST holds and pays for directly.</li>
       <li>Faults caused by changes made to the code or infrastructure by anyone other than the supplier.</li>
       <li>Loss or corruption caused by KNEST staff actions in the admin console — recovery is chargeable at the hourly rate above.</li>
-      <li>Outages attributable to a third-party provider, beyond triage, escalation and reporting.</li>
+      <li>Outages attributable to AWS, Cloudflare or another provider, beyond triage, escalation and reporting.</li>
     </ul>
   </div>
 </div>
 
 <h2>Infrastructure — indicative annual cost to KNEST</h2>
 <p class="note" style="margin-bottom:6px">
-  These are paid by KNEST directly to the providers and form no part of the fee above.
-  Figures are indicative for the expected first-year load and will vary with traffic
-  and storage. Actual provider pricing should be confirmed before budgeting.
+  These are billed by AWS and Cloudflare directly to KNEST and form no part of the
+  fee above. Ranges are indicative for expected first-year load in
+  <code>ap-south-1</code> (Mumbai): the low end assumes the 12-month AWS free tier
+  and Cloudflare's free plan, the high end assumes paid tiers once traffic, stored
+  documents and mail volume grow. Confirm against the AWS Pricing Calculator before
+  budgeting — AWS prices in USD, so the rupee figure moves with the exchange rate.
 </p>
 <table class="grid">
-  <thead><tr><th>Service</th><th>Purpose</th><th class="r">Indicative per year</th></tr></thead>
+  <thead><tr><th style="width:30%">Service</th><th>Purpose</th><th class="r" style="width:24%">Indicative per year</th></tr></thead>
   <tbody>
-    <tr><td>Domain name</td><td>Public address for the platform</td><td class="r">Held by KNEST</td></tr>
-    <tr><td>Application hosting</td><td>Runs the website, portal and admin console</td><td class="r">₹0 – ₹24,000</td></tr>
-    <tr><td>Managed PostgreSQL</td><td>Content, accounts and application records</td><td class="r">₹0 – ₹30,000</td></tr>
-    <tr><td>Object storage &amp; CDN</td><td>Uploaded documents, images, media delivery</td><td class="r">₹1,500 – ₹12,000</td></tr>
-    <tr><td>Transactional email</td><td>Verification, reset and notification mail</td><td class="r">₹0 – ₹6,000</td></tr>
+    <tr><td>Domain name</td><td>Public address for the platform</td><td class="r">Held &amp; paid by KNEST</td></tr>
+    <tr><td>AWS Amplify Hosting</td><td>Build minutes, hosting and server-side rendering</td><td class="r">₹0 – ₹18,000</td></tr>
+    <tr><td>Amazon RDS for PostgreSQL</td><td>Content, accounts, applications, bookings</td><td class="r">₹0 – ₹30,000</td></tr>
+    <tr><td>Amazon S3 &amp; CloudFront</td><td>Applicant documents, media storage and delivery</td><td class="r">₹1,500 – ₹12,000</td></tr>
+    <tr><td>Amazon SES</td><td>Verification, notification and booking mail</td><td class="r">₹0 – ₹4,000</td></tr>
+    <tr><td>AWS Secrets Manager</td><td>Credential storage for the application</td><td class="r">₹1,000 – ₹2,000</td></tr>
+    <tr><td>Amazon CloudWatch</td><td>Logs, metrics and alarms</td><td class="r">₹0 – ₹6,000</td></tr>
+    <tr><td>Cloudflare</td><td>DNS, TLS, WAF, DDoS protection, Turnstile</td><td class="r">₹0 – ₹22,000</td></tr>
   </tbody>
 </table>
 <p class="note" style="margin-top:6px">
-  The lower ends reflect free tiers, which are adequate at launch volumes; the upper
-  ends reflect paid tiers once traffic, stored documents or mail volume grow.
-  Recommending when to move up a tier, and doing the move, is included in the
-  maintenance fee.
+  <strong>Realistic first year: near zero.</strong> The AWS free tier and Cloudflare's
+  free plan cover launch volumes for this platform, and Turnstile is free to one
+  million challenges a month. Costs begin once the free tier expires at twelve
+  months. Watching that boundary, warning KNEST before it is crossed, recommending
+  when to move up a tier, and doing the move, are all included in the maintenance fee.
 </p>
 
 <div class="pagebreak"></div>

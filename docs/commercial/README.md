@@ -5,8 +5,25 @@ arithmetic is never typed by hand.
 
 | File | What it is |
 |---|---|
-| `knest-development-invoice.{html,pdf}` | Invoice for the build — 45 modules, ₹98,200 |
-| `knest-amc-proposal.{html,pdf}` | Annual maintenance proposal — 17 coverage areas, ₹38,400/year |
+| `knest-development-invoice.{html,pdf}` | Invoice for the build — 53 modules, ₹1,23,200 gross less a ₹25,000 concession = **₹98,200** |
+| `knest-amc-proposal.{html,pdf}` | Annual maintenance proposal — 18 coverage areas, **₹48,000/year** |
+
+Scope covers the KNEST ecosystem platform *and* the KIIT lab booking platform,
+delivered as one installable PWA on AWS (Amplify, RDS, S3, CloudFront, SES,
+Secrets Manager, CloudWatch) behind Cloudflare with Turnstile.
+
+## Pricing knobs
+
+All in `generate.mjs`, near the top:
+
+| Constant | Effect |
+|---|---|
+| `DEV_DISCOUNT` | The concession. Set to `0` to invoice the full ₹1,23,200 scope. |
+| `AMC_HOURS` | Enhancement hours bundled into the AMC fee. |
+| `AMC_HOURLY` | Rate charged beyond those hours. |
+
+Every total, subtotal, line count and percentage in both documents is derived —
+change a line amount and everything downstream follows.
 
 ## Before sending
 
