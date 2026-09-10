@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import { ButtonLink, EmptyState, FilterBar, Heading, LinkCard, LiveRegion, Section, Tag } from '@/components/ui'
-import { PageHero } from '@/components/layout/page-hero'
+import { PageHeader } from '@/components/layout/page-header'
 import { resultSummary } from '@/lib/result-summary'
 import { STARTUPS_EMPTY } from '@/lib/empty-state-copy'
 import { applyFacets, deriveFacets, hasActiveFacets, type FacetSource } from '@/lib/facets'
@@ -103,11 +103,11 @@ export default async function StartupsPage({
 
   return (
     <>
-      <PageHero
-        eyebrow="Startups"
+      <PageHeader
+        kicker="Startups"
         title="Built with KNEST."
-        image="/images/stage_scaling.jpg"
-        lede="Every venture here walked the same path: a problem worth solving, an idea worth testing, and the unglamorous work of turning that into something real."
+        imageSrc="/images/stage_scaling.jpg"
+        description="Every venture here walked the same path: a problem worth solving, an idea worth testing, and the unglamorous work of turning that into something real."
       />
 
       <Section padding="top">

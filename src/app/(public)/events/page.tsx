@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import { ButtonLink, EmptyState, FilterBar, Heading, LinkCard, LiveRegion, Section, Tag } from '@/components/ui'
-import { PageHero } from '@/components/layout/page-hero'
+import { PageHeader } from '@/components/layout/page-header'
 import { formatEventTime } from '@/lib/dates'
 import { resultSummary } from '@/lib/result-summary'
 import { EVENTS_EMPTY } from '@/lib/empty-state-copy'
@@ -113,11 +113,11 @@ export default async function EventsPage({
 
   return (
     <>
-      <PageHero
-        eyebrow="Events"
+      <PageHeader
+        kicker="Events"
         title="What’s on."
-        image="/images/hero_bg.jpg"
-        lede="You don’t need an idea to show up. Events are where curiosity turns into something more, one conversation at a time — and they are the cheapest way to find out whether any of this is for you."
+        imageSrc="/images/hero_bg.jpg"
+        description="You don’t need an idea to show up. Events are where curiosity turns into something more, one conversation at a time — and they are the cheapest way to find out whether any of this is for you."
       />
 
       <Section padding="top">

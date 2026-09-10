@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "skills": {
+    "scope-creep-detector": {
+      "source": "Shubhamsaboo/awesome-llm-apps",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "agent_skills/scope-creep-detector/SKILL.md",
+      "computedHash": "5d09cae4760131fa245aa8a1655374ed5d64b801f3205d65c38671bca210471f"
+    }
+  }
+}

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ButtonLink, Card, Heading, Section } from '@/components/ui'
-import { PageHero } from '@/components/layout/page-hero'
+import { PageHeader } from '@/components/layout/page-header'
 import { Testimonials } from '@/components/content/testimonials'
 import { listTestimonials } from '@/server/content/testimonials'
 
@@ -96,11 +96,11 @@ export default async function AboutPage() {
 
   return (
     <>
-      <PageHero
-        eyebrow="About"
+      <PageHeader
+        kicker="About"
         title="A university that builds things."
-        image="/images/hero_team.jpg"
-        lede="KNEST is KIIT’s innovation and entrepreneurship ecosystem: the programs, mentors, space, capital and people that stand between a student noticing a problem and a student doing something about it."
+        imageSrc="/images/hero_team.jpg"
+        description="KNEST is KIIT’s innovation and entrepreneurship ecosystem: the programs, mentors, space, capital and people that stand between a student noticing a problem and a student doing something about it."
       />
 
       <Section padding="tight">

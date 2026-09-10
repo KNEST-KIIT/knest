@@ -2,6 +2,7 @@ import { withPayload } from '@payloadcms/next/withPayload'
 import type { NextConfig } from 'next'
 
 const isDev = process.env.NODE_ENV === 'development'
+const isVercel = Boolean(process.env.VERCEL)
 
 /**
  * §4.3: no nonces — this is a next.config.ts headers() export, not
@@ -31,7 +32,7 @@ const cspDirectives = [
 const cspHeaderValue = cspDirectives.join('; ')
 
 const nextConfig: NextConfig = {
-  output: 'standalone',
+  output: isVercel ? undefined : 'standalone',
   reactStrictMode: true,
   poweredByHeader: false,
   async headers() {

@@ -12,14 +12,17 @@ import { Heading } from './heading'
  *
  * - `default` — the standard rhythm between sections of a page.
  * - `tight` — stacked content sections that would otherwise drift apart.
- * - `top` — the first section under a `PageHero`, which already carries its
+ * - `top` — the first section under a `PageHeader`, which already carries its
  *   own generous space above.
  * - `none` — the caller is doing its own spacing.
  */
 const PADDING = {
-  default: 'py-[72px] md:py-32',
-  tight: 'py-16 md:py-24',
-  top: 'pb-16 pt-8 md:pb-24 md:pt-10',
+  // `default` is the base branch's tightened rhythm, kept as the standard;
+  // the other steps are scaled to sit under it rather than under the
+  // 72px/128px one it replaced.
+  default: 'py-10 md:py-16',
+  tight: 'py-8 md:py-12',
+  top: 'pb-10 pt-6 md:pb-16 md:pt-8',
   none: '',
 } as const
 

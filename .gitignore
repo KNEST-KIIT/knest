@@ -12,3 +12,9 @@ coverage/
 AGENTS.md
 CLAUDE.md
 uploads/
+__pycache__/
+*.pyc
+.claude/
+*.pdf
+.vercel
+.env*

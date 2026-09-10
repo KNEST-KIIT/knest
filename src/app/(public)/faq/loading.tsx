@@ -1,10 +1,10 @@
-import { PageHeroSkeleton } from '@/components/layout/page-hero'
+import { PageHeaderSkeleton } from '@/components/layout/page-header'
 import { Section, Skeleton } from '@/components/ui'
 
 export default function Loading() {
   return (
     <>
-      <PageHeroSkeleton />
+      <PageHeaderSkeleton />
       <Section padding="top">
         <Skeleton className="h-8 w-40" />
         <div className="mt-6 flex max-w-[68ch] flex-col gap-4">

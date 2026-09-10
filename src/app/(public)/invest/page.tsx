@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { ButtonLink, EmptyState, Heading, LinkCard, Section, Tag } from '@/components/ui'
-import { PageHero } from '@/components/layout/page-hero'
+import { PageHeader } from '@/components/layout/page-header'
 import { formatEventTime } from '@/lib/dates'
 import { STARTUPS_EMPTY } from '@/lib/empty-state-copy'
 import { stageLabel } from '@/lib/labels'
@@ -61,11 +61,11 @@ export default async function InvestPage() {
 
   return (
     <>
-      <PageHero
-        eyebrow="For investors"
+      <PageHeader
+        kicker="For investors"
         title="Invest in the ecosystem."
-        image="/images/stage_mentoring.jpg"
-        lede="KNEST is building the pipeline of KIIT’s next founders. Some of it exists today — demo days, ventures already underway, the people behind them. Most of it is still ahead. This page shows both, honestly."
+        imageSrc="/images/stage_mentoring.jpg"
+        description="KNEST is building the pipeline of KIIT’s next founders. Some of it exists today — demo days, ventures already underway, the people behind them. Most of it is still ahead. This page shows both, honestly."
       />
 
       <Section padding="tight">

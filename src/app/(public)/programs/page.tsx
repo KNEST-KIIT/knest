@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import { ButtonLink, EmptyState, FilterBar, Heading, LinkCard, LiveRegion, Section } from '@/components/ui'
-import { PageHero } from '@/components/layout/page-hero'
+import { PageHeader } from '@/components/layout/page-header'
 import { formatDate } from '@/lib/dates'
 import { resultSummary } from '@/lib/result-summary'
 import { PROGRAMS_EMPTY } from '@/lib/empty-state-copy'
@@ -150,10 +150,10 @@ export default async function ProgramsPage({
 
   return (
     <>
-      <PageHero
-        eyebrow="Programs"
+      <PageHeader
+        kicker="Programs"
         title="Find where you fit."
-        lede="Every program is built for a particular stage. Start with where you actually are, not where you think you should be — the fit matters more than the ambition."
+        description="Every program is built for a particular stage. Start with where you actually are, not where you think you should be — the fit matters more than the ambition."
       />
 
       <Section padding="top">

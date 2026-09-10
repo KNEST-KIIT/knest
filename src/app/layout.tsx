@@ -6,6 +6,10 @@ const DESCRIPTION =
   "KNEST is KIIT's innovation and entrepreneurship ecosystem: programs, mentors, workspace and community for students building things — at every stage, including the stage where you have nothing but a question."
 
 /**
+ * `siteUrl` falls back through the Vercel-provided hosts before localhost, so
+ * a deploy with no explicit NEXT_PUBLIC_SITE_URL still resolves absolute URLs
+ * (from the base branch).
+ *
  * `openGraph` and `twitter` were absent entirely, so every link to KNEST
  * shared in a WhatsApp group, a Slack channel or a LinkedIn post unfurled as
  * a bare URL — on a site whose whole distribution model is students sending
@@ -20,11 +24,22 @@ const DESCRIPTION =
  * which also gives `og:url` the real page URL instead of pinning every card
  * to the homepage.
  */
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : null) ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
+  'http://localhost:3000'
+
 export const metadata: Metadata = {
   title: { default: 'KNEST', template: '%s — KNEST' },
   description: DESCRIPTION,
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'),
+  metadataBase: new URL(siteUrl),
   alternates: { canonical: './' },
+  icons: {
+    icon: '/images/knest_icon.png',
+    shortcut: '/images/knest_icon.png',
+    apple: '/images/knest_icon.png',
+  },
   openGraph: {
     type: 'website',
     siteName: 'KNEST',

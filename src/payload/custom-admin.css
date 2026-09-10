@@ -1,0 +1,116 @@
+/* Make the Payload admin panel feel like KNEST (Institutional Modern) */
+@import '../styles/tokens.css';
+
+html[data-theme='light'] {
+  /* Override Payload's generic fonts with KNEST fonts */
+  --font-body: 'Inter', sans-serif !important;
+  --font-display: 'Fraunces', serif !important;
+
+  /* Elevate to KNEST Paper */
+  --theme-elevation-0: #f6f4ee; /* Sand background */
+  --theme-elevation-50: #f0eee8;
+  --theme-elevation-100: #ffffff;
+  
+  /* Primary accents to Oxblood */
+  --theme-success-400: #76232f; /* Button backgrounds */
+  --theme-success-500: #5c1b24; /* Button hover */
+  --theme-success-100: #76232f;
+
+  /* Typography colors */
+  --theme-text: #1a1a1a;
+  --theme-text-dim: #4a4a4a;
+}
+
+/* Specific styling for the sidebar to make it light and architectural */
+.nav {
+  background-color: #f6f4ee !important;
+  border-right: 1px solid #e0dfd9 !important;
+}
+
+.nav * {
+  color: #1a1a1a !important;
+}
+
+.nav .nav-group__toggle {
+  color: #76232f !important;
+  font-family: 'Fraunces', serif !important;
+  font-weight: 700 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.9rem;
+  border-bottom: 1px solid #e0dfd9;
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+}
+
+.nav .nav__link--active {
+  background-color: #ffffff !important;
+  border-radius: 0;
+  border-left: 3px solid #76232f;
+}
+
+/* Fix sidebar avatar clipping */
+.nav__account {
+  padding-bottom: 24px !important;
+  border-top: 1px solid #e0dfd9;
+}
+
+/* Buttons */
+.btn {
+  background-color: #76232f !important;
+  font-family: 'Inter', sans-serif !important;
+  font-weight: 600 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: none !important;
+  border-radius: 0 !important; /* KNEST aesthetic */
+  transition: all 0.2s ease-in-out;
+}
+
+/* Deeper target for button text to ensure contrast */
+.btn, .btn *, .btn__label, .btn__content, .btn__icon {
+  color: #ffffff !important;
+}
+
+.btn:hover {
+  background-color: #5c1b24 !important;
+}
+
+.btn--style-secondary, .btn--style-secondary * {
+  background-color: transparent !important;
+  border: 1px solid #76232f !important;
+  color: #76232f !important;
+}
+
+/* Card overrides */
+.card {
+  border-radius: 0 !important;
+  border: 1px solid #e0dfd9 !important;
+  box-shadow: none !important;
+  background-color: #ffffff !important;
+}
+
+/* Fix collection card title text contrast */
+.card *, .card__title {
+  color: #1a1a1a !important;
+  font-family: 'Fraunces', serif !important;
+}
+
+/* Table header contrast fix */
+table th, table th * {
+  color: #1a1a1a !important;
+  font-weight: 600 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.8rem;
+}
+
+/* Custom dashboard styles */
+.knest-dashboard {
+  font-family: 'Inter', sans-serif;
+  color: #1a1a1a;
+}
+.knest-dashboard h1, .knest-dashboard h2, .knest-dashboard h3 {
+  font-family: 'Fraunces', serif !important;
+  color: #1a1a1a !important;
+}

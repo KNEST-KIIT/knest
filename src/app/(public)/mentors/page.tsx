@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Suspense } from 'react'
 import { Avatar, ButtonLink, EmptyState, Heading, LinkCard, LiveRegion, Section } from '@/components/ui'
-import { PageHero } from '@/components/layout/page-hero'
+import { PageHeader } from '@/components/layout/page-header'
 import { resultSummary } from '@/lib/result-summary'
 import { MENTORS_EMPTY } from '@/lib/empty-state-copy'
 import { expertiseLabel } from '@/lib/labels'
@@ -62,10 +62,10 @@ export default async function MentorsPage({
 
   return (
     <>
-      <PageHero
-        eyebrow="Mentors"
+      <PageHeader
+        kicker="Mentors"
         title="Find who can help."
-        lede="You already know what you’re stuck on. Start there, not with a directory of photographs — every mentor here has agreed to help KIIT students specifically, and has been vouched for by KNEST."
+        description="You already know what you’re stuck on. Start there, not with a directory of photographs — every mentor here has agreed to help KIIT students specifically, and has been vouched for by KNEST."
       />
 
       <Section padding="top">

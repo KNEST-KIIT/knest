@@ -9,7 +9,6 @@ import { cn } from '@/lib/cn'
 const NAV = [
   { href: '/programs', label: 'Programs' },
   { href: '/startups', label: 'Startups' },
-  { href: '/mentors', label: 'Mentors' },
   { href: '/ecosystem', label: 'Ecosystem' },
   { href: '/events', label: 'Events' },
   { href: '/resources', label: 'Resources' },
@@ -57,51 +56,49 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
     <>
       <header
         className={cn(
-          'sticky top-0 z-50 transition-all duration-500',
+          'sticky top-0 z-50 w-full transition-all duration-500',
           scrolled || open
             ? 'border-b border-[var(--color-line)]/40 bg-[var(--color-paper)]/95 backdrop-blur-2xl shadow-[0_4px_30px_rgba(0,0,0,0.04)]'
             : 'border-b border-transparent bg-gradient-to-b from-[var(--color-paper)] via-[var(--color-paper)]/80 to-transparent backdrop-blur-md',
         )}
       >
-        <div className="mx-auto flex h-[4.5rem] w-full max-w-[1280px] items-center justify-between px-6 md:px-10">
-          <Link href="/" className="mr-4 flex shrink-0 items-baseline gap-2" aria-label="KNEST home">
-            <Logo />
-          </Link>
-
-          <nav aria-label="Main" className="hidden items-center gap-5 lg:flex xl:gap-7">
-            {NAV.map((item) => {
-              const active = pathname.startsWith(item.href)
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  aria-current={active ? 'page' : undefined}
-                  className={cn(
-                    'border-b-2 py-1 text-[length:var(--text-small)] font-medium transition-colors',
-                    active
-                      ? 'border-[var(--color-signal)] text-[var(--color-ink)]'
-                      : 'border-transparent text-[var(--color-ink-soft)] hover:border-[var(--color-line)] hover:text-[var(--color-ink)]',
-                  )}
-                >
-                  {item.label}
-                </Link>
-              )
-            })}
-          </nav>
-
-          <div className="hidden shrink-0 items-center gap-3 lg:flex xl:gap-4">
+        <div className="flex h-[4.5rem] w-full items-center justify-between px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 2xl:px-16">
+          {/* Left: Brand Logo & Navigation balanced together */}
+          <div className="flex items-center gap-6 lg:gap-8 xl:gap-10 shrink-0">
             <Link
-              href="/search"
-              aria-label="Search"
-              className="flex size-11 items-center justify-center text-[var(--color-ink-soft)] hover:text-[var(--color-signal)]"
+              href="/"
+              className="flex items-center group focus-visible:outline-[var(--color-signal)] shrink-0"
+              aria-label="KNEST Home"
             >
-              <svg aria-hidden viewBox="0 0 20 20" fill="none" className="size-5" stroke="currentColor" strokeWidth="1.75">
-                <circle cx="8.5" cy="8.5" r="6" />
-                <path d="M17 17l-4-4" strokeLinecap="round" />
-              </svg>
+              <Logo size="md" />
             </Link>
+
+            <nav aria-label="Main" className="hidden items-center gap-3.5 lg:gap-4.5 xl:gap-6 2xl:gap-7 lg:flex">
+              {NAV.map((item) => {
+                const active = pathname.startsWith(item.href)
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    aria-current={active ? 'page' : undefined}
+                    className={cn(
+                      'relative inline-flex items-center h-9 px-1.5 text-sm font-medium transition-colors whitespace-nowrap',
+                      active
+                        ? 'text-[var(--color-ink)] font-semibold after:absolute after:bottom-0 after:inset-x-0 after:h-0.5 after:bg-[var(--color-signal)]'
+                        : 'text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]',
+                    )}
+                  >
+                    {item.label}
+                  </Link>
+                )
+              })}
+            </nav>
+          </div>
+
+          {/* Right: Log In and Start Building CTA */}
+          <div className="hidden items-center gap-3 sm:gap-4 lg:flex shrink-0">
             {signedIn ? (
-              <div className="relative">
+              <div className="relative shrink-0">
                 <ButtonLink
                   href="/dashboard"
                   size="sm"
@@ -120,12 +117,15 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
               </div>
             ) : (
               <>
-                <ButtonLink href="/signup" size="sm">
-                  Start building
-                </ButtonLink>
-                <Link href="/login" className="whitespace-nowrap text-[length:var(--text-small)]">
+                <Link
+                  href="/login"
+                  className="inline-flex items-center h-9 px-3 text-sm font-medium text-[var(--color-ink-soft)] hover:text-[var(--color-ink)] transition-colors rounded-lg hover:bg-black/[0.04] whitespace-nowrap shrink-0"
+                >
                   Log in
                 </Link>
+                <ButtonLink href="/signup" size="sm" className="whitespace-nowrap shrink-0">
+                  Start building
+                </ButtonLink>
               </>
             )}
           </div>
@@ -133,7 +133,7 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
           <button
             ref={toggleRef}
             type="button"
-            className="-mr-2 flex size-11 items-center justify-center lg:hidden"
+            className="-mr-1 flex size-10 shrink-0 items-center justify-center rounded-lg text-[var(--color-ink)] hover:bg-black/[0.04] transition-colors lg:hidden"
             aria-expanded={open}
             aria-controls="mobile-nav"
             onClick={() => setOpen((v) => !v)}
@@ -172,12 +172,6 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
           className="fixed inset-x-0 bottom-0 top-[4.5rem] z-50 flex flex-col bg-[var(--color-paper)] lg:hidden"
         >
           <nav aria-label="Main" className="flex flex-1 flex-col gap-1 overflow-y-auto px-6 py-6">
-            <Link
-              href="/search"
-              className="border-b border-[var(--color-line)] py-4 font-[family-name:var(--font-display)] text-[length:var(--text-heading)] font-bold"
-            >
-              Search
-            </Link>
             {NAV.map((item) => (
               <Link
                 key={item.href}

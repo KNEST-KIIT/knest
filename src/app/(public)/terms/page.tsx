@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Section } from '@/components/ui'
-import { PageHero } from '@/components/layout/page-hero'
+import { PageHeader } from '@/components/layout/page-header'
 import { LEGAL_LAST_REVIEWED, LegalSection, LegalContact } from '../legal-page'
 
 export const metadata: Metadata = {
@@ -13,10 +13,10 @@ export const metadata: Metadata = {
 export default function TermsPage() {
   return (
     <>
-      <PageHero
-        eyebrow="Terms"
+      <PageHeader
+        kicker="Terms"
         title="The rules, in plain words."
-        lede="What you can expect from KNEST, what we expect from you, and the things we are careful not to promise. Short, because it does not need to be long."
+        description="What you can expect from KNEST, what we expect from you, and the things we are careful not to promise. Short, because it does not need to be long."
       />
 
       <Section padding="top">

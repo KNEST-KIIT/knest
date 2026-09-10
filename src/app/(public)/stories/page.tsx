@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { ButtonLink, EmptyState, Heading, LinkCard, Section, Tag } from '@/components/ui'
-import { PageHero } from '@/components/layout/page-hero'
+import { PageHeader } from '@/components/layout/page-header'
 import { formatDate } from '@/lib/dates'
 import { listArticles } from '@/server/content/articles'
 
@@ -22,11 +22,11 @@ export default async function StoriesPage() {
 
   return (
     <>
-      <PageHero
-        eyebrow="Stories"
+      <PageHeader
+        kicker="Stories"
         title="What actually happened."
-        image="/images/stage_brainstorming.jpg"
-        lede="Longer pieces about ventures built at KIIT, written with the people who built them. Including the parts that did not work, which is usually where the useful detail is."
+        imageSrc="/images/stage_brainstorming.jpg"
+        description="Longer pieces about ventures built at KIIT, written with the people who built them. Including the parts that did not work, which is usually where the useful detail is."
       />
 
       <Section padding="top">

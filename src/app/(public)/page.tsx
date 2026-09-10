@@ -10,6 +10,7 @@ import { JourneySelector } from './journey-selector'
 import { TheJourney } from './the-journey'
 import { TheEcosystem } from './the-ecosystem'
 import { BuiltWithKnest } from './built-with-knest'
+import { ExecutionFlow } from './execution-flow'
 
 export const metadata: Metadata = {
   title: 'KNEST — What if you actually built it?',
@@ -29,7 +30,7 @@ const OFFER_ITEMS = [
   { label: 'Space', body: 'Labs, studios and desks. Somewhere to build that isn’t your hostel room.', href: '/ecosystem#infrastructure' },
   { label: 'Industry', body: 'Introductions to companies, customers and partners you couldn’t reach alone.', href: '/ecosystem#partners' },
   { label: 'Community', body: 'Other people building things. This turns out to matter more than anyone expects.', href: '/events' },
-  { label: 'Capital', body: 'Direct grants, cloud credits, and introductions to seed investors when you scale.', href: '/ecosystem#framework' },
+  { label: 'Capital', body: 'Direct grants, cloud credits, and introductions to seed investors when you scale.', href: '/invest' },
 ]
 
 export default async function HomePage() {
@@ -44,58 +45,17 @@ export default async function HomePage() {
             return <Hero key={key} homepage={homepage} />
 
           case 'problem':
-            return (
-              <Section key={key} className="mx-auto max-w-[68ch]">
-                <Heading as="h2" size="title">
-                  {homepage.problemHeading}
-                </Heading>
-                {homepage.problemBody && (
-                  <div className="mt-6 flex flex-col gap-4 text-[var(--color-ink-soft)]">
-                    {homepage.problemBody.split('\n\n').map((para, i) => (
-                      <p key={i}>{para}</p>
-                    ))}
-                  </div>
-                )}
-              </Section>
-            )
+            return <ExecutionFlow key={key} homepage={homepage} />
 
           case 'person':
-            return (
-              <section key={key} className="relative w-full py-32 md:py-48 overflow-hidden bg-black text-white text-center">
-                <div className="absolute inset-0 z-0">
-                  <div className="absolute inset-0 bg-black/70 z-10"></div>
-                  <img src="/images/stage_idea.jpg" alt="" className="w-full h-full object-cover opacity-40 grayscale" />
-                </div>
-                <div className="relative z-20 mx-auto max-w-[68ch] px-6">
-                  <Heading as="h2" size="title" className="text-white">
-                    {homepage.personHeading}
-                  </Heading>
-                  {homepage.personLines && homepage.personLines.length > 0 && (
-                    <div className="mt-8 flex flex-col gap-3 text-[length:var(--text-heading)] font-light text-[var(--color-paper)]/90">
-                      {homepage.personLines.map((entry, i) => (
-                        <Reveal key={entry.id ?? i} delay={i * 0.15}>
-                          <p>{entry.line}</p>
-                        </Reveal>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </section>
-            )
+            return null
 
           case 'knest':
-            return (
-              <Section key={key} className="mx-auto max-w-[68ch]">
-                <Heading as="h2" size="title">
-                  {homepage.knestHeading}
-                </Heading>
-                {homepage.knestBody && <p className="mt-6 text-[var(--color-ink-soft)]">{homepage.knestBody}</p>}
-              </Section>
-            )
+            return null
 
           case 'journey_selector':
             return (
-              <Section key={key}>
+              <Section key={key} className="!py-6 md:!py-8">
                 <JourneySelector signedIn={Boolean(user)} />
               </Section>
             )
@@ -105,34 +65,48 @@ export default async function HomePage() {
 
           case 'offer':
             return (
-              <Section key={key} className="py-24 md:py-32 relative bg-[var(--color-paper-soft)]">
-                <RevealHeading size="display" className="tracking-tighter max-w-3xl">
-                  What KNEST actually gives you.
-                </RevealHeading>
+              <Section key={key} className="py-10 md:py-14 relative bg-[var(--color-paper-soft)]">
+                <div className="flex flex-col md:flex-row md:items-end justify-between mb-6 pb-4 border-b border-[var(--color-line)]">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.25em] font-bold text-[var(--color-signal)] mb-1.5">
+                      The KNEST Guarantee
+                    </p>
+                    <RevealHeading size="display" className="tracking-tight text-3xl md:text-4xl font-bold text-[var(--color-ink)]">
+                      What KNEST actually gives you.
+                    </RevealHeading>
+                  </div>
+                  <p className="text-xs font-mono uppercase tracking-wider text-[var(--color-ink-muted)] mt-2 md:mt-0">
+                    6 Core Operational Linkages
+                  </p>
+                </div>
                 
-                <div className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="border border-[var(--color-line)] bg-white/70 divide-y divide-[var(--color-line)] shadow-sm">
                   {OFFER_ITEMS.map((item, i) => (
-                    <Reveal key={item.label} delay={i * 0.1}>
-                      <Link href={item.href} className="group relative flex flex-col p-6 h-full rounded-2xl bg-white border border-[var(--color-line)] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden cursor-pointer">
-                        {/* Animated background on hover */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-[var(--color-signal-wash)] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <Reveal key={item.label} delay={i * 0.05}>
+                      <Link
+                        href={item.href}
+                        className="group flex flex-col md:flex-row md:items-center py-4 sm:py-5 px-5 sm:px-7 border-l-4 border-l-transparent hover:border-l-[var(--color-signal)] hover:bg-gradient-to-r hover:from-[#f4e4e2] hover:via-white hover:to-white transition-all duration-300 cursor-pointer"
+                      >
+                        <div className="w-14 shrink-0 font-mono text-lg sm:text-xl font-bold text-[var(--color-signal)]/45 group-hover:text-[var(--color-signal)] group-hover:scale-110 transition-all">
+                          {String(i + 1).padStart(2, '0')}
+                        </div>
                         
-                        {/* Animated border ring */}
-                        <div className="absolute inset-0 border-2 border-transparent group-hover:border-[var(--color-signal)]/10 rounded-2xl transition-colors duration-300"></div>
-
-                        <div className="relative z-10 flex flex-col h-full">
-                          <div className="flex items-center justify-between mb-4">
-                            <h3 className="font-[family-name:var(--font-display)] text-xl font-semibold text-[var(--color-ink)] group-hover:text-[var(--color-signal)] transition-colors duration-300">
-                              {item.label}
-                            </h3>
-                            <div className="font-[family-name:var(--font-display)] text-3xl font-light text-[var(--color-ink-soft)] opacity-40 group-hover:opacity-100 group-hover:text-[var(--color-signal)] transition-all duration-300 transform group-hover:scale-105 group-hover:rotate-3 origin-center">
-                              {String(i + 1).padStart(2, '0')}
-                            </div>
-                          </div>
-                          
-                          <p className="text-[var(--color-ink-soft)] text-sm leading-relaxed group-hover:text-[var(--color-ink)] transition-colors duration-300 flex-grow">
+                        <div className="md:w-1/4 pr-4">
+                          <h3 className="font-[family-name:var(--font-display)] text-xl sm:text-2xl font-bold text-[var(--color-ink)] group-hover:text-[var(--color-signal)] transition-colors duration-200">
+                            {item.label}
+                          </h3>
+                        </div>
+                        
+                        <div className="flex-1 mt-1.5 md:mt-0">
+                          <p className="text-[var(--color-ink-soft)] text-sm sm:text-[15px] font-light leading-relaxed group-hover:text-[var(--color-ink)] transition-colors duration-200">
                             {item.body}
                           </p>
+                        </div>
+
+                        <div className="shrink-0 pl-4 text-right hidden md:block">
+                          <span className="font-mono text-base font-bold text-[var(--color-signal)] opacity-0 group-hover:opacity-100 group-hover:translate-x-1.5 transition-all duration-200 inline-block">
+                            →
+                          </span>
                         </div>
                       </Link>
                     </Reveal>
@@ -145,32 +119,28 @@ export default async function HomePage() {
             return <TheEcosystem key={key} />
 
           case 'startups':
-            return (
-              <Section key={key} className="flex min-h-[60vh] flex-col justify-center">
-                <BuiltWithKnest homepage={homepage} />
-              </Section>
-            )
+            return null
 
           case 'closing':
             return (
-              <div key={key} className="bg-[var(--color-ink)] py-32 md:py-48 border-t-8 border-[var(--color-signal)] relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/50 z-0"></div>
-                <Section inverted className="text-center relative z-10">
-                <Heading as="h2" size="display">
+              <div key={key} className="bg-[var(--color-ink)] py-16 md:py-24 border-t border-[var(--color-signal)] relative overflow-hidden">
+                <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_center,_var(--color-signal)_0%,_transparent_70%)] mix-blend-screen pointer-events-none"></div>
+                <Section inverted className="text-center relative z-10 !py-0">
+                <Heading as="h2" size="display" className="text-white">
                   {homepage.closingHeading}
                 </Heading>
                 {homepage.closingBody && (
-                  <p className="mt-4 text-[length:var(--text-heading)] text-[var(--color-paper)]/80">
+                  <p className="mt-6 text-lg md:text-xl font-light text-[var(--color-paper)]/80 max-w-2xl mx-auto">
                     {homepage.closingBody}
                   </p>
                 )}
-                <div className="mt-10 flex flex-wrap items-center justify-center gap-6">
-                  <ButtonLink href="/signup" size="lg">
+                <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-6">
+                  <ButtonLink href="/signup" size="lg" className="rounded-none uppercase tracking-widest text-sm px-8 border border-white hover:bg-white hover:text-[var(--color-ink)]">
                     {homepage.closingCta ?? 'Start your journey'}
                   </ButtonLink>
                   <Link
                     href="/programs"
-                    className="text-[length:var(--text-small)] font-medium text-[var(--color-paper)] underline underline-offset-4"
+                    className="text-sm uppercase tracking-widest font-bold text-[var(--color-paper)]/70 hover:text-white border-b border-[var(--color-paper)]/30 hover:border-white transition-colors"
                   >
                     Browse programs
                   </Link>

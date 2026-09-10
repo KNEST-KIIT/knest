@@ -28,7 +28,19 @@ export default buildConfig({
   // mirror: real accounts live in app.users (spec §32).
   // No `meta.titleSuffix`: the root layout's title template already appends
   // "— KNEST", and setting both produces "Dashboard — KNEST — KNEST".
-  admin: { user: Staff.slug },
+  admin: {
+    user: Staff.slug,
+    components: {
+      graphics: {
+        Logo: '@/payload/components/Branding#Logo',
+        Icon: '@/payload/components/Branding#Icon',
+      },
+      beforeDashboard: ['@/payload/components/BeforeDashboard#BeforeDashboard'],
+    },
+    meta: {
+      titleSuffix: ' — KNEST',
+    },
+  },
   collections: [
     // Grouped by what an editor is actually doing, not alphabetically.
     Programs,
@@ -46,7 +58,22 @@ export default buildConfig({
     Metrics,
     Media,
     Staff,
-  ],
+  ].map((c) => ({
+    ...c,
+    admin: {
+      ...c.admin,
+      group:
+        ['programs', 'cohorts', 'startups', 'founders'].includes(c.slug)
+          ? 'Incubator'
+          : ['mentors', 'partners', 'infrastructure'].includes(c.slug)
+            ? 'Ecosystem'
+            : ['events', 'resources', 'articles'].includes(c.slug)
+              ? 'Content'
+              : ['staff', 'media', 'metrics', 'faqs', 'testimonials'].includes(c.slug)
+                ? 'System'
+                : 'Other',
+    },
+  })),
   globals: [Homepage],
   editor: lexicalEditor(),
   // Required for the Media collection's image sizes.

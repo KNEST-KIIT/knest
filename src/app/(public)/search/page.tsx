@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Button, EmptyState, Heading, Input, LinkCard, LiveRegion, Section, Tag } from '@/components/ui'
-import { PageHero } from '@/components/layout/page-hero'
+import { PageHeader } from '@/components/layout/page-header'
 import { resultSummary } from '@/lib/result-summary'
 import { searchEmpty } from '@/lib/empty-state-copy'
 import { search, type SearchResultType } from '@/server/content/search'
@@ -106,10 +106,10 @@ export default async function SearchPage({
 
   return (
     <>
-      <PageHero
-        eyebrow="Search"
+      <PageHeader
+        kicker="Search"
         title="Look across all of it."
-        lede="Programs, startups, events and resources — one search, no tabs to choose between first."
+        description="Programs, startups, events and resources — one search, no tabs to choose between first."
       />
 
       <Section padding="top">

@@ -18,26 +18,31 @@ export type ProgramFilters = {
  */
 
 export async function listPrograms(filters: ProgramFilters = {}) {
-  const payload = await getContentClient()
+  try {
+    const payload = await getContentClient()
 
-  const where: Where = { and: [] }
-  const and = where.and as Where[]
-  if (filters.stage) and.push({ stage: { equals: filters.stage } })
-  if (filters.sector) and.push({ sectors: { equals: filters.sector } })
-  if (filters.audience) and.push({ audience: { equals: filters.audience } })
-  if (filters.format) and.push({ format: { equals: filters.format } })
-  if (filters.status) and.push({ applicationStatus: { equals: filters.status } })
+    const where: Where = { and: [] }
+    const and = where.and as Where[]
+    if (filters.stage) and.push({ stage: { equals: filters.stage } })
+    if (filters.sector) and.push({ sectors: { equals: filters.sector } })
+    if (filters.audience) and.push({ audience: { equals: filters.audience } })
+    if (filters.format) and.push({ format: { equals: filters.format } })
+    if (filters.status) and.push({ applicationStatus: { equals: filters.status } })
 
-  const result = await payload.find({
-    collection: 'programs',
-    where: and.length > 0 ? where : undefined,
-    depth: 1,
-    limit: 100,
-    sort: '-nextCohortStart',
-    overrideAccess: false,
-  })
+    const result = await payload.find({
+      collection: 'programs',
+      where: and.length > 0 ? where : undefined,
+      depth: 1,
+      limit: 100,
+      sort: '-nextCohortStart',
+      overrideAccess: false,
+    })
 
-  return result.docs
+    return result?.docs || []
+  } catch (error) {
+    console.warn('Could not fetch programs from database/CMS:', error)
+    return []
+  }
 }
 
 /** Programs a mentor is attached to — "programs you support" on the mentor dashboard (§4.1). */

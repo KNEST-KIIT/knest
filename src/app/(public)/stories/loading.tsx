@@ -1,10 +1,10 @@
-import { PageHeroSkeleton } from '@/components/layout/page-hero'
+import { PageHeaderSkeleton } from '@/components/layout/page-header'
 import { Section, SkeletonGrid } from '@/components/ui'
 
 export default function Loading() {
   return (
     <>
-      <PageHeroSkeleton dark />
+      <PageHeaderSkeleton withImage />
       <Section padding="top">
         <SkeletonGrid />
       </Section>

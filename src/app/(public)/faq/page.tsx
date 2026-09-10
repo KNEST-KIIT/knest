@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { ButtonLink, EmptyState, Heading, Section } from '@/components/ui'
-import { PageHero } from '@/components/layout/page-hero'
+import { PageHeader } from '@/components/layout/page-header'
 import { RichText } from '@/components/content/rich-text'
 import { listFaqsByCategory } from '@/server/content/faqs'
 import { OpenTargetedFaq } from './open-targeted'
@@ -23,10 +23,10 @@ export default async function FaqPage() {
 
   return (
     <>
-      <PageHero
-        eyebrow="Questions"
+      <PageHeader
+        kicker="Questions"
         title="Straight answers."
-        lede="Including the questions people feel slightly stupid asking. Nobody here started out knowing this, and asking early is cheaper than guessing."
+        description="Including the questions people feel slightly stupid asking. Nobody here started out knowing this, and asking early is cheaper than guessing."
       />
 
       <OpenTargetedFaq />

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import { ButtonLink, EmptyState, FilterBar, Heading, LinkCard, LiveRegion, Section, Tag } from '@/components/ui'
-import { PageHero } from '@/components/layout/page-hero'
+import { PageHeader } from '@/components/layout/page-header'
 import { resultSummary } from '@/lib/result-summary'
 import { RESOURCES_EMPTY } from '@/lib/empty-state-copy'
 import { applyFacets, deriveFacets, hasActiveFacets, type FacetSource } from '@/lib/facets'
@@ -112,11 +112,11 @@ export default async function ResourcesPage({
 
   return (
     <>
-      <PageHero
-        eyebrow="Resources"
+      <PageHeader
+        kicker="Resources"
         title="Start where you are."
-        image="/images/stage_exploring.jpg"
-        lede="“I have an idea” needs validation material. “I am raising” needs fundraising material. Everything here is filed by stage, so you do not have to already know the vocabulary to find the right thing."
+        imageSrc="/images/stage_exploring.jpg"
+        description="“I have an idea” needs validation material. “I am raising” needs fundraising material. Everything here is filed by stage, so you do not have to already know the vocabulary to find the right thing."
       />
 
       <Section padding="top">

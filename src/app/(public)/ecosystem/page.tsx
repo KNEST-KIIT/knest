@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ButtonLink, Card, EmptyState, Heading, Section, Tag } from '@/components/ui'
-import { PageHero } from '@/components/layout/page-hero'
+import { PageHeader } from '@/components/layout/page-header'
 import { TripleHelix } from '@/components/content/triple-helix'
 import { MetricsBand } from '@/components/content/metrics-band'
 import { partnerTypeLabel, spaceTypeLabel } from '@/lib/labels'
@@ -101,11 +101,11 @@ export default async function EcosystemPage() {
 
   return (
     <>
-      <PageHero
-        eyebrow="Ecosystem"
+      <PageHeader
+        kicker="Ecosystem"
         title="Nobody builds alone."
-        image="/images/stage_mvp.jpg"
-        lede="KNEST isn’t one office. It is three parts of KIIT working together, the spaces that hold them, and the partners beyond campus who make a student idea reach further than campus ever could alone."
+        imageSrc="/images/stage_mvp.jpg"
+        description="KNEST isn’t one office. It is three parts of KIIT working together, the spaces that hold them, and the partners beyond campus who make a student idea reach further than campus ever could alone."
       />
 
       <Section padding="tight">
@@ -140,7 +140,7 @@ export default async function EcosystemPage() {
         </Section>
       )}
 
-      <Section id="framework" padding="tight" className="scroll-mt-24 border-t border-[var(--color-line)]">
+      <Section padding="tight" className="border-t border-[var(--color-line)]">
         <Heading as="h2" size="title">
           What sits inside it
         </Heading>

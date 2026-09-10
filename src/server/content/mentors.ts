@@ -23,21 +23,26 @@ function byAvailability(a: Mentor, b: Mentor): number {
  * collection's own "honest over hiding" design intent.
  */
 export async function listMentors(filters: MentorFilters = {}) {
-  const payload = await getContentClient()
+  try {
+    const payload = await getContentClient()
 
-  const where: Where = { and: [] }
-  const and = where.and as Where[]
-  if (filters.expertise) and.push({ expertise: { equals: filters.expertise } })
+    const where: Where = { and: [] }
+    const and = where.and as Where[]
+    if (filters.expertise) and.push({ expertise: { equals: filters.expertise } })
 
-  const result = await payload.find({
-    collection: 'mentors',
-    where: and.length > 0 ? where : undefined,
-    depth: 1,
-    limit: 100,
-    overrideAccess: false,
-  })
+    const result = await payload.find({
+      collection: 'mentors',
+      where: and.length > 0 ? where : undefined,
+      depth: 1,
+      limit: 100,
+      overrideAccess: false,
+    })
 
-  return [...result.docs].sort(byAvailability)
+    return [...(result?.docs || [])].sort(byAvailability)
+  } catch (error) {
+    console.warn('Could not fetch mentors:', error)
+    return []
+  }
 }
 
 /**
@@ -48,29 +53,39 @@ export async function listMentors(filters: MentorFilters = {}) {
  * than treating it as an error.
  */
 export async function getMentorByUserId(userId: string): Promise<Mentor | null> {
-  const payload = await getContentClient()
+  try {
+    const payload = await getContentClient()
 
-  const result = await payload.find({
-    collection: 'mentors',
-    where: { userId: { equals: userId } },
-    depth: 1,
-    limit: 1,
-    overrideAccess: false,
-  })
+    const result = await payload.find({
+      collection: 'mentors',
+      where: { userId: { equals: userId } },
+      depth: 1,
+      limit: 1,
+      overrideAccess: false,
+    })
 
-  return result.docs[0] ?? null
+    return result?.docs?.[0] ?? null
+  } catch (error) {
+    console.warn('Could not fetch mentor by user id:', error)
+    return null
+  }
 }
 
 export async function getMentorBySlug(slug: string): Promise<Mentor | null> {
-  const payload = await getContentClient()
+  try {
+    const payload = await getContentClient()
 
-  const result = await payload.find({
-    collection: 'mentors',
-    where: { slug: { equals: slug } },
-    depth: 1,
-    limit: 1,
-    overrideAccess: false,
-  })
+    const result = await payload.find({
+      collection: 'mentors',
+      where: { slug: { equals: slug } },
+      depth: 1,
+      limit: 1,
+      overrideAccess: false,
+    })
 
-  return result.docs[0] ?? null
+    return result?.docs?.[0] ?? null
+  } catch (error) {
+    console.warn('Could not fetch mentor by slug:', error)
+    return null
+  }
 }
