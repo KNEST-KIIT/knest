@@ -227,6 +227,31 @@ const inr = (n) => '₹' + n.toLocaleString('en-IN')
 const total = (sections) =>
   sections.reduce((s, sec) => s + sec.items.reduce((t, [, , amt]) => t + amt, 0), 0)
 
+/**
+ * Every module is priced as (estimated hours x RATE). Holding one flat rate
+ * across all 71 line items is the point: nothing is padded, and no line can be
+ * argued with on rate — only on hours.
+ */
+const RATE = 200
+/** Lowest prevailing Indian agency rate for senior full-stack work, per hour. */
+const MARKET_LOW = 1000
+/** Upper end of the same band. */
+const MARKET_HIGH = 1800
+/** Conservative senior-freelance floor, per hour. */
+const FREELANCE_LOW = 800
+/** Indicative fully-loaded cost of one mid-level in-house developer, per year. */
+const INHOUSE_YEAR = 650000
+/** 616 hrs at ~160 productive hrs a month, rounded down to stay conservative. */
+const INHOUSE_MONTHS = 4
+
+const hoursOf = (amt) => amt / RATE
+
+for (const sec of [...DEV_SECTIONS, ...AMC_SECTIONS]) {
+  for (const [label, , amt] of sec.items) {
+    if (amt % RATE !== 0) throw new Error(`"${label}" is not a whole number of hours at Rs ${RATE}/hr`)
+  }
+}
+
 const DEV_GROSS = total(DEV_SECTIONS)
 /** Institutional concession, agreed with KNEST. Set to 0 to invoice full scope. */
 const DEV_DISCOUNT = 25000
@@ -234,6 +259,28 @@ const DEV_TOTAL = DEV_GROSS - DEV_DISCOUNT
 const AMC_TOTAL = total(AMC_SECTIONS)
 const DEV_COUNT = DEV_SECTIONS.reduce((n, s) => n + s.items.length, 0)
 const AMC_COUNT = AMC_SECTIONS.reduce((n, s) => n + s.items.length, 0)
+
+const DEV_EFFORT = hoursOf(DEV_GROSS)
+const AMC_EFFORT = hoursOf(AMC_TOTAL)
+const DEV_MARKET = DEV_EFFORT * MARKET_LOW
+const DEV_MARKET_HIGH = DEV_EFFORT * MARKET_HIGH
+const DEV_SAVING = DEV_MARKET - DEV_TOTAL
+const DEV_SAVING_PCT = Math.round((DEV_SAVING / DEV_MARKET) * 100)
+const DEV_EFFECTIVE = Math.round(DEV_TOTAL / DEV_EFFORT)
+const AMC_MARKET = AMC_EFFORT * MARKET_LOW
+const AMC_SAVING_PCT = Math.round(((AMC_MARKET - AMC_TOTAL) / AMC_MARKET) * 100)
+
+/* three-year total cost of ownership */
+const CLOUD_Y1 = 0
+const CLOUD_Y2 = 30000
+const CLOUD_Y3 = 35000
+const TCO_Y1 = DEV_TOTAL + AMC_TOTAL + CLOUD_Y1
+const TCO_Y2 = AMC_TOTAL + CLOUD_Y2
+const TCO_Y3 = AMC_TOTAL + CLOUD_Y3
+const TCO_3 = TCO_Y1 + TCO_Y2 + TCO_Y3
+const INHOUSE_3 = INHOUSE_YEAR * 3
+const TCO_PCT = Math.round((TCO_3 / INHOUSE_3) * 100)
+const TCO_MONTHS = (TCO_3 / (INHOUSE_YEAR / 12)).toFixed(1)
 
 const scopeTable = (sections) => {
   let n = 0
@@ -246,13 +293,15 @@ const scopeTable = (sections) => {
           <tr>
             <td class="num">${String(++n).padStart(2, '0')}</td>
             <td><span class="item">${label}</span><span class="detail">${detail}</span></td>
+            <td class="hrs">${hoursOf(amt)}</td>
+            <td class="mkt">${inr(hoursOf(amt) * MARKET_LOW)}</td>
             <td class="amt">${inr(amt)}</td>
           </tr>`,
         )
         .join('')
       return `
         <tr class="section">
-          <td colspan="3">
+          <td colspan="5">
             <span class="sec-title">${sec.title}</span>
             <span class="sec-note">${sec.note}</span>
           </td>
@@ -260,6 +309,8 @@ const scopeTable = (sections) => {
         <tr class="subtotal">
           <td></td>
           <td>Subtotal — ${sec.title}</td>
+          <td class="hrs">${hoursOf(sub)}</td>
+          <td class="mkt">${inr(hoursOf(sub) * MARKET_LOW)}</td>
           <td class="amt">${inr(sub)}</td>
         </tr>`
     })
@@ -326,8 +377,13 @@ table.scope thead th {
   text-align: left; padding: 0 6px 5px; border-bottom: 1.5px solid #1a1a1a; font-weight: 500;
 }
 table.scope thead th.amt { text-align: right; }
-td.num { width: 7%; color: #a6a397; font-size: 9.2px; padding-top: 6px; }
-td.amt { width: 17%; text-align: right; white-space: nowrap; font-weight: 600; }
+td.num { width: 5%; color: #a6a397; font-size: 9.2px; padding-top: 6px; }
+td.amt, th.amt { width: 15%; text-align: right; white-space: nowrap; font-weight: 600; }
+td.hrs, th.hrs { width: 6%; text-align: right; white-space: nowrap; color: #6b6558; font-size: 9.2px; }
+td.mkt, th.mkt { width: 13%; text-align: right; white-space: nowrap; color: #a6a397; font-size: 9.2px;
+  text-decoration: line-through; text-decoration-thickness: 0.5px; }
+tr.subtotal td.mkt { color: #a6a397; }
+th.hrs, th.mkt { text-decoration: none; }
 .item { display: block; font-weight: 600; font-size: 10.2px; }
 .detail { display: block; font-size: 8.9px; line-height: 1.45; color: #6b6558; margin-top: 1px; }
 tr.section td { background: #f6f4ee; border-bottom: 1px solid #ded9cd; padding: 7px 6px 6px; }
@@ -337,6 +393,26 @@ tr.section { break-after: avoid; page-break-after: avoid; }
 tr.subtotal td { font-size: 9.2px; color: #6b6558; border-bottom: 1.5px solid #ded9cd; padding-top: 5px; padding-bottom: 7px; }
 tr.subtotal td.amt { color: #1a1a1a; }
 tr { break-inside: avoid; page-break-inside: avoid; }
+
+/* value band */
+.valueband { display: flex; margin-top: 14px; border: 1.5px solid #1a1a1a; }
+.valueband > div { flex: 1; padding: 11px 12px; border-right: 1px solid #ded9cd; }
+.valueband > div:last-child { border-right: 0; }
+.valueband .k { font-size: 8px; letter-spacing: 0.14em; text-transform: uppercase; color: #6b6558; }
+.valueband .v { font-family: "Fraunces", Georgia, serif; font-size: 20px; font-weight: 600; margin-top: 3px; line-height: 1.05; }
+.valueband .v.was { color: #a6a397; text-decoration: line-through; text-decoration-thickness: 1px; font-size: 17px; }
+.valueband .s { font-size: 8.4px; color: #6b6558; margin-top: 4px; line-height: 1.4; }
+.valueband .save { background: #76232f; border-right: 0; }
+.valueband .save .k { color: #e8c9ce; }
+.valueband .save .v { color: #fff; }
+.valueband .save .s { color: #f0d8dc; }
+
+/* stat row */
+.stats { display: flex; gap: 10px; margin: 10px 0 4px; }
+.stats > div { flex: 1; border-top: 2px solid #1a1a1a; padding-top: 7px; }
+.stats .v { font-family: "Fraunces", Georgia, serif; font-size: 17px; font-weight: 600; line-height: 1.1; }
+.stats .v.sig { color: #76232f; }
+.stats .k { font-size: 8.4px; color: #6b6558; margin-top: 3px; line-height: 1.4; }
 
 /* total */
 .total { margin-top: 14px; display: flex; justify-content: flex-end; }
@@ -449,16 +525,42 @@ ${partiesBlock(
    <span style="color:#1a1a1a;font-weight:600">Basis:</span> fixed price, charged module by module.`,
 )}
 
+<div class="valueband">
+  <div>
+    <div class="k">Scope at market rate</div>
+    <div class="v was">${inr(DEV_MARKET)}</div>
+    <div class="s">${DEV_EFFORT} hours at ${inr(MARKET_LOW)}/hr — the <em>lowest</em> prevailing Indian agency rate for this work</div>
+  </div>
+  <div>
+    <div class="k">KNEST pays</div>
+    <div class="v">${inr(DEV_TOTAL)}</div>
+    <div class="s">Fixed price. ${inr(DEV_EFFECTIVE)} per hour, effective — no overage, no change-order risk</div>
+  </div>
+  <div class="save">
+    <div class="k">KNEST saves</div>
+    <div class="v">${inr(DEV_SAVING)}</div>
+    <div class="s">${DEV_SAVING_PCT}% below the market floor. Basis set out on page 3</div>
+  </div>
+</div>
+
 <h2>Scope of work &amp; charges</h2>
 <p class="note" style="margin-bottom:8px">
-  Each line below is a discrete, working module — no line repeats work charged
-  under another. Charges are fixed per module, not hourly, and no single module
-  exceeds ${inr(5000)}. Amounts are in Indian Rupees.
+  Every line is a discrete, working module — no line repeats work charged under
+  another. Each is priced as <strong>estimated hours × a flat ${inr(RATE)} per
+  hour</strong>, the same rate on all ${DEV_COUNT} lines, so nothing is padded and
+  no line can be argued on rate. The struck-through column is what the same hours
+  cost at ${inr(MARKET_LOW)}/hr, the floor of the prevailing agency band. Amounts
+  in Indian Rupees.
 </p>
 
 <table class="scope">
   <thead>
-    <tr><th>#</th><th>Module &amp; deliverable</th><th class="amt">Amount (₹)</th></tr>
+    <tr>
+      <th>#</th><th>Module &amp; deliverable</th>
+      <th class="hrs">Hrs</th>
+      <th class="mkt">At market</th>
+      <th class="amt">Your price (₹)</th>
+    </tr>
   </thead>
   <tbody>${scopeTable(DEV_SECTIONS)}</tbody>
 </table>
@@ -472,6 +574,106 @@ ${partiesBlock(
   </div>
 </div>
 <div class="words">Rupees Ninety-Eight Thousand Two Hundred Only</div>
+
+<div class="pagebreak"></div>
+
+<h2>What this would cost elsewhere</h2>
+<p class="note" style="margin-bottom:6px">
+  The same ${DEV_EFFORT} hours of work, costed four ways. Rates are indicative of
+  the prevailing Indian market in 2026 and are given as ranges, not quotations —
+  KNEST is welcome to test them against any two vendors.
+</p>
+<table class="grid">
+  <thead><tr><th style="width:30%">Route</th><th>Basis</th><th class="r" style="width:26%">Cost of the same scope</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>Software development agency</td>
+      <td>${DEV_EFFORT} hrs at ${inr(MARKET_LOW)}–${inr(MARKET_HIGH)}/hr, plus project-management loading</td>
+      <td class="r">${inr(DEV_MARKET)} – ${inr(DEV_MARKET_HIGH)}</td>
+    </tr>
+    <tr>
+      <td>Senior freelance developer</td>
+      <td>${DEV_EFFORT} hrs at ${inr(FREELANCE_LOW)}/hr, and typically no CMS, cloud, security or accessibility specialism in one person</td>
+      <td class="r">${inr(DEV_EFFORT * FREELANCE_LOW)}</td>
+    </tr>
+    <tr>
+      <td>In-house hire</td>
+      <td>One mid-level full-stack developer for the ~${INHOUSE_MONTHS} months this represents, fully loaded — before any AWS, security or accessibility expertise</td>
+      <td class="r">${inr(Math.round((INHOUSE_YEAR / 12) * INHOUSE_MONTHS / 10000) * 10000)}</td>
+    </tr>
+    <tr style="background:#f6f4ee">
+      <td><strong>This engagement</strong></td>
+      <td><strong>${DEV_EFFORT} hrs at a flat ${inr(RATE)}/hr, less the concession — fixed price, overrun risk carried by the supplier</strong></td>
+      <td class="r"><strong style="color:#76232f">${inr(DEV_TOTAL)}</strong></td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="stats">
+  <div><div class="v sig">${inr(DEV_EFFECTIVE)}/hr</div><div class="k">Effective rate KNEST pays, against a ${inr(MARKET_LOW)}–${inr(MARKET_HIGH)} market band</div></div>
+  <div><div class="v">${(DEV_MARKET / DEV_TOTAL).toFixed(1)}×</div><div class="k">What the same scope costs at the market floor</div></div>
+  <div><div class="v">${DEV_EFFORT} hrs</div><div class="k">Estimated engineering effort, itemised line by line</div></div>
+  <div><div class="v">${DEV_COUNT}</div><div class="k">Discrete modules, each independently priced</div></div>
+</div>
+
+<h2>Why the price is what it is</h2>
+<p class="note" style="margin-bottom:6px">
+  A price this far below market invites a fair question. The honest answer, in four parts:
+</p>
+<ul class="tight">
+  <li><strong>It is built by a KIIT student, for KIIT.</strong> The rate is a student rate, not a market rate. That is a deliberate concession to the institution, not a reflection of the work's value.</li>
+  <li><strong>KNEST is the reference deployment.</strong> Being able to point at a live platform serving a real university is part of the consideration. That has value to the supplier, and it is priced in.</li>
+  <li><strong>There is no agency overhead.</strong> No sales team, no account managers, no office, no margin stacked on subcontracted work. Agency rates carry all four; this does not.</li>
+  <li><strong>The estimate risk sits with the supplier.</strong> This is a fixed price against a fixed scope. If a module takes twice the estimated hours, that is absorbed, not invoiced. Agencies price that risk in; time-and-materials contracts pass it to the client.</li>
+</ul>
+
+<h2>Three-year cost of ownership</h2>
+<p class="note" style="margin-bottom:6px">
+  What KNEST actually spends to own and run both platforms — the number that matters
+  to a budget, rather than a one-time invoice figure.
+</p>
+<table class="grid">
+  <thead><tr><th>Cost</th><th class="r">Year 1</th><th class="r">Year 2</th><th class="r">Year 3</th><th class="r">Three-year total</th></tr></thead>
+  <tbody>
+    <tr><td>Build — one time, never repeats</td><td class="r">${inr(DEV_TOTAL)}</td><td class="r">—</td><td class="r">—</td><td class="r">${inr(DEV_TOTAL)}</td></tr>
+    <tr><td>Annual maintenance</td><td class="r">${inr(AMC_TOTAL)}</td><td class="r">${inr(AMC_TOTAL)}</td><td class="r">${inr(AMC_TOTAL)}</td><td class="r">${inr(AMC_TOTAL * 3)}</td></tr>
+    <tr><td>AWS &amp; Cloudflare, estimated</td><td class="r">nil (free tier)</td><td class="r">${inr(CLOUD_Y2)}</td><td class="r">${inr(CLOUD_Y3)}</td><td class="r">${inr(CLOUD_Y2 + CLOUD_Y3)}</td></tr>
+    <tr><td>Software licences</td><td class="r">nil</td><td class="r">nil</td><td class="r">nil</td><td class="r"><strong>nil</strong></td></tr>
+    <tr><td>Per-student or per-seat fees</td><td class="r">nil</td><td class="r">nil</td><td class="r">nil</td><td class="r"><strong>nil</strong></td></tr>
+    <tr style="background:#f6f4ee"><td><strong>Total</strong></td><td class="r"><strong>${inr(TCO_Y1)}</strong></td><td class="r"><strong>${inr(TCO_Y2)}</strong></td><td class="r"><strong>${inr(TCO_Y3)}</strong></td><td class="r"><strong style="color:#76232f">${inr(TCO_3)}</strong></td></tr>
+  </tbody>
+</table>
+
+<div class="callout">
+  <strong>Three years of both platforms, fully maintained, comes to ${inr(TCO_3)}.</strong>
+  That is ${TCO_PCT}% of what one mid-level in-house developer would cost over the
+  same period — roughly ${TCO_MONTHS} months of a single salary — and it buys a
+  public website, an applications system, a lab booking platform, a staff console,
+  a progressive web app and year-round operation of nine cloud services.
+</div>
+
+<h2>What KNEST owns outright</h2>
+<div class="cols">
+  <div>
+    <ul class="tight">
+      <li><strong>The source code.</strong> Held in KNEST's own repository, with no supplier claim over it.</li>
+      <li><strong>The cloud accounts.</strong> Every AWS and Cloudflare resource sits in KNEST-owned accounts, not the supplier's.</li>
+      <li><strong>The data.</strong> Exportable in full, at any time, in open formats.</li>
+    </ul>
+  </div>
+  <div>
+    <ul class="tight">
+      <li><strong>No per-seat licence, ever.</strong> Unlimited students, founders, mentors, lab heads and admins at no additional cost.</li>
+      <li><strong>No lock-in.</strong> Standard Next.js, PostgreSQL and AWS. Any competent developer can take it over — the maintenance contract is a choice, not a dependency.</li>
+      <li><strong>No renewal cliff.</strong> Nothing stops working if a contract lapses.</li>
+    </ul>
+  </div>
+</div>
+<p class="note">
+  This matters more than it first appears. Per-seat platforms in this category charge
+  by the student, every year, forever, and hold the data. Here, growth from a hundred
+  users to thirty thousand costs KNEST nothing in licensing.
+</p>
 
 <div class="pagebreak"></div>
 
@@ -615,16 +817,40 @@ ${partiesBlock(
   platform of this size, and it covers both platforms, not just the website.
 </p>
 
+<div class="valueband">
+  <div>
+    <div class="k">Cover at market rate</div>
+    <div class="v was">${inr(AMC_MARKET)}</div>
+    <div class="s">${AMC_EFFORT} hours a year at ${inr(MARKET_LOW)}/hr, the agency floor</div>
+  </div>
+  <div>
+    <div class="k">KNEST pays</div>
+    <div class="v">${inr(AMC_TOTAL)}</div>
+    <div class="s">${inr(AMC_MONTH)} a month — about ${inr(Math.round(AMC_TOTAL / 365))} a day, at the same flat ${inr(RATE)}/hr as the build</div>
+  </div>
+  <div class="save">
+    <div class="k">KNEST saves</div>
+    <div class="v">${inr(AMC_MARKET - AMC_TOTAL)}</div>
+    <div class="s">${AMC_SAVING_PCT}% below the market floor, every year</div>
+  </div>
+</div>
+
 <h2>Scope of maintenance &amp; charges</h2>
 <p class="note" style="margin-bottom:8px">
-  Priced by coverage area on the same basis as the development invoice, with no
-  area repeating another. No single line exceeds ${inr(5000)}. Amounts are in
-  Indian Rupees, for the full 12-month term.
+  Priced by coverage area on the same basis as the development invoice — estimated
+  hours at the same flat ${inr(RATE)} per hour — with no area repeating another.
+  ${AMC_EFFORT} hours across the year, roughly ${(AMC_EFFORT / 52).toFixed(1)} hours
+  a week. Amounts in Indian Rupees, for the full 12-month term.
 </p>
 
 <table class="scope">
   <thead>
-    <tr><th>#</th><th>Coverage area</th><th class="amt">Annual (₹)</th></tr>
+    <tr>
+      <th>#</th><th>Coverage area</th>
+      <th class="hrs">Hrs/yr</th>
+      <th class="mkt">At market</th>
+      <th class="amt">Your price (₹)</th>
+    </tr>
   </thead>
   <tbody>${scopeTable(AMC_SECTIONS)}</tbody>
 </table>
@@ -704,6 +930,21 @@ ${partiesBlock(
   Both options carry the same total and the same cover; quarterly exists purely to
   suit institutional budget cycles. Payment terms are 15 days from each invoice.
 </p>
+
+<div class="stats">
+  <div><div class="v sig">${inr(Math.round(AMC_TOTAL / 365))}</div><div class="k">Per day, for a platform holding student records and gating lab access</div></div>
+  <div><div class="v">${AMC_EFFORT} hrs</div><div class="k">Engineering cover a year, across two platforms and nine cloud services</div></div>
+  <div><div class="v">${Math.round((AMC_TOTAL / DEV_GROSS) * 100)}%</div><div class="k">Of delivered scope value — the customary band is 15–40%</div></div>
+  <div><div class="v">${AMC_HOURS} hrs</div><div class="k">Enhancement work bundled in, before anything is chargeable</div></div>
+</div>
+
+<div class="callout">
+  <strong>What it costs not to have this.</strong> One intake window missed because
+  sign-in broke, one morning of founders turned away from a lab because QR scanning
+  failed, or one applicant's uploaded documents exposed — any of the three costs
+  KNEST more, in reputation and in scramble, than the annual fee. Maintenance is
+  not insurance against unlikely events; it is the work that stops likely ones.
+</div>
 
 <h2>Outside this contract</h2>
 <div class="cols">

@@ -64,8 +64,13 @@ table.scope thead th {
   text-align: left; padding: 0 6px 5px; border-bottom: 1.5px solid #1a1a1a; font-weight: 500;
 }
 table.scope thead th.amt { text-align: right; }
-td.num { width: 7%; color: #a6a397; font-size: 9.2px; padding-top: 6px; }
-td.amt { width: 17%; text-align: right; white-space: nowrap; font-weight: 600; }
+td.num { width: 5%; color: #a6a397; font-size: 9.2px; padding-top: 6px; }
+td.amt, th.amt { width: 15%; text-align: right; white-space: nowrap; font-weight: 600; }
+td.hrs, th.hrs { width: 6%; text-align: right; white-space: nowrap; color: #6b6558; font-size: 9.2px; }
+td.mkt, th.mkt { width: 13%; text-align: right; white-space: nowrap; color: #a6a397; font-size: 9.2px;
+  text-decoration: line-through; text-decoration-thickness: 0.5px; }
+tr.subtotal td.mkt { color: #a6a397; }
+th.hrs, th.mkt { text-decoration: none; }
 .item { display: block; font-weight: 600; font-size: 10.2px; }
 .detail { display: block; font-size: 8.9px; line-height: 1.45; color: #6b6558; margin-top: 1px; }
 tr.section td { background: #f6f4ee; border-bottom: 1px solid #ded9cd; padding: 7px 6px 6px; }
@@ -75,6 +80,26 @@ tr.section { break-after: avoid; page-break-after: avoid; }
 tr.subtotal td { font-size: 9.2px; color: #6b6558; border-bottom: 1.5px solid #ded9cd; padding-top: 5px; padding-bottom: 7px; }
 tr.subtotal td.amt { color: #1a1a1a; }
 tr { break-inside: avoid; page-break-inside: avoid; }
+
+/* value band */
+.valueband { display: flex; margin-top: 14px; border: 1.5px solid #1a1a1a; }
+.valueband > div { flex: 1; padding: 11px 12px; border-right: 1px solid #ded9cd; }
+.valueband > div:last-child { border-right: 0; }
+.valueband .k { font-size: 8px; letter-spacing: 0.14em; text-transform: uppercase; color: #6b6558; }
+.valueband .v { font-family: "Fraunces", Georgia, serif; font-size: 20px; font-weight: 600; margin-top: 3px; line-height: 1.05; }
+.valueband .v.was { color: #a6a397; text-decoration: line-through; text-decoration-thickness: 1px; font-size: 17px; }
+.valueband .s { font-size: 8.4px; color: #6b6558; margin-top: 4px; line-height: 1.4; }
+.valueband .save { background: #76232f; border-right: 0; }
+.valueband .save .k { color: #e8c9ce; }
+.valueband .save .v { color: #fff; }
+.valueband .save .s { color: #f0d8dc; }
+
+/* stat row */
+.stats { display: flex; gap: 10px; margin: 10px 0 4px; }
+.stats > div { flex: 1; border-top: 2px solid #1a1a1a; padding-top: 7px; }
+.stats .v { font-family: "Fraunces", Georgia, serif; font-size: 17px; font-weight: 600; line-height: 1.1; }
+.stats .v.sig { color: #76232f; }
+.stats .k { font-size: 8.4px; color: #6b6558; margin-top: 3px; line-height: 1.4; }
 
 /* total */
 .total { margin-top: 14px; display: flex; justify-content: flex-end; }
@@ -158,20 +183,46 @@ footer.doc { margin-top: 20px; padding-top: 8px; border-top: 1px solid #ded9cd;
   </div>
 </div>
 
+<div class="valueband">
+  <div>
+    <div class="k">Scope at market rate</div>
+    <div class="v was">₹6,16,000</div>
+    <div class="s">616 hours at ₹1,000/hr — the <em>lowest</em> prevailing Indian agency rate for this work</div>
+  </div>
+  <div>
+    <div class="k">KNEST pays</div>
+    <div class="v">₹98,200</div>
+    <div class="s">Fixed price. ₹159 per hour, effective — no overage, no change-order risk</div>
+  </div>
+  <div class="save">
+    <div class="k">KNEST saves</div>
+    <div class="v">₹5,17,800</div>
+    <div class="s">84% below the market floor. Basis set out on page 3</div>
+  </div>
+</div>
+
 <h2>Scope of work &amp; charges</h2>
 <p class="note" style="margin-bottom:8px">
-  Each line below is a discrete, working module — no line repeats work charged
-  under another. Charges are fixed per module, not hourly, and no single module
-  exceeds ₹5,000. Amounts are in Indian Rupees.
+  Every line is a discrete, working module — no line repeats work charged under
+  another. Each is priced as <strong>estimated hours × a flat ₹200 per
+  hour</strong>, the same rate on all 53 lines, so nothing is padded and
+  no line can be argued on rate. The struck-through column is what the same hours
+  cost at ₹1,000/hr, the floor of the prevailing agency band. Amounts
+  in Indian Rupees.
 </p>
 
 <table class="scope">
   <thead>
-    <tr><th>#</th><th>Module &amp; deliverable</th><th class="amt">Amount (₹)</th></tr>
+    <tr>
+      <th>#</th><th>Module &amp; deliverable</th>
+      <th class="hrs">Hrs</th>
+      <th class="mkt">At market</th>
+      <th class="amt">Your price (₹)</th>
+    </tr>
   </thead>
   <tbody>
         <tr class="section">
-          <td colspan="3">
+          <td colspan="5">
             <span class="sec-title">Foundation & Design System</span>
             <span class="sec-note">The base both platforms are built on.</span>
           </td>
@@ -179,35 +230,47 @@ footer.doc { margin-top: 20px; padding-top: 8px; border-top: 1px solid #ded9cd;
           <tr>
             <td class="num">01</td>
             <td><span class="item">Project foundation</span><span class="detail">Next.js 16 App Router on TypeScript strict mode, with the code standards, type generation and build pipeline the rest of the work depends on.</span></td>
+            <td class="hrs">10</td>
+            <td class="mkt">₹10,000</td>
             <td class="amt">₹2,000</td>
           </tr>
           <tr>
             <td class="num">02</td>
             <td><span class="item">Data architecture</span><span class="detail">One PostgreSQL database split into two schemas — editorial content kept apart from operational records — so the CMS never becomes the backend.</span></td>
+            <td class="hrs">12</td>
+            <td class="mkt">₹12,000</td>
             <td class="amt">₹2,400</td>
           </tr>
           <tr>
             <td class="num">03</td>
             <td><span class="item">Schema, migrations & seed tooling</span><span class="detail">8 schema modules, versioned migrations and seeding scripts for first-run and demo data.</span></td>
+            <td class="hrs">11</td>
+            <td class="mkt">₹11,000</td>
             <td class="amt">₹2,200</td>
           </tr>
           <tr>
             <td class="num">04</td>
             <td><span class="item">Design system & token pipeline</span><span class="detail">Colour, typography, spacing, border and motion rules built as design tokens, so both platforms look like one product.</span></td>
+            <td class="hrs">14</td>
+            <td class="mkt">₹14,000</td>
             <td class="amt">₹2,800</td>
           </tr>
           <tr>
             <td class="num">05</td>
             <td><span class="item">Component library & application shell</span><span class="detail">20 shared components — buttons, forms, tables, badges, timelines, empty and loading states — plus the responsive header, mobile drawer and footer.</span></td>
+            <td class="hrs">16</td>
+            <td class="mkt">₹16,000</td>
             <td class="amt">₹3,200</td>
           </tr>
         <tr class="subtotal">
           <td></td>
           <td>Subtotal — Foundation & Design System</td>
+          <td class="hrs">63</td>
+          <td class="mkt">₹63,000</td>
           <td class="amt">₹12,600</td>
         </tr>
         <tr class="section">
-          <td colspan="3">
+          <td colspan="5">
             <span class="sec-title">Identity, Accounts & Access</span>
             <span class="sec-note">One account per person, opening both the ecosystem platform and lab booking.</span>
           </td>
@@ -215,30 +278,40 @@ footer.doc { margin-top: 20px; padding-top: 8px; border-top: 1px solid #ded9cd;
           <tr>
             <td class="num">06</td>
             <td><span class="item">Authentication & session management</span><span class="detail">Auth.js v5 with revocable server-side sessions, password hashing and Google sign-in — removing someone locks them out on their next request, not whenever a token expires.</span></td>
+            <td class="hrs">16</td>
+            <td class="mkt">₹16,000</td>
             <td class="amt">₹3,200</td>
           </tr>
           <tr>
             <td class="num">07</td>
             <td><span class="item">Account lifecycle flows</span><span class="detail">Email verification and password reset end to end: token issue, expiry, single use and confirmation.</span></td>
+            <td class="hrs">12</td>
+            <td class="mkt">₹12,000</td>
             <td class="amt">₹2,400</td>
           </tr>
           <tr>
             <td class="num">08</td>
             <td><span class="item">Roles & authorisation</span><span class="detail">Student, founder, mentor, lab staff and admin roles, with permissions re-read from the database on every request and admin routes hidden rather than merely refused.</span></td>
+            <td class="hrs">13</td>
+            <td class="mkt">₹13,000</td>
             <td class="amt">₹2,600</td>
           </tr>
           <tr>
             <td class="num">09</td>
             <td><span class="item">Account screens</span><span class="detail">Six screens over one shared form, validation and error layer.</span></td>
+            <td class="hrs">10</td>
+            <td class="mkt">₹10,000</td>
             <td class="amt">₹2,000</td>
           </tr>
         <tr class="subtotal">
           <td></td>
           <td>Subtotal — Identity, Accounts & Access</td>
+          <td class="hrs">51</td>
+          <td class="mkt">₹51,000</td>
           <td class="amt">₹10,200</td>
         </tr>
         <tr class="section">
-          <td colspan="3">
+          <td colspan="5">
             <span class="sec-title">Content Management</span>
             <span class="sec-note">Everything public is editable by KNEST staff without a developer.</span>
           </td>
@@ -246,30 +319,40 @@ footer.doc { margin-top: 20px; padding-top: 8px; border-top: 1px solid #ded9cd;
           <tr>
             <td class="num">10</td>
             <td><span class="item">Payload CMS 3 staff console</span><span class="detail">Admin console mounted inside the application, with staff signing in on the same single account as the rest of the platform.</span></td>
+            <td class="hrs">15</td>
+            <td class="mkt">₹15,000</td>
             <td class="amt">₹3,000</td>
           </tr>
           <tr>
             <td class="num">11</td>
             <td><span class="item">Programme & venture content types</span><span class="detail">Programs, Cohorts, Startups, Founders and Mentors — fields, relationships, validation and editor layout.</span></td>
+            <td class="hrs">14</td>
+            <td class="mkt">₹14,000</td>
             <td class="amt">₹2,800</td>
           </tr>
           <tr>
             <td class="num">12</td>
             <td><span class="item">Editorial & site content types</span><span class="detail">Events, Resources, Articles, FAQs, Partners, Infrastructure, Metrics, Testimonials, Staff, the media library and site-wide homepage settings.</span></td>
+            <td class="hrs">15</td>
+            <td class="mkt">₹15,000</td>
             <td class="amt">₹3,000</td>
           </tr>
           <tr>
             <td class="num">13</td>
             <td><span class="item">Content delivery layer</span><span class="detail">11 typed services that read published content for the public site, with fallbacks so a database hiccup degrades gracefully instead of erroring.</span></td>
+            <td class="hrs">13</td>
+            <td class="mkt">₹13,000</td>
             <td class="amt">₹2,600</td>
           </tr>
         <tr class="subtotal">
           <td></td>
           <td>Subtotal — Content Management</td>
+          <td class="hrs">57</td>
+          <td class="mkt">₹57,000</td>
           <td class="amt">₹11,400</td>
         </tr>
         <tr class="section">
-          <td colspan="3">
+          <td colspan="5">
             <span class="sec-title">Public Website</span>
             <span class="sec-note">The public front door — discover, self-locate, apply.</span>
           </td>
@@ -277,40 +360,54 @@ footer.doc { margin-top: 20px; padding-top: 8px; border-top: 1px solid #ded9cd;
           <tr>
             <td class="num">14</td>
             <td><span class="item">Homepage</span><span class="detail">Hero, the triple-helix ecosystem model, counters that read real data rather than invented numbers, and calls to action.</span></td>
+            <td class="hrs">14</td>
+            <td class="mkt">₹14,000</td>
             <td class="amt">₹2,800</td>
           </tr>
           <tr>
             <td class="num">15</td>
             <td><span class="item">Programme pages</span><span class="detail">Listing with filters, plus an individual page for every programme.</span></td>
+            <td class="hrs">10</td>
+            <td class="mkt">₹10,000</td>
             <td class="amt">₹2,000</td>
           </tr>
           <tr>
             <td class="num">16</td>
             <td><span class="item">Ecosystem directories</span><span class="detail">Startup and mentor listings, each with individual profile pages.</span></td>
+            <td class="hrs">11</td>
+            <td class="mkt">₹11,000</td>
             <td class="amt">₹2,200</td>
           </tr>
           <tr>
             <td class="num">17</td>
             <td><span class="item">Events & resources</span><span class="detail">Event and resource listings, event detail pages and long-form article rendering.</span></td>
+            <td class="hrs">11</td>
+            <td class="mkt">₹11,000</td>
             <td class="amt">₹2,200</td>
           </tr>
           <tr>
             <td class="num">18</td>
             <td><span class="item">About, Ecosystem & Invest pages</span><span class="detail">Three editorial pages covering the organisation, the ecosystem and the investor-facing pitch.</span></td>
+            <td class="hrs">9</td>
+            <td class="mkt">₹9,000</td>
             <td class="amt">₹1,800</td>
           </tr>
           <tr>
             <td class="num">19</td>
             <td><span class="item">Site-wide search</span><span class="detail">One search across programmes, startups, mentors, events and resources.</span></td>
+            <td class="hrs">8</td>
+            <td class="mkt">₹8,000</td>
             <td class="amt">₹1,600</td>
           </tr>
         <tr class="subtotal">
           <td></td>
           <td>Subtotal — Public Website</td>
+          <td class="hrs">63</td>
+          <td class="mkt">₹63,000</td>
           <td class="amt">₹12,600</td>
         </tr>
         <tr class="section">
-          <td colspan="3">
+          <td colspan="5">
             <span class="sec-title">Member Experience & Applications</span>
             <span class="sec-note">What a student, founder or mentor uses after signing up.</span>
           </td>
@@ -318,35 +415,47 @@ footer.doc { margin-top: 20px; padding-top: 8px; border-top: 1px solid #ded9cd;
           <tr>
             <td class="num">20</td>
             <td><span class="item">Guided onboarding & recommendation</span><span class="detail">A short intake that places a person at their real stage and recommends the programmes that actually fit.</span></td>
+            <td class="hrs">13</td>
+            <td class="mkt">₹13,000</td>
             <td class="amt">₹2,600</td>
           </tr>
           <tr>
             <td class="num">21</td>
             <td><span class="item">Application engine</span><span class="detail">Question sets configured per programme, so staff add or change a question without a code change or a new release.</span></td>
+            <td class="hrs">15</td>
+            <td class="mkt">₹15,000</td>
             <td class="amt">₹3,000</td>
           </tr>
           <tr>
             <td class="num">22</td>
             <td><span class="item">Application lifecycle & review states</span><span class="detail">Draft, submit and review states with server-side validation and only permitted transitions, so an incomplete or tampered application cannot be submitted.</span></td>
+            <td class="hrs">13</td>
+            <td class="mkt">₹13,000</td>
             <td class="amt">₹2,600</td>
           </tr>
           <tr>
             <td class="num">23</td>
             <td><span class="item">Member dashboard & event registration</span><span class="detail">Journey status, application progress, registered events, and event registration with capacity respected.</span></td>
+            <td class="hrs">12</td>
+            <td class="mkt">₹12,000</td>
             <td class="amt">₹2,400</td>
           </tr>
           <tr>
             <td class="num">24</td>
             <td><span class="item">Notification centre</span><span class="detail">In-app and email notifications with read state, raised as applications, events and bookings progress.</span></td>
+            <td class="hrs">9</td>
+            <td class="mkt">₹9,000</td>
             <td class="amt">₹1,800</td>
           </tr>
         <tr class="subtotal">
           <td></td>
           <td>Subtotal — Member Experience & Applications</td>
+          <td class="hrs">62</td>
+          <td class="mkt">₹62,000</td>
           <td class="amt">₹12,400</td>
         </tr>
         <tr class="section">
-          <td colspan="3">
+          <td colspan="5">
             <span class="sec-title">KIIT Lab Booking Platform</span>
             <span class="sec-note">Founders book real lab time across KIIT; lab staff approve, attend and verify it.</span>
           </td>
@@ -354,50 +463,68 @@ footer.doc { margin-top: 20px; padding-top: 8px; border-top: 1px solid #ded9cd;
           <tr>
             <td class="num">25</td>
             <td><span class="item">Lab & facility registry</span><span class="detail">Every bookable lab across KIIT — department, equipment, capacity, operating hours and the staff who run it — maintained by lab heads themselves.</span></td>
+            <td class="hrs">12</td>
+            <td class="mkt">₹12,000</td>
             <td class="amt">₹2,400</td>
           </tr>
           <tr>
             <td class="num">26</td>
             <td><span class="item">Availability calendar & slot engine</span><span class="detail">Bookable slots generated from each lab’s operating hours, with double-booking made impossible at the database level, and blackout dates for holidays, exams and maintenance.</span></td>
+            <td class="hrs">15</td>
+            <td class="mkt">₹15,000</td>
             <td class="amt">₹3,000</td>
           </tr>
           <tr>
             <td class="num">27</td>
             <td><span class="item">Booking request flow</span><span class="detail">A founder picks a lab, sees live availability, chooses a slot and states purpose, headcount and equipment needed.</span></td>
+            <td class="hrs">13</td>
+            <td class="mkt">₹13,000</td>
             <td class="amt">₹2,600</td>
           </tr>
           <tr>
             <td class="num">28</td>
             <td><span class="item">Lab-head approval console</span><span class="detail">A request queue per lab, with approve, reject with a reason, or propose an alternative slot — and a record of who decided what, and when.</span></td>
+            <td class="hrs">14</td>
+            <td class="mkt">₹14,000</td>
             <td class="amt">₹2,800</td>
           </tr>
           <tr>
             <td class="num">29</td>
             <td><span class="item">Lab assistant assignment & roster</span><span class="detail">An approved slot gets a named assistant, who sees their own upcoming duty schedule rather than being told on the day.</span></td>
+            <td class="hrs">11</td>
+            <td class="mkt">₹11,000</td>
             <td class="amt">₹2,200</td>
           </tr>
           <tr>
             <td class="num">30</td>
             <td><span class="item">Booking ticket & signed QR pass</span><span class="detail">Approval issues a ticket carrying a cryptographically signed QR code, tied to that booking, that slot and that person — a screenshot of somebody else’s pass does not work.</span></td>
+            <td class="hrs">13</td>
+            <td class="mkt">₹13,000</td>
             <td class="amt">₹2,600</td>
           </tr>
           <tr>
             <td class="num">31</td>
             <td><span class="item">Two-sided QR check-in and check-out</span><span class="detail">The student pass is scanned by the assigned lab staff, and the staff pass is scanned by the student. Both sides are recorded, so attendance is proved from both directions and neither party can claim it alone.</span></td>
+            <td class="hrs">14</td>
+            <td class="mkt">₹14,000</td>
             <td class="amt">₹2,800</td>
           </tr>
           <tr>
             <td class="num">32</td>
             <td><span class="item">Lab utilisation reporting</span><span class="detail">Bookings, attendance, no-shows and hours used, per lab and per department — the numbers KIIT needs to justify the facilities.</span></td>
+            <td class="hrs">10</td>
+            <td class="mkt">₹10,000</td>
             <td class="amt">₹2,000</td>
           </tr>
         <tr class="subtotal">
           <td></td>
           <td>Subtotal — KIIT Lab Booking Platform</td>
+          <td class="hrs">102</td>
+          <td class="mkt">₹1,02,000</td>
           <td class="amt">₹20,400</td>
         </tr>
         <tr class="section">
-          <td colspan="3">
+          <td colspan="5">
             <span class="sec-title">Staff Operations & Analytics</span>
             <span class="sec-note">The tools KNEST staff run programmes and reviews with.</span>
           </td>
@@ -405,25 +532,33 @@ footer.doc { margin-top: 20px; padding-top: 8px; border-top: 1px solid #ded9cd;
           <tr>
             <td class="num">33</td>
             <td><span class="item">Application review console</span><span class="detail">Reviewer queue with filters, full applicant detail, decisions with permitted transitions, and an audit trail against every reviewer.</span></td>
+            <td class="hrs">15</td>
+            <td class="mkt">₹15,000</td>
             <td class="amt">₹3,000</td>
           </tr>
           <tr>
             <td class="num">34</td>
             <td><span class="item">Document handling</span><span class="detail">Uploads to Amazon S3 with real file-type verification, and retrieval that is access-controlled rather than merely an unguessable link.</span></td>
+            <td class="hrs">11</td>
+            <td class="mkt">₹11,000</td>
             <td class="amt">₹2,200</td>
           </tr>
           <tr>
             <td class="num">35</td>
             <td><span class="item">Analytics dashboard</span><span class="detail">Activity tracking and the application funnel — how many people start, complete and are accepted.</span></td>
+            <td class="hrs">11</td>
+            <td class="mkt">₹11,000</td>
             <td class="amt">₹2,200</td>
           </tr>
         <tr class="subtotal">
           <td></td>
           <td>Subtotal — Staff Operations & Analytics</td>
+          <td class="hrs">37</td>
+          <td class="mkt">₹37,000</td>
           <td class="amt">₹7,400</td>
         </tr>
         <tr class="section">
-          <td colspan="3">
+          <td colspan="5">
             <span class="sec-title">Progressive Web App</span>
             <span class="sec-note">Installable on a phone, and usable in a lab basement with no signal.</span>
           </td>
@@ -431,25 +566,33 @@ footer.doc { margin-top: 20px; padding-top: 8px; border-top: 1px solid #ded9cd;
           <tr>
             <td class="num">36</td>
             <td><span class="item">PWA packaging</span><span class="detail">Web app manifest, icon and splash sets, and home-screen install on both Android and iOS — no app store, no review queue, no separate build to maintain.</span></td>
+            <td class="hrs">10</td>
+            <td class="mkt">₹10,000</td>
             <td class="amt">₹2,000</td>
           </tr>
           <tr>
             <td class="num">37</td>
             <td><span class="item">Offline shell & background sync</span><span class="detail">A service worker caching the app shell, an offline fallback, and queued actions that sync once signal returns instead of being lost.</span></td>
+            <td class="hrs">12</td>
+            <td class="mkt">₹12,000</td>
             <td class="amt">₹2,400</td>
           </tr>
           <tr>
             <td class="num">38</td>
             <td><span class="item">Mobile camera QR scanning</span><span class="detail">In-browser camera scanning for lab check-in and check-out, built to work on the patchy Wi-Fi found in most lab buildings.</span></td>
+            <td class="hrs">11</td>
+            <td class="mkt">₹11,000</td>
             <td class="amt">₹2,200</td>
           </tr>
         <tr class="subtotal">
           <td></td>
           <td>Subtotal — Progressive Web App</td>
+          <td class="hrs">33</td>
+          <td class="mkt">₹33,000</td>
           <td class="amt">₹6,600</td>
         </tr>
         <tr class="section">
-          <td colspan="3">
+          <td colspan="5">
             <span class="sec-title">Security & Anti-Abuse</span>
             <span class="sec-note">The platform holds applicant documents and gates physical lab access.</span>
           </td>
@@ -457,35 +600,47 @@ footer.doc { margin-top: 20px; padding-top: 8px; border-top: 1px solid #ded9cd;
           <tr>
             <td class="num">39</td>
             <td><span class="item">Cloudflare Turnstile</span><span class="detail">Invisible bot protection on sign-up, sign-in, password reset, application submit and booking request, verified server-side so the check cannot be skipped by calling the API directly.</span></td>
+            <td class="hrs">12</td>
+            <td class="mkt">₹12,000</td>
             <td class="amt">₹2,400</td>
           </tr>
           <tr>
             <td class="num">40</td>
             <td><span class="item">Rate limiting & abuse controls</span><span class="detail">Per-route token buckets on every sensitive endpoint, sized per route and enforced in the database rather than per server instance.</span></td>
+            <td class="hrs">9</td>
+            <td class="mkt">₹9,000</td>
             <td class="amt">₹1,800</td>
           </tr>
           <tr>
             <td class="num">41</td>
             <td><span class="item">Browser hardening</span><span class="detail">Content Security Policy, HSTS, and clickjacking, MIME-sniffing and referrer-leak protection, verified in report-only mode before being enforced.</span></td>
+            <td class="hrs">9</td>
+            <td class="mkt">₹9,000</td>
             <td class="amt">₹1,800</td>
           </tr>
           <tr>
             <td class="num">42</td>
             <td><span class="item">Upload safety</span><span class="detail">Magic-byte file verification rather than trusted extensions, type and size allow-lists, private storage, and nothing user-uploaded ever served as executable content.</span></td>
+            <td class="hrs">9</td>
+            <td class="mkt">₹9,000</td>
             <td class="amt">₹1,800</td>
           </tr>
           <tr>
             <td class="num">43</td>
             <td><span class="item">Secrets, encryption & audit logging</span><span class="detail">AWS Secrets Manager, least-privilege IAM roles, encryption at rest on RDS and S3, TLS in transit, and an audit log of every privileged action.</span></td>
+            <td class="hrs">12</td>
+            <td class="mkt">₹12,000</td>
             <td class="amt">₹2,400</td>
           </tr>
         <tr class="subtotal">
           <td></td>
           <td>Subtotal — Security & Anti-Abuse</td>
+          <td class="hrs">51</td>
+          <td class="mkt">₹51,000</td>
           <td class="amt">₹10,200</td>
         </tr>
         <tr class="section">
-          <td colspan="3">
+          <td colspan="5">
             <span class="sec-title">Cloud Infrastructure & Deployment</span>
             <span class="sec-note">Named services, provisioned, configured and live.</span>
           </td>
@@ -493,40 +648,54 @@ footer.doc { margin-top: 20px; padding-top: 8px; border-top: 1px solid #ded9cd;
           <tr>
             <td class="num">44</td>
             <td><span class="item">AWS Amplify Hosting</span><span class="detail">Git-connected CI/CD with server-side rendering, per-branch preview environments, atomic deploys and one-click rollback.</span></td>
+            <td class="hrs">12</td>
+            <td class="mkt">₹12,000</td>
             <td class="amt">₹2,400</td>
           </tr>
           <tr>
             <td class="num">45</td>
             <td><span class="item">Amazon RDS for PostgreSQL 16</span><span class="detail">Instance provisioning, parameter and storage configuration, encryption, automated backups and point-in-time recovery.</span></td>
+            <td class="hrs">12</td>
+            <td class="mkt">₹12,000</td>
             <td class="amt">₹2,400</td>
           </tr>
           <tr>
             <td class="num">46</td>
             <td><span class="item">Amazon S3 & CloudFront</span><span class="detail">Private buckets for applicant documents, CDN delivery for public media, lifecycle rules and signed access.</span></td>
+            <td class="hrs">10</td>
+            <td class="mkt">₹10,000</td>
             <td class="amt">₹2,000</td>
           </tr>
           <tr>
             <td class="num">47</td>
             <td><span class="item">Amazon SES</span><span class="detail">Transactional mail with domain verification and the SPF, DKIM and DMARC records that keep KNEST mail out of spam folders.</span></td>
+            <td class="hrs">9</td>
+            <td class="mkt">₹9,000</td>
             <td class="amt">₹1,800</td>
           </tr>
           <tr>
             <td class="num">48</td>
             <td><span class="item">Cloudflare edge</span><span class="detail">DNS on the KNEST-supplied domain, TLS, WAF rules and DDoS protection sitting in front of everything.</span></td>
+            <td class="hrs">9</td>
+            <td class="mkt">₹9,000</td>
             <td class="amt">₹1,800</td>
           </tr>
           <tr>
             <td class="num">49</td>
             <td><span class="item">Amazon CloudWatch</span><span class="detail">Log aggregation, error and uptime alarms, and alert routing, so a failure is noticed before a user reports it.</span></td>
+            <td class="hrs">8</td>
+            <td class="mkt">₹8,000</td>
             <td class="amt">₹1,600</td>
           </tr>
         <tr class="subtotal">
           <td></td>
           <td>Subtotal — Cloud Infrastructure & Deployment</td>
+          <td class="hrs">60</td>
+          <td class="mkt">₹60,000</td>
           <td class="amt">₹12,000</td>
         </tr>
         <tr class="section">
-          <td colspan="3">
+          <td colspan="5">
             <span class="sec-title">Quality Assurance & Handover</span>
             <span class="sec-note">What makes it safe to put in front of students, staff and the public.</span>
           </td>
@@ -534,26 +703,36 @@ footer.doc { margin-top: 20px; padding-top: 8px; border-top: 1px solid #ded9cd;
           <tr>
             <td class="num">50</td>
             <td><span class="item">Accessibility</span><span class="detail">WCAG 2.1 AA pass across both platforms — contrast, keyboard operation, focus handling, screen-reader labelling and reduced-motion support.</span></td>
+            <td class="hrs">11</td>
+            <td class="mkt">₹11,000</td>
             <td class="amt">₹2,200</td>
           </tr>
           <tr>
             <td class="num">51</td>
             <td><span class="item">Automated tests & flow verification</span><span class="detail">Unit tests over the rules that must not break, plus scripted end-to-end verification of the auth, application and booking flows.</span></td>
+            <td class="hrs">9</td>
+            <td class="mkt">₹9,000</td>
             <td class="amt">₹1,800</td>
           </tr>
           <tr>
             <td class="num">52</td>
             <td><span class="item">Performance & search visibility</span><span class="detail">Image pipeline, load-time tuning, page metadata and social preview cards.</span></td>
+            <td class="hrs">8</td>
+            <td class="mkt">₹8,000</td>
             <td class="amt">₹1,600</td>
           </tr>
           <tr>
             <td class="num">53</td>
             <td><span class="item">Documentation, training & handover</span><span class="detail">Architecture, content editing and lab operations documentation, plus a walkthrough for KNEST staff and lab heads.</span></td>
+            <td class="hrs">9</td>
+            <td class="mkt">₹9,000</td>
             <td class="amt">₹1,800</td>
           </tr>
         <tr class="subtotal">
           <td></td>
           <td>Subtotal — Quality Assurance & Handover</td>
+          <td class="hrs">37</td>
+          <td class="mkt">₹37,000</td>
           <td class="amt">₹7,400</td>
         </tr></tbody>
 </table>
@@ -567,6 +746,106 @@ footer.doc { margin-top: 20px; padding-top: 8px; border-top: 1px solid #ded9cd;
   </div>
 </div>
 <div class="words">Rupees Ninety-Eight Thousand Two Hundred Only</div>
+
+<div class="pagebreak"></div>
+
+<h2>What this would cost elsewhere</h2>
+<p class="note" style="margin-bottom:6px">
+  The same 616 hours of work, costed four ways. Rates are indicative of
+  the prevailing Indian market in 2026 and are given as ranges, not quotations —
+  KNEST is welcome to test them against any two vendors.
+</p>
+<table class="grid">
+  <thead><tr><th style="width:30%">Route</th><th>Basis</th><th class="r" style="width:26%">Cost of the same scope</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>Software development agency</td>
+      <td>616 hrs at ₹1,000–₹1,800/hr, plus project-management loading</td>
+      <td class="r">₹6,16,000 – ₹11,08,800</td>
+    </tr>
+    <tr>
+      <td>Senior freelance developer</td>
+      <td>616 hrs at ₹800/hr, and typically no CMS, cloud, security or accessibility specialism in one person</td>
+      <td class="r">₹4,92,800</td>
+    </tr>
+    <tr>
+      <td>In-house hire</td>
+      <td>One mid-level full-stack developer for the ~4 months this represents, fully loaded — before any AWS, security or accessibility expertise</td>
+      <td class="r">₹2,20,000</td>
+    </tr>
+    <tr style="background:#f6f4ee">
+      <td><strong>This engagement</strong></td>
+      <td><strong>616 hrs at a flat ₹200/hr, less the concession — fixed price, overrun risk carried by the supplier</strong></td>
+      <td class="r"><strong style="color:#76232f">₹98,200</strong></td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="stats">
+  <div><div class="v sig">₹159/hr</div><div class="k">Effective rate KNEST pays, against a ₹1,000–₹1,800 market band</div></div>
+  <div><div class="v">6.3×</div><div class="k">What the same scope costs at the market floor</div></div>
+  <div><div class="v">616 hrs</div><div class="k">Estimated engineering effort, itemised line by line</div></div>
+  <div><div class="v">53</div><div class="k">Discrete modules, each independently priced</div></div>
+</div>
+
+<h2>Why the price is what it is</h2>
+<p class="note" style="margin-bottom:6px">
+  A price this far below market invites a fair question. The honest answer, in four parts:
+</p>
+<ul class="tight">
+  <li><strong>It is built by a KIIT student, for KIIT.</strong> The rate is a student rate, not a market rate. That is a deliberate concession to the institution, not a reflection of the work's value.</li>
+  <li><strong>KNEST is the reference deployment.</strong> Being able to point at a live platform serving a real university is part of the consideration. That has value to the supplier, and it is priced in.</li>
+  <li><strong>There is no agency overhead.</strong> No sales team, no account managers, no office, no margin stacked on subcontracted work. Agency rates carry all four; this does not.</li>
+  <li><strong>The estimate risk sits with the supplier.</strong> This is a fixed price against a fixed scope. If a module takes twice the estimated hours, that is absorbed, not invoiced. Agencies price that risk in; time-and-materials contracts pass it to the client.</li>
+</ul>
+
+<h2>Three-year cost of ownership</h2>
+<p class="note" style="margin-bottom:6px">
+  What KNEST actually spends to own and run both platforms — the number that matters
+  to a budget, rather than a one-time invoice figure.
+</p>
+<table class="grid">
+  <thead><tr><th>Cost</th><th class="r">Year 1</th><th class="r">Year 2</th><th class="r">Year 3</th><th class="r">Three-year total</th></tr></thead>
+  <tbody>
+    <tr><td>Build — one time, never repeats</td><td class="r">₹98,200</td><td class="r">—</td><td class="r">—</td><td class="r">₹98,200</td></tr>
+    <tr><td>Annual maintenance</td><td class="r">₹48,000</td><td class="r">₹48,000</td><td class="r">₹48,000</td><td class="r">₹1,44,000</td></tr>
+    <tr><td>AWS &amp; Cloudflare, estimated</td><td class="r">nil (free tier)</td><td class="r">₹30,000</td><td class="r">₹35,000</td><td class="r">₹65,000</td></tr>
+    <tr><td>Software licences</td><td class="r">nil</td><td class="r">nil</td><td class="r">nil</td><td class="r"><strong>nil</strong></td></tr>
+    <tr><td>Per-student or per-seat fees</td><td class="r">nil</td><td class="r">nil</td><td class="r">nil</td><td class="r"><strong>nil</strong></td></tr>
+    <tr style="background:#f6f4ee"><td><strong>Total</strong></td><td class="r"><strong>₹1,46,200</strong></td><td class="r"><strong>₹78,000</strong></td><td class="r"><strong>₹83,000</strong></td><td class="r"><strong style="color:#76232f">₹3,07,200</strong></td></tr>
+  </tbody>
+</table>
+
+<div class="callout">
+  <strong>Three years of both platforms, fully maintained, comes to ₹3,07,200.</strong>
+  That is 16% of what one mid-level in-house developer would cost over the
+  same period — roughly 5.7 months of a single salary — and it buys a
+  public website, an applications system, a lab booking platform, a staff console,
+  a progressive web app and year-round operation of nine cloud services.
+</div>
+
+<h2>What KNEST owns outright</h2>
+<div class="cols">
+  <div>
+    <ul class="tight">
+      <li><strong>The source code.</strong> Held in KNEST's own repository, with no supplier claim over it.</li>
+      <li><strong>The cloud accounts.</strong> Every AWS and Cloudflare resource sits in KNEST-owned accounts, not the supplier's.</li>
+      <li><strong>The data.</strong> Exportable in full, at any time, in open formats.</li>
+    </ul>
+  </div>
+  <div>
+    <ul class="tight">
+      <li><strong>No per-seat licence, ever.</strong> Unlimited students, founders, mentors, lab heads and admins at no additional cost.</li>
+      <li><strong>No lock-in.</strong> Standard Next.js, PostgreSQL and AWS. Any competent developer can take it over — the maintenance contract is a choice, not a dependency.</li>
+      <li><strong>No renewal cliff.</strong> Nothing stops working if a contract lapses.</li>
+    </ul>
+  </div>
+</div>
+<p class="note">
+  This matters more than it first appears. Per-seat platforms in this category charge
+  by the student, every year, forever, and hold the data. Here, growth from a hundred
+  users to thirty thousand costs KNEST nothing in licensing.
+</p>
 
 <div class="pagebreak"></div>
 

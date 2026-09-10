@@ -12,18 +12,41 @@ Scope covers the KNEST ecosystem platform *and* the KIIT lab booking platform,
 delivered as one installable PWA on AWS (Amplify, RDS, S3, CloudFront, SES,
 Secrets Manager, CloudWatch) behind Cloudflare with Turnstile.
 
+## How the pricing is built
+
+Every module is priced as **estimated hours × a flat ₹200/hour**, the same rate on
+all 71 line items. The generator throws if any amount is not a whole number of
+hours at that rate, so the effort story can never drift from the prices.
+
+That gives 616 hours on the build and 240 hours a year on maintenance, which is
+what the market comparison anchors against — ₹1,000/hr is the floor of the
+prevailing Indian agency band, so the headline saving is the conservative one.
+
 ## Pricing knobs
 
 All in `generate.mjs`, near the top:
 
 | Constant | Effect |
 |---|---|
+| `RATE` | The flat hourly rate. Changes every line, both documents, and every derived figure. |
 | `DEV_DISCOUNT` | The concession. Set to `0` to invoice the full ₹1,23,200 scope. |
+| `MARKET_LOW` / `MARKET_HIGH` | The agency band the comparison anchors to. |
+| `FREELANCE_LOW` | Senior freelance floor used in the comparison table. |
+| `INHOUSE_YEAR` / `INHOUSE_MONTHS` | The in-house hire comparison. |
+| `CLOUD_Y2` / `CLOUD_Y3` | AWS + Cloudflare estimates in the 3-year TCO table. |
 | `AMC_HOURS` | Enhancement hours bundled into the AMC fee. |
 | `AMC_HOURLY` | Rate charged beyond those hours. |
 
-Every total, subtotal, line count and percentage in both documents is derived —
-change a line amount and everything downstream follows.
+Every total, subtotal, line count, hour count, saving and percentage in both
+documents is derived — change a line amount and everything downstream follows.
+
+## A caution on the comparison figures
+
+The market rates, the in-house salary and the cloud estimates are **indicative,
+and labelled as such in the documents**. They are defensible as ranges, not as
+quotations. Do not tighten them into specific claims about specific vendors, and
+be ready to say where they came from if KNEST asks — the documents invite them to
+test the rates against two vendors, which only works if you mean it.
 
 ## Before sending
 
