@@ -161,7 +161,7 @@ footer.doc { margin-top: 20px; padding-top: 8px; border-top: 1px solid #ded9cd;
   <div><div class="k">Proposal no.</div><div class="v">KNEST/AMC/2026-27/001</div></div>
   <div><div class="k">Issued</div><div class="v">10 September 2026</div></div>
   <div><div class="k">Valid until</div><div class="v">10 October 2026</div></div>
-  <div><div class="k">Annual fee</div><div class="v hi">₹48,000</div></div>
+  <div><div class="k">Annual fee</div><div class="v hi">₹96,000</div></div>
 </div>
 
 
@@ -186,7 +186,7 @@ footer.doc { margin-top: 20px; padding-top: 8px; border-top: 1px solid #ded9cd;
 <p>
   What is live is not one website. It is a public platform holding real applicant
   documents, and a booking system that decides who gets physical access to KIIT
-  labs — running across nine AWS services and Cloudflare. Software of that shape
+  labs — running across eight AWS services and Cloudflare. Software of that shape
   does not stand still. Security advisories are published against its dependencies,
   AWS deprecates runtimes, Android and iOS releases break camera and offline
   behaviour in progressive web apps, intake cycles bring new programmes and new
@@ -197,26 +197,42 @@ footer.doc { margin-top: 20px; padding-top: 8px; border-top: 1px solid #ded9cd;
   a price every time something needs attention — and so there is a named person
   accountable when a student cannot get into a lab at nine in the morning.
 </p>
-<p class="note">
-  The fee is 39% of the ₹1,23,200
-  delivered scope — within the customary 15–40% band for annual maintenance on a
-  platform of this size, and it covers both platforms, not just the website.
+<h2>Why this is not a percentage of the build price</h2>
+<p>
+  Maintenance contracts are often quoted as 15–40% of what the build cost. That
+  convention only works when the build was priced at market. This one was not: it
+  was written by a KIIT student for KIIT, at a flat ₹200 an hour against a
+  market band of ₹1,000–₹1,800. Taking a percentage of an
+  already-conceded price would set the maintenance fee by an accident of who built
+  it, rather than by the work involved.
 </p>
+<p>
+  So this fee is built the way the invoice was — from hours. 480 hours
+  across the year, itemised below, at the same flat ₹200 an hour. Nothing
+  is derived from the build price, and the concession granted there is not
+  quietly recovered here: the same rate applies to both.
+</p>
+<div class="stats">
+  <div><div class="v sig">₹8,000</div><div class="k">A month, fixed, for two platforms and nine cloud services</div></div>
+  <div><div class="v">15%</div><div class="k">Of what one in-house developer costs a year, fully loaded</div></div>
+  <div><div class="v">480 hrs</div><div class="k">Committed engineering cover, roughly 9 hours a week</div></div>
+  <div><div class="v">24 hrs</div><div class="k">Enhancement work included before anything is chargeable</div></div>
+</div>
 
 <div class="valueband">
   <div>
     <div class="k">Cover at market rate</div>
-    <div class="v was">₹2,40,000</div>
-    <div class="s">240 hours a year at ₹1,000/hr, the agency floor</div>
+    <div class="v was">₹4,80,000</div>
+    <div class="s">480 hours a year at ₹1,000/hr, the agency floor</div>
   </div>
   <div>
     <div class="k">KNEST pays</div>
-    <div class="v">₹48,000</div>
-    <div class="s">₹4,000 a month — about ₹132 a day, at the same flat ₹200/hr as the build</div>
+    <div class="v">₹96,000</div>
+    <div class="s">₹8,000 a month — about ₹263 a day, at the same flat ₹200/hr as the build</div>
   </div>
   <div class="save">
     <div class="k">KNEST saves</div>
-    <div class="v">₹1,92,000</div>
+    <div class="v">₹3,84,000</div>
     <div class="s">80% below the market floor, every year</div>
   </div>
 </div>
@@ -225,7 +241,7 @@ footer.doc { margin-top: 20px; padding-top: 8px; border-top: 1px solid #ded9cd;
 <p class="note" style="margin-bottom:8px">
   Priced by coverage area on the same basis as the development invoice — estimated
   hours at the same flat ₹200 per hour — with no area repeating another.
-  240 hours across the year, roughly 4.6 hours
+  480 hours across the year, roughly 9.2 hours
   a week. Amounts in Indian Rupees, for the full 12-month term.
 </p>
 
@@ -248,75 +264,96 @@ footer.doc { margin-top: 20px; padding-top: 8px; border-top: 1px solid #ded9cd;
           <tr>
             <td class="num">01</td>
             <td><span class="item">AWS Amplify Hosting operations</span><span class="detail">Build pipeline health, deployments and rollbacks, preview environments, and framework runtime upgrades as Amplify deprecates older ones.</span></td>
-            <td class="hrs">16</td>
-            <td class="mkt">₹16,000</td>
-            <td class="amt">₹3,200</td>
+            <td class="hrs">20</td>
+            <td class="mkt">₹20,000</td>
+            <td class="amt">₹4,000</td>
           </tr>
           <tr>
             <td class="num">02</td>
-            <td><span class="item">Amazon RDS administration</span><span class="detail">Automated backups and point-in-time recovery verified by real restore drills, plus parameter tuning, storage growth review, index and vacuum health, and minor-version upgrades.</span></td>
-            <td class="hrs">16</td>
-            <td class="mkt">₹16,000</td>
-            <td class="amt">₹3,200</td>
+            <td><span class="item">Amazon RDS administration</span><span class="detail">Parameter and storage tuning, index and vacuum health, connection and slow-query review, storage growth forecasting, and minor-version upgrades applied in a maintenance window rather than by surprise.</span></td>
+            <td class="hrs">22</td>
+            <td class="mkt">₹22,000</td>
+            <td class="amt">₹4,400</td>
           </tr>
           <tr>
             <td class="num">03</td>
-            <td><span class="item">S3, CloudFront & SES operations</span><span class="detail">Storage lifecycle rules, CDN cache and invalidation, and mail deliverability — bounce and complaint rates, DKIM and DMARC monitoring.</span></td>
-            <td class="hrs">12</td>
-            <td class="mkt">₹12,000</td>
-            <td class="amt">₹2,400</td>
+            <td><span class="item">S3, CloudFront & SES operations</span><span class="detail">Storage lifecycle rules, CDN cache and invalidation, and mail deliverability — bounce and complaint rates, DKIM and DMARC monitoring, and reputation repair if a send goes wrong.</span></td>
+            <td class="hrs">16</td>
+            <td class="mkt">₹16,000</td>
+            <td class="amt">₹3,200</td>
           </tr>
           <tr>
             <td class="num">04</td>
             <td><span class="item">Cloudflare edge management</span><span class="detail">DNS records, TLS renewal, WAF rule tuning against real traffic, and review of anything the DDoS protection stops.</span></td>
-            <td class="hrs">12</td>
-            <td class="mkt">₹12,000</td>
-            <td class="amt">₹2,400</td>
-          </tr>
-          <tr>
-            <td class="num">05</td>
-            <td><span class="item">CloudWatch monitoring & incident response</span><span class="detail">Alarm tuning, log retention, alert triage, and a written note on anything that caused downtime.</span></td>
             <td class="hrs">15</td>
             <td class="mkt">₹15,000</td>
             <td class="amt">₹3,000</td>
           </tr>
-        <tr class="subtotal">
-          <td></td>
-          <td>Subtotal — Cloud Infrastructure Operations</td>
-          <td class="hrs">71</td>
-          <td class="mkt">₹71,000</td>
-          <td class="amt">₹14,200</td>
-        </tr>
-        <tr class="section">
-          <td colspan="5">
-            <span class="sec-title">Security & Compliance</span>
-            <span class="sec-note">The platform holds student data and gates physical access to labs.</span>
-          </td>
-        </tr>
           <tr>
-            <td class="num">06</td>
-            <td><span class="item">Security patch management</span><span class="detail">Advisory monitoring across Next.js, Payload, PostgreSQL, the AWS services and every dependency, with impact triage and out-of-cycle patching for anything critical.</span></td>
+            <td class="num">05</td>
+            <td><span class="item">CloudWatch monitoring & alerting</span><span class="detail">Alarm tuning, log retention, dashboard upkeep, alert triage, and a written note on anything that caused downtime.</span></td>
             <td class="hrs">17</td>
             <td class="mkt">₹17,000</td>
             <td class="amt">₹3,400</td>
           </tr>
           <tr>
-            <td class="num">07</td>
-            <td><span class="item">Anti-abuse tuning</span><span class="detail">Cloudflare Turnstile and rate-limit thresholds adjusted against real traffic, so genuine students are not blocked and bots still are.</span></td>
-            <td class="hrs">9</td>
-            <td class="mkt">₹9,000</td>
-            <td class="amt">₹1,800</td>
+            <td class="num">06</td>
+            <td><span class="item">Disaster recovery & restore drills</span><span class="detail">Two full documented restore drills a year against a live copy, proving the backups actually restore and recording how long it takes — because an untested backup is not a backup.</span></td>
+            <td class="hrs">15</td>
+            <td class="mkt">₹15,000</td>
+            <td class="amt">₹3,000</td>
           </tr>
           <tr>
+            <td class="num">07</td>
+            <td><span class="item">AWS cost management</span><span class="detail">Monthly spend review, right-sizing, and advance warning before the free tier expires at month thirteen, so the first real bill is planned rather than discovered.</span></td>
+            <td class="hrs">14</td>
+            <td class="mkt">₹14,000</td>
+            <td class="amt">₹2,800</td>
+          </tr>
+        <tr class="subtotal">
+          <td></td>
+          <td>Subtotal — Cloud Infrastructure Operations</td>
+          <td class="hrs">119</td>
+          <td class="mkt">₹1,19,000</td>
+          <td class="amt">₹23,800</td>
+        </tr>
+        <tr class="section">
+          <td colspan="5">
+            <span class="sec-title">Security & Compliance</span>
+            <span class="sec-note">The platform holds student records and gates physical access to labs.</span>
+          </td>
+        </tr>
+          <tr>
             <td class="num">08</td>
-            <td><span class="item">Credential & access management</span><span class="detail">IAM and Secrets Manager rotation, staff access reviews, and prompt offboarding when lab staff or admins change.</span></td>
-            <td class="hrs">10</td>
-            <td class="mkt">₹10,000</td>
-            <td class="amt">₹2,000</td>
+            <td><span class="item">Security patch management</span><span class="detail">Advisory monitoring across Next.js, Payload, PostgreSQL, the AWS services and every dependency, with impact triage and out-of-cycle patching for anything critical.</span></td>
+            <td class="hrs">22</td>
+            <td class="mkt">₹22,000</td>
+            <td class="amt">₹4,400</td>
           </tr>
           <tr>
             <td class="num">09</td>
-            <td><span class="item">Annual security review</span><span class="detail">Dependency audit, AWS and Cloudflare configuration review, and a written findings report with a prioritised remediation list.</span></td>
+            <td><span class="item">Anti-abuse & Turnstile tuning</span><span class="detail">Cloudflare Turnstile and rate-limit thresholds adjusted against real traffic, so genuine students are not blocked and bots still are.</span></td>
+            <td class="hrs">14</td>
+            <td class="mkt">₹14,000</td>
+            <td class="amt">₹2,800</td>
+          </tr>
+          <tr>
+            <td class="num">10</td>
+            <td><span class="item">Credential & access management</span><span class="detail">IAM and Secrets Manager rotation, staff access reviews each semester, and prompt offboarding when lab staff or admins change.</span></td>
+            <td class="hrs">14</td>
+            <td class="mkt">₹14,000</td>
+            <td class="amt">₹2,800</td>
+          </tr>
+          <tr>
+            <td class="num">11</td>
+            <td><span class="item">Annual security review</span><span class="detail">Dependency audit, AWS and Cloudflare configuration review, authorisation-boundary testing, and a written findings report with a prioritised remediation list.</span></td>
+            <td class="hrs">18</td>
+            <td class="mkt">₹18,000</td>
+            <td class="amt">₹3,600</td>
+          </tr>
+          <tr>
+            <td class="num">12</td>
+            <td><span class="item">Data protection & audit-log review</span><span class="detail">Periodic review of who accessed applicant documents and privileged records, retention enforcement, and support for any data request KIIT has to answer.</span></td>
             <td class="hrs">14</td>
             <td class="mkt">₹14,000</td>
             <td class="amt">₹2,800</td>
@@ -324,9 +361,9 @@ footer.doc { margin-top: 20px; padding-top: 8px; border-top: 1px solid #ded9cd;
         <tr class="subtotal">
           <td></td>
           <td>Subtotal — Security & Compliance</td>
-          <td class="hrs">50</td>
-          <td class="mkt">₹50,000</td>
-          <td class="amt">₹10,000</td>
+          <td class="hrs">82</td>
+          <td class="mkt">₹82,000</td>
+          <td class="amt">₹16,400</td>
         </tr>
         <tr class="section">
           <td colspan="5">
@@ -335,99 +372,161 @@ footer.doc { margin-top: 20px; padding-top: 8px; border-top: 1px solid #ded9cd;
           </td>
         </tr>
           <tr>
-            <td class="num">10</td>
-            <td><span class="item">Accounts, roles & CMS support</span><span class="detail">Account recovery, role and permission changes, content-type and field adjustments, and support for the staff who publish.</span></td>
-            <td class="hrs">13</td>
-            <td class="mkt">₹13,000</td>
-            <td class="amt">₹2,600</td>
-          </tr>
-          <tr>
-            <td class="num">11</td>
-            <td><span class="item">Public website content operations</span><span class="detail">New sections, page updates and layout adjustments within the existing design system.</span></td>
-            <td class="hrs">12</td>
-            <td class="mkt">₹12,000</td>
-            <td class="amt">₹2,400</td>
-          </tr>
-          <tr>
-            <td class="num">12</td>
-            <td><span class="item">Applications & review workflow</span><span class="detail">Question-set updates ahead of each intake cycle, reviewer workflow changes, and cycle-open support when volume spikes.</span></td>
-            <td class="hrs">14</td>
-            <td class="mkt">₹14,000</td>
-            <td class="amt">₹2,800</td>
-          </tr>
-          <tr>
             <td class="num">13</td>
-            <td><span class="item">Lab booking operations</span><span class="detail">Lab and slot configuration, term calendars and blackout dates for holidays, exams and maintenance, assistant rosters, and onboarding new labs as they come online.</span></td>
+            <td><span class="item">Accounts, roles & permissions</span><span class="detail">Account recovery, role and permission changes, sign-in investigations, and staff onboarding and offboarding.</span></td>
             <td class="hrs">15</td>
             <td class="mkt">₹15,000</td>
             <td class="amt">₹3,000</td>
           </tr>
           <tr>
             <td class="num">14</td>
-            <td><span class="item">QR ticketing & PWA upkeep</span><span class="detail">Scanner compatibility as Android, iOS and browser releases change camera and service-worker behaviour, plus install and offline behaviour.</span></td>
-            <td class="hrs">12</td>
-            <td class="mkt">₹12,000</td>
-            <td class="amt">₹2,400</td>
+            <td><span class="item">CMS & editorial support</span><span class="detail">Content type and field adjustments, editor assistance, and help for the staff who publish.</span></td>
+            <td class="hrs">16</td>
+            <td class="mkt">₹16,000</td>
+            <td class="amt">₹3,200</td>
           </tr>
           <tr>
             <td class="num">15</td>
-            <td><span class="item">Notifications, email & analytics</span><span class="detail">Template changes, notification rules, and funnel and report definition updates as programmes change.</span></td>
-            <td class="hrs">9</td>
-            <td class="mkt">₹9,000</td>
-            <td class="amt">₹1,800</td>
+            <td><span class="item">Public website content operations</span><span class="detail">New sections, page updates and layout adjustments within the existing design system.</span></td>
+            <td class="hrs">16</td>
+            <td class="mkt">₹16,000</td>
+            <td class="amt">₹3,200</td>
+          </tr>
+          <tr>
+            <td class="num">16</td>
+            <td><span class="item">Applications & review workflow</span><span class="detail">Question-set updates ahead of each intake cycle, reviewer workflow changes, and configuration for every new programme opened.</span></td>
+            <td class="hrs">22</td>
+            <td class="mkt">₹22,000</td>
+            <td class="amt">₹4,400</td>
+          </tr>
+          <tr>
+            <td class="num">17</td>
+            <td><span class="item">Lab booking operations</span><span class="detail">Lab and slot configuration, term calendars and blackout dates for holidays, exams and maintenance, assistant rosters, and onboarding each new lab as it comes online.</span></td>
+            <td class="hrs">24</td>
+            <td class="mkt">₹24,000</td>
+            <td class="amt">₹4,800</td>
+          </tr>
+          <tr>
+            <td class="num">18</td>
+            <td><span class="item">QR ticketing & PWA compatibility</span><span class="detail">Scanner and offline behaviour re-verified against new Android, iOS and browser releases, which change camera and service-worker rules without warning.</span></td>
+            <td class="hrs">18</td>
+            <td class="mkt">₹18,000</td>
+            <td class="amt">₹3,600</td>
+          </tr>
+          <tr>
+            <td class="num">19</td>
+            <td><span class="item">Notifications, email & analytics</span><span class="detail">Template changes, notification rules, deliverability monitoring, and funnel and report definition updates as programmes change.</span></td>
+            <td class="hrs">14</td>
+            <td class="mkt">₹14,000</td>
+            <td class="amt">₹2,800</td>
           </tr>
         <tr class="subtotal">
           <td></td>
           <td>Subtotal — Application Support</td>
+          <td class="hrs">125</td>
+          <td class="mkt">₹1,25,000</td>
+          <td class="amt">₹25,000</td>
+        </tr>
+        <tr class="section">
+          <td colspan="5">
+            <span class="sec-title">Service Desk & Response</span>
+            <span class="sec-note">A named channel and a committed response, not best effort.</span>
+          </td>
+        </tr>
+          <tr>
+            <td class="num">20</td>
+            <td><span class="item">Priority 1 & 2 defect resolution</span><span class="detail">Unlimited P1 and P2 fixes within the response times set out below, at no additional charge, however many arise.</span></td>
+            <td class="hrs">24</td>
+            <td class="mkt">₹24,000</td>
+            <td class="amt">₹4,800</td>
+          </tr>
+          <tr>
+            <td class="num">21</td>
+            <td><span class="item">Support desk</span><span class="detail">A named channel for KNEST staff and lab heads, with acknowledged response inside the support window rather than mail into a void.</span></td>
+            <td class="hrs">18</td>
+            <td class="mkt">₹18,000</td>
+            <td class="amt">₹3,600</td>
+          </tr>
+          <tr>
+            <td class="num">22</td>
+            <td><span class="item">Intake-cycle surge support</span><span class="detail">Extended cover through application windows and the opening weeks of each semester, when load and question volume both spike.</span></td>
+            <td class="hrs">15</td>
+            <td class="mkt">₹15,000</td>
+            <td class="amt">₹3,000</td>
+          </tr>
+          <tr>
+            <td class="num">23</td>
+            <td><span class="item">Monthly release cycle</span><span class="detail">One scheduled release a month with regression checks and rollback readiness, so changes ship predictably instead of accumulating.</span></td>
+            <td class="hrs">18</td>
+            <td class="mkt">₹18,000</td>
+            <td class="amt">₹3,600</td>
+          </tr>
+        <tr class="subtotal">
+          <td></td>
+          <td>Subtotal — Service Desk & Response</td>
           <td class="hrs">75</td>
           <td class="mkt">₹75,000</td>
           <td class="amt">₹15,000</td>
         </tr>
         <tr class="section">
           <td colspan="5">
-            <span class="sec-title">Service Level & Included Changes</span>
-            <span class="sec-note">Response commitments and a bundled budget for small changes.</span>
+            <span class="sec-title">Included Changes, Assurance & Reporting</span>
+            <span class="sec-note">Work bundled into the fee before anything becomes chargeable.</span>
           </td>
         </tr>
           <tr>
-            <td class="num">16</td>
-            <td><span class="item">Defect resolution</span><span class="detail">Unlimited Priority 1 and Priority 2 defect fixes within the response times set out below, at no additional charge.</span></td>
+            <td class="num">24</td>
+            <td><span class="item">Included enhancement budget</span><span class="detail">24 engineering hours a year for small enhancements — copy, fields, filters, layout tweaks, report changes, new content sections. Unused hours do not carry over.</span></td>
+            <td class="hrs">24</td>
+            <td class="mkt">₹24,000</td>
+            <td class="amt">₹4,800</td>
+          </tr>
+          <tr>
+            <td class="num">25</td>
+            <td><span class="item">Annual accessibility & performance audit</span><span class="detail">One full audit a year against WCAG 2.1 AA and performance targets across both platforms, with a written report and a remediation list.</span></td>
             <td class="hrs">16</td>
             <td class="mkt">₹16,000</td>
             <td class="amt">₹3,200</td>
           </tr>
           <tr>
-            <td class="num">17</td>
-            <td><span class="item">Included change budget</span><span class="detail">16 engineering hours a year for small enhancements — copy, fields, filters, layout tweaks, report changes. Unused hours do not carry over.</span></td>
-            <td class="hrs">16</td>
-            <td class="mkt">₹16,000</td>
-            <td class="amt">₹3,200</td>
+            <td class="num">26</td>
+            <td><span class="item">Quarterly service reporting</span><span class="detail">A short written report each quarter: uptime, incidents and their causes, support volume, platform usage and cloud spend — the evidence KNEST needs to renew or to justify the platform internally.</span></td>
+            <td class="hrs">15</td>
+            <td class="mkt">₹15,000</td>
+            <td class="amt">₹3,000</td>
           </tr>
           <tr>
-            <td class="num">18</td>
-            <td><span class="item">Annual audit, documentation & training</span><span class="detail">One accessibility and performance audit a year with a written report, documentation kept current, and a refresher session for staff editors, reviewers and lab heads.</span></td>
+            <td class="num">27</td>
+            <td><span class="item">Documentation upkeep</span><span class="detail">Architecture, content-editing and lab-operations documentation kept current as the platform changes.</span></td>
+            <td class="hrs">12</td>
+            <td class="mkt">₹12,000</td>
+            <td class="amt">₹2,400</td>
+          </tr>
+          <tr>
+            <td class="num">28</td>
+            <td><span class="item">Training sessions</span><span class="detail">Two sessions a year for staff editors, reviewers and lab heads, including any new people who join.</span></td>
             <td class="hrs">12</td>
             <td class="mkt">₹12,000</td>
             <td class="amt">₹2,400</td>
           </tr>
         <tr class="subtotal">
           <td></td>
-          <td>Subtotal — Service Level & Included Changes</td>
-          <td class="hrs">44</td>
-          <td class="mkt">₹44,000</td>
-          <td class="amt">₹8,800</td>
+          <td>Subtotal — Included Changes, Assurance & Reporting</td>
+          <td class="hrs">79</td>
+          <td class="mkt">₹79,000</td>
+          <td class="amt">₹15,800</td>
         </tr></tbody>
 </table>
 
 <div class="total">
   <div class="box">
-    <div class="row"><span>Subtotal (18 coverage areas)</span><span>₹48,000</span></div>
+    <div class="row"><span>Subtotal (28 coverage areas)</span><span>₹96,000</span></div>
     <div class="row muted"><span>GST</span><span>Not applicable</span></div>
-    <div class="row grand"><span class="lbl">Annual maintenance fee</span><span class="val">₹48,000</span></div>
+    <div class="row grand"><span class="lbl">Annual maintenance fee</span><span class="val">₹96,000</span></div>
   </div>
 </div>
 <div class="words">
-  Rupees Forty-Eight Thousand Only &nbsp;·&nbsp; ₹4,000 per month equivalent
+  Rupees Ninety-Six Thousand Only &nbsp;·&nbsp; ₹8,000 per month equivalent
 </div>
 
 <div class="pagebreak"></div>
@@ -441,35 +540,36 @@ footer.doc { margin-top: 20px; padding-top: 8px; border-top: 1px solid #ded9cd;
     <tr>
       <td><strong>P1 — Critical</strong></td>
       <td>Site down, sign-in broken, applications cannot be submitted, lab check-in or QR scanning failing at the lab door, or a data/security incident.</td>
-      <td class="r">4 business hours</td>
-      <td class="r">1 business day</td>
+      <td class="r">2 business hours</td>
+      <td class="r">Same business day</td>
     </tr>
     <tr>
       <td><strong>P2 — High</strong></td>
       <td>A module is unusable or wrong, but a workaround exists — a broken review action, a failing upload.</td>
-      <td class="r">1 business day</td>
-      <td class="r">3 business days</td>
+      <td class="r">4 business hours</td>
+      <td class="r">2 business days</td>
     </tr>
     <tr>
       <td><strong>P3 — Normal</strong></td>
       <td>Cosmetic issues, minor content or copy corrections, small requests.</td>
-      <td class="r">3 business days</td>
-      <td class="r">Next release cycle</td>
+      <td class="r">1 business day</td>
+      <td class="r">Next monthly release</td>
     </tr>
     <tr>
       <td><strong>P4 — Change</strong></td>
-      <td>Enhancements drawn from the included 16-hour annual change budget.</td>
-      <td class="r">3 business days</td>
+      <td>Enhancements drawn from the included 24-hour annual change budget.</td>
+      <td class="r">1 business day</td>
       <td class="r">Scheduled, by agreement</td>
     </tr>
   </tbody>
 </table>
 <p class="note" style="margin-top:6px">
-  Support window: Monday to Saturday, 10:00–19:00 IST, excluding public holidays.
-  Requests are raised by email; P1 incidents may additionally be raised by phone or
-  WhatsApp at any hour. Response times run from within the support window.
-  Release cycle: one scheduled maintenance release each month, plus out-of-cycle
-  releases for P1 and security fixes.
+  Support window: Monday to Saturday, 09:00–20:00 IST, excluding public holidays,
+  extended through intake windows and the opening weeks of each semester. Requests
+  are raised through a named support channel; P1 incidents may additionally be
+  raised by phone or WhatsApp at any hour, including Sundays. Response times run
+  from within the support window. Release cycle: one scheduled release each month,
+  plus out-of-cycle releases for P1 and security fixes.
 </p>
 
 <h2>Billing options</h2>
@@ -479,14 +579,14 @@ footer.doc { margin-top: 20px; padding-top: 8px; border-top: 1px solid #ded9cd;
     <tr>
       <td><strong>Annual, in advance</strong> <span class="sig">— recommended</span></td>
       <td>One payment at the start of the term</td>
-      <td class="r">₹48,000</td>
-      <td class="r"><strong>₹48,000</strong></td>
+      <td class="r">₹96,000</td>
+      <td class="r"><strong>₹96,000</strong></td>
     </tr>
     <tr>
       <td>Quarterly</td>
       <td>Four payments, each in advance of the quarter</td>
-      <td class="r">₹12,000</td>
-      <td class="r">₹48,000</td>
+      <td class="r">₹24,000</td>
+      <td class="r">₹96,000</td>
     </tr>
   </tbody>
 </table>
@@ -496,10 +596,10 @@ footer.doc { margin-top: 20px; padding-top: 8px; border-top: 1px solid #ded9cd;
 </p>
 
 <div class="stats">
-  <div><div class="v sig">₹132</div><div class="k">Per day, for a platform holding student records and gating lab access</div></div>
-  <div><div class="v">240 hrs</div><div class="k">Engineering cover a year, across two platforms and nine cloud services</div></div>
-  <div><div class="v">39%</div><div class="k">Of delivered scope value — the customary band is 15–40%</div></div>
-  <div><div class="v">16 hrs</div><div class="k">Enhancement work bundled in, before anything is chargeable</div></div>
+  <div><div class="v sig">₹263</div><div class="k">Per day, for a platform holding student records and gating lab access</div></div>
+  <div><div class="v">480 hrs</div><div class="k">Engineering cover a year, across two platforms and nine cloud services</div></div>
+  <div><div class="v">28</div><div class="k">Coverage areas, each priced and itemised separately</div></div>
+  <div><div class="v">nil</div><div class="k">Licence and per-seat fees, at any number of users</div></div>
 </div>
 
 <div class="callout">
@@ -515,7 +615,7 @@ footer.doc { margin-top: 20px; padding-top: 8px; border-top: 1px solid #ded9cd;
   <div>
     <h3>Charged separately</h3>
     <ul class="tight">
-      <li>Enhancement work beyond the included 16 hours a year, at <strong>₹700 per hour</strong>, estimated and approved in writing before work starts.</li>
+      <li>Enhancement work beyond the included 24 hours a year, at <strong>₹700 per hour</strong>, estimated and approved in writing before work starts.</li>
       <li>New modules or significant features — quoted per module, on the same basis as the development invoice.</li>
       <li>Visual redesign or rebranding beyond the existing design system.</li>
       <li>Migration off AWS Amplify or RDS to a different provider or architecture.</li>
@@ -588,7 +688,7 @@ footer.doc { margin-top: 20px; padding-top: 8px; border-top: 1px solid #ded9cd;
   <div>
     <div class="kv"><span class="k">Billing option selected</span><span class="v">☐ Annual &nbsp;&nbsp; ☐ Quarterly</span></div>
     <div class="kv"><span class="k">Term begins</span><span class="v">01 October 2026</span></div>
-    <div class="kv"><span class="k">Annual fee</span><span class="v">₹48,000</span></div>
+    <div class="kv"><span class="k">Annual fee</span><span class="v">₹96,000</span></div>
   </div>
   <div>
     <div class="kv"><span class="k">KNEST point of contact</span><span class="v">«Name»</span></div>
@@ -618,7 +718,7 @@ footer.doc { margin-top: 20px; padding-top: 8px; border-top: 1px solid #ded9cd;
 </div>
 
 <footer class="doc">
-  <span>Proposal KNEST/AMC/2026-27/001 · ₹48,000 per year</span>
+  <span>Proposal KNEST/AMC/2026-27/001 · ₹96,000 per year</span>
   <span>Valid for 30 days from the date of issue.</span>
 </footer>
 </div></body>

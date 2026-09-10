@@ -6,7 +6,7 @@ arithmetic is never typed by hand.
 | File | What it is |
 |---|---|
 | `knest-development-invoice.{html,pdf}` | Invoice for the build — 53 modules, ₹1,23,200 gross less a ₹25,000 concession = **₹98,200** |
-| `knest-amc-proposal.{html,pdf}` | Annual maintenance proposal — 18 coverage areas, **₹48,000/year** |
+| `knest-amc-proposal.{html,pdf}` | Annual maintenance proposal — 28 coverage areas, **₹96,000/year** |
 
 Scope covers the KNEST ecosystem platform *and* the KIIT lab booking platform,
 delivered as one installable PWA on AWS (Amplify, RDS, S3, CloudFront, SES,
@@ -15,12 +15,21 @@ Secrets Manager, CloudWatch) behind Cloudflare with Turnstile.
 ## How the pricing is built
 
 Every module is priced as **estimated hours × a flat ₹200/hour**, the same rate on
-all 71 line items. The generator throws if any amount is not a whole number of
+all 81 line items. The generator throws if any amount is not a whole number of
 hours at that rate, so the effort story can never drift from the prices.
 
-That gives 616 hours on the build and 240 hours a year on maintenance, which is
+That gives 616 hours on the build and 480 hours a year on maintenance, which is
 what the market comparison anchors against — ₹1,000/hr is the floor of the
 prevailing Indian agency band, so the headline saving is the conservative one.
+
+Amounts in words are generated (Indian numbering), not typed.
+
+**The AMC is deliberately not a percentage of the build price.** At ₹96,000 it is
+78% of the ₹1,23,200 build scope, well outside the customary 15–40% convention.
+The proposal meets that objection directly rather than hoping nobody does the
+division: the build carries a student rate and a concession, so a percentage of it
+would price maintenance by an accident of who built it. Keep that section if you
+change the fee — deleting it leaves an easy line of attack open.
 
 ## Pricing knobs
 

@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url'
 const OUT_DIR = path.dirname(fileURLToPath(import.meta.url))
 
 /** Enhancement hours bundled into the AMC fee. */
-const AMC_HOURS = 16
+const AMC_HOURS = 24
 /** Rate for enhancement work beyond the bundled hours. */
 const AMC_HOURLY = 700
 
@@ -180,42 +180,58 @@ const AMC_SECTIONS = [
     title: 'Cloud Infrastructure Operations',
     note: 'Running the named AWS and Cloudflare services the platform sits on.',
     items: [
-      ['AWS Amplify Hosting operations', 'Build pipeline health, deployments and rollbacks, preview environments, and framework runtime upgrades as Amplify deprecates older ones.', 3200],
-      ['Amazon RDS administration', 'Automated backups and point-in-time recovery verified by real restore drills, plus parameter tuning, storage growth review, index and vacuum health, and minor-version upgrades.', 3200],
-      ['S3, CloudFront & SES operations', 'Storage lifecycle rules, CDN cache and invalidation, and mail deliverability — bounce and complaint rates, DKIM and DMARC monitoring.', 2400],
-      ['Cloudflare edge management', 'DNS records, TLS renewal, WAF rule tuning against real traffic, and review of anything the DDoS protection stops.', 2400],
-      ['CloudWatch monitoring & incident response', 'Alarm tuning, log retention, alert triage, and a written note on anything that caused downtime.', 3000],
+      ['AWS Amplify Hosting operations', 'Build pipeline health, deployments and rollbacks, preview environments, and framework runtime upgrades as Amplify deprecates older ones.', 4000],
+      ['Amazon RDS administration', 'Parameter and storage tuning, index and vacuum health, connection and slow-query review, storage growth forecasting, and minor-version upgrades applied in a maintenance window rather than by surprise.', 4400],
+      ['S3, CloudFront & SES operations', 'Storage lifecycle rules, CDN cache and invalidation, and mail deliverability — bounce and complaint rates, DKIM and DMARC monitoring, and reputation repair if a send goes wrong.', 3200],
+      ['Cloudflare edge management', 'DNS records, TLS renewal, WAF rule tuning against real traffic, and review of anything the DDoS protection stops.', 3000],
+      ['CloudWatch monitoring & alerting', 'Alarm tuning, log retention, dashboard upkeep, alert triage, and a written note on anything that caused downtime.', 3400],
+      ['Disaster recovery & restore drills', 'Two full documented restore drills a year against a live copy, proving the backups actually restore and recording how long it takes — because an untested backup is not a backup.', 3000],
+      ['AWS cost management', 'Monthly spend review, right-sizing, and advance warning before the free tier expires at month thirteen, so the first real bill is planned rather than discovered.', 2800],
     ],
   },
   {
     title: 'Security & Compliance',
-    note: 'The platform holds student data and gates physical access to labs.',
+    note: 'The platform holds student records and gates physical access to labs.',
     items: [
-      ['Security patch management', 'Advisory monitoring across Next.js, Payload, PostgreSQL, the AWS services and every dependency, with impact triage and out-of-cycle patching for anything critical.', 3400],
-      ['Anti-abuse tuning', 'Cloudflare Turnstile and rate-limit thresholds adjusted against real traffic, so genuine students are not blocked and bots still are.', 1800],
-      ['Credential & access management', 'IAM and Secrets Manager rotation, staff access reviews, and prompt offboarding when lab staff or admins change.', 2000],
-      ['Annual security review', 'Dependency audit, AWS and Cloudflare configuration review, and a written findings report with a prioritised remediation list.', 2800],
+      ['Security patch management', 'Advisory monitoring across Next.js, Payload, PostgreSQL, the AWS services and every dependency, with impact triage and out-of-cycle patching for anything critical.', 4400],
+      ['Anti-abuse & Turnstile tuning', 'Cloudflare Turnstile and rate-limit thresholds adjusted against real traffic, so genuine students are not blocked and bots still are.', 2800],
+      ['Credential & access management', 'IAM and Secrets Manager rotation, staff access reviews each semester, and prompt offboarding when lab staff or admins change.', 2800],
+      ['Annual security review', 'Dependency audit, AWS and Cloudflare configuration review, authorisation-boundary testing, and a written findings report with a prioritised remediation list.', 3600],
+      ['Data protection & audit-log review', 'Periodic review of who accessed applicant documents and privileged records, retention enforcement, and support for any data request KIIT has to answer.', 2800],
     ],
   },
   {
     title: 'Application Support',
     note: 'Ongoing support per module, across both platforms.',
     items: [
-      ['Accounts, roles & CMS support', 'Account recovery, role and permission changes, content-type and field adjustments, and support for the staff who publish.', 2600],
-      ['Public website content operations', 'New sections, page updates and layout adjustments within the existing design system.', 2400],
-      ['Applications & review workflow', 'Question-set updates ahead of each intake cycle, reviewer workflow changes, and cycle-open support when volume spikes.', 2800],
-      ['Lab booking operations', 'Lab and slot configuration, term calendars and blackout dates for holidays, exams and maintenance, assistant rosters, and onboarding new labs as they come online.', 3000],
-      ['QR ticketing & PWA upkeep', 'Scanner compatibility as Android, iOS and browser releases change camera and service-worker behaviour, plus install and offline behaviour.', 2400],
-      ['Notifications, email & analytics', 'Template changes, notification rules, and funnel and report definition updates as programmes change.', 1800],
+      ['Accounts, roles & permissions', 'Account recovery, role and permission changes, sign-in investigations, and staff onboarding and offboarding.', 3000],
+      ['CMS & editorial support', 'Content type and field adjustments, editor assistance, and help for the staff who publish.', 3200],
+      ['Public website content operations', 'New sections, page updates and layout adjustments within the existing design system.', 3200],
+      ['Applications & review workflow', 'Question-set updates ahead of each intake cycle, reviewer workflow changes, and configuration for every new programme opened.', 4400],
+      ['Lab booking operations', 'Lab and slot configuration, term calendars and blackout dates for holidays, exams and maintenance, assistant rosters, and onboarding each new lab as it comes online.', 4800],
+      ['QR ticketing & PWA compatibility', 'Scanner and offline behaviour re-verified against new Android, iOS and browser releases, which change camera and service-worker rules without warning.', 3600],
+      ['Notifications, email & analytics', 'Template changes, notification rules, deliverability monitoring, and funnel and report definition updates as programmes change.', 2800],
     ],
   },
   {
-    title: 'Service Level & Included Changes',
-    note: 'Response commitments and a bundled budget for small changes.',
+    title: 'Service Desk & Response',
+    note: 'A named channel and a committed response, not best effort.',
     items: [
-      ['Defect resolution', 'Unlimited Priority 1 and Priority 2 defect fixes within the response times set out below, at no additional charge.', 3200],
-      ['Included change budget', `${AMC_HOURS} engineering hours a year for small enhancements — copy, fields, filters, layout tweaks, report changes. Unused hours do not carry over.`, 3200],
-      ['Annual audit, documentation & training', 'One accessibility and performance audit a year with a written report, documentation kept current, and a refresher session for staff editors, reviewers and lab heads.', 2400],
+      ['Priority 1 & 2 defect resolution', 'Unlimited P1 and P2 fixes within the response times set out below, at no additional charge, however many arise.', 4800],
+      ['Support desk', 'A named channel for KNEST staff and lab heads, with acknowledged response inside the support window rather than mail into a void.', 3600],
+      ['Intake-cycle surge support', 'Extended cover through application windows and the opening weeks of each semester, when load and question volume both spike.', 3000],
+      ['Monthly release cycle', 'One scheduled release a month with regression checks and rollback readiness, so changes ship predictably instead of accumulating.', 3600],
+    ],
+  },
+  {
+    title: 'Included Changes, Assurance & Reporting',
+    note: 'Work bundled into the fee before anything becomes chargeable.',
+    items: [
+      ['Included enhancement budget', `${AMC_HOURS} engineering hours a year for small enhancements — copy, fields, filters, layout tweaks, report changes, new content sections. Unused hours do not carry over.`, 4800],
+      ['Annual accessibility & performance audit', 'One full audit a year against WCAG 2.1 AA and performance targets across both platforms, with a written report and a remediation list.', 3200],
+      ['Quarterly service reporting', 'A short written report each quarter: uptime, incidents and their causes, support volume, platform usage and cloud spend — the evidence KNEST needs to renew or to justify the platform internally.', 3000],
+      ['Documentation upkeep', 'Architecture, content-editing and lab-operations documentation kept current as the platform changes.', 2400],
+      ['Training sessions', 'Two sessions a year for staff editors, reviewers and lab heads, including any new people who join.', 2400],
     ],
   },
 ]
@@ -223,6 +239,32 @@ const AMC_SECTIONS = [
 /* ------------------------------------------------------------------- shared */
 
 const inr = (n) => '₹' + n.toLocaleString('en-IN')
+
+const ONES = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten',
+  'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen']
+const TENS = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety']
+
+/** Under 100, hyphenated the way Indian invoices write it (Ninety-Six). */
+const under100 = (n) =>
+  n < 20 ? ONES[n] : TENS[Math.floor(n / 10)] + (n % 10 ? '-' + ONES[n % 10] : '')
+
+const under1000 = (n) =>
+  (n >= 100 ? ONES[Math.floor(n / 100)] + ' Hundred' + (n % 100 ? ' ' : '') : '') + under100(n % 100)
+
+/** Rupees in words, Indian numbering (crore / lakh / thousand). */
+const inWords = (n) => {
+  if (n === 0) return 'Rupees Zero Only'
+  const parts = []
+  const units = [[10000000, 'Crore'], [100000, 'Lakh'], [1000, 'Thousand']]
+  let rest = n
+  for (const [value, name] of units) {
+    const count = Math.floor(rest / value)
+    if (count) parts.push(under1000(count) + ' ' + name)
+    rest %= value
+  }
+  if (rest) parts.push(under1000(rest))
+  return 'Rupees ' + parts.join(' ') + ' Only'
+}
 
 const total = (sections) =>
   sections.reduce((s, sec) => s + sec.items.reduce((t, [, , amt]) => t + amt, 0), 0)
@@ -573,7 +615,7 @@ ${partiesBlock(
     <div class="row grand"><span class="lbl">Total payable</span><span class="val">${inr(DEV_TOTAL)}</span></div>
   </div>
 </div>
-<div class="words">Rupees Ninety-Eight Thousand Two Hundred Only</div>
+<div class="words">${inWords(DEV_TOTAL)}</div>
 
 <div class="pagebreak"></div>
 
@@ -800,7 +842,7 @@ ${partiesBlock(
 <p>
   What is live is not one website. It is a public platform holding real applicant
   documents, and a booking system that decides who gets physical access to KIIT
-  labs — running across nine AWS services and Cloudflare. Software of that shape
+  labs — running across eight AWS services and Cloudflare. Software of that shape
   does not stand still. Security advisories are published against its dependencies,
   AWS deprecates runtimes, Android and iOS releases break camera and offline
   behaviour in progressive web apps, intake cycles bring new programmes and new
@@ -811,11 +853,27 @@ ${partiesBlock(
   a price every time something needs attention — and so there is a named person
   accountable when a student cannot get into a lab at nine in the morning.
 </p>
-<p class="note">
-  The fee is ${Math.round((AMC_TOTAL / DEV_GROSS) * 100)}% of the ${inr(DEV_GROSS)}
-  delivered scope — within the customary 15–40% band for annual maintenance on a
-  platform of this size, and it covers both platforms, not just the website.
+<h2>Why this is not a percentage of the build price</h2>
+<p>
+  Maintenance contracts are often quoted as 15–40% of what the build cost. That
+  convention only works when the build was priced at market. This one was not: it
+  was written by a KIIT student for KIIT, at a flat ${inr(RATE)} an hour against a
+  market band of ${inr(MARKET_LOW)}–${inr(MARKET_HIGH)}. Taking a percentage of an
+  already-conceded price would set the maintenance fee by an accident of who built
+  it, rather than by the work involved.
 </p>
+<p>
+  So this fee is built the way the invoice was — from hours. ${AMC_EFFORT} hours
+  across the year, itemised below, at the same flat ${inr(RATE)} an hour. Nothing
+  is derived from the build price, and the concession granted there is not
+  quietly recovered here: the same rate applies to both.
+</p>
+<div class="stats">
+  <div><div class="v sig">${inr(AMC_MONTH)}</div><div class="k">A month, fixed, for two platforms and nine cloud services</div></div>
+  <div><div class="v">${Math.round((AMC_TOTAL / INHOUSE_YEAR) * 100)}%</div><div class="k">Of what one in-house developer costs a year, fully loaded</div></div>
+  <div><div class="v">${AMC_EFFORT} hrs</div><div class="k">Committed engineering cover, roughly ${(AMC_EFFORT / 52).toFixed(0)} hours a week</div></div>
+  <div><div class="v">${AMC_HOURS} hrs</div><div class="k">Enhancement work included before anything is chargeable</div></div>
+</div>
 
 <div class="valueband">
   <div>
@@ -863,7 +921,7 @@ ${partiesBlock(
   </div>
 </div>
 <div class="words">
-  Rupees Forty-Eight Thousand Only &nbsp;·&nbsp; ${inr(AMC_MONTH)} per month equivalent
+  ${inWords(AMC_TOTAL)} &nbsp;·&nbsp; ${inr(AMC_MONTH)} per month equivalent
 </div>
 
 <div class="pagebreak"></div>
@@ -877,35 +935,36 @@ ${partiesBlock(
     <tr>
       <td><strong>P1 — Critical</strong></td>
       <td>Site down, sign-in broken, applications cannot be submitted, lab check-in or QR scanning failing at the lab door, or a data/security incident.</td>
-      <td class="r">4 business hours</td>
-      <td class="r">1 business day</td>
+      <td class="r">2 business hours</td>
+      <td class="r">Same business day</td>
     </tr>
     <tr>
       <td><strong>P2 — High</strong></td>
       <td>A module is unusable or wrong, but a workaround exists — a broken review action, a failing upload.</td>
-      <td class="r">1 business day</td>
-      <td class="r">3 business days</td>
+      <td class="r">4 business hours</td>
+      <td class="r">2 business days</td>
     </tr>
     <tr>
       <td><strong>P3 — Normal</strong></td>
       <td>Cosmetic issues, minor content or copy corrections, small requests.</td>
-      <td class="r">3 business days</td>
-      <td class="r">Next release cycle</td>
+      <td class="r">1 business day</td>
+      <td class="r">Next monthly release</td>
     </tr>
     <tr>
       <td><strong>P4 — Change</strong></td>
       <td>Enhancements drawn from the included ${AMC_HOURS}-hour annual change budget.</td>
-      <td class="r">3 business days</td>
+      <td class="r">1 business day</td>
       <td class="r">Scheduled, by agreement</td>
     </tr>
   </tbody>
 </table>
 <p class="note" style="margin-top:6px">
-  Support window: Monday to Saturday, 10:00–19:00 IST, excluding public holidays.
-  Requests are raised by email; P1 incidents may additionally be raised by phone or
-  WhatsApp at any hour. Response times run from within the support window.
-  Release cycle: one scheduled maintenance release each month, plus out-of-cycle
-  releases for P1 and security fixes.
+  Support window: Monday to Saturday, 09:00–20:00 IST, excluding public holidays,
+  extended through intake windows and the opening weeks of each semester. Requests
+  are raised through a named support channel; P1 incidents may additionally be
+  raised by phone or WhatsApp at any hour, including Sundays. Response times run
+  from within the support window. Release cycle: one scheduled release each month,
+  plus out-of-cycle releases for P1 and security fixes.
 </p>
 
 <h2>Billing options</h2>
@@ -934,8 +993,8 @@ ${partiesBlock(
 <div class="stats">
   <div><div class="v sig">${inr(Math.round(AMC_TOTAL / 365))}</div><div class="k">Per day, for a platform holding student records and gating lab access</div></div>
   <div><div class="v">${AMC_EFFORT} hrs</div><div class="k">Engineering cover a year, across two platforms and nine cloud services</div></div>
-  <div><div class="v">${Math.round((AMC_TOTAL / DEV_GROSS) * 100)}%</div><div class="k">Of delivered scope value — the customary band is 15–40%</div></div>
-  <div><div class="v">${AMC_HOURS} hrs</div><div class="k">Enhancement work bundled in, before anything is chargeable</div></div>
+  <div><div class="v">${AMC_COUNT}</div><div class="k">Coverage areas, each priced and itemised separately</div></div>
+  <div><div class="v">nil</div><div class="k">Licence and per-seat fees, at any number of users</div></div>
 </div>
 
 <div class="callout">
