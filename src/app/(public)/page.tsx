@@ -17,13 +17,19 @@ export const metadata: Metadata = {
     "KIIT's university-wide innovation and entrepreneurship ecosystem. Programs, mentors, space and a community of people building things, at every stage.",
 }
 
+/**
+ * Each card points at the page that actually covers it. All six previously
+ * linked to on-page anchors — #programs, #mentors, #space, #industry,
+ * #community, #capital — and none of those ids exists anywhere on this page,
+ * so every card was a dead click that scrolled nowhere. Copy is unchanged.
+ */
 const OFFER_ITEMS = [
-  { label: 'Programs', body: 'Structured paths from idea to venture, run in cohorts.', href: '#programs' },
-  { label: 'Mentors', body: 'People who’ve built things, made mistakes, and will tell you about both.', href: '#mentors' },
-  { label: 'Space', body: 'Labs, studios and desks. Somewhere to build that isn’t your hostel room.', href: '#space' },
-  { label: 'Industry', body: 'Introductions to companies, customers and partners you couldn’t reach alone.', href: '#industry' },
-  { label: 'Community', body: 'Other people building things. This turns out to matter more than anyone expects.', href: '#community' },
-  { label: 'Capital', body: 'Direct grants, cloud credits, and introductions to seed investors when you scale.', href: '#capital' },
+  { label: 'Programs', body: 'Structured paths from idea to venture, run in cohorts.', href: '/programs' },
+  { label: 'Mentors', body: 'People who’ve built things, made mistakes, and will tell you about both.', href: '/mentors' },
+  { label: 'Space', body: 'Labs, studios and desks. Somewhere to build that isn’t your hostel room.', href: '/ecosystem#infrastructure' },
+  { label: 'Industry', body: 'Introductions to companies, customers and partners you couldn’t reach alone.', href: '/ecosystem#partners' },
+  { label: 'Community', body: 'Other people building things. This turns out to matter more than anyone expects.', href: '/events' },
+  { label: 'Capital', body: 'Direct grants, cloud credits, and introductions to seed investors when you scale.', href: '/ecosystem#framework' },
 ]
 
 export default async function HomePage() {

@@ -140,7 +140,7 @@ export default async function EcosystemPage() {
         </Section>
       )}
 
-      <Section padding="tight" className="border-t border-[var(--color-line)]">
+      <Section id="framework" padding="tight" className="scroll-mt-24 border-t border-[var(--color-line)]">
         <Heading as="h2" size="title">
           What sits inside it
         </Heading>
