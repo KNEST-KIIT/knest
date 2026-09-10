@@ -12,6 +12,7 @@ const NAV = [
   { href: '/ecosystem', label: 'Ecosystem' },
   { href: '/events', label: 'Events' },
   { href: '/resources', label: 'Resources' },
+  { href: '/blog', label: 'Blog' },
   { href: '/about', label: 'About' },
 ]
 
