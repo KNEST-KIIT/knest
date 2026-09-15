@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { motion } from 'framer-motion'
 import { EXPERTISE_OPTIONS, SECTOR_OPTIONS } from '@/payload/fields/taxonomy'
 import { Field, Heading, Input, MultiSelect, SingleSelect, Textarea } from '@/components/ui'
 import type { JourneyStage, PlatformRole } from '@/server/auth/roles'

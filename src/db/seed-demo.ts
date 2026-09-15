@@ -186,8 +186,8 @@ async function seedDemoData() {
   // Seed articles (Founder Stories)
   if (createdStartups.length >= 2) {
     const articlesData = [
-      { title: 'Scaling AeroDrive to 10k deliveries', summary: 'How AeroDrive found product market fit in rural logistics.', startup: createdStartups[0].id },
-      { title: 'The story behind FinFlow', summary: 'From a dorm room idea to processing $1M in payroll.', startup: createdStartups[1].id },
+      { title: 'Scaling AeroDrive to 10k deliveries', summary: 'How AeroDrive found product market fit in rural logistics.', startup: createdStartups[0]!.id },
+      { title: 'The story behind FinFlow', summary: 'From a dorm room idea to processing $1M in payroll.', startup: createdStartups[1]!.id },
     ]
     for (const article of articlesData) {
       const slug = article.title.toLowerCase().replace(/ /g, '-')

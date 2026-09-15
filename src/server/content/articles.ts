@@ -31,6 +31,7 @@ const FALLBACK_ARTICLES = [
     authorRole: 'Founder, Medsage (KIIT 2024)',
     readTime: '6 min read',
     publishedAt: '2026-08-28T00:00:00.000Z',
+    startup: null,
   },
   {
     id: 'art-2',
@@ -42,6 +43,7 @@ const FALLBACK_ARTICLES = [
     authorRole: 'Ecosystem Capital Team',
     readTime: '8 min read',
     publishedAt: '2026-08-15T00:00:00.000Z',
+    startup: null,
   },
   {
     id: 'art-3',
@@ -53,6 +55,7 @@ const FALLBACK_ARTICLES = [
     authorRole: 'Faculty Lead, Maker Studios',
     readTime: '5 min read',
     publishedAt: '2026-08-02T00:00:00.000Z',
+    startup: null,
   },
   {
     id: 'art-4',
@@ -64,6 +67,7 @@ const FALLBACK_ARTICLES = [
     authorRole: 'KIIT Alumni Operator Syndicate',
     readTime: '7 min read',
     publishedAt: '2026-07-20T00:00:00.000Z',
+    startup: null,
   },
   {
     id: 'art-5',
@@ -75,6 +79,7 @@ const FALLBACK_ARTICLES = [
     authorRole: 'Founder, AstroSarthi',
     readTime: '4 min read',
     publishedAt: '2026-07-08T00:00:00.000Z',
+    startup: null,
   },
   {
     id: 'art-6',
@@ -86,6 +91,7 @@ const FALLBACK_ARTICLES = [
     authorRole: 'KNEST Legal Support',
     readTime: '9 min read',
     publishedAt: '2026-06-25T00:00:00.000Z',
+    startup: null,
   },
 ]
 
