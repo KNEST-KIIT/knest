@@ -8,7 +8,6 @@ import { track } from '@/server/analytics/track'
 import { Hero } from './hero'
 import { JourneySelector } from './journey-selector'
 import { TheJourney } from './the-journey'
-import { TheEcosystem } from './the-ecosystem'
 import { BuiltWithKnest } from './built-with-knest'
 import { ExecutionFlow } from './execution-flow'
 
@@ -60,45 +59,52 @@ export default async function HomePage() {
           case 'offer':
             return (
               <Section key={key} className="py-10 md:py-14 relative bg-[var(--color-paper-soft)]">
-                <div className="flex flex-col md:flex-row md:items-end justify-between mb-6 pb-4 border-b border-[var(--color-line)]">
+                <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 pb-6 border-b border-[var(--color-line)] relative">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.25em] font-bold text-[var(--color-signal)] mb-1.5">
-                      The KNEST Guarantee
-                    </p>
-                    <RevealHeading size="display" className="tracking-tight text-3xl md:text-4xl font-bold text-[var(--color-ink)]">
+                    <Reveal delay={0.1}>
+                      <p className="text-xs uppercase tracking-[0.25em] font-bold text-[var(--color-signal)] mb-3">
+                        The KNEST Guarantee
+                      </p>
+                    </Reveal>
+                    <RevealHeading size="display" className="tracking-tight text-4xl md:text-5xl font-bold text-[var(--color-ink)] leading-[1.1]">
                       What KNEST actually gives you.
                     </RevealHeading>
                   </div>
-                  <p className="text-xs font-mono uppercase tracking-wider text-[var(--color-ink-muted)] mt-2 md:mt-0">
-                    6 Core Operational Linkages
-                  </p>
+                  <Reveal delay={0.3}>
+                    <p className="text-xs font-mono uppercase tracking-wider text-[var(--color-ink-muted)] mt-4 md:mt-0">
+                      6 Core Operational Linkages
+                    </p>
+                  </Reveal>
                 </div>
                 
-                <div className="border border-[var(--color-line)] bg-white/70 divide-y divide-[var(--color-line)] shadow-sm">
+                <div className="border border-[var(--color-line)] bg-white/80 divide-y divide-[var(--color-line)] shadow-[0_4px_24px_rgba(13,19,33,0.02)] backdrop-blur-sm">
                   {OFFER_ITEMS.map((item, i) => (
                     <Reveal key={item.label} delay={i * 0.05}>
                       <Link
                         href={item.href}
-                        className="group flex flex-col md:flex-row md:items-center py-4 sm:py-5 px-5 sm:px-7 border-l-4 border-l-transparent hover:border-l-[var(--color-signal)] hover:bg-gradient-to-r hover:from-[#f4e4e2] hover:via-white hover:to-white transition-all duration-300 cursor-pointer"
+                        className="group relative flex flex-col md:flex-row md:items-center py-5 sm:py-7 px-6 sm:px-8 overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.19,1,0.22,1)] hover:bg-[var(--color-paper)]/50"
                       >
-                        <div className="w-14 shrink-0 font-mono text-lg sm:text-xl font-bold text-[var(--color-signal)]/45 group-hover:text-[var(--color-signal)] group-hover:scale-110 transition-all">
+                        <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-signal)]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 ease-[cubic-bezier(0.19,1,0.22,1)]" />
+                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--color-signal)] scale-y-0 group-hover:scale-y-100 transition-transform duration-500 ease-[cubic-bezier(0.19,1,0.22,1)] origin-top" />
+                        
+                        <div className="relative w-14 shrink-0 font-mono text-lg sm:text-xl font-bold text-[var(--color-signal)]/30 group-hover:text-[var(--color-signal)] group-hover:translate-x-2 transition-all duration-500 ease-[cubic-bezier(0.19,1,0.22,1)]">
                           {String(i + 1).padStart(2, '0')}
                         </div>
                         
-                        <div className="md:w-1/4 pr-4">
-                          <h3 className="font-[family-name:var(--font-display)] text-xl sm:text-2xl font-bold text-[var(--color-ink)] group-hover:text-[var(--color-signal)] transition-colors duration-200">
+                        <div className="relative md:w-1/4 pr-4">
+                          <h3 className="font-[family-name:var(--font-display)] text-xl sm:text-2xl font-bold text-[var(--color-ink)] group-hover:text-[var(--color-signal)] transition-colors duration-300">
                             {item.label}
                           </h3>
                         </div>
                         
-                        <div className="flex-1 mt-1.5 md:mt-0">
-                          <p className="text-[var(--color-ink-soft)] text-sm sm:text-[15px] font-light leading-relaxed group-hover:text-[var(--color-ink)] transition-colors duration-200">
+                        <div className="relative flex-1 mt-2 md:mt-0">
+                          <p className="text-[var(--color-ink-soft)] text-sm sm:text-base font-light leading-relaxed group-hover:text-[var(--color-ink)] transition-colors duration-300">
                             {item.body}
                           </p>
                         </div>
 
-                        <div className="shrink-0 pl-4 text-right hidden md:block">
-                          <span className="font-mono text-base font-bold text-[var(--color-signal)] opacity-0 group-hover:opacity-100 group-hover:translate-x-1.5 transition-all duration-200 inline-block">
+                        <div className="relative shrink-0 pl-4 text-right hidden md:block">
+                          <span className="font-mono text-xl font-bold text-[var(--color-signal)] opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-500 ease-[cubic-bezier(0.19,1,0.22,1)] inline-block">
                             →
                           </span>
                         </div>
@@ -110,7 +116,7 @@ export default async function HomePage() {
             )
 
           case 'ecosystem':
-            return <TheEcosystem key={key} />
+            return null
 
           case 'startups':
             return null

@@ -13,11 +13,11 @@ export async function listFounderArticles(limit = 6) {
       sort: '-publishedAt',
       overrideAccess: false,
     })
-    return result?.docs || []
+    if (result?.docs && result.docs.length > 0) return result.docs
   } catch (error) {
-    console.warn('Could not fetch founder articles:', error)
-    return []
+    console.warn('Could not fetch founder articles, using fallback:', error)
   }
+  return FALLBACK_ARTICLES.slice(0, limit)
 }
 
 const FALLBACK_ARTICLES = [

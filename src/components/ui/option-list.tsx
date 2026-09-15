@@ -1,14 +1,15 @@
 'use client'
 
+import { motion } from 'framer-motion'
+
 /**
- * The radio/checkbox-styled option rows from UX_WIREFRAMES.md §6 — full-width
- * rows rather than a native <select>, so every choice is visible at once and
- * reachable with arrow keys as a proper radio/checkbox group.
+ * A beautiful, animated Bento-style selection grid. 
+ * Replaces the basic radio/checkbox rows with luxury interactive cards.
  */
 
 type Option = { value: string; label: string }
 
-function Row({
+function BentoCard({
   selected,
   label,
   onClick,
@@ -20,25 +21,34 @@ function Row({
   multi: boolean
 }) {
   return (
-    <button
+    <motion.button
       type="button"
       role={multi ? 'checkbox' : 'radio'}
       aria-checked={selected}
       onClick={onClick}
-      className={`flex w-full items-center gap-3 border-b border-[var(--color-line)] px-4 py-4 text-left text-[length:var(--text-body)] transition-colors last:border-b-0 hover:bg-[var(--color-paper-soft)] ${
-        selected ? 'bg-[var(--color-signal-wash)]' : ''
-      }`}
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      initial={false}
+      animate={{
+        backgroundColor: selected ? 'var(--color-signal-wash)' : 'var(--color-paper-soft)',
+        borderColor: selected ? 'var(--color-signal)' : 'var(--color-line)',
+      }}
+      transition={{ duration: 0.2 }}
+      className="relative flex w-full flex-col items-start justify-center gap-2 rounded-[var(--radius-lg)] border-2 p-5 text-left text-[length:var(--text-body)] shadow-sm hover:shadow-md"
     >
-      <span
-        aria-hidden
-        className={`flex size-5 shrink-0 items-center justify-center border-2 ${
-          multi ? 'rounded-[var(--radius-sm)]' : 'rounded-full'
-        } ${selected ? 'border-[var(--color-signal)] bg-[var(--color-signal)]' : 'border-[var(--color-line)]'}`}
-      >
-        {selected && <span className="size-2 rounded-full bg-white" />}
-      </span>
-      {label}
-    </button>
+      <div className="flex w-full items-center justify-between">
+        <span className="font-medium text-[var(--color-ink)]">{label}</span>
+        <span
+          aria-hidden
+          className={`flex size-5 shrink-0 items-center justify-center border-2 transition-colors duration-200 ${
+            multi ? 'rounded-[var(--radius-sm)]' : 'rounded-full'
+          } ${selected ? 'border-[var(--color-signal)] bg-[var(--color-signal)]' : 'border-[var(--color-line)] bg-white'}`}
+        >
+          {selected && <span className="size-2 rounded-full bg-white" />}
+        </span>
+      </div>
+      {/* Optional: We can render descriptions here if we extend Option to have a 'description' */}
+    </motion.button>
   )
 }
 
@@ -52,9 +62,9 @@ export function SingleSelect({
   onChange: (value: string) => void
 }) {
   return (
-    <div role="radiogroup" className="rounded-[var(--radius-md)] border border-[var(--color-line)]">
+    <div role="radiogroup" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {options.map((opt) => (
-        <Row key={opt.value} multi={false} selected={value === opt.value} label={opt.label} onClick={() => onChange(opt.value)} />
+        <BentoCard key={opt.value} multi={false} selected={value === opt.value} label={opt.label} onClick={() => onChange(opt.value)} />
       ))}
     </div>
   )
@@ -74,9 +84,9 @@ export function MultiSelect({
   }
 
   return (
-    <div className="rounded-[var(--radius-md)] border border-[var(--color-line)]">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {options.map((opt) => (
-        <Row key={opt.value} multi selected={value.includes(opt.value)} label={opt.label} onClick={() => toggle(opt.value)} />
+        <BentoCard key={opt.value} multi selected={value.includes(opt.value)} label={opt.label} onClick={() => toggle(opt.value)} />
       ))}
     </div>
   )

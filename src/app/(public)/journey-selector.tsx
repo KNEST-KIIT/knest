@@ -86,15 +86,22 @@ export function JourneySelector({ signedIn }: { signedIn: boolean }) {
               role="radio"
               aria-checked={selected === i}
               onClick={() => select(i)}
-              className={`group flex items-center justify-between rounded-none border-b border-[var(--color-line)] border-l-4 py-3.5 sm:py-4 pr-5 pl-5 text-left font-[family-name:var(--font-display)] text-base sm:text-lg lg:text-xl font-bold uppercase tracking-wide transition-all duration-200 ${
+              className={`group relative flex items-center justify-between rounded-none border-b border-[var(--color-line)] py-4 sm:py-5 pr-5 pl-6 text-left font-[family-name:var(--font-display)] text-base sm:text-lg lg:text-xl font-bold uppercase tracking-wide transition-all duration-500 ease-[cubic-bezier(0.19,1,0.22,1)] ${
                 selected === i
-                  ? 'border-l-[var(--color-signal)] bg-[var(--color-signal)]/8 text-[var(--color-signal)] shadow-sm'
-                  : 'border-l-transparent bg-transparent hover:border-l-[var(--color-line)] hover:bg-black/[0.02] text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]'
+                  ? 'text-[var(--color-signal)]'
+                  : 'bg-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink)] hover:pl-8'
               }`}
             >
-              <span>{opt.label}</span>
+              {selected === i && (
+                <motion.div
+                  layoutId="journey-active-bg"
+                  className="absolute inset-0 bg-gradient-to-r from-[var(--color-signal)]/10 to-transparent border-l-4 border-[var(--color-signal)]"
+                  transition={{ type: "spring", bounce: 0.15, duration: 0.6 }}
+                />
+              )}
+              <span className="relative z-10">{opt.label}</span>
               <span
-                className={`font-mono text-sm transition-all duration-200 ${
+                className={`relative z-10 font-mono text-sm transition-all duration-500 ease-[cubic-bezier(0.19,1,0.22,1)] ${
                   selected === i
                     ? 'text-[var(--color-signal)] translate-x-1 font-bold'
                     : 'text-[var(--color-ink-muted)] opacity-0 group-hover:opacity-100 group-hover:translate-x-1'
@@ -111,29 +118,29 @@ export function JourneySelector({ signedIn }: { signedIn: boolean }) {
           {option ? (
             <motion.div 
               key={selected}
-              initial={{ opacity: 0, scale: 0.96, y: 8 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.98, y: -8 }}
-              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-              className="w-full rounded-none border-2 border-[var(--color-line)] bg-white p-7 sm:p-9 relative overflow-hidden shadow-sm flex flex-col justify-between h-full min-h-[260px]"
+              initial={{ opacity: 0, scale: 0.98, x: 20 }}
+              animate={{ opacity: 1, scale: 1, x: 0 }}
+              exit={{ opacity: 0, scale: 0.98, x: -20 }}
+              transition={{ duration: 0.5, ease: [0.19, 1, 0.22, 1] }}
+              className="w-full rounded-none border-2 border-[var(--color-line)] bg-white/90 p-8 sm:p-10 relative overflow-hidden shadow-[0_8px_32px_rgba(13,19,33,0.06)] flex flex-col justify-between h-full min-h-[260px] backdrop-blur-md group"
             >
-              <div className="absolute top-0 left-0 w-1.5 h-full bg-[var(--color-signal)]"></div>
+              <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-[var(--color-signal)] to-[var(--color-signal-deep)] scale-y-0 animate-[fill-down_0.6s_ease-out_forwards]"></div>
               {/* The reveal replaces the "pick one" prompt with no page
                   reload — a screen reader user needs this announced the
                   same way a filter-count change already is elsewhere. */}
               <LiveRegion message={option.response} />
-              <div>
-                <span className="font-mono text-xs font-bold uppercase tracking-widest text-[var(--color-signal)] mb-3 block">
+              <div className="relative z-10">
+                <span className="font-mono text-xs font-bold uppercase tracking-widest text-[var(--color-signal)] mb-4 block">
                   Next Tactical Step
                 </span>
-                <p className="font-[family-name:var(--font-accent)] text-lg sm:text-xl md:text-2xl italic text-[var(--color-ink)] leading-snug">
+                <p className="font-[family-name:var(--font-accent)] text-xl sm:text-2xl md:text-3xl italic text-[var(--color-ink)] leading-[1.3]">
                   &ldquo;{option.response}&rdquo;
                 </p>
               </div>
-              <div className="mt-8 pt-4 border-t border-[var(--color-line)]">
-                <ButtonLink href={destinationFor(option.href)} size="lg" className="rounded-none px-8 py-3.5 font-bold uppercase tracking-widest text-xs sm:text-sm bg-[var(--color-signal)] hover:bg-[var(--color-signal-deep)] text-white shadow-md inline-flex items-center gap-2">
+              <div className="relative z-10 mt-10 pt-6 border-t border-[var(--color-line)]">
+                <ButtonLink href={destinationFor(option.href)} size="lg" className="rounded-none px-8 py-4 font-bold uppercase tracking-[0.15em] text-xs sm:text-sm bg-gradient-to-r from-[var(--color-signal)] to-[var(--color-signal-deep)] hover:from-[var(--color-signal-deep)] hover:to-red-900 text-white shadow-lg inline-flex items-center gap-3 transition-all duration-500 hover:shadow-[0_8px_24px_rgba(122,31,43,0.3)]">
                   <span>{option.cta}</span>
-                  <span>→</span>
+                  <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
                 </ButtonLink>
               </div>
             </motion.div>

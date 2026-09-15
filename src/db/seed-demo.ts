@@ -106,11 +106,12 @@ async function seedDemoData() {
     { name: 'AeroDrive', tagline: 'Autonomous drone delivery for rural healthcare.', stage: 'mvp', sector: 'health', featured: true },
     { name: 'FinFlow', tagline: 'API-first payroll for Indian MSMEs.', stage: 'idea', sector: 'fintech', featured: true },
   ]
+  const createdStartups = []
 
   for (const startup of startupsData) {
     const existing = await payload.find({ collection: 'startups', where: { slug: { equals: startup.name.toLowerCase().replace(/ /g, '-') } } })
     if (existing.totalDocs === 0) {
-      await payload.create({
+      const doc = await payload.create({
         collection: 'startups',
         data: {
           name: startup.name,
@@ -123,8 +124,90 @@ async function seedDemoData() {
           _status: 'published',
         } as any,
       })
+      createdStartups.push(doc)
+    } else {
+      createdStartups.push(existing.docs[0])
     }
   }
+
+  // Seed mentors
+  const mentorsData = [
+    { name: 'Sarah Chen', title: 'VP Product', organization: 'Scale AI', expertise: ['product', 'gtm'], availability: 'limited' },
+    { name: 'Rajiv Menon', title: 'Managing Partner', organization: 'Indic Capital', expertise: ['fundraising'], availability: 'unavailable' },
+    { name: 'Dr. Alok Verma', title: 'Chief Scientist', organization: 'DeepTech Labs', expertise: ['technology', 'industry'], availability: 'open' },
+  ]
+  for (const mentor of mentorsData) {
+    const slug = mentor.name.toLowerCase().replace(/ /g, '-')
+    const existing = await payload.find({ collection: 'mentors', where: { slug: { equals: slug } } })
+    if (existing.totalDocs === 0) {
+      await payload.create({
+        collection: 'mentors',
+        data: {
+          name: mentor.name,
+          slug,
+          title: mentor.title,
+          organization: mentor.organization,
+          expertise: mentor.expertise as any,
+          availability: mentor.availability as any,
+          publishedAt: new Date().toISOString(),
+          _status: 'published',
+        } as any,
+      })
+    }
+  }
+
+  // Seed events (Demo Days)
+  const eventsData = [
+    { title: 'Winter 2026 Demo Day', eventType: 'demo_day', summary: 'Top 10 student ventures pitch to early-stage investors.', daysFromNow: 14 },
+    { title: 'Founders Mixer', eventType: 'mixer', summary: 'Casual meetup for all KNEST founders.', daysFromNow: 5 },
+  ]
+  for (const event of eventsData) {
+    const slug = event.title.toLowerCase().replace(/ /g, '-')
+    const existing = await payload.find({ collection: 'events', where: { slug: { equals: slug } } })
+    if (existing.totalDocs === 0) {
+      const startsAt = new Date(Date.now() + 86400000 * event.daysFromNow)
+      const endsAt = new Date(startsAt.getTime() + 7200000)
+      await payload.create({
+        collection: 'events',
+        data: {
+          title: event.title,
+          slug,
+          eventType: event.eventType as any,
+          summary: event.summary,
+          startsAt: startsAt.toISOString(),
+          endsAt: endsAt.toISOString(),
+          publishedAt: new Date().toISOString(),
+          _status: 'published',
+        } as any,
+      })
+    }
+  }
+
+  // Seed articles (Founder Stories)
+  if (createdStartups.length >= 2) {
+    const articlesData = [
+      { title: 'Scaling AeroDrive to 10k deliveries', summary: 'How AeroDrive found product market fit in rural logistics.', startup: createdStartups[0].id },
+      { title: 'The story behind FinFlow', summary: 'From a dorm room idea to processing $1M in payroll.', startup: createdStartups[1].id },
+    ]
+    for (const article of articlesData) {
+      const slug = article.title.toLowerCase().replace(/ /g, '-')
+      const existing = await payload.find({ collection: 'articles', where: { slug: { equals: slug } } })
+      if (existing.totalDocs === 0) {
+        await payload.create({
+          collection: 'articles',
+          data: {
+            title: article.title,
+            slug,
+            summary: article.summary,
+            startup: article.startup,
+            publishedAt: new Date().toISOString(),
+            _status: 'published',
+          } as any,
+        })
+      }
+    }
+  }
+
 
   console.log('Demo CMS data seeded')
 }

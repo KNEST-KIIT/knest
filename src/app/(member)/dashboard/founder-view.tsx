@@ -14,81 +14,108 @@ export async function FounderDashboard({ user }: { user: SessionUser }) {
   const program = accepted ? await getProgramById(accepted.application.programId) : null
   const resources = await listRecommendedResources(user.journeyStage)
 
-  // Program.timeline carries no dates (spec §4.1's "next entry whose implied
-  // date hasn't passed, or the first entry if none carry dates" — none ever
-  // do), so the first entry is always the one shown.
   const nextMilestone = program?.timeline?.[0]
 
+  // Hardcoded Learning Playbooks based on the "student to founder" pipeline requirement
+  const learningPlaybooks = [
+    { title: 'Growth & Scaling Strategies', progress: 75, status: 'in-progress' },
+    { title: 'Fundraising Prep: Seed Round', progress: 10, status: 'in-progress' },
+    { title: 'Building a Go-To-Market Team', progress: 0, status: 'locked' }
+  ]
+
   return (
-    <>
+    <div className="flex flex-col gap-8">
+      {/* Top Row: Command Center */}
       <section>
-        <Heading as="h2" size="title">
-          Your applications
-        </Heading>
-        {applications.length === 0 ? (
-          <EmptyState headingLevel="h3"
-            className="mt-6"
-            heading="Nothing here yet"
-            body="You haven't applied to anything yet. When you do, you'll be able to track it here."
-          />
-        ) : (
-          <div className="mt-6 flex flex-col gap-3">
-            {applications.map(({ application, programTitle, programSlug }) => (
-              <div
-                key={application.id}
-                className="flex flex-col gap-3 rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-white p-5 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div>
-                  <p className="font-medium">{programTitle}</p>
-                  <p className="mt-1 text-[length:var(--text-small)] text-[var(--color-ink-muted)]">
-                    {application.submittedAt ? `Submitted ${formatDate(application.submittedAt)}` : 'Not submitted'}
+        <NextStepCard
+          eyebrow="Next milestone"
+          heading={nextMilestone?.label ?? program?.title ?? 'Start Your Application'}
+          body={nextMilestone?.description || (program ? `You're in ${program.title}. Keep building!` : 'Find a program to accelerate your startup.')}
+          actionLabel={program ? 'View Program Details' : 'Browse Programs'}
+          actionHref={program ? '/dashboard/applications' : '/programs'}
+        />
+      </section>
+
+      {/* Middle Row: Bento Grid (Learning Hub & Applications) */}
+      <section className="grid gap-6 lg:grid-cols-12">
+        
+        {/* Learning Hub Widget (Spans 7 cols) */}
+        <div className="lg:col-span-7 flex flex-col rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-white p-6 shadow-sm">
+          <div className="mb-6 flex items-center justify-between">
+            <Heading as="h2" size="heading" uppercase={false}>
+              Founder Playbooks
+            </Heading>
+            <span className="rounded-full bg-[var(--color-ink)] px-3 py-1 text-[length:var(--text-small)] font-medium text-white">
+              Phase 2
+            </span>
+          </div>
+          
+          <div className="flex flex-col gap-4">
+            {learningPlaybooks.map((playbook, idx) => (
+              <div key={idx} className={`relative overflow-hidden rounded-lg border border-[var(--color-line)] p-4 transition-colors ${playbook.status === 'in-progress' ? 'bg-[var(--color-paper-soft)] border-[var(--color-signal)]/30' : 'bg-white'}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <p className={`font-medium ${playbook.status === 'locked' ? 'text-[var(--color-ink-muted)]' : 'text-[var(--color-ink)]'}`}>
+                    {playbook.title}
                   </p>
+                  <span className="text-[length:var(--text-small)] text-[var(--color-ink-muted)] font-medium">
+                    {playbook.progress}%
+                  </span>
                 </div>
-                <ApplicationStatusBadge status={application.status} />
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--color-line)]">
+                  <div 
+                    className={`h-full rounded-full transition-all duration-1000 ${playbook.status === 'completed' ? 'bg-[var(--color-signal)]' : 'bg-[var(--color-signal)]'}`}
+                    style={{ width: `${playbook.progress}%` }}
+                  />
+                </div>
               </div>
             ))}
           </div>
-        )}
+        </div>
+
+        {/* Applications Widget (Spans 5 cols) */}
+        <div className="lg:col-span-5 flex flex-col rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-white p-6 shadow-sm">
+          <Heading as="h2" size="heading" className="mb-6" uppercase={false}>
+            Your applications
+          </Heading>
+          {applications.length === 0 ? (
+            <EmptyState headingLevel="h3" className="mt-2 flex-1 border-none shadow-none" heading="Nothing here yet." body="You haven't applied to anything yet." />
+          ) : (
+            <div className="flex flex-col gap-3">
+              {applications.slice(0, 4).map(({ application, programTitle }) => (
+                <div
+                  key={application.id}
+                  className="flex flex-col gap-2 rounded-lg border border-[var(--color-line)] bg-[var(--color-paper-soft)] p-4 hover:border-[var(--color-signal)]/50 transition-colors"
+                >
+                  <div className="flex items-center justify-between gap-4">
+                    <p className="font-medium text-[var(--color-ink)] line-clamp-1">{programTitle}</p>
+                    <ApplicationStatusBadge status={application.status} />
+                  </div>
+                  <p className="text-[length:var(--text-small)] text-[var(--color-ink-muted)]">
+                    {application.submittedAt ? `Submitted ${formatDate(application.submittedAt)}` : 'Not submitted'}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </section>
 
-      <section className="mt-12">
-        <Heading as="h2" size="title">
-          Your program
-        </Heading>
-        {!program ? (
-          <EmptyState headingLevel="h3"
-            className="mt-6"
-            heading="Your program will appear here once you're accepted."
-            body="Track where your applications stand any time from the list above."
-          />
-        ) : (
-          <div className="mt-6">
-            <NextStepCard
-              eyebrow="Next milestone"
-              heading={nextMilestone?.label ?? program.title}
-              body={nextMilestone?.description || `You're in ${program.title}.`}
-              actionLabel="View program"
-              actionHref="/dashboard/applications"
-            />
-          </div>
-        )}
-      </section>
-
-      <section className="mt-12">
-        <Heading as="h2" size="title">
+      {/* Bottom Row: Resources feed */}
+      <section className="rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-white p-6 shadow-sm">
+        <Heading as="h2" size="heading" className="mb-6" uppercase={false}>
           Resources for your stage
         </Heading>
         {resources.length === 0 ? (
-          <EmptyState headingLevel="h3" className="mt-6" {...RESOURCES_EMPTY} />
+          <EmptyState headingLevel="h3" className="mt-2 border-none shadow-none" {...RESOURCES_EMPTY} />
         ) : (
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {resources.map((resource) => {
               const hosted = Boolean(resource.body)
               const href = hosted ? `/resources/${resource.slug}` : resource.externalUrl || '#'
               return (
-                <LinkCard key={resource.id} href={href} label={`${hosted ? 'Read' : 'Visit'} ${resource.title}`}>
-                  <p className="font-medium">{resource.title}</p>
-                  <p className="mt-1 text-[length:var(--text-small)] text-[var(--color-ink-soft)]">
+                <LinkCard key={resource.id} href={href} label={`${hosted ? 'Read' : 'Visit'} ${resource.title}`} className="group hover:border-[var(--color-signal)]/50">
+                  <p className="font-medium text-[var(--color-ink)] group-hover:text-[var(--color-signal)] transition-colors">{resource.title}</p>
+                  <p className="mt-2 text-[length:var(--text-small)] text-[var(--color-ink-soft)] line-clamp-2">
                     {resource.summary}
                   </p>
                 </LinkCard>
@@ -97,6 +124,6 @@ export async function FounderDashboard({ user }: { user: SessionUser }) {
           </div>
         )}
       </section>
-    </>
+    </div>
   )
 }

@@ -12,7 +12,9 @@ export function Card({
   return (
     <div
       className={cn(
-        'rounded-none border border-[var(--color-line)] bg-white p-6 md:p-8 transition-colors duration-200',
+        'relative rounded-none border border-[var(--color-line)] bg-white p-6 md:p-8',
+        'transition-all duration-700 ease-[cubic-bezier(0.19,1,0.22,1)]',
+        'hover:border-[var(--color-ink)]/20 hover:shadow-[0_12px_32px_-12px_rgba(13,19,33,0.05)]',
         className,
       )}
     >
@@ -43,9 +45,12 @@ export function LinkCard({
   return (
     <div
       className={cn(
-        'group relative flex flex-col rounded-none border border-[var(--color-line)] bg-white p-6 md:p-8 transition-all duration-300',
-        'hover:border-[var(--color-signal)] hover:shadow-[0_16px_32px_-12px_rgba(13,19,33,0.08)]',
+        'group relative flex flex-col rounded-none border border-[var(--color-line)] bg-white p-6 md:p-8',
+        'transition-all duration-700 ease-[cubic-bezier(0.19,1,0.22,1)]',
+        'hover:border-[var(--color-signal)]/40 hover:bg-gradient-to-b hover:from-[var(--color-paper)]/40 hover:to-white hover:shadow-[0_24px_48px_-12px_rgba(13,19,33,0.1),0_0_0_1px_rgba(122,31,43,0.1)] hover:-translate-y-1',
         'focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[var(--color-signal)]',
+        'after:absolute after:inset-0 after:opacity-0 hover:after:opacity-100 after:transition-opacity after:duration-700',
+        'after:bg-[radial-gradient(circle_at_50%_0%,rgba(122,31,43,0.04)_0%,transparent_70%)] after:pointer-events-none',
         className,
       )}
     >

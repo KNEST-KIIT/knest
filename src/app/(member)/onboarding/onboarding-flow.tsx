@@ -328,43 +328,71 @@ export function OnboardingFlow({ initial, stagePrefill }: Props) {
   const result = recommend(answers.platformRole ?? 'student', answers.journeyStage)
 
   return (
-    <div>
-      <p className="mb-2 text-[length:var(--text-small)] text-[var(--color-ink-muted)]">
-        Step {total} of {total}
-      </p>
-      <div className="mb-8 h-1 w-full rounded-full bg-[var(--color-signal)]" />
+    <div className="relative">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        className="mx-auto max-w-2xl text-center"
+      >
+        <div className="mb-8 inline-flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-signal-wash)] text-[var(--color-signal)]">
+          <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
 
-      <Heading as="h1" size="title">
-        Your KNEST path
-      </Heading>
+        <Heading as="h1" size="display" className="mb-4 text-[var(--color-ink)]">
+          Your KNEST Path is Ready
+        </Heading>
+        <p className="mb-10 text-[length:var(--text-body)] text-[var(--color-ink-soft)]">
+          Based on your profile, here is exactly where you should start.
+        </p>
 
-      <div className="mt-6 rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-[var(--color-paper-soft)] p-6">
-        <p className="font-[family-name:var(--font-display)] text-[length:var(--text-heading)] uppercase text-[var(--color-signal)]">
-          {result.path}
-        </p>
-        <p className="mt-2 text-[length:var(--text-body)]">{result.body}</p>
-        <p className="mt-4 text-[length:var(--text-small)] text-[var(--color-ink-soft)]">
-          <strong>Why this: </strong>
-          {result.reason}
-        </p>
+        <div className="relative overflow-hidden rounded-[var(--radius-xl)] border border-[var(--color-line)] bg-white p-1 shadow-2xl">
+          <div className="absolute inset-0 bg-gradient-to-br from-[var(--color-signal-wash)] to-transparent opacity-50" />
+          <div className="relative rounded-[var(--radius-lg)] bg-white p-8 sm:p-12 text-left">
+            <div className="mb-6 flex items-center gap-3">
+              <span className="flex h-8 items-center rounded-full bg-[var(--color-signal)] px-3 text-[length:var(--text-small)] font-semibold uppercase tracking-wider text-white">
+                Recommended
+              </span>
+              <span className="text-[length:var(--text-small)] font-medium text-[var(--color-ink-muted)] uppercase tracking-widest">
+                {result.path}
+              </span>
+            </div>
+            
+            <h2 className="mb-4 font-[family-name:var(--font-display)] text-3xl md:text-4xl leading-tight text-[var(--color-ink)]">
+              {result.headline || result.body}
+            </h2>
+            
+            <p className="mb-8 text-[length:var(--text-body)] leading-relaxed text-[var(--color-ink-soft)]">
+              {result.reason}
+            </p>
+
+            <button
+              type="button"
+              disabled={pending}
+              onClick={async () => {
+                setPending(true)
+                await postStep('complete')
+                router.push('/dashboard')
+                router.refresh()
+              }}
+              className="group relative inline-flex w-full sm:w-auto items-center justify-center overflow-hidden rounded-full bg-[var(--color-ink)] px-8 py-4 font-medium text-white transition-all hover:scale-105 hover:bg-[var(--color-signal)] disabled:opacity-50"
+            >
+              <span className="relative z-10">{pending ? 'Creating your workspace…' : result.cta}</span>
+              <div className="absolute inset-0 -z-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+            </button>
+          </div>
+        </div>
+
         <button
           type="button"
-          disabled={pending}
-          onClick={async () => {
-            setPending(true)
-            await postStep('complete')
-            router.push('/dashboard')
-            router.refresh()
-          }}
-          className="mt-6 inline-flex h-12 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-signal)] px-6 font-medium text-white hover:bg-[var(--color-signal-deep)] disabled:opacity-50"
+          onClick={() => setIndex(0)}
+          className="mt-8 text-[length:var(--text-small)] font-medium text-[var(--color-ink-muted)] underline-offset-4 hover:text-[var(--color-ink)] hover:underline"
         >
-          {pending ? 'Finishing…' : result.cta}
+          Not quite right? Re-configure your profile
         </button>
-      </div>
-
-      <button type="button" onClick={() => setIndex(0)} className="mt-6 text-[length:var(--text-small)] text-[var(--color-signal)]">
-        Not quite right? Change your answers.
-      </button>
+      </motion.div>
     </div>
   )
 }
