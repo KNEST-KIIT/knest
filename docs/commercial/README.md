@@ -22,7 +22,10 @@ That gives 616 hours on the build and 480 hours a year on maintenance, which is
 what the market comparison anchors against — ₹1,000/hr is the floor of the
 prevailing Indian agency band, so the headline saving is the conservative one.
 
-Amounts in words are generated (Indian numbering), not typed.
+Amounts in words are generated (Indian numbering), not typed. So are all dates:
+set `ISSUED` and the payment due date, the 30-day defect window and the AMC term
+follow, with the term starting the day the defect window closes so cover never
+gaps.
 
 **The AMC is deliberately not a percentage of the build price.** At ₹96,000 it is
 78% of the ₹1,23,200 build scope, well outside the customary 15–40% convention.
@@ -37,6 +40,8 @@ All in `generate.mjs`, near the top:
 
 | Constant | Effect |
 |---|---|
+| `ISSUED` | Date of issue. Payment due, the defect window and the whole AMC term derive from it. |
+| `TERMS_DAYS` / `DEFECT_DAYS` | Payment terms and free defect support, in days from issue. |
 | `RATE` | The flat hourly rate. Changes every line, both documents, and every derived figure. |
 | `DEV_DISCOUNT` | The concession. Set to `0` to invoice the full ₹1,23,200 scope. |
 | `MARKET_LOW` / `MARKET_HIGH` | The agency band the comparison anchors to. |

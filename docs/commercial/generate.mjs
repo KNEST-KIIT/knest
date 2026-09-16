@@ -13,6 +13,24 @@ import { fileURLToPath } from 'node:url'
 
 const OUT_DIR = path.dirname(fileURLToPath(import.meta.url))
 
+/* ------------------------------------------------------------------- dates */
+
+/** Date of issue. Everything else below is derived from it. */
+const ISSUED = new Date('2026-09-16T00:00:00Z')
+/** Payment terms, in days from issue. */
+const TERMS_DAYS = 15
+/** Free post-launch defect support, in days from issue. */
+const DEFECT_DAYS = 30
+
+const addDays = (d, n) => new Date(d.getTime() + n * 86400000)
+const fmt = (d) =>
+  `${String(d.getUTCDate()).padStart(2, '0')} ${d.toLocaleString('en-GB', { month: 'long', timeZone: 'UTC' })} ${d.getUTCFullYear()}`
+
+const DUE = addDays(ISSUED, TERMS_DAYS)
+/** Free defect support ends; maintenance cover begins the same day, so there is no gap. */
+const AMC_START = addDays(ISSUED, DEFECT_DAYS)
+const AMC_END = addDays(new Date(Date.UTC(AMC_START.getUTCFullYear() + 1, AMC_START.getUTCMonth(), AMC_START.getUTCDate())), -1)
+
 /** Enhancement hours bundled into the AMC fee. */
 const AMC_HOURS = 24
 /** Rate for enhancement work beyond the bundled hours. */
@@ -552,8 +570,8 @@ ${masthead('Tax Invoice', 'Invoice', 'Design &amp; development — KNEST platfor
 
 <div class="meta">
   <div><div class="k">Invoice no.</div><div class="v">KNEST/2026-27/001</div></div>
-  <div><div class="k">Invoice date</div><div class="v">10 September 2026</div></div>
-  <div><div class="k">Payment due</div><div class="v">25 September 2026</div></div>
+  <div><div class="k">Invoice date</div><div class="v">${fmt(ISSUED)}</div></div>
+  <div><div class="k">Payment due</div><div class="v">${fmt(DUE)}</div></div>
   <div><div class="k">Amount due</div><div class="v hi">${inr(DEV_TOTAL)}</div></div>
 </div>
 
@@ -755,7 +773,7 @@ ${partiesBlock(
       <li>Lab-head and lab-assistant consoles, with the QR pass and scanning flow working end to end.</li>
       <li>Architecture, content-editing and lab-operations documentation.</li>
       <li>One handover walkthrough for KNEST staff and one for lab heads.</li>
-      <li>30 days of post-launch defect support from the invoice date, at no charge.</li>
+      <li>${DEFECT_DAYS} days of post-launch defect support, to ${fmt(AMC_START)}, at no charge.</li>
     </ul>
   </div>
   <div>
@@ -791,7 +809,7 @@ ${partiesBlock(
   <div>
     <h3>Terms</h3>
     <ul class="tight">
-      <li>Payable within 15 days of the invoice date.</li>
+      <li>Payable within ${TERMS_DAYS} days of the invoice date, by ${fmt(DUE)}.</li>
       <li>Please quote invoice number <strong>KNEST/2026-27/001</strong> in the transfer reference.</li>
       <li>GST is not applicable — supplier is not registered under GST. <span class="note">(Delete this line and add a GST row above if registered.)</span></li>
       <li>Tax deducted at source, if any, may be deducted at the applicable rate against the PAN above.</li>
@@ -824,16 +842,16 @@ ${masthead('Proposal', 'Annual Maintenance', 'KNEST platform + KIIT Lab Booking 
 
 <div class="meta">
   <div><div class="k">Proposal no.</div><div class="v">KNEST/AMC/2026-27/001</div></div>
-  <div><div class="k">Issued</div><div class="v">10 September 2026</div></div>
-  <div><div class="k">Valid until</div><div class="v">10 October 2026</div></div>
+  <div><div class="k">Issued</div><div class="v">${fmt(ISSUED)}</div></div>
+  <div><div class="k">Valid until</div><div class="v">${fmt(AMC_START)}</div></div>
   <div><div class="k">Annual fee</div><div class="v hi">${inr(AMC_TOTAL)}</div></div>
 </div>
 
 ${partiesBlock(
   'Proposed term',
-  `<strong style="color:#1a1a1a">01 October 2026 — 30 September 2027</strong><br>
-   Twelve months, beginning the day the 30-day post-launch defect window on
-   invoice KNEST/2026-27/001 ends, so there is no gap in cover.<br><br>
+  `<strong style="color:#1a1a1a">${fmt(AMC_START)} — ${fmt(AMC_END)}</strong><br>
+   Twelve months, beginning the day the ${DEFECT_DAYS}-day post-launch defect
+   window on invoice KNEST/2026-27/001 ends, so there is no gap in cover.<br><br>
    <span style="color:#1a1a1a;font-weight:600">Renewable</span> annually by mutual
    consent, with any revision capped at 10% of the then-current fee.`,
 )}
@@ -1064,7 +1082,7 @@ ${partiesBlock(
 
 <h2>Terms</h2>
 <ul class="tight">
-  <li><strong>Term.</strong> Twelve months from 01 October 2026, renewable by mutual consent. Any renewal increase is capped at 10% of the then-current fee.</li>
+  <li><strong>Term.</strong> Twelve months from ${fmt(AMC_START)}, renewable by mutual consent. Any renewal increase is capped at 10% of the then-current fee.</li>
   <li><strong>Termination.</strong> Either party may terminate with 30 days' written notice. On termination, fees for the unexpired period are refunded pro rata, less any enhancement work already delivered.</li>
   <li><strong>Handover on exit.</strong> All source code, credentials, documentation and data export are handed over within 14 days of termination, at no charge.</li>
   <li><strong>Ownership.</strong> KNEST owns the source code and all data. The supplier retains no rights over either, and may reference the project as portfolio work unless KNEST asks otherwise in writing.</li>
@@ -1077,12 +1095,12 @@ ${partiesBlock(
 <h2>Acceptance</h2>
 <p class="note">
   To accept, sign below and return one copy. An invoice for the selected billing
-  option is raised on acceptance, and cover begins on 01 October 2026.
+  option is raised on acceptance, and cover begins on ${fmt(AMC_START)}.
 </p>
 <div class="cols" style="margin-top:8px">
   <div>
     <div class="kv"><span class="k">Billing option selected</span><span class="v">☐ Annual &nbsp;&nbsp; ☐ Quarterly</span></div>
-    <div class="kv"><span class="k">Term begins</span><span class="v">01 October 2026</span></div>
+    <div class="kv"><span class="k">Term begins</span><span class="v">${fmt(AMC_START)}</span></div>
     <div class="kv"><span class="k">Annual fee</span><span class="v">${inr(AMC_TOTAL)}</span></div>
   </div>
   <div>
@@ -1109,7 +1127,7 @@ ${partiesBlock(
 
 <footer class="doc">
   <span>Proposal KNEST/AMC/2026-27/001 · ${inr(AMC_TOTAL)} per year</span>
-  <span>Valid for 30 days from the date of issue.</span>
+  <span>Valid until ${fmt(AMC_START)}.</span>
 </footer>
 `,
 )
