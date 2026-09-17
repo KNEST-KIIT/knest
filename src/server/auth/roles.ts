@@ -17,6 +17,7 @@ export const ADMIN_AREAS = {
   applications: ['program_manager', 'reviewer'],
   startups: ['startup_manager'],
   mentors: ['mentor_manager'],
+  infrastructure: ['lab_admin'],
   users: [],
   settings: [],
   // Cross-program, ecosystem-wide — super_admin only, same as users/settings.

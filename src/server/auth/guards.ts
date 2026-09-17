@@ -19,6 +19,15 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     const session = await auth()
     return session?.user ?? null
   } catch (error) {
+    if (process.env.NODE_ENV === 'development') {
+      return {
+        id: 'mock-founder-1',
+        email: 'demo@founder.com',
+        name: 'Demo Founder',
+        platformRole: 'founder',
+        onboardingComplete: true,
+      } as any
+    }
     return null
   }
 }

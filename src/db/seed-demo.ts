@@ -159,7 +159,7 @@ async function seedDemoData() {
   // Seed events (Demo Days)
   const eventsData = [
     { title: 'Winter 2026 Demo Day', eventType: 'demo_day', summary: 'Top 10 student ventures pitch to early-stage investors.', daysFromNow: 14 },
-    { title: 'Founders Mixer', eventType: 'mixer', summary: 'Casual meetup for all KNEST founders.', daysFromNow: 5 },
+    { title: 'Founders Mixer', eventType: 'networking', summary: 'Casual meetup for all KNEST founders.', daysFromNow: 5 },
   ]
   for (const event of eventsData) {
     const slug = event.title.toLowerCase().replace(/ /g, '-')
@@ -199,6 +199,7 @@ async function seedDemoData() {
             title: article.title,
             slug,
             summary: article.summary,
+            body: { root: { type: 'root', format: '', indent: 0, version: 1, children: [{ children: [{ detail: 0, format: 0, mode: 'normal', style: '', text: 'This is a demo article.', type: 'text', version: 1 }], direction: 'ltr', format: '', indent: 0, type: 'paragraph', version: 1 }] } },
             startup: article.startup,
             publishedAt: new Date().toISOString(),
             _status: 'published',

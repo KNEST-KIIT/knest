@@ -33,6 +33,7 @@ export const staffRole = appSchema.enum('staff_role', [
   'program_manager',
   'startup_manager',
   'mentor_manager',
+  'lab_admin',
   'super_admin',
 ])
 

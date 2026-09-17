@@ -26,14 +26,25 @@ export async function FounderDashboard({ user }: { user: SessionUser }) {
   return (
     <div className="flex flex-col gap-8">
       {/* Top Row: Command Center */}
-      <section>
-        <NextStepCard
-          eyebrow="Next milestone"
-          heading={nextMilestone?.label ?? program?.title ?? 'Start Your Application'}
-          body={nextMilestone?.description || (program ? `You're in ${program.title}. Keep building!` : 'Find a program to accelerate your startup.')}
-          actionLabel={program ? 'View Program Details' : 'Browse Programs'}
-          actionHref={program ? '/dashboard/applications' : '/programs'}
-        />
+      <section className="grid gap-6 lg:grid-cols-12">
+        <div className="lg:col-span-8">
+          <NextStepCard
+            eyebrow="Next milestone"
+            heading={nextMilestone?.label ?? program?.title ?? 'Start Your Application'}
+            body={nextMilestone?.description || (program ? `You're in ${program.title}. Keep building!` : 'Find a program to accelerate your startup.')}
+            actionLabel={program ? 'View Program Details' : 'Browse Programs'}
+            actionHref={program ? '/dashboard/applications' : '/programs'}
+          />
+        </div>
+        <div className="lg:col-span-4 flex flex-col gap-4">
+          <div className="rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-white p-6 shadow-sm flex-1 flex flex-col justify-center items-start">
+            <Heading as="h3" size="heading" uppercase={false} className="mb-2">Lab & Infrastructure</Heading>
+            <p className="text-[length:var(--text-small)] text-[var(--color-ink-muted)] mb-4">Book maker spaces, founder cabins, and studios.</p>
+            <LinkCard href="/dashboard/lab-booking" label="Book a Space" className="w-full hover:border-[var(--color-signal)]/50">
+              <span className="font-medium text-[var(--color-ink)] transition-colors">Book a Space</span>
+            </LinkCard>
+          </div>
+        </div>
       </section>
 
       {/* Middle Row: Bento Grid (Learning Hub & Applications) */}

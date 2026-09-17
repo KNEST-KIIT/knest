@@ -48,11 +48,13 @@ export async function createDatabaseSession(userId: string): Promise<void> {
   await db.insert(sessions).values({ sessionToken, userId, expires })
 
   const store = await cookies()
+  const envUrl = process.env.AUTH_URL ?? process.env.NEXTAUTH_URL
+  const secure = envUrl ? envUrl.startsWith('https://') : process.env.NODE_ENV === 'production'
   store.set(sessionCookieName(), sessionToken, {
     httpOnly: true,
     sameSite: 'lax',
     path: '/',
-    secure: process.env.NODE_ENV === 'production',
+    secure,
     expires,
   })
 }

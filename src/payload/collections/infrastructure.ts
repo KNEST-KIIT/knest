@@ -15,9 +15,9 @@ export const Infrastructure: CollectionConfig = {
   admin: { useAsTitle: 'name', defaultColumns: ['name', 'spaceType', '_status'] },
   access: {
     read: readPublished,
-    create: canWrite('content'),
-    update: canWrite('content'),
-    delete: canWrite('content'),
+    create: canWrite('infrastructure'),
+    update: canWrite('infrastructure'),
+    delete: canWrite('infrastructure'),
   },
   fields: [
     { name: 'name', type: 'text', required: true },

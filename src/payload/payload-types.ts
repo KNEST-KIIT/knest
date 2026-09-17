@@ -77,6 +77,7 @@ export interface Config {
     resources: Resource;
     articles: Article;
     infrastructure: Infrastructure;
+    'lab-bookings': LabBooking;
     testimonials: Testimonial;
     faqs: Faq;
     metrics: Metric;
@@ -99,6 +100,7 @@ export interface Config {
     resources: ResourcesSelect<false> | ResourcesSelect<true>;
     articles: ArticlesSelect<false> | ArticlesSelect<true>;
     infrastructure: InfrastructureSelect<false> | InfrastructureSelect<true>;
+    'lab-bookings': LabBookingsSelect<false> | LabBookingsSelect<true>;
     testimonials: TestimonialsSelect<false> | TestimonialsSelect<true>;
     faqs: FaqsSelect<false> | FaqsSelect<true>;
     metrics: MetricsSelect<false> | MetricsSelect<true>;
@@ -919,6 +921,24 @@ export interface Infrastructure {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "lab-bookings".
+ */
+export interface LabBooking {
+  id: number;
+  infrastructure: number | Infrastructure;
+  /**
+   * The Drizzle UUID of the founder.
+   */
+  userId: string;
+  userEmail: string;
+  startTime: string;
+  endTime: string;
+  status: 'pending' | 'approved' | 'rejected';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "testimonials".
  */
 export interface Testimonial {
@@ -1070,6 +1090,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'infrastructure';
         value: number | Infrastructure;
+      } | null)
+    | ({
+        relationTo: 'lab-bookings';
+        value: number | LabBooking;
       } | null)
     | ({
         relationTo: 'testimonials';
@@ -1430,6 +1454,20 @@ export interface InfrastructureSelect<T extends boolean = true> {
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "lab-bookings_select".
+ */
+export interface LabBookingsSelect<T extends boolean = true> {
+  infrastructure?: T;
+  userId?: T;
+  userEmail?: T;
+  startTime?: T;
+  endTime?: T;
+  status?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
