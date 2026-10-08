@@ -8,7 +8,7 @@ import { PNG_1X1, payloadClient } from '../support/payload'
  * real session cookie against the production build.
  */
 
-const ROLES = ['reviewer', 'content_admin', 'program_manager', 'startup_manager', 'mentor_manager', 'super_admin'] as const
+const ROLES = ['reviewer', 'content_admin', 'program_manager', 'startup_manager', 'mentor_manager', 'lab_admin', 'super_admin'] as const
 type Role = (typeof ROLES)[number]
 const sessions = {} as Record<Role | 'student', Session>
 
@@ -58,8 +58,8 @@ describe('lab-bookings: who can read it over the real REST API (KN-02)', () => {
     },
   )
 
-  it('super_admin can read it (the route works; the denial above is real)', async () => {
-    const res = await get('/api/lab-bookings', sessions.super_admin)
+  it.each(['super_admin', 'lab_admin'] as const)('%s can read it (the route works; the denials above are real)', async (who) => {
+    const res = await get('/api/lab-bookings', sessions[who])
     expect(res.status).toBe(200)
     expect(await res.text()).toContain('roles.booking.pii@example.test')
   })
@@ -108,7 +108,7 @@ describe('media: who can upload, and what (NF-03, KN-22j)', () => {
     expect([401, 403]).toContain(res.status)
   })
 
-  it.each(['reviewer', 'program_manager', 'startup_manager', 'mentor_manager'] as const)('refuses %s', async (role) => {
+  it.each(['reviewer', 'program_manager', 'startup_manager', 'mentor_manager', 'lab_admin'] as const)('refuses %s', async (role) => {
     const res = await upload(PNG_1X1, `${role}.png`, 'image/png', sessions[role])
     expect([401, 403], `${role} got ${res.status}`).toContain(res.status)
   })

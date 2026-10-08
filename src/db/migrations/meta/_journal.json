@@ -43,6 +43,13 @@
       "when": 1788069534217,
       "tag": "0005_warm_outlaw_kid",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791465050402,
+      "tag": "0006_lab_admin_role",
+      "breakpoints": true
     }
   ]
 }

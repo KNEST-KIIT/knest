@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { staffRole } from '@/db/schema'
 import { ADMIN_AREAS, canAccessArea, isStaff, type AdminArea, type StaffRole } from './roles'
 
 const ALL_AREAS = Object.keys(ADMIN_AREAS) as AdminArea[]
@@ -8,7 +9,21 @@ const NON_SUPER_ROLES: StaffRole[] = [
   'program_manager',
   'startup_manager',
   'mentor_manager',
+  'lab_admin',
 ]
+
+describe('role coverage', () => {
+  it('this file lists every staff role the database enum knows (NF-11: lab_admin was missing)', () => {
+    expect([...NON_SUPER_ROLES, 'super_admin'].sort()).toEqual([...staffRole.enumValues].sort())
+  })
+
+  it('analytics is super_admin only; infrastructure is lab_admin (plus super_admin)', () => {
+    for (const role of NON_SUPER_ROLES) {
+      expect(canAccessArea(role, 'analytics')).toBe(false)
+      expect(canAccessArea(role, 'infrastructure')).toBe(role === 'lab_admin')
+    }
+  })
+})
 
 describe('canAccessArea', () => {
   it('refuses every area when there is no staff role', () => {

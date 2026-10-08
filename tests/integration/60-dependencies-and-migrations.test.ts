@@ -68,10 +68,12 @@ describe('migrations (KN-04)', () => {
     }
   })
 
-  // NF-04 / KN-04, still open: the lab_admin role exists in code (and in the Payload access
-  // rules) but not in the app.staff_role enum, because no Drizzle migration adds it.
-  it.fails('NF-04 (OPEN): the lab_admin staff role can be stored', async () => {
-    await createUser({ email: 'lab-admin@enum.test', platformRole: 'other', staffRole: 'lab_admin' })
+  // NF-04: the lab_admin role existed in code and in Payload's access rules but not in the
+  // app.staff_role enum, because no Drizzle migration added it (0006_lab_admin_role).
+  it('NF-04: the lab_admin staff role can be stored (enum migration 0006)', async () => {
+    const id = await createUser({ email: 'lab-admin@enum.test', platformRole: 'other', staffRole: 'lab_admin' })
+    const row = await db().query('select staff_role from app.users where id = $1', [id])
+    expect(row.rows[0].staff_role).toBe('lab_admin')
   })
 })
 

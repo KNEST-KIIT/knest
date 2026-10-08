@@ -1,0 +1,1 @@
+ALTER TYPE "app"."staff_role" ADD VALUE IF NOT EXISTS 'lab_admin' BEFORE 'super_admin';
