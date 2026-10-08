@@ -46,7 +46,7 @@ Branch: `delivery/p1-containment` (from `00181d4`). Nothing is pushed, deployed 
 | Item | Status |
 |---|---|
 | A. Commercial document KIIT received | **BLOCKED on the owner** (Gmail needs re-authentication; supply the document) |
-| B. S-1 hosting/memory gate | Specified (`S-1-SPEC.md`); not started; not authorised |
+| B. S-1 hosting/memory gate | Specified (`S-1-SPEC.md`); **approval packet written (`S-1-APPROVAL-PACKET.md`), awaiting owner decisions D1-D7**; nothing created |
 | C. QR / offline threat model | Draft (`LAB-ATTENDANCE-THREAT-MODEL.md`); LB-07, LB-08, LB-10 blocked until validated |
 | D. Pilot-A (applications) and Pilot-B (labs) | Separate. Pilot-A needs P2, P3A, P4a, P5-core, P7-A; Pilot-B additionally P3B, HD-16 and the threat-model sign-off |
 | E. Tests do not equal "secure / complete / production-ready" | Applied: see "Not covered" column |
