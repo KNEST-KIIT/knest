@@ -1,0 +1,13 @@
+# pnpm 10 reads settings from here, not from package.json's "pnpm" field
+# (the old block was silently ignored; see KN-27).
+overrides:
+  # pg pin that package.json's ignored "pnpm.overrides" was meant to enforce
+  pg: 8.23.0
+  '@types/pg': 8.23.1
+  # Transitive advisories that the Payload 3.90.x line still pulls in (KN-03 / NF-01).
+  # Each range is the first patched release of the same major line.
+  'undici@<7.29.1': '>=7.29.1 <8'
+  'fast-uri@<3.1.8': '>=3.1.8 <4'
+  'dompurify@<3.4.16': '>=3.4.16 <4'
+  'source-map-js@<1.2.2': '>=1.2.2 <2'
+  'fast-copy@<3.1.0': '>=3.1.0'

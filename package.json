@@ -24,23 +24,23 @@
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.3",
     "@aws-sdk/client-s3": "^3.1121.0",
-    "@payloadcms/db-postgres": "^3.88.0",
-    "@payloadcms/next": "^3.88.0",
-    "@payloadcms/richtext-lexical": "^3.88.0",
-    "@payloadcms/ui": "^3.88.0",
+    "@payloadcms/db-postgres": "3.90.2",
+    "@payloadcms/next": "3.90.2",
+    "@payloadcms/richtext-lexical": "3.90.2",
+    "@payloadcms/ui": "3.90.2",
     "bcryptjs": "^3.0.3",
     "drizzle-orm": "^0.45.2",
     "file-type": "^22.0.2",
     "framer-motion": "^13.1.1",
     "graphql": "^16.14.2",
-    "next": "^16.3.3",
+    "next": "16.4.0",
     "next-auth": "5.0.0-beta.32",
-    "nodemailer": "^8.0.11",
-    "payload": "^3.88.0",
+    "nodemailer": "^10.0.16",
+    "payload": "3.90.2",
     "pg": "^8.23.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "sharp": "^0.35.4",
+    "sharp": "^0.35.5",
     "zod": "^4.5.2"
   },
   "devDependencies": {
@@ -48,7 +48,6 @@
     "@tailwindcss/postcss": "^4.3.3",
     "@types/bcryptjs": "^3.0.0",
     "@types/node": "^26.4.0",
-    "@types/nodemailer": "^8.0.1",
     "@types/pg": "^8.23.1",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.5",
@@ -63,11 +62,5 @@
     "tsx": "^4.23.12",
     "typescript": "^5.9.3",
     "vitest": "^4.1.11"
-  },
-  "pnpm": {
-    "overrides": {
-      "pg": "8.23.0",
-      "@types/pg": "8.23.1"
-    }
   }
 }
