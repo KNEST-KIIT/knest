@@ -7,7 +7,7 @@ Method: unauthenticated HTTP GET of public URLs from the engineer workstation, r
 | Question | Finding | Basis |
 |---|---|---|
 | Publicly accessible? | **Yes.** `https://knest-kiit.vercel.app` serves KNEST over HTTPS from Vercel (`Server: Vercel`, edge `bom1`). `knest.vercel.app` is a different project; `knest.kiit.ac.in` does not respond. | OBSERVED |
-| Which commit? | **Exact SHA UNVERIFIED** (not exposed publicly). It is at or after `00181d4` (2026-09-17): the lab-booking route exists (`/dashboard/lab-booking` answers 307 to login rather than 404), the Blog nav item and the invented `/blog` articles are present, and the footer still says "Campus Labs are Open". | INFERRED from content and routes |
+| Which commit? | **UNVERIFIED.** The SHA is not exposed publicly, and what is visible does not establish ancestry. The observable features (a `/dashboard/lab-booking` route, the Blog nav item and invented `/blog` articles, the footer "Campus Labs are Open") are **consistent with code from the `00181d4` era** (September 2026), but the same output could come from another branch or fork. Needed: the Vercel deployment record and its linked Git commit (requires dashboard access). | OBSERVED features; commit INFERRED only |
 | CMS API reachable? | **No.** Every Payload REST route returns HTTP 500 `{"message":"There was an error initializing Payload"}`: `/api/programs`, `/api/lab-bookings`, `/api/globals/homepage`, `/api/startups` (4 of 4 probes, both times). | OBSERVED |
 | Database connected? | **The CMS database is not working.** Payload cannot initialise. Auth.js also reports "a problem with the server configuration" at `/api/auth/providers`, so sign-in is not functional either. Whether any database is attached at all, and which, is **UNVERIFIED** (the error text is generic). | OBSERVED / INFERRED |
 | Anonymous access to lab-booking records? | **No records were retrievable** at either probe time, because Payload does not start. | OBSERVED |
@@ -21,6 +21,18 @@ Method: unauthenticated HTTP GET of public URLs from the engineer workstation, r
 | KN-01, fabricated public content | **Medium-High, active** | Visible now: `/blog` renders the invented "From Hostel Dorm to First 10,000 Users" and other invented articles; the programs page shows invented programs; the hero reads "The most dangerous thing you can do is graduate with just a degree". This is a public misrepresentation under KIIT's name. |
 | KN-16, `/privacy` and `/terms` | Medium | Both return 404 although the footer links to them. |
 | Sign-in broken | Medium (functional) | Auth.js configuration error; no one can log in or sign up. |
+
+## Open follow-ups (none performed; each needs access I do not have)
+
+| Check | Status | Needs |
+|---|---|---|
+| Deployment protection enabled? | Unknown. The site answers anonymous requests, so none is enforced at the probed URL. | Vercel dashboard |
+| Linked Git commit and branch | UNVERIFIED | Vercel deployment record |
+| Why Payload fails to initialise | Unknown (the public error is generic) | Server logs and the project's environment variables |
+| Why Auth.js reports a configuration error | Unknown | Same |
+| Whether a database is attached, and which | UNVERIFIED | Environment variables and connection diagnostics, **without** reading student records |
+| KN-02 on the deployed code | The deployed code is known to allow anonymous reads of lab bookings (code review of `00181d4`: `read: () => true`). The 500s do not show the control works; they show Payload is down. | Do not connect a working database until the fixed build is deployed |
+| Containment action | **Not taken.** Recommended only. | Your authorisation |
 
 ## Recommended containment (not performed; needs your authorisation)
 
