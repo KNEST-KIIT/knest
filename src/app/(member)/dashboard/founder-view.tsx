@@ -3,6 +3,7 @@ import { formatDate } from '@/lib/dates'
 import { RESOURCES_EMPTY } from '@/lib/empty-state-copy'
 import { listApplicationsForUser } from '@/server/applications/actions'
 import { getProgramById } from '@/server/content/programs'
+import { isLabBookingEnabled } from '@/server/features'
 import { listRecommendedResources } from '@/server/content/resources'
 import type { SessionUser } from '@/server/auth/guards'
 import { ApplicationStatusBadge } from './applications/status-badge'
@@ -36,15 +37,17 @@ export async function FounderDashboard({ user }: { user: SessionUser }) {
             actionHref={program ? '/dashboard/applications' : '/programs'}
           />
         </div>
-        <div className="lg:col-span-4 flex flex-col gap-4">
-          <div className="rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-white p-6 shadow-sm flex-1 flex flex-col justify-center items-start">
-            <Heading as="h3" size="heading" uppercase={false} className="mb-2">Lab & Infrastructure</Heading>
-            <p className="text-[length:var(--text-small)] text-[var(--color-ink-muted)] mb-4">Book maker spaces, founder cabins, and studios.</p>
-            <LinkCard href="/dashboard/lab-booking" label="Book a Space" className="w-full hover:border-[var(--color-signal)]/50">
-              <span className="font-medium text-[var(--color-ink)] transition-colors">Book a Space</span>
-            </LinkCard>
+        {isLabBookingEnabled() && (
+          <div className="lg:col-span-4 flex flex-col gap-4">
+            <div className="rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-white p-6 shadow-sm flex-1 flex flex-col justify-center items-start">
+              <Heading as="h3" size="heading" uppercase={false} className="mb-2">Lab & Infrastructure</Heading>
+              <p className="text-[length:var(--text-small)] text-[var(--color-ink-muted)] mb-4">Book maker spaces, founder cabins, and studios.</p>
+              <LinkCard href="/dashboard/lab-booking" label="Book a Space" className="w-full hover:border-[var(--color-signal)]/50">
+                <span className="font-medium text-[var(--color-ink)] transition-colors">Book a Space</span>
+              </LinkCard>
+            </div>
           </div>
-        </div>
+        )}
       </section>
 
       {/* Middle Row: Bento Grid (Learning Hub & Applications) */}

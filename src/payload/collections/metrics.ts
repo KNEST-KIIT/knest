@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { canWrite, readAlways } from '../access'
+import { canWrite, canWriteField, readAlways } from '../access'
 
 /**
  * Ecosystem numbers shown on the homepage.
@@ -30,6 +30,8 @@ export const Metrics: CollectionConfig = {
       name: 'source',
       type: 'text',
       required: true,
+      // NF-02: documented as internal, but the collection is publicly readable.
+      access: { read: canWriteField('content') },
       admin: { description: 'Where this number comes from. Internal note — not shown publicly.' },
     },
     { name: 'order', type: 'number', defaultValue: 0, admin: { position: 'sidebar' } },

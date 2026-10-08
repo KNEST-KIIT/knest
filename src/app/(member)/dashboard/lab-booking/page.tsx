@@ -2,34 +2,24 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 import { BookingForm } from './booking-form'
 import { getSessionUser } from '@/server/auth/guards'
-import { redirect } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
+import { isLabBookingEnabled } from '@/server/features'
 
 export const metadata = {
   title: 'Lab Booking',
 }
 
 export default async function LabBookingPage() {
+  if (!isLabBookingEnabled()) notFound()
+
   const user = await getSessionUser()
   if (!user || user.platformRole !== 'founder') {
     redirect('/dashboard')
   }
 
   const payload = await getPayload({ config })
-  let spaces: any[] = []
-  try {
-    const result = await payload.find({
-      collection: 'infrastructure',
-      limit: 100,
-    })
-    spaces = result.docs
-  } catch (error) {
-    if (process.env.NODE_ENV === 'development') {
-      spaces = [
-        { id: '1', title: 'Maker Lab Alpha', type: 'maker-lab', capacity: 10, status: 'operational' },
-        { id: '2', title: 'Founder Cabin 1', type: 'founder-cabin', capacity: 4, status: 'operational' },
-      ]
-    }
-  }
+  const result = await payload.find({ collection: 'infrastructure', limit: 100 })
+  const spaces = result.docs
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-12">

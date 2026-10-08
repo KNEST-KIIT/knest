@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { canWrite } from '../access'
+import { canWrite, canWriteField } from '../access'
 
 export const LabBookings: CollectionConfig = {
   slug: 'lab-bookings',
@@ -9,7 +9,10 @@ export const LabBookings: CollectionConfig = {
     group: 'Ecosystem',
   },
   access: {
-    read: () => true, // Anyone can read to see blocked slots
+    // KN-02: this collection holds booker identity (userId, userEmail). It was
+    // world-readable through the Payload REST API. Free/busy for the booking UI
+    // is served by a server action that returns start/end only.
+    read: canWrite('infrastructure'),
     create: canWrite('infrastructure'), // Frontend will use Local API to bypass this
     update: canWrite('infrastructure'),
     delete: canWrite('infrastructure'),
@@ -17,8 +20,14 @@ export const LabBookings: CollectionConfig = {
   },
   fields: [
     { name: 'infrastructure', type: 'relationship', relationTo: 'infrastructure', required: true },
-    { name: 'userId', type: 'text', required: true, admin: { description: 'The Drizzle UUID of the founder.' } },
-    { name: 'userEmail', type: 'text', required: true },
+    {
+      name: 'userId',
+      type: 'text',
+      required: true,
+      access: { read: canWriteField('infrastructure') },
+      admin: { description: 'The Drizzle UUID of the founder.' },
+    },
+    { name: 'userEmail', type: 'text', required: true, access: { read: canWriteField('infrastructure') } },
     { name: 'startTime', type: 'date', required: true, admin: { date: { pickerAppearance: 'dayAndTime' } } },
     { name: 'endTime', type: 'date', required: true, admin: { date: { pickerAppearance: 'dayAndTime' } } },
     {
