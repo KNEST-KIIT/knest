@@ -218,3 +218,29 @@ describe('KN-31 / KN-13: submitting', () => {
     expect((await db().query('select status from app.applications where id = $1', [id])).rows[0].status).toBe('submitted')
   })
 })
+
+describe('KN-08 containment and KN-17: no interim lab booking, no invented progress', () => {
+  it('the lab-booking page does not exist while the feature flag is off', async () => {
+    await createUser({ email: `flag-${stamp}@journey.test`, platformRole: 'founder' })
+    const s = (await login(`flag-${stamp}@journey.test`))!
+    // /dashboard streams (loading.tsx), so the status line is already 200 when notFound()
+    // fires; what matters is that none of the booking UI is rendered.
+    const html = await (await get('/dashboard/lab-booking', s)).text()
+    expect(html).not.toContain('Select Space')
+    expect(html).not.toContain('Reserve maker labs')
+    expect(html).toContain('It may have moved, or the link may be wrong.')
+  })
+
+  it.each(['student', 'founder'] as const)('the %s dashboard shows no made-up course progress', async (role) => {
+    const email = `dash-${role}-${stamp}@journey.test`
+    await createUser({ email, platformRole: role })
+    await db().query("update app.users set onboarding_completed_at = now(), journey_stage = 'idea' where email = $1", [email])
+    const s = (await login(email))!
+    const res = await get('/dashboard', s)
+    expect(res.status).toBe(200)
+    const html = await res.text()
+    for (const invented of ['Idea Validation 101', 'Customer Discovery', 'Pitch Deck Fundamentals', 'Growth &amp; Scaling Strategies', 'Fundraising Prep', 'Founder Playbooks', 'Book a Space']) {
+      expect(html, invented).not.toContain(invented)
+    }
+  })
+})

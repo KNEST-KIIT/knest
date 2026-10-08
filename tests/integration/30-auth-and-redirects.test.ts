@@ -141,3 +141,35 @@ describe('account state', () => {
     expect(sessions.rows[0].c).toBe(0)
   })
 })
+
+describe('sign-up -> e-mailed link -> verified account (nodemailer 10, absolute link, single use)', () => {
+  it('the link in the e-mail verifies the account exactly once', async () => {
+    const email = `verify-${Date.now()}@auth.test`
+    const signup = await fetch(`${BASE()}/api/auth/password/signup`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-forwarded-for': uniqueIp() },
+      body: JSON.stringify({ name: 'Verify Person', email, password: PASSWORD }),
+    })
+    expect(signup.status).toBe(201)
+    expect((await db().query('select email_verified from app.users where email = $1', [email])).rows[0].email_verified).toBeNull()
+
+    await expect.poll(() => readMail().find((m) => m.to.includes(email)), { timeout: 20_000 }).toBeTruthy()
+    const text = decodeMailText(readMail().find((m) => m.to.includes(email))!.body)
+    const link = text.match(/https?:\/\/[^\s]+\/verify\/confirm\?[^\s]+/)?.[0]
+    expect(link, text.slice(0, 300)).toBeTruthy()
+    const params = new URL(link!).searchParams
+    const token = params.get('token')!
+    expect(params.get('email')).toBe(email)
+    expect(token).toMatch(/^[0-9a-f]{64}$/)
+
+    const confirm = () =>
+      fetch(`${BASE()}/api/auth/password/verify/confirm`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email, token }),
+      })
+    expect((await confirm()).status).toBe(200)
+    expect((await db().query('select email_verified from app.users where email = $1', [email])).rows[0].email_verified).not.toBeNull()
+    expect((await confirm()).status).toBe(400) // single use
+  })
+})
