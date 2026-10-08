@@ -11,3 +11,12 @@ overrides:
   'dompurify@<3.4.16': '>=3.4.16 <4'
   'source-map-js@<1.2.2': '>=1.2.2 <2'
   'fast-copy@<3.1.0': '>=3.1.0'
+
+# Advisories accepted on purpose (KN-03). Each is reached only through build/dev
+# tooling, not a request path, and has no patched release. Anything else fails CI.
+auditConfig:
+  ignoreGhsas:
+    # braces: ReDoS on deeply nested glob patterns; sass -> chokidar file watching. Unpatched upstream.
+    - GHSA-vfj7-8cjw-p6xm
+    # esbuild: dev-server request exposure; via drizzle-kit's legacy esbuild-kit loader.
+    - GHSA-67mh-4wv8-2f99
