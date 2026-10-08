@@ -19,15 +19,11 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     const session = await auth()
     return session?.user ?? null
   } catch (error) {
-    if (process.env.NODE_ENV === 'development') {
-      return {
-        id: 'mock-founder-1',
-        email: 'demo@founder.com',
-        name: 'Demo Founder',
-        platformRole: 'founder',
-        onboardingComplete: true,
-      } as any
-    }
+    // Fail closed: a lookup failure is "not signed in", in every environment.
+    // (A development-only mock user used to be returned here; it masked real
+    // failures and was one NODE_ENV misconfiguration away from a bypass.)
+    // Log the error object only. It never carries the session token.
+    console.error('[auth] session lookup failed; treating request as signed out', error)
     return null
   }
 }

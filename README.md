@@ -43,9 +43,20 @@ pnpm db:seed
 pnpm dev                      # http://localhost:3000
 ```
 
-`pnpm db:seed` creates a super admin (`admin@knest.local`) and, outside production, a
-non-staff test account (`student@knest.local`) used to verify the authorization
-boundary. Both use `SEED_PASSWORD`, default `knest-dev-password`.
+`pnpm db:seed` creates a super admin (`SEED_ADMIN_EMAIL`, default `admin@knest.local`) and,
+outside production, a non-staff test account (`student@knest.local`) used to verify the
+authorization boundary.
+
+Seed safety (KN-07):
+
+- The development default password is used **only** when `DATABASE_URL` points at a local
+  database and the environment is not production. Against any other database, set
+  `SEED_PASSWORD` (12+ characters; the published default is rejected).
+- Seeds never rewrite an existing account. To reset local accounts deliberately, set
+  `SEED_RESET_EXISTING=true` (ignored in production).
+- `pnpm db:seed:demo` and the dummy-programs seed insert fictional records and well-known
+  logins. They refuse to run in production, and refuse a non-local database unless
+  `ALLOW_DEMO_SEED=true` is set for a disposable non-production database.
 
 It seeds **no** startups, mentors, metrics, testimonials or partnerships. KNEST's
 ecosystem is beginning, and the product shows that honestly rather than filling itself

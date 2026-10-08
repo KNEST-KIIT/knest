@@ -3,6 +3,12 @@ import { hash } from 'bcryptjs'
 import { eq } from 'drizzle-orm'
 import { db, pool } from './client'
 import { users } from './schema'
+import {
+  assertDemoSeedAllowed,
+  mayModifyExistingUsers,
+  looksLikeProduction,
+  resolveSeedPassword,
+} from './seed-policy'
 import { getPayload } from 'payload'
 import config from '@/payload/payload.config'
 import { seedDummy } from './seed-dummy'
@@ -17,6 +23,12 @@ async function upsertUser(input: {
 }) {
   const passwordHash = await hash(input.password, 12)
   const existing = await db.query.users.findFirst({ where: eq(users.email, input.email) })
+
+  if (existing && !mayModifyExistingUsers(process.env)) {
+    // Never silently rewrite an existing account (KN-07). Opt in with
+    // SEED_RESET_EXISTING=true, outside production only.
+    return { ...existing, action: 'kept' as const }
+  }
 
   if (existing) {
     await db
@@ -80,7 +92,7 @@ async function seedDemoData() {
 
   // Seed partners
   const partnersData = [
-    { name: 'Sequoia Surge', type: 'investor', description: 'Early-stage scale-up program for startups.', websiteUrl: 'https://surgeahead.com' },
+    { name: 'Example Accelerator (demo)', type: 'investor', description: 'Early-stage scale-up program for startups.', websiteUrl: 'https://example.com' },
     { name: 'Govt of Odisha', type: 'government', description: 'Supporting local innovation hubs.', websiteUrl: 'https://startupodisha.gov.in' }
   ]
 
@@ -132,8 +144,8 @@ async function seedDemoData() {
 
   // Seed mentors
   const mentorsData = [
-    { name: 'Sarah Chen', title: 'VP Product', organization: 'Scale AI', expertise: ['product', 'gtm'], availability: 'limited' },
-    { name: 'Rajiv Menon', title: 'Managing Partner', organization: 'Indic Capital', expertise: ['fundraising'], availability: 'unavailable' },
+    { name: 'Sarah Chen', title: 'VP Product', organization: 'Example Co. (demo)', expertise: ['product', 'gtm'], availability: 'limited' },
+    { name: 'Rajiv Menon', title: 'Managing Partner', organization: 'Example Capital (demo)', expertise: ['fundraising'], availability: 'unavailable' },
     { name: 'Dr. Alok Verma', title: 'Chief Scientist', organization: 'DeepTech Labs', expertise: ['technology', 'industry'], availability: 'open' },
   ]
   for (const mentor of mentorsData) {
@@ -214,7 +226,8 @@ async function seedDemoData() {
 }
 
 async function main() {
-  const devPassword = process.env.SEED_PASSWORD ?? 'knest-dev-password'
+  assertDemoSeedAllowed(process.env, 'seed-demo')
+  const devPassword = resolveSeedPassword(process.env)
 
   console.log('Seeding core accounts...')
   

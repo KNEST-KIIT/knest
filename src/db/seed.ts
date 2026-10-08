@@ -3,6 +3,11 @@ import { hash } from 'bcryptjs'
 import { eq } from 'drizzle-orm'
 import { db, pool } from './client'
 import { users } from './schema'
+import {
+  mayModifyExistingUsers,
+  looksLikeProduction,
+  resolveSeedPassword,
+} from './seed-policy'
 
 /**
  * Seeds only what the platform cannot run without.
@@ -22,6 +27,12 @@ async function upsertUser(input: {
 }) {
   const passwordHash = await hash(input.password, 12)
   const existing = await db.query.users.findFirst({ where: eq(users.email, input.email) })
+
+  if (existing && !mayModifyExistingUsers(process.env)) {
+    // Never silently rewrite an existing account (KN-07). Opt in with
+    // SEED_RESET_EXISTING=true, outside production only.
+    return { ...existing, action: 'kept' as const }
+  }
 
   if (existing) {
     await db
@@ -53,7 +64,8 @@ async function upsertUser(input: {
 }
 
 async function main() {
-  const devPassword = process.env.SEED_PASSWORD ?? 'knest-dev-password'
+  // Throws before any database work if the environment is unsafe (KN-07).
+  const devPassword = resolveSeedPassword(process.env)
 
   const admin = await upsertUser({
     email: process.env.SEED_ADMIN_EMAIL ?? 'admin@knest.local',
@@ -66,7 +78,7 @@ async function main() {
 
   // Exists to prove the authorization boundary, not to pad the database:
   // the Phase 0a check requires a non-staff account that must be refused /admin.
-  if (process.env.NODE_ENV !== 'production') {
+  if (!looksLikeProduction(process.env)) {
     const student = await upsertUser({
       email: 'student@knest.local',
       name: 'Test Student',
