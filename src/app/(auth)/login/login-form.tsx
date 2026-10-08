@@ -1,5 +1,6 @@
 'use client'
 
+import { safeNext } from '@/lib/safe-next'
 import { useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ButtonLink, Field, Heading, Input, PasswordInput } from '@/components/ui'
@@ -32,8 +33,7 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
       return
     }
 
-    const next = searchParams.get('next')
-    router.push(next && next.startsWith('/') ? next : '/dashboard')
+    router.push(safeNext(searchParams.get('next')) ?? '/dashboard')
     router.refresh()
   }
 

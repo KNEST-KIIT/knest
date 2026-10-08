@@ -7,14 +7,13 @@ import { users } from '@/db/schema'
 import { resetPasswordTemplate, verifyEmailTemplate } from '@/server/email/templates'
 import { sendEmail } from '@/server/email/send'
 import { consumeToken, issueToken } from './tokens'
+import { DUMMY_HASH } from './dummy-hash'
 import { createDatabaseSession, destroyDatabaseSession, revokeAllSessions } from './session'
 import { credentialsSchema, emailSchema, passwordSchema, signupSchema } from './validation'
 import { track } from '@/server/analytics/track'
 
 export type AuthResult = { ok: true } | { ok: false; error: string }
 
-/** Timing-equalising comparison target for accounts that do not exist. */
-const DUMMY_HASH = '$2b$12$0000000000000000000000000000000000000000000000000000'
 
 const VERIFY_TTL_MS = 24 * 60 * 60 * 1000
 const RESET_TTL_MS = 60 * 60 * 1000

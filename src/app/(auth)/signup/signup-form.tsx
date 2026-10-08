@@ -1,5 +1,6 @@
 'use client'
 
+import { safeNext } from '@/lib/safe-next'
 import { useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ButtonLink, Field, Heading, Input, PasswordInput } from '@/components/ui'
@@ -37,7 +38,7 @@ export function SignupForm({ googleEnabled }: { googleEnabled: boolean }) {
       return
     }
 
-    const next = searchParams.get('next')
+    const next = safeNext(searchParams.get('next'))
     // A next that already targets /onboarding (e.g. the homepage journey
     // selector's ?stage= prefill) goes there directly rather than being
     // re-wrapped — /onboarding itself never reads a `next` param, so
