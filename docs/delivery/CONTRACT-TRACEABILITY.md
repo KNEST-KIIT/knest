@@ -1,6 +1,12 @@
-> Source: `docs/commercial/generate.mjs` on branch `claude/knest-invoicing-maintenance-8rh7gd` (`DEV_SECTIONS`, lines 72-191), the 53 build modules. Wording is quoted from that file and abridged only where marked "...". **The repository copy still contains 15 unfilled placeholders, so it may differ from the document KIIT received; confirm the version with the owner (HD-21).**
+> **Contractual delivery status is UNVERIFIED.** The exact documents KIIT received have not been seen. What has been checked (2026-10-08):
 >
-> Statuses are the baseline at `00181d4`, before Phase 1. Phase 1 changed: module 13 (content delivery: invented fallbacks removed; the contract's "degrades gracefully" is now an honest empty or error state), 42 (SVG/XML uploads removed), 40 (analytics endpoint now rate limited), 6 (dev-bypass removed; deactivation still not enforced), 10 (Payload upgraded). None of these is yet VERIFIED in any environment.
+> - The module wording below comes from `docs/commercial/generate.mjs` on branch `claude/knest-invoicing-maintenance-8rh7gd` (`DEV_SECTIONS`, lines 72-191), the 53 build modules. The generator at that commit still holds 15 unfilled `«placeholders»`.
+> - The PDFs committed on that branch (`knest-development-invoice.pdf` and `knest-amc-proposal.pdf`, last changed in `88c7e4a`, 2026-09-16) carry invoice number `KNEST/2026-27/001` and the line **"Status: delivered, deployed and in production."** Their bank and vendor fields are still unfilled placeholders, which suggests a template rather than a sent copy. That is an inference, not a finding.
+> - A search of Google Drive for matching files found nothing. Gmail could not be searched (the connector needs you to sign in again), so **whether, when and to whom anything was sent is unknown.**
+>
+> Until you supply the version KIIT holds (or confirm none was sent), nothing in this document is to be quoted to KIIT as a statement of what was or was not delivered against the contract. The "status" column describes only what the repository contains, against the wording above (HD-21).
+>
+> Statuses are the repository baseline at `00181d4`, before Phase 1. Phase 1 changed: module 13 (invented fallbacks removed; "degrades gracefully" is now an honest empty or error state), 42 (SVG/XML uploads removed), 40 (analytics endpoint rate limited), 6 (dev bypass removed; deactivation still not enforced), 10 (Payload upgraded). None is VERIFIED in any environment.
 
 # Contract traceability (D-06) (invoice `DEV_SECTIONS`, `generate.mjs:72-191`, branch copy; 53 modules)
 

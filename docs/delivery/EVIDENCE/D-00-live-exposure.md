@@ -20,6 +20,11 @@ The KN-02 probe used `limit=0` so that no booking rows could be returned.
 - KN-16: legal pages 404 in public.
 - The deployment is on Vercel, which confirms the HD-01 ambiguity. The contract names AWS.
 
+## UNVERIFIED (do not read this file as "no other exposure")
+- Only the URLs listed above were probed. Any other deployment, preview URL, custom domain or AWS/Amplify app is **unknown**. The Vercel project is named `knest`; its deployments list, domains and environment variables were not accessible.
+- The `knest-kiit.vercel.app` result is a single observation on 2026-10-08. The database state behind it can change.
+- No DNS for a KNEST domain on `kiit.ac.in` resolved to a site, which is weak evidence only.
+
 ## Not verifiable from here (needs owner action)
 - Which Vercel team owns the project, and which environment variables and database it is linked to.
 - Whether the DB (probably Supabase, per the local `.env` variable names) is empty or holds data.

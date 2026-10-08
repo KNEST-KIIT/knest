@@ -28,6 +28,16 @@ Branch: `delivery/p1-containment` (from `00181d4`). Nothing is pushed, deployed 
 | C-02 honesty containment | IMPLEMENTED | `35bf0ca` | 38 content-layer tests; repository-wide gate (failed on the real offenders before the fix); production smoke test with no DB shows no fabricated content | Visual check of every list page against an empty CMS (needs a DB); HD-04 sign-off of the remaining copy |
 | C-01 lint harness | VERIFIED | `a1ff0b9` | `pnpm lint`: 0 errors, 28 warnings; `pnpm check` exit 0 | |
 
+## Standing gates and additional requirements (owner message 2026-10-08)
+
+| Item | Status | Where |
+|---|---|---|
+| A. Verify the commercial documents KIIT received | **BLOCKED on the owner**: Drive had no match, Gmail needs re-authentication. The committed PDFs are described in `CONTRACT-TRACEABILITY.md`. Contract delivery status stays UNVERIFIED. | HD-21 |
+| B. S-1 stays a separate gate; EC2 memory incl. overlapping containers | Specified, **not started, not authorised** | `S-1-SPEC.md` |
+| C. QR / offline threat model validated before building attendance | Draft written; **LB-07, LB-08, LB-10 are BLOCKED** until its validation steps are done | `LAB-ATTENDANCE-THREAT-MODEL.md` |
+| D. Pilot-A (applications) and Pilot-B (labs) stay separate | Unchanged. Pilot-A depends on P2, P3A, P4a, P5-core, P7-A. Pilot-B additionally depends on P3B, HD-16 and the threat-model sign-off. Neither can start before its own staging gate. | blueprint R1 section 5 |
+| E. No claim of "secure/complete/production-ready" from passing repository tests | Applied: statuses above say IMPLEMENTED, not VERIFIED, wherever a DB, staging or live environment is needed | this file |
+
 ## Gate verdict
 
 See `EVIDENCE/phase1-gate-report.md`.
