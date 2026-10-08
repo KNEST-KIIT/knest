@@ -71,15 +71,15 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <div className="absolute bottom-12 left-12 right-12 z-10">
             <div className="max-w-xl">
               <p className="text-2xl font-[family-name:var(--font-display)] leading-tight text-white/90">
-                "KNEST is the gateway for students to transition into founders. We are building the future of innovation."
+                Innovation ready. Enterprise ready. Market ready.
               </p>
               <div className="mt-4 flex items-center gap-3">
                 <div className="h-10 w-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white">
                   K
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-white">KIIT University</p>
-                  <p className="text-xs text-white/60 uppercase tracking-widest">Global Entrepreneurship</p>
+                  <p className="text-sm font-semibold text-white">KNEST</p>
+                  <p className="text-xs text-white/60 uppercase tracking-widest">KIIT University</p>
                 </div>
               </div>
             </div>

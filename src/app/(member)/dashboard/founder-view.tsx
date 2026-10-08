@@ -17,13 +17,6 @@ export async function FounderDashboard({ user }: { user: SessionUser }) {
 
   const nextMilestone = program?.timeline?.[0]
 
-  // Hardcoded Learning Playbooks based on the "student to founder" pipeline requirement
-  const learningPlaybooks = [
-    { title: 'Growth & Scaling Strategies', progress: 75, status: 'in-progress' },
-    { title: 'Fundraising Prep: Seed Round', progress: 10, status: 'in-progress' },
-    { title: 'Building a Go-To-Market Team', progress: 0, status: 'locked' }
-  ]
-
   return (
     <div className="flex flex-col gap-8">
       {/* Top Row: Command Center */}
@@ -50,44 +43,12 @@ export async function FounderDashboard({ user }: { user: SessionUser }) {
         )}
       </section>
 
-      {/* Middle Row: Bento Grid (Learning Hub & Applications) */}
+      {/* Middle Row: applications. (A "Founder Playbooks" widget with hardcoded
+          progress used to sit beside this: KN-17.) */}
       <section className="grid gap-6 lg:grid-cols-12">
         
-        {/* Learning Hub Widget (Spans 7 cols) */}
-        <div className="lg:col-span-7 flex flex-col rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-white p-6 shadow-sm">
-          <div className="mb-6 flex items-center justify-between">
-            <Heading as="h2" size="heading" uppercase={false}>
-              Founder Playbooks
-            </Heading>
-            <span className="rounded-full bg-[var(--color-ink)] px-3 py-1 text-[length:var(--text-small)] font-medium text-white">
-              Phase 2
-            </span>
-          </div>
-          
-          <div className="flex flex-col gap-4">
-            {learningPlaybooks.map((playbook, idx) => (
-              <div key={idx} className={`relative overflow-hidden rounded-lg border border-[var(--color-line)] p-4 transition-colors ${playbook.status === 'in-progress' ? 'bg-[var(--color-paper-soft)] border-[var(--color-signal)]/30' : 'bg-white'}`}>
-                <div className="flex items-center justify-between mb-2">
-                  <p className={`font-medium ${playbook.status === 'locked' ? 'text-[var(--color-ink-muted)]' : 'text-[var(--color-ink)]'}`}>
-                    {playbook.title}
-                  </p>
-                  <span className="text-[length:var(--text-small)] text-[var(--color-ink-muted)] font-medium">
-                    {playbook.progress}%
-                  </span>
-                </div>
-                <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--color-line)]">
-                  <div 
-                    className={`h-full rounded-full transition-all duration-1000 ${playbook.status === 'completed' ? 'bg-[var(--color-signal)]' : 'bg-[var(--color-signal)]'}`}
-                    style={{ width: `${playbook.progress}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Applications Widget (Spans 5 cols) */}
-        <div className="lg:col-span-5 flex flex-col rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-white p-6 shadow-sm">
+        {/* Applications Widget */}
+        <div className="lg:col-span-12 flex flex-col rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-white p-6 shadow-sm">
           <Heading as="h2" size="heading" className="mb-6" uppercase={false}>
             Your applications
           </Heading>

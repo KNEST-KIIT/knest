@@ -1,5 +1,6 @@
 import { getContentClient } from './payload-client'
 import type { Homepage } from '@/payload/payload-types'
+import { HOMEPAGE_COPY } from './homepage-copy'
 
 export type SectionKey = NonNullable<Homepage['sections']>[number]['key']
 
@@ -16,31 +17,17 @@ const DEFAULT_ORDER: SectionKey[] = [
   'closing',
 ]
 
+/**
+ * Used when the global is empty or unreadable. It is the approved copy from
+ * CONTENT_SPEC section 1 and nothing else: no records, no figures, no claims
+ * (KN-01 / KN-18). The previous fallback carried unapproved copy that promised
+ * capital and open labs.
+ */
 export const FALLBACK_HOMEPAGE: Homepage = {
   id: 1,
   sections: DEFAULT_ORDER.map((key) => ({ key, enabled: true })),
-  heroHeadline: 'THE MOST DANGEROUS THING YOU CAN DO IS GRADUATE WITH JUST A DEGREE.',
-  heroSubhead:
-    'While everyone else is memorising the past, a quiet minority is busy building the future. The infrastructure, capital, and network you need are already here. The only thing missing is you.',
-  heroPrimaryCta: 'Stop spectating. Build.',
-  heroSecondaryCta: 'Explore programs',
-  problemHeading: "THE HARDEST PART ISN'T THE IDEA. IT'S THE EXECUTION.",
-  problemBody:
-    "You've probably had one. Sitting in a lecture, noticing a broken system, and thinking someone should fix it.\n\nThe gap between noticing and building is where 99% of potential is lost. Not to a lack of talent. To a lack of a next step. We are the next step.",
-  personHeading: "YOU DON'T HAVE TO BE 'AN ENTREPRENEUR' YET.",
-  personLines: [
-    { id: '0', line: 'You just need an obsession.' },
-    { id: '1', line: 'You need to hate inefficiency.' },
-    { id: '2', line: 'You need to be willing to fail in public.' },
-    { id: '3', line: 'We will teach you the rest.' },
-  ],
-  knestHeading: 'KNEST IS THE INFRASTRUCTURE FOR AMBITION.',
-  knestBody:
-    "We don't just run programs. We provide the capital, the makerspaces, the industry networks, and the intense, high-agency community you need to turn a prototype into a scalable venture.",
-  closingHeading: 'THE CAPITAL IS WAITING. THE LABS ARE OPEN.',
-  closingBody:
-    'You have a four-year window to build something that scales beyond your own time. Decide if you are a spectator or a founder.',
-  closingCta: 'Apply Now',
+  ...HOMEPAGE_COPY,
+  personLines: HOMEPAGE_COPY.personLines.map((line, i) => ({ id: String(i), line })),
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
 }
@@ -59,7 +46,9 @@ export async function getHomepage(): Promise<Homepage> {
     if (result && result.heroHeadline) return result
     return FALLBACK_HOMEPAGE
   } catch (error) {
-    console.warn('Could not fetch homepage from database/CMS, using fallback:', error)
+    // Static approved copy is safe to show during an outage, but the outage must
+    // not be silent.
+    console.error('Could not fetch homepage from the CMS; serving the approved static copy:', error)
     return FALLBACK_HOMEPAGE
   }
 }

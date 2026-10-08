@@ -1,4 +1,4 @@
-import { notFound, redirect } from 'next/navigation'
+import { notFound, redirect, unstable_rethrow } from 'next/navigation'
 import type { Session } from 'next-auth'
 import { auth } from './index'
 import { canAccessArea, type AdminArea, type PlatformRole, type StaffRole } from './roles'
@@ -19,6 +19,10 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     const session = await auth()
     return session?.user ?? null
   } catch (error) {
+    // Next signals "this render is dynamic" (and redirect/notFound) by throwing. Those
+    // must reach Next, or a page that reads the session gets prerendered as if
+    // nobody were signed in.
+    unstable_rethrow(error)
     // Fail closed: a lookup failure is "not signed in", in every environment.
     // (A development-only mock user used to be returned here; it masked real
     // failures and was one NODE_ENV misconfiguration away from a bypass.)

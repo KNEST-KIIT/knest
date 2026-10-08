@@ -12,51 +12,51 @@ const OBJECTIVES = [
   {
     num: '01',
     title: 'Early-Stage Ideation',
-    desc: 'Enable early-stage ideation and venture creation among students across all schools of KIIT.',
+    desc: 'Enable early-stage ideation and venture creation among students.',
   },
   {
     num: '02',
     title: 'Idea Vetting & Validation',
-    desc: 'Provide structured support and empirical frameworks from initial hypothesis testing to live validation.',
+    desc: 'Provide structured support from idea vetting through validation.',
   },
   {
     num: '03',
     title: 'Entrepreneurial University',
-    desc: 'Position KIIT as a leading entrepreneurial university in India and globally through world-class infrastructure.',
+    desc: 'Position KIIT as a leading entrepreneurial university in India.',
   },
   {
     num: '04',
     title: 'Risk Absorption',
-    desc: 'Offer comprehensive capacity development and institutional backing to absorb early risk for student founders.',
+    desc: 'Build students’ capacity to take on the risk of founding something.',
   },
   {
     num: '05',
     title: 'Mentors & Policy Access',
-    desc: 'Facilitate direct access to mentors, markets, funding (Govt, CSR, Angels), and platforms such as NEN.',
+    desc: 'Give founders access to mentors, markets, funding and policy platforms, including NEN.',
   },
   {
     num: '06',
     title: 'Alumni-Led Ecosystem',
-    desc: 'Create a self-sustaining alumni founder and operator network that continuously reinvests into student talent.',
+    desc: 'Create a sustainable, alumni-led startup ecosystem.',
   },
 ]
 
 const PILLARS_SIEL = [
   {
     title: 'Mentored by Founders',
-    desc: 'Studios, masterclasses, and 1:1 clinics led directly by active founders, CXOs, policymakers, and operators.',
+    desc: 'Studios, masterclasses, and 1:1 clinics led by founders, CXOs, policymakers, and operators.',
   },
   {
     title: 'Incubation Support',
-    desc: 'Advanced maker labs, prototype seed grants, legal and IP clinics, and investor rooms to launch faster.',
+    desc: 'Advanced labs, grants, legal/IP clinics, and investor rooms to launch faster.',
   },
   {
     title: 'Finding Opportunities',
-    desc: 'Demo days, proof-of-concept seed grants, angel syndicates, and institutional venture partners backing student ventures.',
+    desc: 'Demo days, seed grants, angels, and venture partners that back student-led startups.',
   },
   {
     title: 'Action-Based Learning',
-    desc: 'Solve live industry challenges, venture simulations, and graduate with progress on your venture factored into your grade.',
+    desc: 'Work on live problems, simulations, and your own venture, with progress counted in your grade.',
   },
 ]
 
@@ -79,11 +79,13 @@ const INSTITUTIONAL_ROLES = [
   },
 ]
 
+// Five-year GOALS from the official brochure (CONTENT_SPEC section 0). They are
+// targets, not results, and are labelled as such wherever they are shown.
 const OUTCOMES = [
-  { metric: '150–200', label: 'Student Startups', sub: 'Projected within a 5-year horizon' },
-  { metric: '25–30', label: 'Scalable Ventures / Yr', sub: 'Venture-backed and revenue generating' },
-  { metric: '100%', label: 'Incubation Pipeline', sub: 'Direct link to KIIT TBI, Startup India & Odisha' },
-  { metric: 'Top Tier', label: 'Global Ranking', sub: 'Benchmark for university innovation hubs' },
+  { metric: '150–200', label: 'Student startups', sub: 'Goal for a five-year horizon' },
+  { metric: '25–30', label: 'Scalable ventures a year', sub: 'Goal' },
+  { metric: 'Pipeline', label: 'KIIT TBI, Startup India and Startup Odisha', sub: 'Goal: a strong pipeline into each' },
+  { metric: 'Network', label: 'Industry collaboration and alumni founders', sub: 'Goal: deeper collaboration and a stronger alumni founder network' },
 ]
 
 export default function AboutPage() {
@@ -260,13 +262,13 @@ export default function AboutPage() {
       <Section className="border-b border-[var(--color-line)] bg-[var(--color-ink)] text-[var(--color-paper)] py-10 md:py-14">
         <div className="max-w-3xl">
           <p className="text-xs uppercase tracking-[0.2em] font-bold text-[var(--color-signal)]">
-            Target Metrics
+            Our five-year goals
           </p>
           <Heading as="h2" size="display" className="mt-2 text-white text-3xl md:text-4xl">
-            Expected 5-Year Horizon Outcomes
+            What we are working towards
           </Heading>
           <p className="mt-3 text-base text-[var(--color-paper)]/70 font-light">
-            Empirical targets benchmarked to position KIIT as a premier global hub for student innovation.
+            These are goals for a five-year horizon, not results achieved to date.
           </p>
         </div>
 

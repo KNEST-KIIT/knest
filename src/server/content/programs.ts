@@ -17,42 +17,28 @@ export type ProgramFilters = {
  * even though the local API would otherwise bypass access control by default.
  */
 
-const FALLBACK_PROGRAMS = [
-  { id: 1, title: 'Ignite Ideation Lab', slug: 'ignite-ideation', tagline: 'Brainstorming and sparking ideas.', stage: ['exploring'], applicationStatus: 'open', nextCohortStart: '2026-10-01T00:00:00.000Z', duration: '4 weeks' },
-  { id: 2, title: 'Validation Bootcamp', slug: 'validation-bootcamp', tagline: 'Architectural blueprints turning into a solid object.', stage: ['idea'], applicationStatus: 'closed', nextCohortStart: '2027-01-15T00:00:00.000Z', duration: '8 weeks' },
-  { id: 3, title: 'MVP Builders Program', slug: 'mvp-builders', tagline: 'Building and coding a glowing geometric structure.', stage: ['mvp'], applicationStatus: 'waitlist', nextCohortStart: '2026-11-01T00:00:00.000Z', duration: '12 weeks' },
-  { id: 4, title: 'Scale-Up Fellowship', slug: 'scale-up-fellowship', tagline: 'A massive, towering structure extending upwards.', stage: ['scaling'], applicationStatus: 'open', nextCohortStart: '2026-09-30T00:00:00.000Z', duration: '6 months' },
-]
-
+/** Empty means empty; failure throws (KN-01). No invented programs. */
 export async function listPrograms(filters: ProgramFilters = {}) {
-  try {
-    const payload = await getContentClient()
+  const payload = await getContentClient()
 
-    const where: Where = { and: [] }
-    const and = where.and as Where[]
-    if (filters.stage) and.push({ stage: { equals: filters.stage } })
-    if (filters.sector) and.push({ sectors: { equals: filters.sector } })
-    if (filters.audience) and.push({ audience: { equals: filters.audience } })
-    if (filters.format) and.push({ format: { equals: filters.format } })
-    if (filters.status) and.push({ applicationStatus: { equals: filters.status } })
+  const where: Where = { and: [] }
+  const and = where.and as Where[]
+  if (filters.stage) and.push({ stage: { equals: filters.stage } })
+  if (filters.sector) and.push({ sectors: { equals: filters.sector } })
+  if (filters.audience) and.push({ audience: { equals: filters.audience } })
+  if (filters.format) and.push({ format: { equals: filters.format } })
+  if (filters.status) and.push({ applicationStatus: { equals: filters.status } })
 
-    const result = await payload.find({
-      collection: 'programs',
-      where: and.length > 0 ? where : undefined,
-      depth: 1,
-      limit: 100,
-      sort: '-nextCohortStart',
-      overrideAccess: false,
-    })
+  const result = await payload.find({
+    collection: 'programs',
+    where: and.length > 0 ? where : undefined,
+    depth: 1,
+    limit: 100,
+    sort: '-nextCohortStart',
+    overrideAccess: false,
+  })
 
-    if (result?.docs && result.docs.length > 0) return result.docs
-  } catch (error) {
-    console.warn('Could not fetch programs from database/CMS, using fallback:', error)
-  }
-  
-  let fallback = FALLBACK_PROGRAMS as unknown as Program[]
-  if (filters.stage) fallback = fallback.filter(p => p.stage?.includes(filters.stage! as any))
-  return fallback
+  return result.docs
 }
 
 /** Programs a mentor is attached to — "programs you support" on the mentor dashboard (§4.1). */

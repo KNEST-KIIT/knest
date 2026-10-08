@@ -55,7 +55,7 @@ export function SignupForm({ googleEnabled }: { googleEnabled: boolean }) {
     <div>
       <div className="mb-8">
         <span className="inline-block text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--color-signal)] mb-2">
-          Founder Onboarding
+          Create your account
         </span>
         <h1 className="font-[family-name:var(--font-display)] text-3xl sm:text-4xl font-bold tracking-tight text-[var(--color-ink)]">
           Start your journey.
@@ -161,7 +161,7 @@ export function SignupForm({ googleEnabled }: { googleEnabled: boolean }) {
               Creating account…
             </span>
           ) : (
-            'Create Founder Account →'
+            'Create account →'
           )}
         </Button>
       </form>

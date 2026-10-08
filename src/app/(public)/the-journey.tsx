@@ -7,42 +7,52 @@ import { Heading } from '@/components/ui'
 import { STAGE_OPTIONS } from '@/payload/fields/taxonomy'
 import type { Program } from '@/payload/payload-types'
 
+/**
+ * What each stage *is*. Deliberately says nothing about what KNEST provides at a
+ * stage: the previous copy promised free credits, co-founder
+ * matching, monthly hackathons, customer introductions and investor
+ * introductions, none of which has been approved (KN-18). What KNEST
+ * actually offers at a stage is whatever programs the CMS holds for it.
+ */
 const STAGE_CONTENT = {
-  'exploring': {
+  exploring: {
     image: '/images/stage_01_exploring.jpg',
-    description: "You don't need a groundbreaking idea to start. This stage is about exposing yourself to new problems, finding people who share your intensity, and figuring out exactly what you want to dedicate your time to. KNEST provides the spaces, events, and community to spark that initial fire.",
-    noProgramCopy: "We run open mixer events, hackathons, and ideation workshops every month. No formal program required—just show up and start talking to people."
+    description: "You don't need an idea yet. This stage is about finding problems worth solving and people who care about them.",
   },
-  'idea': {
+  idea: {
     image: '/images/stage_02_idea.jpg',
-    description: "You have a hypothesis. Now you need to tear it apart. We provide the mentorship and frameworks to validate your concept before you write a single line of code. Stop guessing and start talking to users.",
-    noProgramCopy: "Leverage our mentor network and drop-in office hours to pressure-test your idea before committing to a structured cohort."
+    description: "You have an idea. Now the question is whether it's actually worth building.",
   },
-  'validation': {
+  validation: {
     image: '/images/stage_idea.jpg',
-    description: "The hardest part isn't building, it's building something people actually want. Get out of the building and test your prototypes against harsh reality. We provide the structure to ensure you aren't building in a vacuum.",
-    noProgramCopy: "Our validation frameworks and customer discovery workshops are available on-demand in the resource portal."
+    description: 'You have a hypothesis. This stage is about testing it against real people before you build more.',
   },
-  'mvp': {
+  mvp: {
     image: '/images/stage_mvp.jpg',
-    description: "Validation is over. It's time to build the first functioning version of your product. Access our maker spaces, cloud credits, and technical talent to actually ship your MVP and get it into users' hands.",
-    noProgramCopy: "Access our prototyping labs, developer credits, and technical co-founder matchmaking events to build your V1."
+    description: 'The idea is no longer hypothetical. You are building a first version, and it needs users, feedback and momentum.',
   },
-  'early_revenue': {
+  early_revenue: {
     image: '/images/hero_bg.jpg',
-    description: "Your product is live, and you are hunting for your first paying customers. We plug you into industry networks and go-to-market experts to close those critical early deals and prove your business model works.",
-    noProgramCopy: "Tap into our corporate partnerships and alumni network to find your first 10 paying customers."
+    description: 'The product is live and you are looking for your first paying customers.',
   },
-  'scaling': {
+  scaling: {
     image: '/images/stage_scaling.jpg',
-    description: "Your product has traction and users want more. We plug you into institutional capital, advanced growth strategies, and industry networks to turn your project into a massive, venture-backable company.",
-    noProgramCopy: "We facilitate private investor introductions and scaling strategy sessions for high-growth ventures."
-  }
+    description: "You've crossed the first line. Now the question is how far it can go.",
+  },
 }
+
+const NO_PROGRAMS_COPY = 'Programs for this stage are being built.'
+const PROGRAMS_UNAVAILABLE_COPY = 'Programs could not be loaded right now. Please try again shortly.'
 
 const VISIBLE_STAGES = STAGE_OPTIONS.slice(0, 6)
 
-export function TheJourney({ allPrograms }: { allPrograms: Program[] }) {
+export function TheJourney({
+  allPrograms,
+  programsUnavailable = false,
+}: {
+  allPrograms: Program[]
+  programsUnavailable?: boolean
+}) {
   const [activeIdx, setActiveIdx] = useState(0)
 
   const stagePrograms = VISIBLE_STAGES.map((stage) => ({
@@ -60,13 +70,13 @@ export function TheJourney({ allPrograms }: { allPrograms: Program[] }) {
         <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-white/10 pb-5 gap-6">
           <div>
             <p className="text-xs uppercase tracking-[0.25em] font-bold text-[var(--color-signal)]">
-              Stage-Gated Architecture
+              Six stages
             </p>
             <Heading as="h2" size="display" className="mt-2 tracking-tight text-[var(--color-paper)] text-3xl md:text-5xl font-bold">
               The Trajectory
             </Heading>
             <p className="mt-3 text-base md:text-lg font-light text-[var(--color-paper)]/70 max-w-2xl">
-              Nobody builds a scalable venture in one leap. Here is the exact path, and the infrastructure we deploy at every single stage.
+              Nobody goes from idea to company in one leap. Here is the path, and the programs KNEST runs for each stage.
             </p>
           </div>
 
@@ -161,10 +171,10 @@ export function TheJourney({ allPrograms }: { allPrograms: Program[] }) {
                   {current.content.description}
                 </p>
 
-                {/* Deployable Infrastructure */}
+                {/* Programs for this stage */}
                 <div className="mt-8 border-t border-white/10 pt-6">
                   <p className="text-xs uppercase tracking-[0.2em] font-bold text-[var(--color-signal)] mb-4">
-                    Deployable Infrastructure
+                    Programs for this stage
                   </p>
 
                   {current.programs.length > 0 ? (
@@ -187,7 +197,7 @@ export function TheJourney({ allPrograms }: { allPrograms: Program[] }) {
                   ) : (
                     <div className="border-l-2 border-[var(--color-signal)] bg-white/[0.02] p-4">
                       <p className="text-xs md:text-sm text-[var(--color-paper)]/80 font-light leading-relaxed">
-                        {current.content.noProgramCopy}
+                        {programsUnavailable ? PROGRAMS_UNAVAILABLE_COPY : NO_PROGRAMS_COPY}
                       </p>
                     </div>
                   )}

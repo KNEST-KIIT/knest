@@ -22,38 +22,23 @@ function byAvailability(a: Mentor, b: Mentor): number {
  * mentor is still returned (never hidden), just ranked last, matching the
  * collection's own "honest over hiding" design intent.
  */
-const FALLBACK_MENTORS = [
-  { id: 1, name: 'Sarah Chen', slug: 'sarah-chen', title: 'VP Product', organization: 'Scale AI', expertise: ['product', 'gtm'], availability: 'limited' },
-  { id: 2, name: 'Rajiv Menon', slug: 'rajiv-menon', title: 'Managing Partner', organization: 'Indic Capital', expertise: ['fundraising'], availability: 'unavailable' },
-  { id: 3, name: 'Dr. Alok Verma', slug: 'alok-verma', title: 'Chief Scientist', organization: 'DeepTech Labs', expertise: ['technology', 'industry'], availability: 'open' },
-]
-
+/** Empty means empty; failure throws (KN-01). No invented mentors. */
 export async function listMentors(filters: MentorFilters = {}) {
-  try {
-    const payload = await getContentClient()
+  const payload = await getContentClient()
 
-    const where: Where = { and: [] }
-    const and = where.and as Where[]
-    if (filters.expertise) and.push({ expertise: { equals: filters.expertise } })
+  const where: Where = { and: [] }
+  const and = where.and as Where[]
+  if (filters.expertise) and.push({ expertise: { equals: filters.expertise } })
 
-    const result = await payload.find({
-      collection: 'mentors',
-      where: and.length > 0 ? where : undefined,
-      depth: 1,
-      limit: 100,
-      overrideAccess: false,
-    })
+  const result = await payload.find({
+    collection: 'mentors',
+    where: and.length > 0 ? where : undefined,
+    depth: 1,
+    limit: 100,
+    overrideAccess: false,
+  })
 
-    if (result?.docs && result.docs.length > 0) {
-      return [...result.docs].sort(byAvailability)
-    }
-  } catch (error) {
-    console.warn('Could not fetch mentors, using fallback:', error)
-  }
-  
-  let fallback = FALLBACK_MENTORS as unknown as Mentor[]
-  if (filters.expertise) fallback = fallback.filter(m => m.expertise?.includes(filters.expertise! as any))
-  return fallback.sort(byAvailability)
+  return [...result.docs].sort(byAvailability)
 }
 
 /**

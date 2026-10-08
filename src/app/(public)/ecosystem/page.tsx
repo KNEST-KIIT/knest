@@ -10,91 +10,76 @@ export const metadata: Metadata = {
   description: 'How KNEST works — the triple helix framework, spaces, and partners behind it.',
 }
 
+// The six dimensions of the framework, in the words of the official brochure
+// (CONTENT_SPEC section 0). Nothing here is added to what the brochure states.
 const ECOSYSTEM_DIMENSIONS = [
-  {
-    title: 'Academic Excellence',
-    points: ['Rigorous experiential teaching', 'Applied research commercialization', 'Cross-school student capstones'],
-  },
-  {
-    title: 'Innovation Framework',
-    points: ['Design thinking methodologies', 'Disciplined problem solving', 'Interdisciplinary collaboration'],
-  },
-  {
-    title: 'Entrepreneurship',
-    points: ['Dedicated founder mentorship', 'Startup development clinics', 'Go-to-market execution support'],
-  },
-  {
-    title: 'Capital & Funding',
-    points: ['Government proof-of-concept grants', 'CSR innovation funding', 'Angel syndicates and seed VCs'],
-  },
-  {
-    title: 'Commercialization',
-    points: ['Intellectual property (IPR) filing', 'University technology transfer', 'Industry co-development licensing'],
-  },
-  {
-    title: 'Societal Impact',
-    points: ['High-value job creation', 'Sustainable deep-tech solutions', 'Regional economic transformation'],
-  },
+  { title: 'Academic Excellence', points: ['Teaching', 'Research', 'Projects'] },
+  { title: 'Innovation', points: ['Design thinking', 'Problem solving', 'Interdisciplinary learning'] },
+  { title: 'Entrepreneurship', points: ['Mentorship', 'Startup support', 'Business development'] },
+  { title: 'Funding', points: ['Government', 'CSR', 'Investors'] },
+  { title: 'Commercialization', points: ['IPR', 'Technology transfer', 'Industry'] },
+  { title: 'Societal Impact', points: ['Jobs through startups', 'Technology', 'Sustainable development'] },
 ]
 
 const INFRASTRUCTURE_SPEC = [
   {
     title: 'Flexible Co-Working Space',
     metric: '10,000–15,000 sq. ft.',
-    desc: 'High-density flexible co-working environment designed on modern collaborative work principles.',
+    desc: 'A flexible co-working environment, designed on modern co-working principles.',
     tag: 'Co-working',
   },
   {
     title: 'Modular Startup Studios',
     metric: 'Agile Layouts',
-    desc: 'Bespoke studios for founder mentoring sessions, design sprints, workshops, investor interactions, and peer review.',
+    desc: 'Modular studios for mentoring sessions, design sprints, workshops, investor interactions, and peer reviews.',
     tag: 'Studios',
   },
   {
     title: 'Collaboration Zones',
     metric: 'Informal Hubs',
-    desc: 'Community spaces, informal interaction lounges, and breakout zones engineered for spontaneous collision.',
+    desc: 'Community and informal interaction spaces, such as discussion lounges and breakout areas.',
     tag: 'Community',
   },
   {
-    title: 'Maker Labs & Hardware Prototyping',
+    title: 'Maker Labs',
     metric: 'Rapid Fab',
-    desc: 'Heavy fabrication machinery, electronics testing benches, and digital prototyping equipment for physical products.',
+    desc: 'Maker labs for fabrication tools, hardware testing spaces, and digital prototyping infrastructure.',
     tag: 'Maker Space',
   },
   {
     title: 'Digital Content Studio',
     metric: 'Media Production',
-    desc: 'A dedicated studio and media creation facility for high-fidelity product demonstrations and virtual investor rooms.',
+    desc: 'A digital studio and content creation space for product demonstrations and virtual investor interactions.',
     tag: 'Media',
   },
   {
     title: 'Founder Cabins & Focus Rooms',
     metric: 'High-Concentration',
-    desc: 'Private focus rooms and acoustic founder cabins for confidential IP discussions and deep analytical work.',
+    desc: 'Focus rooms and founder cabins to enable confidential discussions and high-concentration tasks.',
     tag: 'Private',
   },
   {
     title: 'Pre-Incubation Space',
     metric: 'Stage Zero',
-    desc: 'Dedicated validation space with integrated mentorship access, IPR facilitation, and early funding linkages.',
+    desc: 'Dedicated pre-incubation and incubation spaces, mentorship access, IPR facilitation, and funding linkages.',
     tag: 'Incubation',
   },
   {
     title: 'Integrated Startup Management System',
     metric: 'Digital Backbone',
-    desc: 'Centralized digital platform connecting all founders with high-speed connectivity, secure servers, and cloud resources.',
+    desc: 'Integrated startup management systems, including digital platforms with high-speed connectivity and secure IT infrastructure.',
     tag: 'Software',
   },
 ]
 
+// The brochure's "synergy" labels, each as something alumni contribute.
 const SYNERGY_POINTS = [
-  { label: 'Real Problems', desc: 'Direct access to actual operational pain points from industry and alumni ventures.' },
-  { label: 'Market Gaps', desc: 'Unfiltered intelligence on customer demand and unserved commercial niches.' },
-  { label: 'Hands-On Mentoring', desc: 'Practical guidance from founders who have walked the same path.' },
-  { label: 'Handholding & Clinics', desc: 'Tactical assistance with incorporation, legal agreements, and early hires.' },
-  { label: 'Founder Stories', desc: 'Authentic playbooks detailing near-death experiences and tactical breakthroughs.' },
-  { label: 'A Sounding Board', desc: 'A safe, high-trust circle to test hypotheses before pitching to external capital.' },
+  { label: 'Real Problems', desc: 'Alumni bring real problems from their work.' },
+  { label: 'Market Gaps that Matter', desc: 'Alumni point to the gaps in the market that matter.' },
+  { label: 'Handholding', desc: 'Alumni help founders through the early steps.' },
+  { label: 'Mentoring', desc: 'Alumni mentor student founders.' },
+  { label: 'Sharing their Story', desc: 'Alumni share their own stories.' },
+  { label: 'A Sounding Board', desc: 'Alumni act as a sounding board for new ideas.' },
 ]
 
 const SPACE_TYPE_LABELS: Record<string, string> = {
@@ -196,13 +181,13 @@ export default async function EcosystemPage() {
       <Section id="infrastructure" className="border-b border-[var(--color-line)] bg-white py-10 md:py-14 scroll-mt-24">
         <div className="max-w-3xl">
           <p className="text-xs uppercase tracking-[0.2em] font-bold text-[var(--color-signal)]">
-            World-Class Facilities
+            Infrastructure
           </p>
           <Heading as="h2" size="display" className="mt-2 text-3xl md:text-4xl text-[var(--color-ink)]">
             Infrastructure &amp; Maker Spaces
           </Heading>
           <p className="mt-4 text-base text-[var(--color-ink-soft)] font-light leading-relaxed">
-            Over 15,000 sq. ft. of purpose-built environments designed to take ideas from raw napkin sketches to deployed physical and digital prototypes.
+            The spaces and facilities described in KNEST’s official brochure.
           </p>
         </div>
 
@@ -300,32 +285,19 @@ export default async function EcosystemPage() {
             Corporate &amp; Institutional Partners
           </Heading>
           <p className="mt-4 text-base text-[var(--color-ink-soft)] font-light">
-            KNEST collaborates with industry leaders, state agencies, and institutional investors to extend founder reach.
+            Confirmed partners are listed here as they are agreed.
           </p>
         </div>
 
         {partners.length === 0 ? (
           <div className="mt-8 border border-[var(--color-line)] bg-white p-8">
             <h3 className="font-[family-name:var(--font-display)] text-xl font-bold text-[var(--color-ink)]">
-              Partnerships Active &amp; Forming
+              Partners will be listed here
             </h3>
             <p className="mt-2 text-sm text-[var(--color-ink-soft)] leading-relaxed">
-              KNEST continuously establishes strategic linkages with industry leaders, state initiatives (Startup Odisha, Startup India), and venture syndicates.
+              KNEST works towards a pipeline into KIIT TBI, Startup India and Startup Odisha, and towards access to
+              policy platforms such as NEN. Confirmed partnerships will appear here once they are in place.
             </p>
-            <div className="mt-6 flex flex-wrap gap-4">
-              <span className="border border-[var(--color-line)] bg-[var(--color-paper)] px-4 py-2 text-xs font-bold uppercase tracking-wider text-[var(--color-ink)]">
-                Startup Odisha
-              </span>
-              <span className="border border-[var(--color-line)] bg-[var(--color-paper)] px-4 py-2 text-xs font-bold uppercase tracking-wider text-[var(--color-ink)]">
-                Startup India
-              </span>
-              <span className="border border-[var(--color-line)] bg-[var(--color-paper)] px-4 py-2 text-xs font-bold uppercase tracking-wider text-[var(--color-ink)]">
-                KIIT Technology Business Incubator (TBI)
-              </span>
-              <span className="border border-[var(--color-line)] bg-[var(--color-paper)] px-4 py-2 text-xs font-bold uppercase tracking-wider text-[var(--color-ink)]">
-                National Entrepreneurship Network (NEN)
-              </span>
-            </div>
           </div>
         ) : (
           <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">

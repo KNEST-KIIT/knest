@@ -10,21 +10,21 @@ const PILLARS = {
     scope: 'INSTITUTIONAL LEADERSHIP',
     title: 'KIIT Deemed to be University',
     shortLabel: 'KIIT University',
-    role: 'Academic excellence, university governance, accreditation backing, and strategic policy direction.',
+    role: 'Policy and infrastructure.',
   },
   schools: {
     num: '02',
     scope: 'ACADEMIC FACULTIES',
     title: 'Schools of KIIT',
     shortLabel: 'Schools of KIIT',
-    role: 'Interdisciplinary talent, research centers, specialized hardware labs, and founder discovery across disciplines.',
+    role: 'Innovation and research.',
   },
   partners: {
     num: '03',
     scope: 'INDUSTRY & ECOSYSTEM',
     title: 'Alumni & Corporate Partners',
     shortLabel: 'Corporate Partners',
-    role: 'Market validation, corporate co-development, seed capital linkages, and operator-grade founder mentorship.',
+    role: 'Market access and capital.',
   },
 } as const
 

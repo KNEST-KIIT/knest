@@ -9,7 +9,7 @@ import { Hero } from './hero'
 import { JourneySelector } from './journey-selector'
 import { TheJourney } from './the-journey'
 import { BuiltWithKnest } from './built-with-knest'
-import { ExecutionFlow } from './execution-flow'
+import { Narrative } from './narrative'
 
 export const metadata: Metadata = {
   title: 'KNEST — What if you actually built it?',
@@ -23,11 +23,23 @@ const OFFER_ITEMS = [
   { label: 'Space', body: 'Labs, studios and desks. Somewhere to build that isn’t your hostel room.', href: '/ecosystem#infrastructure' },
   { label: 'Industry', body: 'Introductions to companies, customers and partners you couldn’t reach alone.', href: '/ecosystem#partners' },
   { label: 'Community', body: 'Other people building things. This turns out to matter more than anyone expects.', href: '/about' },
-  { label: 'Capital', body: 'Direct grants, cloud credits, and introductions to seed investors when you scale.', href: '/invest' },
 ]
 
 export default async function HomePage() {
-  const [homepage, user, allPrograms] = await Promise.all([getHomepage(), getSessionUser(), listPrograms({}), track('landing_view')])
+  const [homepage, user, programsResult] = await Promise.all([
+    getHomepage(),
+    getSessionUser(),
+    // The front door must survive a CMS outage, and say so honestly: the journey
+    // section shows "unavailable", never an empty or invented programs list.
+    listPrograms({}).then(
+      (programs) => ({ programs, unavailable: false as const }),
+      (error) => {
+        console.error('Homepage: could not load programs', error)
+        return { programs: [], unavailable: true as const }
+      },
+    ),
+    track('landing_view'),
+  ])
   const sections = enabledSections(homepage)
 
   return (
@@ -38,7 +50,7 @@ export default async function HomePage() {
             return <Hero key={key} homepage={homepage} />
 
           case 'problem':
-            return <ExecutionFlow key={key} homepage={homepage} />
+            return <Narrative key={key} homepage={homepage} />
 
           case 'person':
             return null
@@ -54,7 +66,7 @@ export default async function HomePage() {
             )
 
           case 'journey':
-            return <TheJourney key={key} allPrograms={allPrograms} />
+            return <TheJourney key={key} allPrograms={programsResult.programs} programsUnavailable={programsResult.unavailable} />
 
           case 'offer':
             return (
@@ -63,18 +75,13 @@ export default async function HomePage() {
                   <div>
                     <Reveal delay={0.1}>
                       <p className="text-xs uppercase tracking-[0.25em] font-bold text-[var(--color-signal)] mb-3">
-                        The KNEST Guarantee
+                        What KNEST offers
                       </p>
                     </Reveal>
-                    <RevealHeading size="display" className="tracking-tight text-4xl md:text-5xl font-bold text-[var(--color-ink)] leading-[1.1]">
+                    <RevealHeading as="h2" size="display" className="tracking-tight text-4xl md:text-5xl font-bold text-[var(--color-ink)] leading-[1.1]">
                       What KNEST actually gives you.
                     </RevealHeading>
                   </div>
-                  <Reveal delay={0.3}>
-                    <p className="text-xs font-mono uppercase tracking-wider text-[var(--color-ink-muted)] mt-4 md:mt-0">
-                      6 Core Operational Linkages
-                    </p>
-                  </Reveal>
                 </div>
                 
                 <div className="border border-[var(--color-line)] bg-white/80 divide-y divide-[var(--color-line)] shadow-[0_4px_24px_rgba(13,19,33,0.02)] backdrop-blur-sm">

@@ -14,65 +14,48 @@ export type EventFilters = {
  * through this layer regardless of what calls it.
  */
 
+/** Empty means empty; failure throws (KN-01 / KN-21). No invented events. */
 export async function listEvents(filters: EventFilters = {}) {
-  try {
-    const payload = await getContentClient()
+  const payload = await getContentClient()
 
-    const where: Where = { and: [] }
-    const and = where.and as Where[]
-    if (filters.eventType) and.push({ eventType: { equals: filters.eventType } })
-    if (filters.format) and.push({ format: { equals: filters.format } })
-    if (filters.stage) and.push({ relevantStages: { equals: filters.stage } })
+  const where: Where = { and: [] }
+  const and = where.and as Where[]
+  if (filters.eventType) and.push({ eventType: { equals: filters.eventType } })
+  if (filters.format) and.push({ format: { equals: filters.format } })
+  if (filters.stage) and.push({ relevantStages: { equals: filters.stage } })
 
-    const result = await payload.find({
-      collection: 'events',
-      where: and.length > 0 ? where : undefined,
-      depth: 1,
-      limit: 100,
-      sort: 'startsAt',
-      overrideAccess: false,
-    })
+  const result = await payload.find({
+    collection: 'events',
+    where: and.length > 0 ? where : undefined,
+    depth: 1,
+    limit: 100,
+    sort: 'startsAt',
+    overrideAccess: false,
+  })
 
-    return result?.docs || []
-  } catch (error) {
-    console.warn('Could not fetch events:', error)
-    return []
-  }
+  return result.docs
 }
 
-const FALLBACK_EVENTS = [
-  { id: 1, title: 'Winter 2026 Demo Day', slug: 'winter-2026-demo-day', eventType: 'demo_day', summary: 'Top 10 student ventures pitch to early-stage investors.', startsAt: new Date(Date.now() + 86400000 * 14).toISOString(), format: 'in_person' },
-  { id: 2, title: 'Founders Mixer', slug: 'founders-mixer', eventType: 'mixer', summary: 'Casual meetup for all KNEST founders.', startsAt: new Date(Date.now() + 86400000 * 5).toISOString(), format: 'in_person' },
-]
-
+/** Empty means empty; failure throws (KN-01). The "upcoming" list used to substitute two invented events. */
 export async function listUpcomingEvents(filters: EventFilters = {}) {
-  try {
-    const payload = await getContentClient()
+  const payload = await getContentClient()
 
-    const where: Where = { and: [{ startsAt: { greater_than: new Date().toISOString() } }] }
-    const and = where.and as Where[]
-    if (filters.eventType) and.push({ eventType: { equals: filters.eventType } })
-    if (filters.format) and.push({ format: { equals: filters.format } })
-    if (filters.stage) and.push({ relevantStages: { equals: filters.stage } })
+  const where: Where = { and: [{ startsAt: { greater_than: new Date().toISOString() } }] }
+  const and = where.and as Where[]
+  if (filters.eventType) and.push({ eventType: { equals: filters.eventType } })
+  if (filters.format) and.push({ format: { equals: filters.format } })
+  if (filters.stage) and.push({ relevantStages: { equals: filters.stage } })
 
-    const result = await payload.find({
-      collection: 'events',
-      where,
-      depth: 1,
-      limit: 100,
-      sort: 'startsAt',
-      overrideAccess: false,
-    })
+  const result = await payload.find({
+    collection: 'events',
+    where,
+    depth: 1,
+    limit: 100,
+    sort: 'startsAt',
+    overrideAccess: false,
+  })
 
-    if (result?.docs && result.docs.length > 0) return result.docs
-  } catch (error) {
-    console.warn('Could not fetch upcoming events, using fallback:', error)
-  }
-  
-  let fallback = FALLBACK_EVENTS as unknown as Event[]
-  if (filters.eventType) fallback = fallback.filter(e => e.eventType === filters.eventType)
-  if (filters.format) fallback = fallback.filter(e => e.format === filters.format)
-  return fallback
+  return result.docs
 }
 
 export async function getEventById(id: number): Promise<Event | null> {

@@ -41,7 +41,7 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
     <div>
       <div className="mb-8">
         <span className="inline-block text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-signal)] mb-2">
-          Founder Portal
+          Your KNEST account
         </span>
         <h1 className="font-[family-name:var(--font-display)] text-3xl sm:text-4xl font-bold tracking-tight text-[var(--color-ink)]">
           Welcome back.

@@ -22,6 +22,12 @@ describe('getSessionUser (KN-09: no development bypass)', () => {
     })
   }
 
+  it("lets Next's dynamic-render signal through instead of treating it as a signed-out user", async () => {
+    const signal = Object.assign(new Error('Dynamic server usage'), { digest: 'DYNAMIC_SERVER_USAGE' })
+    authMock.mockRejectedValue(signal)
+    await expect(getSessionUser()).rejects.toBe(signal)
+  })
+
   it('returns the session user when auth() succeeds', async () => {
     authMock.mockResolvedValue({ user: { id: 'u1', email: 'a@b.c' } })
     expect(await getSessionUser()).toEqual({ id: 'u1', email: 'a@b.c' })

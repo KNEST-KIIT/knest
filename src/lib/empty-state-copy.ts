@@ -37,3 +37,8 @@ export function searchEmpty(query: string) {
     body: 'Try a shorter phrase, or browse programs, events and resources.',
   }
 }
+
+export const ARTICLES_EMPTY = {
+  heading: 'Nothing published yet.',
+  body: 'Stories and playbooks from KNEST founders will appear here as they are written.',
+}

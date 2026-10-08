@@ -56,13 +56,8 @@ export function SiteFooter() {
             </Link>
 
             <p className="mt-6 max-w-[40ch] text-base text-[var(--color-paper)]/90 font-normal leading-relaxed">
-              KIIT&rsquo;s university-wide innovation and entrepreneurship ecosystem. Providing the infrastructure, capital, and network for builders at every stage.
+              KNEST &mdash; KIIT&rsquo;s innovation and entrepreneurship ecosystem. KIIT University, Bhubaneswar, Odisha.
             </p>
-
-            <div className="mt-6 inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full border border-white/25 bg-white/10 backdrop-blur-md">
-              <div className="w-2 h-2 rounded-full bg-[var(--color-signal)] animate-pulse" />
-              <span className="text-xs font-semibold text-white tracking-wide">Campus Labs are Open</span>
-            </div>
           </div>
 
           {/* Links Columns (Spans 7 cols on lg) */}

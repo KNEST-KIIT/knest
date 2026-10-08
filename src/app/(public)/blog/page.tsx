@@ -1,13 +1,18 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { Heading, LinkCard, Section, Tag } from '@/components/ui'
+import { EmptyState, Heading, LinkCard, Section, Tag } from '@/components/ui'
 import { PageHeader } from '@/components/layout/page-header'
 import { listArticles } from '@/server/content/articles'
+import { ARTICLES_EMPTY } from '@/lib/empty-state-copy'
 
 export const metadata: Metadata = {
   title: 'Blog',
   description: 'Dispatches, playbooks, and founder stories from the KNEST innovation ecosystem at KIIT.',
 }
+
+// Reads the CMS on every request. Without this the page was prerendered at build
+// time, freezing whatever the CMS held (or, previously, invented) at that moment.
+export const dynamic = 'force-dynamic'
 
 export default async function BlogPage() {
   const articles = await listArticles(12)
@@ -21,6 +26,9 @@ export default async function BlogPage() {
       />
 
       <Section>
+        {articles.length === 0 ? (
+          <EmptyState {...ARTICLES_EMPTY} />
+        ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {articles.map((article: any) => (
             <LinkCard
@@ -65,6 +73,7 @@ export default async function BlogPage() {
             </LinkCard>
           ))}
         </div>
+        )}
       </Section>
     </>
   )
