@@ -6,6 +6,7 @@ import { motion } from 'framer-motion'
 import { EXPERTISE_OPTIONS, SECTOR_OPTIONS } from '@/payload/fields/taxonomy'
 import { Field, Heading, Input, MultiSelect, SingleSelect, Textarea } from '@/components/ui'
 import type { JourneyStage, PlatformRole } from '@/server/auth/roles'
+import { completionDestination } from '@/server/onboarding/destination'
 import { recommend } from '@/server/onboarding/recommend'
 import { GOALS, JOURNEY_STAGES, MENTOR_AVAILABILITY, PLATFORM_ROLES } from '@/server/onboarding/validation'
 import { StepShell } from './step-shell'
@@ -64,6 +65,8 @@ type Answers = {
 type Props = {
   initial: Answers
   stagePrefill: JourneyStage | null
+  /** Validated same-origin path the person was heading to; null if none. */
+  next: string | null
 }
 
 async function postStep(step: string, data?: unknown): Promise<{ ok: boolean; error?: string }> {
@@ -78,7 +81,7 @@ async function postStep(step: string, data?: unknown): Promise<{ ok: boolean; er
   // a generic "something went wrong" would hide that their answers past this
   // point were never saved.
   if (res.status === 401) {
-    window.location.href = '/login?next=%2Fonboarding'
+    window.location.href = `/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`
     return { ok: false, error: 'Your session expired. Redirecting to log in…' }
   }
 
@@ -93,7 +96,7 @@ async function postStep(step: string, data?: unknown): Promise<{ ok: boolean; er
  * The step list is recomputed from the current role on every render, so
  * changing the answer to step 1 immediately reshapes what follows.
  */
-export function OnboardingFlow({ initial, stagePrefill }: Props) {
+export function OnboardingFlow({ initial, stagePrefill, next }: Props) {
   const router = useRouter()
   const [index, setIndex] = useState(0)
   const [answers, setAnswers] = useState<Answers>(initial)
@@ -374,8 +377,16 @@ export function OnboardingFlow({ initial, stagePrefill }: Props) {
               disabled={pending}
               onClick={async () => {
                 setPending(true)
-                await postStep('complete')
-                router.push('/dashboard')
+                setError(null)
+                const done = await postStep('complete')
+                if (!done.ok) {
+                  // Never navigate on failure: /dashboard would bounce back to step 1
+                  // with no explanation (the old behaviour, KN-14).
+                  setPending(false)
+                  setError(done.error ?? 'We could not finish setting up your account. Try again.')
+                  return
+                }
+                router.push(completionDestination(next, result.path, answers.journeyStage))
                 router.refresh()
               }}
               className="group relative inline-flex w-full sm:w-auto items-center justify-center overflow-hidden rounded-full bg-[var(--color-ink)] px-8 py-4 font-medium text-white transition-all hover:scale-105 hover:bg-[var(--color-signal)] disabled:opacity-50"
@@ -383,6 +394,11 @@ export function OnboardingFlow({ initial, stagePrefill }: Props) {
               <span className="relative z-10">{pending ? 'Creating your workspace…' : result.cta}</span>
               <div className="absolute inset-0 -z-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
             </button>
+            {error && (
+              <p role="alert" className="mt-4 text-[length:var(--text-small)] text-[var(--color-critical)]">
+                {error}
+              </p>
+            )}
           </div>
         </div>
 

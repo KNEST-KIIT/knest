@@ -5,6 +5,7 @@ import { db } from '@/db/client'
 import { users } from '@/db/schema'
 import { requireUser } from '@/server/auth/guards'
 import type { JourneyStage } from '@/server/auth/roles'
+import { onboardingReturnPath, onboardingUrl } from '@/server/onboarding/destination'
 import { JOURNEY_STAGES } from '@/server/onboarding/validation'
 import { OnboardingFlow } from './onboarding-flow'
 
@@ -13,14 +14,16 @@ export const metadata: Metadata = { title: 'Your KNEST path' }
 export default async function OnboardingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ stage?: string }>
+  searchParams: Promise<{ stage?: string; next?: string }>
 }) {
-  const { stage } = await searchParams
+  const { stage, next: rawNext } = await searchParams
+  // Where the person was heading before being asked to sign up (e.g. an application).
+  const next = onboardingReturnPath(rawNext)
   const stagePrefill = JOURNEY_STAGES.includes(stage as JourneyStage) ? (stage as JourneyStage) : null
 
   // A stage-carrying return path here is what lets the homepage journey
   // selector's choice survive a login detour intact, not just a signup one.
-  const sessionUser = await requireUser(stagePrefill ? `/onboarding?stage=${stagePrefill}` : '/onboarding')
+  const sessionUser = await requireUser(onboardingUrl({ stage: stagePrefill, next }))
 
   // Onboarding is re-openable to change answers even after completion — the
   // "Not quite right? Change your answers." link relies on that — so this
@@ -31,6 +34,7 @@ export default async function OnboardingPage({
   return (
     <OnboardingFlow
       stagePrefill={stagePrefill}
+      next={next}
       initial={{
         platformRole: user.platformRole,
         goals: user.goals,

@@ -1,24 +1,12 @@
 import { EmptyState, Heading, LinkCard } from '@/components/ui'
 import { formatEventTime } from '@/lib/dates'
 import { RESOURCES_EMPTY } from '@/lib/empty-state-copy'
+import { pathHref } from '@/server/onboarding/destination'
 import { recommend } from '@/server/onboarding/recommend'
 import { listRecommendedEvents } from '@/server/content/events'
 import { listRecommendedResources } from '@/server/content/resources'
 import type { SessionUser } from '@/server/auth/guards'
 import { NextStepCard } from './next-step-card'
-
-/** Where each recommended path actually sends someone — recommend() itself only carries the label. */
-function pathHref(path: string, stage: string | null): string {
-  const stageParam = stage ? `?stage=${stage}` : ''
-  switch (path) {
-    case 'EXPLORE':
-      return '/events'
-    case 'CONNECT':
-      return '/about#contact'
-    default:
-      return `/programs${stageParam}`
-  }
-}
 
 export async function StudentDashboard({ user }: { user: SessionUser }) {
   const result = recommend(user.platformRole, user.journeyStage)
