@@ -1,0 +1,41 @@
+import coreWebVitals from 'eslint-config-next/core-web-vitals'
+import typescript from 'eslint-config-next/typescript'
+
+/**
+ * ESLint 9 flat config (KN-20). The previous .eslintrc.json crashed ESLint 8
+ * with "Converting circular structure to JSON", so lint had never run in CI-like
+ * conditions. The design-kit folders (scripts, taste, tokens, ...) are
+ * documentation and tooling for agents, not application code, so they are not
+ * linted here.
+ */
+export default [
+  {
+    ignores: [
+      '.next/**',
+      'node_modules/**',
+      'coverage/**',
+      'next-env.d.ts',
+      'src/payload/payload-types.ts',
+      'src/app/(payload)/admin/importMap.js',
+      // design kit / agent material, not application code
+      'accessibility/**',
+      'components/**',
+      'content/**',
+      'design-systems/**',
+      'frameworks/**',
+      'scripts/**',
+      'taste/**',
+      'tokens/**',
+      'workflows/**',
+      '.agents/**',
+      '.claude/**',
+    ],
+  },
+  ...coreWebVitals,
+  ...typescript,
+  {
+    // Seed scripts feed loosely-typed fixtures into Payload's generated types.
+    files: ['src/db/seed*.ts'],
+    rules: { '@typescript-eslint/no-explicit-any': 'off' },
+  },
+]

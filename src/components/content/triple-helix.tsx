@@ -253,7 +253,7 @@ export function TripleHelix() {
                   <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-0 h-0 border-x-[8px] border-x-transparent border-b-[8px] border-b-[var(--color-signal)]" />
 
                   <span className="font-mono text-[10px] font-bold text-[var(--color-signal)] uppercase tracking-widest">
-                    {PILLARS.university.num} // {PILLARS.university.scope}
+                    {PILLARS.university.num} {'//'} {PILLARS.university.scope}
                   </span>
                   <h5 className="mt-1.5 font-[family-name:var(--font-display)] text-lg sm:text-xl font-bold text-[var(--color-ink)]">
                     {PILLARS.university.title}
@@ -292,7 +292,7 @@ export function TripleHelix() {
                   <div className="absolute -bottom-2 right-12 w-0 h-0 border-x-[8px] border-x-transparent border-t-[8px] border-t-[var(--color-signal)]" />
 
                   <span className="font-mono text-[10px] font-bold text-[var(--color-signal)] uppercase tracking-widest">
-                    {PILLARS.schools.num} // {PILLARS.schools.scope}
+                    {PILLARS.schools.num} {'//'} {PILLARS.schools.scope}
                   </span>
                   <h5 className="mt-1.5 font-[family-name:var(--font-display)] text-lg sm:text-xl font-bold text-[var(--color-ink)]">
                     {PILLARS.schools.title}
@@ -348,7 +348,7 @@ export function TripleHelix() {
                   <div className="absolute -bottom-2 left-12 w-0 h-0 border-x-[8px] border-x-transparent border-t-[8px] border-t-[var(--color-signal)]" />
 
                   <span className="font-mono text-[10px] font-bold text-[var(--color-signal)] uppercase tracking-widest">
-                    {PILLARS.partners.num} // {PILLARS.partners.scope}
+                    {PILLARS.partners.num} {'//'} {PILLARS.partners.scope}
                   </span>
                   <h5 className="mt-1.5 font-[family-name:var(--font-display)] text-lg sm:text-xl font-bold text-[var(--color-ink)]">
                     {PILLARS.partners.title}

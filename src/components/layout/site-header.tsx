@@ -31,6 +31,9 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
+  // Close the mobile drawer when the route changes. Resetting UI state on
+  // navigation is the point of this effect, so the rule is waived here only.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setOpen(false), [pathname])
 
   // While the mobile panel is open it is the only thing on screen, so the page

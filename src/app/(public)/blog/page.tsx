@@ -30,7 +30,7 @@ export default async function BlogPage() {
           <EmptyState {...ARTICLES_EMPTY} />
         ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {articles.map((article: any) => (
+          {articles.map((article) => (
             <LinkCard
               key={article.id || article.slug}
               href={`/resources`}
@@ -38,14 +38,7 @@ export default async function BlogPage() {
               className="flex flex-col justify-between"
             >
               <div>
-                <div className="flex items-center justify-between gap-2">
-                  <Tag tone="signal">{article.category || 'Article'}</Tag>
-                  {article.readTime && (
-                    <span className="font-mono text-xs text-[var(--color-ink-muted)]">
-                      {article.readTime}
-                    </span>
-                  )}
-                </div>
+                <Tag tone="signal">Article</Tag>
 
                 <Heading as="h2" size="heading" className="mt-4 leading-snug">
                   {article.title}

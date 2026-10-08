@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/set-state-in-effect --
+   Interim lab-booking UI: gated off by FEATURE_LAB_BOOKING and replaced wholesale by
+   the contracted rebuild (LB-01..LB-12). Not worth reworking before it is deleted. */
 'use client'
 
 import { useState, useEffect } from 'react'

@@ -23,7 +23,7 @@ export function RevealHeading({
   const lines = children.split('\n')
 
   return (
-    <Heading as={as as any} size={size as any} className={className}>
+    <Heading as={as} size={size} className={className}>
       <span ref={ref} className="block">
         {lines.map((line, i) => (
           <span key={i} className="block overflow-hidden">

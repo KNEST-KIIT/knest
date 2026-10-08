@@ -231,7 +231,7 @@ export function TheJourney({
                 className="w-full h-full object-cover grayscale contrast-110 hover:grayscale-0 transition-all duration-700 ease-out"
               />
               <div className="absolute bottom-4 left-4 z-20 bg-black/80 px-3 py-1 text-[11px] font-mono uppercase tracking-widest text-[var(--color-paper)]/80 border border-white/10 backdrop-blur-sm">
-                Stage 0{activeIdx + 1} // {current.stage.label}
+                Stage 0{activeIdx + 1} {'//'} {current.stage.label}
               </div>
             </div>
           </motion.div>
