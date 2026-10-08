@@ -86,5 +86,12 @@ export default buildConfig({
     pool: { connectionString: process.env.DATABASE_URL },
     // Payload keeps entirely to `cms`; `app` is Drizzle's (spec §32).
     schemaName: 'cms',
+    // The cms schema is created by committed migrations (src/migrations), in every
+    // environment, run by `pnpm migrate`. Payload's development-mode auto-push is
+    // off: it never ran in production, so a production database could not be
+    // created at all (KN-04), and an interactive push cannot run in CI.
+    // After changing a collection:  pnpm payload migrate:create <name>
+    push: false,
+    migrationDir: path.resolve(dirname, '../migrations'),
   }),
 })
