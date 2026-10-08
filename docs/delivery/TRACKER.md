@@ -2,42 +2,51 @@
 
 System of record for the R1-approved blueprint. Status vocabulary: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `IMPLEMENTED`, `VERIFIED`, `DEFERRED`.
 
-**IMPLEMENTED is not VERIFIED.** A task is VERIFIED only when every closing check named for it in the blueprint (Part I / Part J) has passed and its evidence is in `EVIDENCE/`. Where the closing check needs a database, staging or a live environment that does not exist yet, the task stays IMPLEMENTED.
+**IMPLEMENTED is not VERIFIED.** A task is VERIFIED only when every closing check named for it has passed and the evidence is in `EVIDENCE/`. "Verified" here means **verified locally**: on an ephemeral PostgreSQL 16, against the production build, in a real browser. It does not mean verified on staging or in production; neither exists. Per-task evidence and what each check does not cover: `EVIDENCE/phase1-verification-matrix.md`.
 
-Branch: `delivery/p1-containment` (from `00181d4`). Nothing is pushed, deployed or merged.
+Branch: `delivery/p1-containment` (from `00181d4`). Nothing is pushed, deployed or merged. The CI workflow has never run on GitHub.
 
 ## Phase 0
 
-| Task | Status | Commit / evidence | Notes |
+| Task | Status | Evidence | Notes |
 |---|---|---|---|
-| D-00 live-exposure check | VERIFIED | `EVIDENCE/D-00-live-exposure.md` | A Vercel deployment is live at `knest-kiit.vercel.app`. Payload fails to initialise there (HTTP 500), so KN-02 was not exploitable at probe time. The fabricated `/blog` content is publicly served. **Owner action pending**: see the report. |
+| D-00 live-exposure check | VERIFIED | `EVIDENCE/live-deployment-2026-10-08.md` | A Vercel deployment is live; Payload and Auth.js are failing on it; invented content is public; no PII retrievable. Owner action pending. |
 | D-01 tracker | IMPLEMENTED | this directory | |
 | D-05 donor-branch map | IMPLEMENTED | `DONOR-MAP.md` | |
-| D-06 contract traceability | IMPLEMENTED | `CONTRACT-TRACEABILITY.md` | Baseline status of all 53 modules, as at `00181d4`. |
+| D-06 contract traceability | IMPLEMENTED | `CONTRACT-TRACEABILITY.md` | Contract status is UNVERIFIED until the document KIIT holds is supplied. |
 
-## Phase 1 (C-01 ... C-08)
+## Phase 1
 
-| Task | Status | Commit | Closing evidence | What is still unproven |
+| Task | Status | Commits | Closing evidence | Not covered |
 |---|---|---|---|---|
-| C-03 lab-bookings lock + flag | IMPLEMENTED | `e95cef5` | Access policy tests for all 16 collections (mutation-checked: restoring `read: () => true` fails 2 tests); flag tests | Anonymous REST denial against a real Payload + DB (no DB available) |
-| C-04 dev auth bypass removed | VERIFIED | `80fd8ad`, `35bf0ca` | `guards.test.ts`: null on `auth()` failure in development, production and test; Next control-flow errors re-thrown | |
-| C-05 seed safety | IMPLEMENTED | `80fd8ad` | 13 policy tests; four seed scripts executed under unsafe settings and each refused (`phase1-gate-report` section 3) | "Existing admin hash unchanged after reseed" needs a database |
-| C-08 redirect / timing / analytics | IMPLEMENTED | `9b53040` | `safeNext` table (18 malicious inputs), dummy hash shape + work test, allow-list + route tests (forged `application_accepted` rejected) | Timing measured on the real login path; limiter against a real DB |
-| C-06 dependency upgrades | IMPLEMENTED | `899a65f` | `pnpm audit --prod` 4C/21H/23M/7L -> 0C/1H/1M/0L (`EVIDENCE/audit-after.md`); build, typecheck, tests pass | Golden-path E2E after the upgrade (needs staging); one high (no patch exists) accepted |
-| C-07 media + unlock hardening | IMPLEMENTED | `afb0887` | Role-matrix and mime-type tests | Behaviour through the Payload admin UI |
-| C-02 honesty containment | IMPLEMENTED | `35bf0ca` | 38 content-layer tests; repository-wide gate (failed on the real offenders before the fix); production smoke test with no DB shows no fabricated content | Visual check of every list page against an empty CMS (needs a DB); HD-04 sign-off of the remaining copy |
-| C-01 lint harness | VERIFIED | `a1ff0b9` | `pnpm lint`: 0 errors, 28 warnings; `pnpm check` exit 0 | |
+| C-01 lint harness | VERIFIED | `a1ff0b9` | `pnpm lint` 0 errors; CI-order pipeline passes | |
+| C-02 honesty containment | VERIFIED (technical) | `35bf0ca` | Empty CMS served by the production build shows each honest empty state; 11 pages scanned for 20 invented strings; repository gate; 38 content-layer tests | **HD-04 copy sign-off** (institutional); screenshots/visual review |
+| C-03 lab-bookings lock | VERIFIED | `e95cef5` | Real REST + real rows: anonymous and 5 staff roles + student refused, super_admin/lab_admin allowed; hidden fields not probeable by filter; **mutation test: the original code leaks the e-mail** | The live deployment is unchanged |
+| C-04 dev auth bypass | VERIFIED | `80fd8ad`, `35bf0ca` | Guard tests in 3 environments | |
+| C-05 seed safety | VERIFIED | `80fd8ad` | Against a real DB: default password allowed locally only; existing admin hash unchanged on re-run; reset only with the opt-in; production refused; staff-edited homepage copy preserved | |
+| C-06 dependency upgrades | IMPLEMENTED | `899a65f` | Audit 0C, 1H + 1M both ignored by id; build; admin UI loads for 3 roles; sharp resize; nodemailer over SMTP; sign-up -> verify -> apply -> submit -> review -> audit -> notification | **Document upload** (needs S3, F-06); real SMTP/SES; interactive admin editing; staging |
+| C-07 media + unlock | VERIFIED | `afb0887` | REST upload by every role; SVG/HTML/XML refused; non-content roles cannot patch or delete; unlock refused | |
+| C-08 redirect / timing / analytics | VERIFIED | `9b53040` | Real-browser redirect tests (mutation test: original follows `//evil`); timing within 0.6x-1.7x of a known account; forged events never stored; flood dropped | **KN-22c open**: the limiter's key is spoofable (documented `it.fails`) |
 
-## Standing gates and additional requirements (owner message 2026-10-08)
+## Next-batch items (done on this branch; authorised in the 2026-10-08 message)
 
-| Item | Status | Where |
-|---|---|---|
-| A. Verify the commercial documents KIIT received | **BLOCKED on the owner**: Drive had no match, Gmail needs re-authentication. The committed PDFs are described in `CONTRACT-TRACEABILITY.md`. Contract delivery status stays UNVERIFIED. | HD-21 |
-| B. S-1 stays a separate gate; EC2 memory incl. overlapping containers | Specified, **not started, not authorised** | `S-1-SPEC.md` |
-| C. QR / offline threat model validated before building attendance | Draft written; **LB-07, LB-08, LB-10 are BLOCKED** until its validation steps are done | `LAB-ATTENDANCE-THREAT-MODEL.md` |
-| D. Pilot-A (applications) and Pilot-B (labs) stay separate | Unchanged. Pilot-A depends on P2, P3A, P4a, P5-core, P7-A. Pilot-B additionally depends on P3B, HD-16 and the threat-model sign-off. Neither can start before its own staging gate. | blueprint R1 section 5 |
-| E. No claim of "secure/complete/production-ready" from passing repository tests | Applied: statuses above say IMPLEMENTED, not VERIFIED, wherever a DB, staging or live environment is needed | this file |
+| Item | Status | Commits | Notes |
+|---|---|---|---|
+| CI foundation | IMPLEMENTED | `858a8e7` | Workflow valid YAML; its commands pass locally in the same order; **has not run on GitHub** (needs a push). |
+| Integration harness | VERIFIED | `0ba85a7` | Ephemeral PG16, migrate-from-zero, production build, stub SMTP, real browser |
+| KN-04 migrations | IMPLEMENTED | `e604737`, `0a0e187` | Payload baseline + Drizzle `lab_admin`; migrate-from-zero and re-run verified locally; drift check in the suite. **Upgrade rehearsal on a populated DB not done.** |
+| NF-04 / NF-11 `lab_admin` | VERIFIED | `0a0e187` | |
+| KN-14 return path | VERIFIED | `d58d0af` | Real browser |
+| KN-15 Google button | VERIFIED (disabled state) | `d58d0af` | The enabled state needs real Google credentials and is untested |
+| KN-31 submit validation / KN-13 submit race | VERIFIED (these two parts) | `a18121a` | Draft-on-view and the other races remain open |
+| NF-08 not-found / global-error | IMPLEMENTED | `0b90153` | 404 verified; `global-error` is not exercised by any test |
 
-## Gate verdict
+## Standing gates
 
-See `EVIDENCE/phase1-gate-report.md`.
+| Item | Status |
+|---|---|
+| A. Commercial document KIIT received | **BLOCKED on the owner** (Gmail needs re-authentication; supply the document) |
+| B. S-1 hosting/memory gate | Specified (`S-1-SPEC.md`); not started; not authorised |
+| C. QR / offline threat model | Draft (`LAB-ATTENDANCE-THREAT-MODEL.md`); LB-07, LB-08, LB-10 blocked until validated |
+| D. Pilot-A (applications) and Pilot-B (labs) | Separate. Pilot-A needs P2, P3A, P4a, P5-core, P7-A; Pilot-B additionally P3B, HD-16 and the threat-model sign-off |
+| E. Tests do not equal "secure / complete / production-ready" | Applied: see "Not covered" column |
