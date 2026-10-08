@@ -31,6 +31,10 @@ export const Staff: CollectionConfig = {
     create: () => false,
     update: () => false,
     delete: () => false,
+    // GHSA-jg8r-5jh2-v2xj: Payload's default account-unlock access lets any
+    // authenticated user reset other accounts' lockouts, and no patched release
+    // exists. Lockout is not used here (local login is disabled), so deny it.
+    unlock: () => false,
     admin: ({ req }) => isStaff(staffRoleOf(req.user)),
   },
   fields: [

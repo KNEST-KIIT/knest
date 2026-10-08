@@ -111,3 +111,35 @@ describe('metrics.source (NF-02)', () => {
     expect(await f.access!.read!(staff('content_admin'))).toBe(true)
   })
 })
+
+describe('media (NF-03 / KN-22j)', () => {
+  const create = Media.access!.create as (a: Args) => unknown
+  const update = Media.access!.update as (a: Args) => unknown
+
+  it('only the content area may create or replace media', async () => {
+    for (const fn of [create, update]) {
+      expect(await fn(anon)).toBe(false)
+      for (const r of ['reviewer', 'program_manager', 'startup_manager', 'mentor_manager', 'lab_admin'] as StaffRole[]) {
+        expect(await fn(staff(r))).toBe(false)
+      }
+      expect(await fn(staff('content_admin'))).toBe(true)
+      expect(await fn(staff('super_admin'))).toBe(true)
+    }
+  })
+
+  it('does not accept SVG or XML uploads', () => {
+    const upload = Media.upload as { mimeTypes?: string[] }
+    expect(upload.mimeTypes).toBeDefined()
+    expect(upload.mimeTypes!.some((m) => m.includes('svg') || m.includes('xml'))).toBe(false)
+    expect(upload.mimeTypes).toEqual(expect.arrayContaining(['image/jpeg', 'image/png', 'image/webp']))
+  })
+})
+
+describe('staff mirror (GHSA-jg8r-5jh2-v2xj)', () => {
+  it('denies the unlock operation to everyone', async () => {
+    const unlock = (Staff.access as { unlock?: (a: Args) => unknown }).unlock
+    expect(typeof unlock).toBe('function')
+    expect(await unlock!(anon)).toBe(false)
+    expect(await unlock!(staff('super_admin'))).toBe(false)
+  })
+})
