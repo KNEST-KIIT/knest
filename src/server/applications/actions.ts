@@ -11,7 +11,7 @@ import { generateStorageKey, putFile } from '@/server/storage'
 import { enforceRateLimit, RATE_LIMITS } from '@/server/security/rate-limit'
 import { verifyFileContents } from '@/server/security/file-verify'
 import { getApplicationProgram, getApplicationProgramBySlug, getProgramTitlesByIds } from './program-questions'
-import { ALLOWED_UPLOAD_MIME_TYPES, MAX_UPLOAD_BYTES, schemaForQuestion } from './validation'
+import { ALLOWED_UPLOAD_MIME_TYPES, findSubmissionProblem, MAX_UPLOAD_BYTES, schemaForQuestion } from './validation'
 
 export type ActionResult = { ok: true } | { ok: false; error: string; code?: string }
 
@@ -217,17 +217,14 @@ export async function submitApplication(applicationId: string): Promise<ActionRe
     db.query.applicationAnswers.findMany({ where: eq(applicationAnswers.applicationId, applicationId) }),
     db.query.applicationDocuments.findMany({ where: eq(applicationDocuments.applicationId, applicationId) }),
   ])
-  const answeredIds = new Set(answers.map((a) => a.questionId))
-  const documentedIds = new Set(documents.map((d) => d.questionId))
 
-  for (const question of program.questions) {
-    if (question.required === false) continue
-    const answered =
-      question.fieldType === 'file' ? documentedIds.has(question.id) : answeredIds.has(question.id)
-    if (!answered) {
-      return { ok: false, error: `“${question.label}” still needs an answer.` }
-    }
-  }
+  // Re-validate what is stored against the program's current questions (KN-31).
+  const problem = findSubmissionProblem(
+    program.questions,
+    answers.map((a) => ({ questionId: a.questionId, value: a.value })),
+    documents.map((d) => d.questionId),
+  )
+  if (problem) return { ok: false, error: problem.message }
 
   // Status update and the notification's DB write commit together
   // (PHASE-7-9-RETROSPECTIVE.md §1) — a crash between the two previously
@@ -246,14 +243,22 @@ export async function submitApplication(applicationId: string): Promise<ActionRe
     email: { subject, text },
   }
 
-  await db.transaction(async (tx) => {
-    await tx
+  // The status change is conditional on the row still being a draft, so two
+  // simultaneous submits cannot both succeed: exactly one updates a row and
+  // writes the notification; the other is told it was already submitted. (The
+  // earlier read-then-write let both through and sent two confirmations.)
+  const submitted = await db.transaction(async (tx) => {
+    const updated = await tx
       .update(applications)
       .set({ status: 'submitted', submittedAt: new Date(), updatedAt: new Date() })
-      .where(eq(applications.id, applicationId))
+      .where(and(eq(applications.id, applicationId), eq(applications.status, 'draft')))
+      .returning({ id: applications.id })
+    if (updated.length === 0) return false
 
     await writeNotification(tx, notifyInput)
+    return true
   })
+  if (!submitted) return { ok: false, error: 'This application has already been submitted.' }
 
   await sendNotificationEmail(sessionUser.id, notifyInput.email)
   await track('application_submit', { applicationId, programId: program.id })

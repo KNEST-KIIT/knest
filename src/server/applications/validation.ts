@@ -46,3 +46,48 @@ export const ALLOWED_UPLOAD_MIME_TYPES = [
 ]
 
 export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+
+export type SubmissionProblem = { questionId: string; label: string; message: string }
+
+/**
+ * Whether a draft is fit to submit, judged against the program's CURRENT question
+ * set (KN-31). Submit used to check only that an answer row existed, so an answer
+ * saved against an older question set (an option since removed, a tighter length
+ * limit) was accepted. Stored values are re-validated with the same schema that
+ * guards saving. Answers whose question no longer exists are ignored.
+ *
+ * Returns the first problem, in question order, or null.
+ */
+export function findSubmissionProblem(
+  questions: ApplicationQuestion[],
+  answers: { questionId: string; value: unknown }[],
+  documentQuestionIds: Iterable<string>,
+): SubmissionProblem | null {
+  const answerByQuestion = new Map(answers.map((a) => [a.questionId, a.value]))
+  const documented = new Set(documentQuestionIds)
+
+  for (const question of questions) {
+    const required = question.required !== false
+
+    if (question.fieldType === 'file') {
+      if (required && !documented.has(question.id)) {
+        return { questionId: question.id, label: question.label, message: `“${question.label}” still needs an answer.` }
+      }
+      continue
+    }
+
+    if (!answerByQuestion.has(question.id)) {
+      if (required) {
+        return { questionId: question.id, label: question.label, message: `“${question.label}” still needs an answer.` }
+      }
+      continue
+    }
+
+    const parsed = schemaForQuestion(question).safeParse(answerByQuestion.get(question.id))
+    if (!parsed.success) {
+      const why = parsed.error.issues[0]?.message ?? 'Check your answer.'
+      return { questionId: question.id, label: question.label, message: `“${question.label}” needs another look: ${why}` }
+    }
+  }
+  return null
+}
