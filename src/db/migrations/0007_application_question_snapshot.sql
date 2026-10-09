@@ -1,0 +1,1 @@
+ALTER TABLE "app"."applications" ADD COLUMN "question_snapshot" jsonb;

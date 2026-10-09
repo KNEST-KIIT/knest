@@ -50,6 +50,13 @@
       "when": 1791465050402,
       "tag": "0006_lab_admin_role",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791523205505,
+      "tag": "0007_application_question_snapshot",
+      "breakpoints": true
     }
   ]
 }

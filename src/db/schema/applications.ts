@@ -1,7 +1,8 @@
 import { relations } from 'drizzle-orm'
-import { index, integer, jsonb, pgTable, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core'
+import { index, integer, jsonb, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core'
 import { applicationStatus, appSchema } from './enums'
 import { users } from './users'
+import type { ApplicationQuestion } from '@/server/applications/types'
 
 /**
  * An application to one program. programId is a Payload document id, stored
@@ -26,6 +27,13 @@ export const applications = appSchema.table(
     decisionAt: timestamp('decision_at', { mode: 'date', withTimezone: true }),
     /** Staff-facing only — never surfaced to the applicant. */
     decisionNote: text('decision_note'),
+    /**
+     * The program's questions exactly as the applicant saw them when they
+     * submitted. Answers are keyed by question id, so without this a program
+     * edited or deleted afterwards leaves review unable to say what was asked
+     * (R-04). Null on drafts and on applications submitted before this column.
+     */
+    questionSnapshot: jsonb('question_snapshot').$type<ApplicationQuestion[]>(),
     createdAt: timestamp('created_at', { mode: 'date', withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { mode: 'date', withTimezone: true }).notNull().defaultNow(),
   },

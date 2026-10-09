@@ -281,7 +281,7 @@ export async function submitApplication(applicationId: string): Promise<ActionRe
 
     await tx
       .update(applications)
-      .set({ status: 'submitted', submittedAt: new Date(), updatedAt: new Date() })
+      .set({ status: 'submitted', submittedAt: new Date(), updatedAt: new Date(), questionSnapshot: program.questions })
       .where(eq(applications.id, applicationId))
 
     await writeNotification(tx, notifyInput)
@@ -321,5 +321,9 @@ export async function getOwnedApplicationDetail(applicationId: string, userId: s
     db.query.applicationDocuments.findMany({ where: eq(applicationDocuments.applicationId, applicationId) }),
   ])
 
-  return { application, program, answers, documents }
+  // After submission the applicant sees the questions they actually answered.
+  const asSubmitted =
+    application.questionSnapshot && program ? { ...program, questions: application.questionSnapshot } : program
+
+  return { application, program: asSubmitted, answers, documents }
 }

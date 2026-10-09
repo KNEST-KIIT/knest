@@ -1,4 +1,7 @@
-import type { CollectionConfig } from 'payload'
+import { count, eq } from 'drizzle-orm'
+import { APIError, type CollectionConfig } from 'payload'
+import { db } from '@/db/client'
+import { applications } from '@/db/schema'
 import { canWrite, readPublished } from '../access'
 import {
   AUDIENCE_OPTIONS,
@@ -32,6 +35,27 @@ export const Programs: CollectionConfig = {
     create: canWrite('programs'),
     update: canWrite('programs'),
     delete: canWrite('programs'),
+  },
+  hooks: {
+    // Applications reference a program by id with no foreign key (the cms and
+    // app schemas stay independent), so the database cannot stop a delete that
+    // would orphan them. This does (R-04). Unpublish instead.
+    beforeDelete: [
+      async ({ id }) => {
+        const [row] = await db
+          .select({ value: count() })
+          .from(applications)
+          .where(eq(applications.programId, Number(id)))
+        if ((row?.value ?? 0) > 0) {
+          throw new APIError(
+            `This program has ${row!.value} application(s) and cannot be deleted. Unpublish it instead.`,
+            409,
+            undefined,
+            true,
+          )
+        }
+      },
+    ],
   },
   fields: [
     { name: 'title', type: 'text', required: true },

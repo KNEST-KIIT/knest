@@ -54,7 +54,20 @@ export async function getApplicationForReview(applicationId: string) {
     db.query.applicationDocuments.findMany({ where: eq(applicationDocuments.applicationId, applicationId) }),
   ])
 
-  return { application, applicant: application.user, program, answers, documents }
+  // Review shows what the applicant was actually asked: the questions frozen at
+  // submit, not whatever the program says today (or nothing, if it was deleted).
+  const asSubmitted = application.questionSnapshot
+    ? {
+        id: application.programId,
+        title: program?.title ?? 'Program no longer available',
+        slug: program?.slug ?? '',
+        applicationStatus: program?.applicationStatus ?? ('closed' as const),
+        applicationDeadline: program?.applicationDeadline ?? null,
+        questions: application.questionSnapshot,
+      }
+    : program
+
+  return { application, applicant: application.user, program: asSubmitted, answers, documents }
 }
 
 /**

@@ -233,3 +233,82 @@ describe('a program that goes away (R-04)', () => {
     expect((await post(`/api/admin/applications/${appId}/status`, staffA, { status: 'under_review' })).status).toBe(200)
   })
 })
+
+describe('questions frozen at submit, and programs that applications depend on (R-04)', () => {
+  const makeProgram = async (tag: string, label: string) => {
+    const payload = await payloadClient()
+    const doc = await payload.create({
+      collection: 'programs',
+      data: {
+        title: `Snapshot ${tag}`,
+        slug: `conc-snap-${tag}-${stamp}`,
+        tagline: 'Created by the concurrency suite',
+        whoItsFor: richText('Anyone'),
+        stage: ['idea'],
+        applicationStatus: 'open',
+        applicationQuestions: [{ label, fieldType: 'text', required: true, maxLength: 100 }],
+        _status: 'published',
+      } as never,
+      overrideAccess: true,
+    })
+    const full = await payload.findByID({ collection: 'programs', id: doc.id, depth: 0, overrideAccess: true })
+    return { payload, id: doc.id as number, slug: `conc-snap-${tag}-${stamp}`, qid: (full as { applicationQuestions: { id: string }[] }).applicationQuestions[0]!.id }
+  }
+
+  it('shows reviewers the questions the applicant answered, even after the program is edited', async () => {
+    const { payload, id, slug, qid } = await makeProgram('edit', 'Original wording of the question')
+    const mail = email('snap-edit')
+    await createUser({ email: mail, platformRole: 'student' })
+    const me = (await login(mail))!
+    const applicationId = (await (await post('/api/applications/start', me, { programSlug: slug })).json()).applicationId as string
+    expect((await post(`/api/applications/${applicationId}/answer`, me, { questionId: qid, value: 'my answer' })).status).toBe(200)
+    expect((await post(`/api/applications/${applicationId}/submit`, me)).status).toBe(200)
+
+    const stored = (await db().query('select question_snapshot from app.applications where id = $1', [applicationId])).rows[0].question_snapshot
+    expect(stored).toHaveLength(1)
+    expect(stored[0].label).toBe('Original wording of the question')
+
+    const doc = (await payload.findByID({ collection: 'programs', id, depth: 0, overrideAccess: true })) as { applicationQuestions: { id: string }[] }
+    await payload.update({
+      collection: 'programs',
+      id,
+      data: { applicationQuestions: [{ id: doc.applicationQuestions[0]!.id, label: 'Completely different question', fieldType: 'text', required: true }] } as never,
+      overrideAccess: true,
+    })
+    const page = await (await get(`/admin/applications/${applicationId}`, staffA)).text()
+    expect(page).toContain('Original wording of the question')
+    expect(page).not.toContain('Completely different question')
+  })
+
+  it('refuses to delete a program that has applications, and allows it when there are none', async () => {
+    const used = await makeProgram('used', 'Q')
+    const unused = await makeProgram('unused', 'Q')
+    await createUser({ email: email('snap-del'), platformRole: 'student' })
+    const userId = (await db().query('select id from app.users where email = $1', [email('snap-del')])).rows[0].id as string
+    await db().query("insert into app.applications (id, user_id, program_id, status) values (gen_random_uuid()::text, $1, $2, 'draft')", [userId, used.id])
+
+    await expect(used.payload.delete({ collection: 'programs', id: used.id, overrideAccess: true })).rejects.toThrow(/cannot be deleted/i)
+    const still = await used.payload.findByID({ collection: 'programs', id: used.id, depth: 0, overrideAccess: true })
+    expect(still.id).toBe(used.id)
+    await unused.payload.delete({ collection: 'programs', id: unused.id, overrideAccess: true })
+    await expect(unused.payload.findByID({ collection: 'programs', id: unused.id, depth: 0, overrideAccess: true })).rejects.toThrow()
+  })
+
+  it('still shows a submitted application whose program row is gone, from its snapshot', async () => {
+    const userId = await createUser({ email: email('snap-gone'), platformRole: 'student' })
+    const missingProgramId = 987000000 + (stamp % 1000)
+    const snapshot = [{ id: 'q1', label: 'A question from a removed program', fieldType: 'text', required: true }]
+    const applicationId = (
+      await db().query(
+        `insert into app.applications (id, user_id, program_id, status, submitted_at, question_snapshot)
+         values (gen_random_uuid()::text, $1, $2, 'submitted', now(), $3::jsonb) returning id`,
+        [userId, missingProgramId, JSON.stringify(snapshot)],
+      )
+    ).rows[0].id as string
+    await db().query(`insert into app.application_answers (id, application_id, question_id, value) values (gen_random_uuid()::text, $1, 'q1', '"kept"'::jsonb)`, [applicationId])
+
+    const res = await get(`/admin/applications/${applicationId}`, staffA)
+    expect(res.status).toBe(200)
+    expect(await res.text()).toContain('A question from a removed program')
+  })
+})
