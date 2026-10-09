@@ -9,13 +9,13 @@
 | # | Module | Status | Notes |
 |---|---|---|---|
 | 1 | Project foundation | DONE | Next 16, strict TypeScript, lint, typecheck, unit, integration, secret scan, image build in CI. |
-| 2 | Data architecture (two schemas) | PARTIAL | Everything operational is in `app` **except lab bookings**, which still sit in the CMS. Moves with the lab build. |
-| 3 | Migrations and seeds | DONE | Drizzle 0000-0009, Payload baseline + media; migrate-from-zero and drift checks; seeds refuse production. |
+| 2 | Data architecture (two schemas) | DONE | Everything operational is in `app`, lab bookings included; the CMS lab-bookings collection is retired by a Payload migration. |
+| 3 | Migrations and seeds | DONE | Drizzle 0000-0010, Payload baseline, media and lab-bookings drop; migrate-from-zero and drift checks; seeds refuse production. |
 | 4 | Design system and token pipeline | PARTIAL | Tokens in CSS; "pipeline" wording is ambiguous (HD-22). Hardcode lint to add. |
-| 5 | Component library and shell | PARTIAL | Primitives and pagination exist; accessibility audit (axe, keyboard) not yet run across them. |
+| 5 | Component library and shell | DONE (automated) | axe-core pass over every public, member and staff screen at desktop and phone width; skip link, labels, focus ring, reduced motion checked. Manual screen-reader review is separate work. |
 | 6 | Authentication and sessions | DONE | Revocable DB sessions, deactivation ends sessions, role changes revoke, Turnstile, rate limits, hashed tokens. Google sign-in guarded when not configured. |
 | 7 | Account lifecycle | DONE | Verification and reset: hashed single-use tokens, atomic consume, e-mail via SES path (stub-tested). |
-| 8 | Roles and authorisation | PARTIAL | Staff roles and areas tested for every role; **lab head / assistant scoping arrives with the lab build.** |
+| 8 | Roles and authorisation | DONE | Staff roles and areas tested for every role; lab head, assistant and administrator scoping tested, including that nothing of a lab console is sent to anyone else. |
 | 9 | Account screens | PARTIAL | Six screens exist; network-failure behaviour to be proven in the browser pass. |
 
 ## Content and public site
@@ -39,7 +39,7 @@
 | 21 | Application engine | DONE | Question snapshot at submit; program delete guard. |
 | 22 | Lifecycle and review states | DONE | Locked writes, conditional transitions, server validation, audit rows. |
 | 23 | Member dashboard and events | DONE | Capacity under parallel load, past events refused, confirmation sent once. |
-| 24 | Notification centre | PARTIAL | Applications and events done; **booking notifications arrive with the lab build.** |
+| 24 | Notification centre | DONE | Applications, events and bookings (requested, decided, alternative proposed, cancelled). |
 | 33 | Application review console | DONE | Queue with search, filters, paging; detail; decisions; audit trail viewer; enquiries inbox; members screen; overview. |
 | 34 | Document handling | DONE (local) | Real multipart upload, type sniffing, size limit at the byte, access control; S3 stub-tested. Real S3 is proven in S-1. |
 | 35 | Analytics dashboard | PARTIAL | Funnel counts exist; reconcile against table-derived figures and add a test. |
@@ -48,15 +48,15 @@
 
 | # | Module | Status | Notes |
 |---|---|---|---|
-| 25 to 29 | Lab registry, slot engine, request flow, head console, assistant roster | TODO (design done) | `LAB-BOOKING-DESIGN.md`. Behind a flag, policy as settings, **not enabled until HD-16**. |
-| 32 | Utilisation reporting | TODO | With the lab build, from the tables. |
+| 25 to 29 | Lab registry, slot engine, request flow, head console, assistant roster | DONE (local, behind flag) | `LAB-BOOKING-DESIGN.md`. Exclusion constraint proven by a 20-way race. **Not enabled anywhere real until HD-16.** |
+| 32 | Utilisation reporting | DONE | Per lab and per department from the tables, CSV export with formula neutralisation. |
 | 30, 31, 36, 37, 38 | Signed QR pass, two-sided scan, PWA, offline sync, camera scanning | GATED | Threat-model review, real-device tests and lab-head review first. Manual attendance is built instead and labelled as such. |
 
 ## Security, operations, hosting
 
 | # | Module | Status | Notes |
 |---|---|---|---|
-| 39 | Cloudflare Turnstile | DONE | Sign-up, sign-in, reset, application submit, contact; booking request joins with the lab build. |
+| 39 | Cloudflare Turnstile | DONE | Sign-up, sign-in, reset, application submit, contact; lab booking request included. |
 | 40 | Rate limiting | DONE | Every sensitive endpoint, database-backed; client address from CloudFront in production. |
 | 41 | Browser hardening | PARTIAL | CSP, frame, sniffing, referrer, no-store set by the app; HSTS is set at CloudFront (IAC). |
 | 42 | Upload safety | DONE | No script-capable types; verified by content. |
@@ -67,15 +67,15 @@
 
 | # | Module | Status | Notes |
 |---|---|---|---|
-| 50 | Accessibility | TODO | Automated axe pass over every public, member and staff screen; fix findings; keyboard and reduced-motion checks. |
-| 51 | Automated tests | PARTIAL | 318 unit and about 170 integration tests; real-browser journeys for student and staff still to add; booking flows with the lab build. |
+| 50 | Accessibility | PARTIAL | Automated: 0 serious or critical axe findings across all screens at two widths; no sideways scroll at 375px; fixes made (contrast on dark sections, keyboard access to report tables, reduced motion for animations, wrapping). **Still to do: manual screen-reader and keyboard walk-through by a person.** |
+| 51 | Automated tests | PARTIAL | 349 unit and 274 integration tests (plus one documented expected failure) on the production build with real PostgreSQL; real-browser journeys for student and staff still to add. |
 | 52 | Performance and search visibility | PARTIAL | Sitemap, robots, noindex-until-launch done; image pipeline, social cards and a Lighthouse budget to add. |
 | 53 | Documentation, training, handover | TODO | Architecture, content-editing guide, lab operations guide, staff walkthrough. |
 
 ## Order of remaining local work
 
-1. Lab booking core (modules 2, 8, 24, 25 to 29, 32, 39 for bookings), behind the flag.
-2. Accessibility pass (50) with fixes; browser journeys for student and staff (51).
+1. Real-browser journeys for student, staff and lab booking (51).
+2. Manual accessibility walk-through (50).
 3. Analytics reconciliation (35); homepage counters from real tables (14); images and social cards (52); audit coverage for CMS actions (43).
 4. Handover documentation (53).
 5. A final full run on a clean database, recorded as evidence.
