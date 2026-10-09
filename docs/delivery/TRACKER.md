@@ -4,7 +4,7 @@ System of record for the R1-approved blueprint. Status vocabulary: `NOT_STARTED`
 
 **IMPLEMENTED is not VERIFIED.** A task is VERIFIED only when every closing check named for it has passed and the evidence is in `EVIDENCE/`. "Verified" here means **verified locally**: on an ephemeral PostgreSQL 16, against the production build, in a real browser. It does not mean verified on staging or in production; neither exists. Per-task evidence and what each check does not cover: `EVIDENCE/phase1-verification-matrix.md`.
 
-Branch: `delivery/p1-containment` (from `00181d4`). Nothing is pushed, deployed or merged. The CI workflow has never run on GitHub.
+Branch: `delivery/p1-containment` (from `00181d4`), pushed to GitHub (feature branch only; Vercel shows it as a protected Preview). Production runs only the maintenance page (`src/proxy.ts`, default branch `aa725f4`); the fixed build is **not released**. CI is green on GitHub for `b222521` and `3ce052c` (see `EVIDENCE/ci-runs.md`; `753028e` pending).
 
 ## Phase 0
 
@@ -39,6 +39,8 @@ Branch: `delivery/p1-containment` (from `00181d4`). Nothing is pushed, deployed 
 | KN-14 return path | VERIFIED | `d58d0af` | Real browser |
 | KN-15 Google button | VERIFIED (disabled state) | `d58d0af` | The enabled state needs real Google credentials and is untested |
 | KN-10 / R-03 deactivation and role-change revocation | VERIFIED (local) | `e95cd4d` | Real cookies against the production build; 8 integration tests + 4 unit tests. No console UI yet. |
+| R-04 program lookup / question snapshot / delete guard | VERIFIED (local) | `3ce052c`, `753028e` | Missing or unpublished program no longer 500s; migration 0007 (nullable `question_snapshot`); review shows the frozen questions after a program is edited; Payload refuses deleting a program with applications. Tests in `tests/integration/26-concurrency.test.ts`. Not covered: upgrade rehearsal of 0007 on a populated database. |
+| R-05 races: answers/uploads vs submit, review transitions, event capacity | VERIFIED (local) | `3ce052c` | Parallel requests against the production build; **mutation check: with the pre-fix source restored, 6 of the 7 tests fail** (the 7th, same-person idempotency, passed before too). Not covered: registration confirmation notification; document upload needs the S3 stub. |
 | KN-31 submit validation / KN-13 submit race | VERIFIED (these two parts) | `a18121a` | Draft-on-view and the other races remain open |
 | NF-08 not-found / global-error | IMPLEMENTED | `0b90153` | 404 verified; `global-error` is not exercised by any test |
 
