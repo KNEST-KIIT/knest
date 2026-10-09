@@ -1,0 +1,139 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  KNEST delivery pipeline resources: a private ECR repository with immutable tags and
+  scan-on-push, the GitHub OIDC identity provider, and two short-lived-credential
+  roles for GitHub Actions: one that may only push images to this repository, one
+  that may only run the deploy document on this environment's host. No long-lived
+  AWS key exists anywhere. DEPLOY IN ap-south-1. STATUS: written, not deployed, not
+  validated by CloudFormation. Trust is limited to this repository AND a GitHub
+  Environment of the same name as the AWS environment, so a workflow can assume a
+  role only from a job that GitHub has attached to that Environment; for production
+  the GitHub Environment carries required reviewers.
+
+Parameters:
+  Environment:
+    Type: String
+    AllowedValues: [s1, production]
+  GitHubRepository:
+    Type: String
+    Default: KNEST-KIIT/knest
+    AllowedPattern: '^[A-Za-z0-9._-]+/[A-Za-z0-9._-]+$'
+  CreateOidcProvider:
+    Type: String
+    Default: 'true'
+    AllowedValues: ['true', 'false']
+    Description: Only one GitHub provider may exist per account. Use false if it already exists, and give its ARN below.
+  ExistingOidcProviderArn:
+    Type: String
+    Default: ''
+  RepositoryName:
+    Type: String
+    Default: knest-app
+
+Conditions:
+  IsProduction: !Equals [!Ref Environment, production]
+  MakeProvider: !Equals [!Ref CreateOidcProvider, 'true']
+
+Resources:
+  Repository:
+    Type: AWS::ECR::Repository
+    DeletionPolicy: Delete # DELETION
+    UpdateReplacePolicy: Delete # DELETION
+    Properties:
+      RepositoryName: !Ref RepositoryName
+      ImageTagMutability: IMMUTABLE
+      ImageScanningConfiguration: { ScanOnPush: true }
+      EncryptionConfiguration: { EncryptionType: AES256 }
+      EmptyOnDelete: !If [IsProduction, false, true]
+      LifecyclePolicy:
+        LifecyclePolicyText: |
+          {"rules":[{"rulePriority":1,"description":"keep the last 20 images","selection":{"tagStatus":"any","countType":"imageCountMoreThan","countNumber":20},"action":{"type":"expire"}}]}
+
+  OidcProvider:
+    Type: AWS::IAM::OIDCProvider
+    Condition: MakeProvider
+    Properties:
+      Url: https://token.actions.githubusercontent.com
+      ClientIdList: [sts.amazonaws.com]
+
+  PushRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'knest-${Environment}-ci-push'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: { Federated: !If [MakeProvider, !Ref OidcProvider, !Ref ExistingOidcProviderArn] }
+            Action: 'sts:AssumeRoleWithWebIdentity'
+            Condition:
+              StringEquals:
+                'token.actions.githubusercontent.com:aud': sts.amazonaws.com
+                'token.actions.githubusercontent.com:sub': !Sub 'repo:${GitHubRepository}:environment:${Environment}'
+      MaxSessionDuration: 3600
+      Policies:
+        - PolicyName: push-images
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - { Sid: Login, Effect: Allow, Action: 'ecr:GetAuthorizationToken', Resource: '*' }
+              - Sid: PushToThisRepositoryOnly
+                Effect: Allow
+                Action:
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:BatchGetImage
+                  - ecr:CompleteLayerUpload
+                  - ecr:DescribeImages
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:InitiateLayerUpload
+                  - ecr:PutImage
+                  - ecr:UploadLayerPart
+                Resource: !GetAtt Repository.Arn
+
+  DeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'knest-${Environment}-ci-deploy'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: { Federated: !If [MakeProvider, !Ref OidcProvider, !Ref ExistingOidcProviderArn] }
+            Action: 'sts:AssumeRoleWithWebIdentity'
+            Condition:
+              StringEquals:
+                'token.actions.githubusercontent.com:aud': sts.amazonaws.com
+                'token.actions.githubusercontent.com:sub': !Sub 'repo:${GitHubRepository}:environment:${Environment}'
+      MaxSessionDuration: 3600
+      Policies:
+        - PolicyName: run-the-deploy-document
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: RunOnlyThisEnvironmentsDeployDocument
+                Effect: Allow
+                Action: ssm:SendCommand
+                Resource: !Sub 'arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:document/knest-${Environment}-deploy'
+              - Sid: OnlyOnThisEnvironmentsHost
+                Effect: Allow
+                Action: ssm:SendCommand
+                Resource: !Sub 'arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:instance/*'
+                Condition: { StringEquals: { 'ssm:resourceTag/knest-deploy-target': !Ref Environment } }
+              - Sid: ReadResults
+                Effect: Allow
+                Action: ['ssm:GetCommandInvocation', 'ssm:ListCommandInvocations']
+                Resource: '*'
+              - Sid: ResolveDigests
+                Effect: Allow
+                Action: ['ecr:DescribeImages']
+                Resource: !GetAtt Repository.Arn
+
+Outputs:
+  RepositoryUri:
+    Value: !GetAtt Repository.RepositoryUri
+  PushRoleArn:
+    Description: Set as the AWS_PUSH_ROLE_ARN variable of the GitHub Environment.
+    Value: !GetAtt PushRole.Arn
+  DeployRoleArn:
+    Description: Set as the AWS_DEPLOY_ROLE_ARN variable of the GitHub Environment.
+    Value: !GetAtt DeployRole.Arn

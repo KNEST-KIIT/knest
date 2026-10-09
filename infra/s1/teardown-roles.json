@@ -9,11 +9,17 @@
         "Statement": [
           {
             "Effect": "Allow",
-            "Principal": { "Service": "scheduler.amazonaws.com" },
+            "Principal": {
+              "Service": "scheduler.amazonaws.com"
+            },
             "Action": "sts:AssumeRole",
             "Condition": {
-              "StringEquals": { "aws:SourceAccount": "<ACCOUNT_ID>" },
-              "ArnLike": { "aws:SourceArn": "arn:aws:scheduler:*:<ACCOUNT_ID>:schedule/knest-s1/*" }
+              "StringEquals": {
+                "aws:SourceAccount": "<ACCOUNT_ID>"
+              },
+              "ArnLike": {
+                "aws:SourceArn": "arn:aws:scheduler:*:<ACCOUNT_ID>:schedule/knest-s1/*"
+              }
             }
           }
         ]
@@ -27,7 +33,9 @@
             "Action": "cloudformation:DeleteStack",
             "Resource": [
               "arn:aws:cloudformation:ap-south-1:<ACCOUNT_ID>:stack/knest-s1/*",
-              "arn:aws:cloudformation:us-east-1:<ACCOUNT_ID>:stack/knest-s1-edge/*"
+              "arn:aws:cloudformation:ap-south-1:<ACCOUNT_ID>:stack/knest-s1-edge/*",
+              "arn:aws:cloudformation:ap-south-1:<ACCOUNT_ID>:stack/knest-s1-ci/*",
+              "arn:aws:cloudformation:us-east-1:<ACCOUNT_ID>:stack/knest-s1-waf/*"
             ]
           },
           {
@@ -35,11 +43,20 @@
             "Effect": "Allow",
             "Action": "iam:PassRole",
             "Resource": "arn:aws:iam::<ACCOUNT_ID>:role/knest-s1-cfn-service",
-            "Condition": { "StringEquals": { "iam:PassedToService": "cloudformation.amazonaws.com" } }
+            "Condition": {
+              "StringEquals": {
+                "iam:PassedToService": "cloudformation.amazonaws.com"
+              }
+            }
           }
         ]
       },
-      "cannotDo": ["create or change anything", "read data", "touch any stack other than knest-s1 and knest-s1-edge", "assume any other role"]
+      "cannotDo": [
+        "create or change anything",
+        "read data",
+        "touch any stack other than the four S-1 stacks (knest-s1, knest-s1-edge, knest-s1-ci, knest-s1-waf)",
+        "assume any other role"
+      ]
     },
     {
       "name": "knest-s1-cfn-service",
@@ -49,14 +66,20 @@
         "Statement": [
           {
             "Effect": "Allow",
-            "Principal": { "Service": "cloudformation.amazonaws.com" },
+            "Principal": {
+              "Service": "cloudformation.amazonaws.com"
+            },
             "Action": "sts:AssumeRole",
             "Condition": {
-              "StringEquals": { "aws:SourceAccount": "<ACCOUNT_ID>" },
+              "StringEquals": {
+                "aws:SourceAccount": "<ACCOUNT_ID>"
+              },
               "ArnLike": {
                 "aws:SourceArn": [
                   "arn:aws:cloudformation:ap-south-1:<ACCOUNT_ID>:stack/knest-s1/*",
-                  "arn:aws:cloudformation:us-east-1:<ACCOUNT_ID>:stack/knest-s1-edge/*"
+                  "arn:aws:cloudformation:ap-south-1:<ACCOUNT_ID>:stack/knest-s1-edge/*",
+                  "arn:aws:cloudformation:ap-south-1:<ACCOUNT_ID>:stack/knest-s1-ci/*",
+                  "arn:aws:cloudformation:us-east-1:<ACCOUNT_ID>:stack/knest-s1-waf/*"
                 ]
               }
             }
@@ -69,21 +92,38 @@
           {
             "Sid": "NetworkAndComputeLifecycle",
             "Effect": "Allow",
-            "Action": ["ec2:*"],
+            "Action": [
+              "ec2:*"
+            ],
             "Resource": "*",
-            "Condition": { "StringEquals": { "aws:RequestedRegion": "ap-south-1" } }
+            "Condition": {
+              "StringEquals": {
+                "aws:RequestedRegion": "ap-south-1"
+              }
+            }
           },
           {
             "Sid": "DatabaseLifecycle",
             "Effect": "Allow",
-            "Action": ["rds:*"],
+            "Action": [
+              "rds:*"
+            ],
             "Resource": "*",
-            "Condition": { "StringEquals": { "aws:RequestedRegion": "ap-south-1" } }
+            "Condition": {
+              "StringEquals": {
+                "aws:RequestedRegion": "ap-south-1"
+              }
+            }
           },
           {
             "Sid": "BucketLogsRegistryParameters",
             "Effect": "Allow",
-            "Action": ["s3:*", "logs:*", "ecr:*", "ssm:*"],
+            "Action": [
+              "s3:*",
+              "logs:*",
+              "ecr:*",
+              "ssm:*"
+            ],
             "Resource": [
               "arn:aws:s3:::knest-s1-*",
               "arn:aws:s3:::knest-s1-*/*",
@@ -96,22 +136,42 @@
           {
             "Sid": "EcrAuthAndLogGroupDescribe",
             "Effect": "Allow",
-            "Action": ["ecr:GetAuthorizationToken", "logs:DescribeLogGroups", "ssm:DescribeParameters"],
+            "Action": [
+              "ecr:GetAuthorizationToken",
+              "logs:DescribeLogGroups",
+              "ssm:DescribeParameters"
+            ],
             "Resource": "*"
           },
           {
             "Sid": "RolesAndProfilesNamedS1",
             "Effect": "Allow",
             "Action": [
-              "iam:CreateRole", "iam:DeleteRole", "iam:GetRole", "iam:TagRole", "iam:UpdateAssumeRolePolicy",
-              "iam:AttachRolePolicy", "iam:DetachRolePolicy", "iam:PutRolePolicy", "iam:DeleteRolePolicy", "iam:GetRolePolicy",
-              "iam:ListRolePolicies", "iam:ListAttachedRolePolicies", "iam:ListInstanceProfilesForRole",
-              "iam:CreateInstanceProfile", "iam:DeleteInstanceProfile", "iam:GetInstanceProfile",
-              "iam:AddRoleToInstanceProfile", "iam:RemoveRoleFromInstanceProfile", "iam:TagInstanceProfile"
+              "iam:CreateRole",
+              "iam:DeleteRole",
+              "iam:GetRole",
+              "iam:TagRole",
+              "iam:UpdateAssumeRolePolicy",
+              "iam:AttachRolePolicy",
+              "iam:DetachRolePolicy",
+              "iam:PutRolePolicy",
+              "iam:DeleteRolePolicy",
+              "iam:GetRolePolicy",
+              "iam:ListRolePolicies",
+              "iam:ListAttachedRolePolicies",
+              "iam:ListInstanceProfilesForRole",
+              "iam:CreateInstanceProfile",
+              "iam:DeleteInstanceProfile",
+              "iam:GetInstanceProfile",
+              "iam:AddRoleToInstanceProfile",
+              "iam:RemoveRoleFromInstanceProfile",
+              "iam:TagInstanceProfile"
             ],
             "Resource": [
               "arn:aws:iam::<ACCOUNT_ID>:role/knest-s1-ec2",
-              "arn:aws:iam::<ACCOUNT_ID>:instance-profile/knest-s1-ec2"
+              "arn:aws:iam::<ACCOUNT_ID>:instance-profile/knest-s1-ec2",
+              "arn:aws:iam::<ACCOUNT_ID>:role/knest-s1-ci-push",
+              "arn:aws:iam::<ACCOUNT_ID>:role/knest-s1-ci-deploy"
             ]
           },
           {
@@ -119,41 +179,116 @@
             "Effect": "Allow",
             "Action": "iam:PassRole",
             "Resource": "arn:aws:iam::<ACCOUNT_ID>:role/knest-s1-ec2",
-            "Condition": { "StringEquals": { "iam:PassedToService": "ec2.amazonaws.com" } }
+            "Condition": {
+              "StringEquals": {
+                "iam:PassedToService": "ec2.amazonaws.com"
+              }
+            }
           },
           {
-            "Sid": "RdsManagedSecret",
+            "Sid": "SecretsOfTheAppStack",
             "Effect": "Allow",
-            "Action": ["secretsmanager:CreateSecret", "secretsmanager:DeleteSecret", "secretsmanager:DescribeSecret", "secretsmanager:TagResource", "secretsmanager:PutResourcePolicy"],
-            "Resource": "arn:aws:secretsmanager:ap-south-1:<ACCOUNT_ID>:secret:rds!*"
+            "Action": [
+              "secretsmanager:CreateSecret",
+              "secretsmanager:DeleteSecret",
+              "secretsmanager:DescribeSecret",
+              "secretsmanager:TagResource",
+              "secretsmanager:PutResourcePolicy",
+              "secretsmanager:GetResourcePolicy",
+              "secretsmanager:UpdateSecret"
+            ],
+            "Resource": [
+              "arn:aws:secretsmanager:ap-south-1:<ACCOUNT_ID>:secret:rds!*",
+              "arn:aws:secretsmanager:ap-south-1:<ACCOUNT_ID>:secret:knest-s1/*"
+            ]
           },
           {
             "Sid": "EdgeStackResources",
             "Effect": "Allow",
-            "Action": ["cloudfront:*", "wafv2:*"],
+            "Action": [
+              "cloudfront:*",
+              "wafv2:*"
+            ],
             "Resource": "*",
-            "Condition": { "StringEquals": { "aws:RequestedRegion": "us-east-1" } }
+            "Condition": {
+              "StringEquals": {
+                "aws:RequestedRegion": "us-east-1"
+              }
+            }
           },
           {
             "Sid": "CloudFrontIsGlobalSoItHasNoRegionKey",
             "Effect": "Allow",
-            "Action": ["cloudfront:*"],
+            "Action": [
+              "cloudfront:*"
+            ],
             "Resource": "*"
+          },
+          {
+            "Sid": "GitHubOidcProviderOfTheCiStack",
+            "Effect": "Allow",
+            "Action": [
+              "iam:CreateOpenIDConnectProvider",
+              "iam:DeleteOpenIDConnectProvider",
+              "iam:GetOpenIDConnectProvider",
+              "iam:TagOpenIDConnectProvider"
+            ],
+            "Resource": "arn:aws:iam::<ACCOUNT_ID>:oidc-provider/token.actions.githubusercontent.com"
+          },
+          {
+            "Sid": "CloudWatchAlarmsAndTopicOfTheAppStack",
+            "Effect": "Allow",
+            "Action": [
+              "cloudwatch:PutMetricAlarm",
+              "cloudwatch:DeleteAlarms",
+              "cloudwatch:DescribeAlarms",
+              "sns:CreateTopic",
+              "sns:DeleteTopic",
+              "sns:GetTopicAttributes",
+              "sns:Subscribe",
+              "sns:Unsubscribe",
+              "sns:SetTopicAttributes",
+              "sns:TagResource"
+            ],
+            "Resource": "*",
+            "Condition": {
+              "StringEquals": {
+                "aws:RequestedRegion": "ap-south-1"
+              }
+            }
+          },
+          {
+            "Sid": "ParametersSecretsAndDocumentsOfTheAppStack",
+            "Effect": "Allow",
+            "Action": [
+              "ssm:CreateDocument",
+              "ssm:DeleteDocument",
+              "ssm:DescribeDocument",
+              "ssm:UpdateDocument",
+              "ssm:AddTagsToResource"
+            ],
+            "Resource": "arn:aws:ssm:ap-south-1:<ACCOUNT_ID>:document/knest-s1-*"
           }
         ]
       },
-      "cannotDo": ["be assumed by anything except CloudFormation acting on the two knest-s1 stacks", "create IAM users or access keys", "pass any role other than knest-s1-ec2", "touch Route 53, SES, ACM, the existing knest-media bucket or the knest-app user"],
+      "cannotDo": [
+        "be assumed by anything except CloudFormation acting on the four S-1 stacks",
+        "create IAM users or access keys",
+        "pass any role other than knest-s1-ec2",
+        "touch Route 53, SES, ACM, the existing knest-media bucket or the knest-app user"
+      ],
       "residualRisk": "ec2:* and rds:* are not limited to tagged resources because many delete and detach actions do not support tag conditions. The role can only be assumed by CloudFormation for the two named stacks, and can only be handed to CloudFormation by the operator (PassRole is limited to the stack role in the operator policy) or by the scheduler role above. Account-wide EC2 and RDS delete rights through a stack that someone else controlled would be a risk; the template and its change sets are reviewed before every create."
     }
   ],
   "retainedAfterTeardown": [
-    "The GitHub OIDC identity provider (token.actions.githubusercontent.com), if it was created: it is free, there is only one allowed per account, and production will reuse it. It is deleted only if the owner says so.",
-    "The pre-existing bucket knest-media-<account>, IAM user knest-app, its key and its policy (untouched)."
+    "The pre-existing bucket knest-media-<account>, IAM user knest-app, its key and its policy (untouched).",
+    "Nothing else: the GitHub OIDC provider is part of the knest-s1-ci stack and is deleted with it. Production creates its own (or reuses an existing one through ExistingOidcProviderArn) in its own stack later."
   ],
   "teardownBehaviourToKnow": [
+    "Order matters and is handled by two schedules: knest-s1-expire-edge deletes knest-s1-edge (ap-south-1) and knest-s1-waf (us-east-1) first; knest-s1-expire deletes knest-s1-ci and knest-s1 two hours later. A CloudFront distribution takes several minutes to disable and delete.",
     "S3: the S-1 bucket has a 1-day object expiry and no versioning so that it is empty by day 14 and the stack can delete it. If it is not empty, only the bucket reports DELETE_FAILED and is removed by the manual teardown.",
-    "ECR: the repository uses EmptyOnDelete so images do not block deletion.",
-    "RDS: DeletionPolicy is Delete with no final snapshot, DeletionProtection off, automated backups removed. The template must set this explicitly because the CloudFormation default for a database instance is to take a snapshot.",
-    "Two schedules are used because CloudFront and CloudFront-scope WAF live in us-east-1: knest-s1-expire-edge (deletes knest-s1-edge first) and knest-s1-expire (deletes knest-s1, two hours later)."
+    "ECR: the repository uses EmptyOnDelete in S-1 so images do not block deletion. For S-1 the repository is named knest-s1-app (parameter RepositoryName) so the operator policy and this role apply.",
+    "RDS: rendered with scripts/render-cfn.mjs s1, so DeletionPolicy is Delete (no final snapshot), DeletionProtection is off and automated backups are removed. The CloudFormation default for a database instance is to snapshot, so the rendered S-1 variant must always be the one deployed.",
+    "Secrets Manager secrets are deleted with a recovery window by default; the manual teardown force-deletes the S-1 secrets so no billable secret lingers for 7 to 30 days."
   ]
 }

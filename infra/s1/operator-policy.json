@@ -86,7 +86,10 @@
       "Action": [
         "cloudformation:*"
       ],
-      "Resource": "arn:aws:cloudformation:ap-south-1:*:stack/knest-s1*/*"
+      "Resource": [
+        "arn:aws:cloudformation:ap-south-1:*:stack/knest-s1*/*",
+        "arn:aws:cloudformation:us-east-1:*:stack/knest-s1*/*"
+      ]
     },
     {
       "Sid": "S1ComputeAndDatabase",

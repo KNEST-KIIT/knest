@@ -1,0 +1,239 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  KNEST DNS in Route 53: hosted zones for kiitnest.com (canonical) and kiitnest.in
+  (redirect only), reproducing every existing record that must survive the move
+  (Google Workspace mail, SPF, DKIM, DMARC, verification) exactly as inventoried in
+  docs/delivery/EVIDENCE/dns-snapshot-kiitnest.com-2026-10-09.md. Creating this
+  stack does NOT change anything live: the zones are inert until GoDaddy's
+  nameservers are pointed at them, which is a separate approval. The web records
+  (apex and www to CloudFront) are only created once CloudFrontDomainName is
+  supplied. STATUS: written, not deployed, not validated by CloudFormation.
+
+Parameters:
+  CloudFrontDomainName:
+    Type: String
+    Default: ''
+    Description: The distribution's d....cloudfront.net name. Leave empty until the cutover manifest is approved.
+  AcmComName1: { Type: String, Default: '' }
+  AcmComValue1: { Type: String, Default: '' }
+  AcmComName2: { Type: String, Default: '' }
+  AcmComValue2: { Type: String, Default: '' }
+  AcmInName1: { Type: String, Default: '' }
+  AcmInValue1: { Type: String, Default: '' }
+  AcmInName2: { Type: String, Default: '' }
+  AcmInValue2: { Type: String, Default: '' }
+  SesDkimToken1: { Type: String, Default: '' }
+  SesDkimToken2: { Type: String, Default: '' }
+  SesDkimToken3: { Type: String, Default: '' }
+
+Conditions:
+  HasCloudFront: !Not [!Equals [!Ref CloudFrontDomainName, '']]
+  HasAcmCom1: !And [!Not [!Equals [!Ref AcmComName1, '']], !Not [!Equals [!Ref AcmComValue1, '']]]
+  HasAcmCom2: !And [!Not [!Equals [!Ref AcmComName2, '']], !Not [!Equals [!Ref AcmComValue2, '']]]
+  HasAcmIn1: !And [!Not [!Equals [!Ref AcmInName1, '']], !Not [!Equals [!Ref AcmInValue1, '']]]
+  HasAcmIn2: !And [!Not [!Equals [!Ref AcmInName2, '']], !Not [!Equals [!Ref AcmInValue2, '']]]
+  HasSesDkim: !And
+    - !Not [!Equals [!Ref SesDkimToken1, '']]
+    - !Not [!Equals [!Ref SesDkimToken2, '']]
+    - !Not [!Equals [!Ref SesDkimToken3, '']]
+
+Resources:
+  ZoneCom:
+    Type: AWS::Route53::HostedZone
+    Properties:
+      Name: kiitnest.com
+      HostedZoneConfig: { Comment: KNEST canonical domain }
+
+  ZoneIn:
+    Type: AWS::Route53::HostedZone
+    Properties:
+      Name: kiitnest.in
+      HostedZoneConfig: { Comment: KNEST redirect domain (redirects to kiitnest.com at the edge) }
+
+  # --- Existing records of kiitnest.com that must survive the move ----------------
+
+  MailExchange:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref ZoneCom
+      Name: kiitnest.com.
+      Type: MX
+      TTL: '600'
+      ResourceRecords: ['1 smtp.google.com.']
+
+  ApexText:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref ZoneCom
+      Name: kiitnest.com.
+      Type: TXT
+      TTL: '600'
+      # Two records at one name in GoDaddy (verification, 600 s; SPF, 1 h) are one
+      # record set here with two values and one TTL.
+      ResourceRecords:
+        - '"google-site-verification=NOi-FDQrbPNRT_bpSyd4YYUg1tP0vjeu1m7jFJdqfQE"'
+        - '"v=spf1 include:dc-bdaca08905._spfm.kiitnest.com ~all"'
+
+  SpfInclude:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref ZoneCom
+      Name: dc-bdaca08905._spfm.kiitnest.com.
+      Type: TXT
+      TTL: '600'
+      ResourceRecords: ['"v=spf1 include:_spf.google.com ~all"']
+
+  GoogleDkim:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref ZoneCom
+      Name: google._domainkey.kiitnest.com.
+      Type: TXT
+      TTL: '600'
+      # 408 characters: stored as two strings of at most 255 each, which resolvers join.
+      ResourceRecords:
+        - '"v=DKIM1;k=rsa;p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAo7CB7qgcpUUOBPI7F+4+Sik9xd0mPtlo+cqwikQVGyaJh6vMnaL5kC6ECZqU9GxPrP8qRN4g6ap9rDmQT+5wJOSSib2FyrS+g+277PQ1fWy0L/gDlF9jDds85QqDq8++Hew8mM6SEGY4GXgipUA6cuZwLmDQG3iFJlNzard8EV5pIwMJdotjkBMKMpL8iAD8zCH" "oIarUbn+nL3ZpUIqPKQmibVP5ZU0MZHH+EW3SpVaypY0S6hncAKdcY8kcOc/oaY06CjDewqauUQlC35AOwF4EDKVB1g9fKqYnl5wp7OEVEch7LiWJ7wa0WgL/7EsYEGAEp4AloR3Jgyz9wi4mpQIDAQAB"'
+
+  Dmarc:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref ZoneCom
+      Name: _dmarc.kiitnest.com.
+      Type: TXT
+      TTL: '3600'
+      ResourceRecords: ['"v=DMARC1; p=quarantine; adkim=r; aspf=r; rua=mailto:dmarc_rua@onsecureserver.net;"']
+
+  DomainConnect:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref ZoneCom
+      Name: _domainconnect.kiitnest.com.
+      Type: CNAME
+      TTL: '3600'
+      ResourceRecords: ['_domainconnect.gd.domaincontrol.com.']
+
+  # --- Web: only once the cutover manifest is approved ---------------------------
+
+  ComApexA:
+    Type: AWS::Route53::RecordSet
+    Condition: HasCloudFront
+    Properties:
+      HostedZoneId: !Ref ZoneCom
+      Name: kiitnest.com.
+      Type: A
+      AliasTarget: { DNSName: !Ref CloudFrontDomainName, HostedZoneId: Z2FDTNDATAQYW2, EvaluateTargetHealth: false }
+  ComApexAaaa:
+    Type: AWS::Route53::RecordSet
+    Condition: HasCloudFront
+    Properties:
+      HostedZoneId: !Ref ZoneCom
+      Name: kiitnest.com.
+      Type: AAAA
+      AliasTarget: { DNSName: !Ref CloudFrontDomainName, HostedZoneId: Z2FDTNDATAQYW2, EvaluateTargetHealth: false }
+  ComWwwA:
+    Type: AWS::Route53::RecordSet
+    Condition: HasCloudFront
+    Properties:
+      HostedZoneId: !Ref ZoneCom
+      Name: www.kiitnest.com.
+      Type: A
+      AliasTarget: { DNSName: !Ref CloudFrontDomainName, HostedZoneId: Z2FDTNDATAQYW2, EvaluateTargetHealth: false }
+  ComWwwAaaa:
+    Type: AWS::Route53::RecordSet
+    Condition: HasCloudFront
+    Properties:
+      HostedZoneId: !Ref ZoneCom
+      Name: www.kiitnest.com.
+      Type: AAAA
+      AliasTarget: { DNSName: !Ref CloudFrontDomainName, HostedZoneId: Z2FDTNDATAQYW2, EvaluateTargetHealth: false }
+  InApexA:
+    Type: AWS::Route53::RecordSet
+    Condition: HasCloudFront
+    Properties:
+      HostedZoneId: !Ref ZoneIn
+      Name: kiitnest.in.
+      Type: A
+      AliasTarget: { DNSName: !Ref CloudFrontDomainName, HostedZoneId: Z2FDTNDATAQYW2, EvaluateTargetHealth: false }
+  InApexAaaa:
+    Type: AWS::Route53::RecordSet
+    Condition: HasCloudFront
+    Properties:
+      HostedZoneId: !Ref ZoneIn
+      Name: kiitnest.in.
+      Type: AAAA
+      AliasTarget: { DNSName: !Ref CloudFrontDomainName, HostedZoneId: Z2FDTNDATAQYW2, EvaluateTargetHealth: false }
+  InWwwA:
+    Type: AWS::Route53::RecordSet
+    Condition: HasCloudFront
+    Properties:
+      HostedZoneId: !Ref ZoneIn
+      Name: www.kiitnest.in.
+      Type: A
+      AliasTarget: { DNSName: !Ref CloudFrontDomainName, HostedZoneId: Z2FDTNDATAQYW2, EvaluateTargetHealth: false }
+  InWwwAaaa:
+    Type: AWS::Route53::RecordSet
+    Condition: HasCloudFront
+    Properties:
+      HostedZoneId: !Ref ZoneIn
+      Name: www.kiitnest.in.
+      Type: AAAA
+      AliasTarget: { DNSName: !Ref CloudFrontDomainName, HostedZoneId: Z2FDTNDATAQYW2, EvaluateTargetHealth: false }
+
+  # --- Certificate validation and SES DKIM (added beside, never instead of, the above)
+
+  AcmCom1:
+    Type: AWS::Route53::RecordSet
+    Condition: HasAcmCom1
+    Properties: { HostedZoneId: !Ref ZoneCom, Name: !Ref AcmComName1, Type: CNAME, TTL: '300', ResourceRecords: [!Ref AcmComValue1] }
+  AcmCom2:
+    Type: AWS::Route53::RecordSet
+    Condition: HasAcmCom2
+    Properties: { HostedZoneId: !Ref ZoneCom, Name: !Ref AcmComName2, Type: CNAME, TTL: '300', ResourceRecords: [!Ref AcmComValue2] }
+  AcmIn1:
+    Type: AWS::Route53::RecordSet
+    Condition: HasAcmIn1
+    Properties: { HostedZoneId: !Ref ZoneIn, Name: !Ref AcmInName1, Type: CNAME, TTL: '300', ResourceRecords: [!Ref AcmInValue1] }
+  AcmIn2:
+    Type: AWS::Route53::RecordSet
+    Condition: HasAcmIn2
+    Properties: { HostedZoneId: !Ref ZoneIn, Name: !Ref AcmInName2, Type: CNAME, TTL: '300', ResourceRecords: [!Ref AcmInValue2] }
+
+  SesDkim1:
+    Type: AWS::Route53::RecordSet
+    Condition: HasSesDkim
+    Properties:
+      HostedZoneId: !Ref ZoneCom
+      Name: !Sub '${SesDkimToken1}._domainkey.kiitnest.com.'
+      Type: CNAME
+      TTL: '3600'
+      ResourceRecords: [!Sub '${SesDkimToken1}.dkim.amazonses.com']
+  SesDkim2:
+    Type: AWS::Route53::RecordSet
+    Condition: HasSesDkim
+    Properties:
+      HostedZoneId: !Ref ZoneCom
+      Name: !Sub '${SesDkimToken2}._domainkey.kiitnest.com.'
+      Type: CNAME
+      TTL: '3600'
+      ResourceRecords: [!Sub '${SesDkimToken2}.dkim.amazonses.com']
+  SesDkim3:
+    Type: AWS::Route53::RecordSet
+    Condition: HasSesDkim
+    Properties:
+      HostedZoneId: !Ref ZoneCom
+      Name: !Sub '${SesDkimToken3}._domainkey.kiitnest.com.'
+      Type: CNAME
+      TTL: '3600'
+      ResourceRecords: [!Sub '${SesDkimToken3}.dkim.amazonses.com']
+
+Outputs:
+  ComNameServers:
+    Description: The four authoritative nameservers for kiitnest.com (set at GoDaddy only at the approved cutover).
+    Value: !Join [', ', !GetAtt ZoneCom.NameServers]
+  InNameServers:
+    Description: The four authoritative nameservers for kiitnest.in.
+    Value: !Join [', ', !GetAtt ZoneIn.NameServers]
+  ComZoneId:
+    Value: !Ref ZoneCom
+  InZoneId:
+    Value: !Ref ZoneIn

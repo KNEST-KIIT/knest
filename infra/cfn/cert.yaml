@@ -1,0 +1,30 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  KNEST public TLS certificate for CloudFront. DEPLOY IN us-east-1 (CloudFront only
+  accepts certificates from there). Validation is by DNS: the stack stays in
+  CREATE_IN_PROGRESS until the validation CNAME records exist in the authoritative
+  DNS. Before the nameserver cutover that is GoDaddy, so the exact CNAMEs (shown by
+  `aws acm describe-certificate`) are added there first, as additive records after
+  the owner approves each value; after the cutover the same records live in Route 53
+  (dns.yaml parameters AcmCom* and AcmIn*) and keep the certificate renewing.
+  STATUS: written, not deployed, not validated by CloudFormation.
+
+Parameters:
+  Environment:
+    Type: String
+    AllowedValues: [s1, production]
+
+Resources:
+  Certificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: kiitnest.com
+      SubjectAlternativeNames: [www.kiitnest.com, kiitnest.in, www.kiitnest.in]
+      ValidationMethod: DNS
+      Tags:
+        - { Key: project, Value: !Sub 'knest-${Environment}' }
+
+Outputs:
+  CertificateArn:
+    Description: Pass to edge.yaml as AcmCertificateArn.
+    Value: !Ref Certificate

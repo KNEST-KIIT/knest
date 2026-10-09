@@ -1,0 +1,542 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  KNEST application stack for ONE environment (the disposable S-1 spike, or
+  production): VPC with a public subnet for the host and two private subnets for the
+  database, EC2 (Graviton) running the container, private RDS PostgreSQL 16 with a
+  managed master password, an S3 bucket for documents and media, the generated
+  origin-verification secret, log group, an instance role with no stored keys, and
+  an SSM document that deploys an image by digest. DEPLOY IN ap-south-1. STATUS:
+  written, not deployed, not validated by CloudFormation. Production differs from
+  S-1 only in the lines marked DELETION and in the Environment parameter; both
+  variants are produced from this file by scripts/render-cfn.mjs.
+
+Parameters:
+  Environment:
+    Type: String
+    AllowedValues: [s1, production]
+  AvailabilityZoneA:
+    Type: AWS::EC2::AvailabilityZone::Name
+    Default: ap-south-1a
+  AvailabilityZoneB:
+    Type: AWS::EC2::AvailabilityZone::Name
+    Default: ap-south-1b
+  VpcCidr:
+    Type: String
+    Default: 10.20.0.0/16
+  InstanceType:
+    Type: String
+    Default: t4g.small
+  DbInstanceClass:
+    Type: String
+    Default: db.t4g.micro
+  DbAllocatedStorageGb:
+    Type: Number
+    Default: 20
+  DbMultiAz:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+  CloudFrontPrefixListId:
+    Type: String
+    Description: The AWS-managed prefix list com.amazonaws.global.cloudfront.origin-facing in ap-south-1 (look it up with ec2 describe-managed-prefix-lists).
+  AppPort:
+    Type: Number
+    Default: 3000
+  LatestAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64
+  EcrRepositoryName:
+    Type: String
+    Default: knest-app
+  SiteUrl:
+    Type: String
+    Description: Public address of the site, https only (SITE_URL). For private verification this is the distribution's *.cloudfront.net address.
+  EmailFromAddress:
+    Type: String
+    Description: Address platform mail is sent from (an SES-verified identity).
+  LogRetentionDays:
+    Type: Number
+    Default: 7
+  AlertEmail:
+    Type: String
+    Default: ''
+    Description: Where alarm notifications go. Empty creates the topic without a subscriber.
+  ExpiresOn:
+    Type: String
+    Default: ''
+    Description: S-1 only. Informational tag (the stack is deleted by the scheduled teardown, not by this tag).
+
+Conditions:
+  IsProduction: !Equals [!Ref Environment, production]
+  IsMultiAz: !Equals [!Ref DbMultiAz, 'true']
+  HasAlertEmail: !Not [!Equals [!Ref AlertEmail, '']]
+
+Resources:
+  # ---------------------------------------------------------------- network
+  Vpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCidr
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags: [{ Key: Name, Value: !Sub 'knest-${Environment}' }]
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+  GatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties: { VpcId: !Ref Vpc, InternetGatewayId: !Ref InternetGateway }
+
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      AvailabilityZone: !Ref AvailabilityZoneA
+      CidrBlock: !Select [0, !Cidr [!GetAtt Vpc.CidrBlock, 4, 8]]
+      MapPublicIpOnLaunch: true
+      Tags: [{ Key: Name, Value: !Sub 'knest-${Environment}-public' }]
+  PrivateSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      AvailabilityZone: !Ref AvailabilityZoneA
+      CidrBlock: !Select [1, !Cidr [!GetAtt Vpc.CidrBlock, 4, 8]]
+      MapPublicIpOnLaunch: false
+      Tags: [{ Key: Name, Value: !Sub 'knest-${Environment}-private-a' }]
+  PrivateSubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      AvailabilityZone: !Ref AvailabilityZoneB
+      CidrBlock: !Select [2, !Cidr [!GetAtt Vpc.CidrBlock, 4, 8]]
+      MapPublicIpOnLaunch: false
+      Tags: [{ Key: Name, Value: !Sub 'knest-${Environment}-private-b' }]
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties: { VpcId: !Ref Vpc }
+  PublicDefaultRoute:
+    Type: AWS::EC2::Route
+    DependsOn: GatewayAttachment
+    Properties: { RouteTableId: !Ref PublicRouteTable, DestinationCidrBlock: 0.0.0.0/0, GatewayId: !Ref InternetGateway }
+  PublicRouteAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties: { SubnetId: !Ref PublicSubnet, RouteTableId: !Ref PublicRouteTable }
+  # The private route table has only the local route: the database subnets cannot reach, or be reached from, the internet.
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties: { VpcId: !Ref Vpc }
+  PrivateRouteAssociationA:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties: { SubnetId: !Ref PrivateSubnetA, RouteTableId: !Ref PrivateRouteTable }
+  PrivateRouteAssociationB:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties: { SubnetId: !Ref PrivateSubnetB, RouteTableId: !Ref PrivateRouteTable }
+
+  AppSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: App host. Inbound only from CloudFront; no SSH.
+      VpcId: !Ref Vpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: !Ref AppPort
+          ToPort: !Ref AppPort
+          SourcePrefixListId: !Ref CloudFrontPrefixListId
+          Description: CloudFront origin-facing addresses (the X-Origin-Verify header is the second control)
+      SecurityGroupEgress:
+        - { IpProtocol: tcp, FromPort: 443, ToPort: 443, CidrIp: 0.0.0.0/0, Description: 'AWS APIs (SSM, ECR, S3, SES, Secrets Manager), Cloudflare Turnstile, Google sign-in' }
+      Tags: [{ Key: Name, Value: !Sub 'knest-${Environment}-app' }]
+
+  DatabaseSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Database. Inbound only from the app host.
+      VpcId: !Ref Vpc
+      SecurityGroupIngress:
+        - { IpProtocol: tcp, FromPort: 5432, ToPort: 5432, SourceSecurityGroupId: !Ref AppSecurityGroup, Description: PostgreSQL from the app host }
+      # Replace the default allow-all egress with a rule that matches nothing real.
+      SecurityGroupEgress:
+        - { IpProtocol: '-1', CidrIp: 127.0.0.1/32, Description: no outbound }
+      Tags: [{ Key: Name, Value: !Sub 'knest-${Environment}-db' }]
+
+  # ------------------------------------------------------------------ data
+  DbSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Private subnets only
+      SubnetIds: [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+
+  DbParameterGroup:
+    Type: AWS::RDS::DBParameterGroup
+    Properties:
+      Description: TLS required, slow-statement logging
+      Family: postgres16
+      Parameters:
+        rds.force_ssl: '1'
+        log_min_duration_statement: '1000'
+
+  Database:
+    Type: AWS::RDS::DBInstance
+    DeletionPolicy: Snapshot # DELETION
+    UpdateReplacePolicy: Snapshot # DELETION
+    Properties:
+      Engine: postgres
+      EngineVersion: '16'
+      DBInstanceClass: !Ref DbInstanceClass
+      AllocatedStorage: !Ref DbAllocatedStorageGb
+      StorageType: gp3
+      StorageEncrypted: true
+      MultiAZ: !If [IsMultiAz, true, false]
+      PubliclyAccessible: false
+      DBName: knest
+      MasterUsername: knest_admin
+      ManageMasterUserPassword: true
+      DBSubnetGroupName: !Ref DbSubnetGroup
+      VPCSecurityGroups: [!Ref DatabaseSecurityGroup]
+      DBParameterGroupName: !Ref DbParameterGroup
+      BackupRetentionPeriod: 7
+      PreferredBackupWindow: '21:00-22:00'
+      PreferredMaintenanceWindow: sun:22:30-sun:23:30
+      CopyTagsToSnapshot: true
+      AutoMinorVersionUpgrade: true
+      DeletionProtection: !If [IsProduction, true, false]
+      DeleteAutomatedBackups: !If [IsProduction, false, true]
+      EnableCloudwatchLogsExports: [postgresql]
+
+  Bucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain # DELETION
+    UpdateReplacePolicy: Retain # DELETION
+    Properties:
+      OwnershipControls: { Rules: [{ ObjectOwnership: BucketOwnerEnforced }] }
+      PublicAccessBlockConfiguration: { BlockPublicAcls: true, BlockPublicPolicy: true, IgnorePublicAcls: true, RestrictPublicBuckets: true }
+      BucketEncryption: { ServerSideEncryptionConfiguration: [{ ServerSideEncryptionByDefault: { SSEAlgorithm: AES256 } }] }
+      VersioningConfiguration: !If [IsProduction, { Status: Enabled }, !Ref 'AWS::NoValue']
+      LifecycleConfiguration:
+        Rules:
+          - Id: abort-incomplete-uploads
+            Status: Enabled
+            AbortIncompleteMultipartUpload: { DaysAfterInitiation: 7 }
+          - !If
+            - IsProduction
+            - { Id: expire-old-versions, Status: Enabled, NoncurrentVersionExpiration: { NoncurrentDays: 90 } }
+            - { Id: s1-expire-objects, Status: Enabled, ExpirationInDays: 1 }
+
+  BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref Bucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: TlsOnly
+            Effect: Deny
+            Principal: '*'
+            Action: 's3:*'
+            Resource: [!GetAtt Bucket.Arn, !Sub '${Bucket.Arn}/*']
+            Condition: { Bool: { 'aws:SecureTransport': 'false' } }
+
+  # The token CloudFront adds to every request so the host can tell it came through the distribution.
+  OriginVerifySecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub 'knest-${Environment}/origin-verify'
+      Description: Value of the X-Origin-Verify header (edge.yaml reads it by dynamic reference).
+      GenerateSecretString:
+        PasswordLength: 48
+        ExcludePunctuation: true
+
+  # The two session and CMS secrets, generated here so no person ever handles them.
+  AuthSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub 'knest-${Environment}/auth-secret'
+      GenerateSecretString: { PasswordLength: 64, ExcludePunctuation: true }
+  PayloadSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub 'knest-${Environment}/payload-secret'
+      GenerateSecretString: { PasswordLength: 64, ExcludePunctuation: true }
+
+  # Cloudflare Turnstile secret key. Created empty; the owner pastes the value in the console.
+  TurnstileSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub 'knest-${Environment}/turnstile-secret'
+      Description: Cloudflare Turnstile secret key (set by the owner; not generated).
+
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/knest-${Environment}'
+      RetentionInDays: !Ref LogRetentionDays
+
+  # ----------------------------------------------------------- host identity
+  InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'knest-${Environment}-ec2'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement: [{ Effect: Allow, Principal: { Service: ec2.amazonaws.com }, Action: 'sts:AssumeRole' }]
+      ManagedPolicyArns: ['arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore']
+      Policies:
+        - PolicyName: app
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: DocumentsAndMedia
+                Effect: Allow
+                Action: ['s3:GetObject', 's3:PutObject']
+                Resource: !Sub '${Bucket.Arn}/*'
+              - Sid: PullImages
+                Effect: Allow
+                Action: ['ecr:BatchGetImage', 'ecr:GetDownloadUrlForLayer', 'ecr:BatchCheckLayerAvailability']
+                Resource: !Sub 'arn:${AWS::Partition}:ecr:${AWS::Region}:${AWS::AccountId}:repository/${EcrRepositoryName}'
+              - Sid: EcrLogin
+                Effect: Allow
+                Action: 'ecr:GetAuthorizationToken'
+                Resource: '*'
+              - Sid: ReadOnlyItsOwnSecrets
+                Effect: Allow
+                Action: 'secretsmanager:GetSecretValue'
+                Resource:
+                  - !Ref OriginVerifySecret
+                  - !Ref AuthSecret
+                  - !Ref PayloadSecret
+                  - !Ref TurnstileSecret
+                  - !GetAtt Database.MasterUserSecret.SecretArn
+              - Sid: ConfigurationParameters
+                Effect: Allow
+                Action: ['ssm:GetParameter', 'ssm:GetParameters', 'ssm:GetParametersByPath']
+                Resource: !Sub 'arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/knest-${Environment}/*'
+              - Sid: Logs
+                Effect: Allow
+                Action: ['logs:CreateLogStream', 'logs:PutLogEvents', 'logs:DescribeLogStreams']
+                Resource: [!GetAtt LogGroup.Arn, !Sub '${LogGroup.Arn}:*']
+              - Sid: SendMailFromTheConfiguredAddressOnly
+                Effect: Allow
+                Action: ['ses:SendEmail', 'ses:SendRawEmail']
+                Resource: '*'
+                Condition: { StringEquals: { 'ses:FromAddress': !Ref EmailFromAddress } }
+
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: !Sub 'knest-${Environment}-ec2'
+      Roles: [!Ref InstanceRole]
+
+  # Non-secret settings the deploy document reads. Secrets stay in Secrets Manager.
+  ConfigSiteUrl:
+    Type: AWS::SSM::Parameter
+    Properties: { Name: !Sub '/knest-${Environment}/config/site-url', Type: String, Value: !Ref SiteUrl }
+  ConfigBucket:
+    Type: AWS::SSM::Parameter
+    Properties: { Name: !Sub '/knest-${Environment}/config/bucket', Type: String, Value: !Ref Bucket }
+  ConfigDbEndpoint:
+    Type: AWS::SSM::Parameter
+    Properties: { Name: !Sub '/knest-${Environment}/config/db-endpoint', Type: String, Value: !GetAtt Database.Endpoint.Address }
+  ConfigDbSecretArn:
+    Type: AWS::SSM::Parameter
+    Properties: { Name: !Sub '/knest-${Environment}/config/db-secret-arn', Type: String, Value: !GetAtt Database.MasterUserSecret.SecretArn }
+  ConfigEmailFrom:
+    Type: AWS::SSM::Parameter
+    Properties: { Name: !Sub '/knest-${Environment}/config/email-from', Type: String, Value: !Ref EmailFromAddress }
+  ConfigSecretIds:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/knest-${Environment}/config/secret-ids'
+      Type: String
+      Value: !Sub 'knest-${Environment}/origin-verify,knest-${Environment}/auth-secret,knest-${Environment}/payload-secret'
+
+  # --------------------------------------------------------------- the host
+  AppInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref LatestAmiId
+      InstanceType: !Ref InstanceType
+      IamInstanceProfile: !Ref InstanceProfile
+      SubnetId: !Ref PublicSubnet
+      SecurityGroupIds: [!Ref AppSecurityGroup]
+      # IMDSv2 only; hop limit 2 so a container can reach the metadata service for the role credentials.
+      MetadataOptions: { HttpTokens: required, HttpPutResponseHopLimit: 2, HttpEndpoint: enabled }
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs: { VolumeSize: 20, VolumeType: gp3, Encrypted: true, DeleteOnTermination: true }
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+          set -euo pipefail
+          dnf install -y docker jq
+          systemctl enable --now docker
+          mkdir -p /opt/knest
+          # The RDS certificate authority bundle, so the app can verify the database's TLS certificate.
+          curl -fsS -o /opt/knest/rds-global-bundle.pem https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
+      Tags:
+        - { Key: Name, Value: !Sub 'knest-${Environment}-app' }
+        - { Key: knest-deploy-target, Value: !Ref Environment }
+        - { Key: expires, Value: !Ref ExpiresOn }
+
+  # Deploys an image by digest: migrate, then (re)start the app. If the new container is not
+  # healthy it is removed and the previous one is started again. Run from the pipeline with
+  # SSM Run Command; nothing about it needs a person on the host.
+  DeployDocument:
+    Type: AWS::SSM::Document
+    Properties:
+      DocumentType: Command
+      Name: !Sub 'knest-${Environment}-deploy'
+      Content:
+        schemaVersion: '2.2'
+        description: Deploy a KNEST image by digest (migrate, then restart; roll back if unhealthy).
+        parameters:
+          Environment:
+            type: String
+            default: !Ref Environment
+          AppImage:
+            type: String
+            description: Full ECR URI of the app image, by digest (ends in @sha256:...). A tag is refused.
+            allowedPattern: '^[0-9]+\.dkr\.ecr\.[a-z0-9-]+\.amazonaws\.com/[a-z0-9._/-]+@sha256:[a-f0-9]{64}$'
+          MigrateImage:
+            type: String
+            description: Full ECR URI of the migrate-target image built from the same commit, by digest.
+            allowedPattern: '^[0-9]+\.dkr\.ecr\.[a-z0-9-]+\.amazonaws\.com/[a-z0-9._/-]+@sha256:[a-f0-9]{64}$'
+        mainSteps:
+          - action: aws:runShellScript
+            name: deploy
+            inputs:
+              timeoutSeconds: '900'
+              runCommand:
+                - |
+                  set -euo pipefail
+                  ENVIRONMENT="{{ Environment }}"
+                  APP_IMAGE="{{ AppImage }}"
+                  MIGRATE_IMAGE="{{ MigrateImage }}"
+                  TOKEN=$(curl -fsS -X PUT http://169.254.169.254/latest/api/token -H 'X-aws-ec2-metadata-token-ttl-seconds: 120')
+                  REGION=$(curl -fsS -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/placement/region)
+                  param() { aws ssm get-parameter --region "$REGION" --name "/knest-$ENVIRONMENT/config/$1" --query Parameter.Value --output text; }
+                  secret() { aws secretsmanager get-secret-value --region "$REGION" --secret-id "$1" --query SecretString --output text; }
+
+                  # Registry login for the image host (the instance role pulls; no stored credentials).
+                  REGISTRY="${APP_IMAGE%%/*}"
+                  aws ecr get-login-password --region "$REGION" | docker login --username AWS --password-stdin "$REGISTRY" >/dev/null
+
+                  # Build the environment file in memory-backed storage, readable by root only.
+                  DB_SECRET=$(secret "$(param db-secret-arn)")
+                  DB_USER=$(echo "$DB_SECRET" | jq -r .username)
+                  DB_PASSWORD=$(echo "$DB_SECRET" | jq -rj .password | jq -sRr @uri)
+                  SITE_URL=$(param site-url)
+                  umask 077
+                  mkdir -p /run/knest
+                  {
+                    echo "NODE_ENV=production"
+                    echo "DATABASE_URL=postgres://${DB_USER}:${DB_PASSWORD}@$(param db-endpoint):5432/knest"
+                    echo "DATABASE_SSL=verify"
+                    echo "DATABASE_SSL_CA_FILE=/etc/knest/rds-global-bundle.pem"
+                    echo "AUTH_SECRET=$(secret "knest-$ENVIRONMENT/auth-secret")"
+                    echo "PAYLOAD_SECRET=$(secret "knest-$ENVIRONMENT/payload-secret")"
+                    echo "ORIGIN_VERIFY_SECRET=$(secret "knest-$ENVIRONMENT/origin-verify")"
+                    echo "SITE_URL=${SITE_URL}"
+                    echo "AUTH_URL=${SITE_URL}"
+                    echo "AUTH_TRUST_HOST=true"
+                    echo "CLIENT_IP_SOURCE=cloudfront"
+                    echo "S3_BUCKET=$(param bucket)"
+                    echo "S3_REGION=${REGION}"
+                    echo "EMAIL_TRANSPORT=ses"
+                    echo "EMAIL_FROM=$(param email-from)"
+                  } > /run/knest/app.env
+
+                  RUN_OPTS="--env-file /run/knest/app.env -v /opt/knest/rds-global-bundle.pem:/etc/knest/rds-global-bundle.pem:ro"
+                  PREVIOUS=$(docker inspect knest 2>/dev/null | jq -r '.[0].Config.Image // empty' || true)
+
+                  echo "Migrating with $MIGRATE_IMAGE"
+                  docker pull "$MIGRATE_IMAGE" >/dev/null
+                  docker run --rm $RUN_OPTS "$MIGRATE_IMAGE"
+
+                  echo "Starting $APP_IMAGE (previous: ${PREVIOUS:-none})"
+                  docker pull "$APP_IMAGE" >/dev/null
+                  docker rm -f knest >/dev/null 2>&1 || true
+                  start() {
+                    docker run -d --name knest --restart unless-stopped $RUN_OPTS -p 3000:3000 \
+                      --log-driver awslogs --log-opt "awslogs-region=$REGION" --log-opt "awslogs-group=/knest-$ENVIRONMENT" --log-opt "awslogs-stream=app-$(date +%s)" "$1" >/dev/null
+                  }
+                  start "$APP_IMAGE"
+                  for i in $(seq 1 45); do
+                    STATUS=$(docker inspect knest | jq -r '.[0].State.Health.Status // "starting"')
+                    [ "$STATUS" = "healthy" ] && { echo "healthy"; rm -f /run/knest/app.env; echo "$APP_IMAGE" > /opt/knest/current; [ -n "$PREVIOUS" ] && echo "$PREVIOUS" > /opt/knest/previous; exit 0; }
+                    sleep 2
+                  done
+                  echo "NOT healthy after 90 s; rolling back" >&2
+                  docker logs --tail 40 knest >&2 || true
+                  docker rm -f knest >/dev/null 2>&1 || true
+                  if [ -n "$PREVIOUS" ]; then start "$PREVIOUS" && echo "restored $PREVIOUS" >&2; fi
+                  rm -f /run/knest/app.env
+                  exit 1
+
+  # ---------------------------------------------------------------- alarms
+  AlertTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub 'knest-${Environment}-alerts'
+  AlertSubscription:
+    Type: AWS::SNS::Subscription
+    Condition: HasAlertEmail
+    Properties: { TopicArn: !Ref AlertTopic, Protocol: email, Endpoint: !Ref AlertEmail }
+
+  HostStatusAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: The instance failed its status checks.
+      Namespace: AWS/EC2
+      MetricName: StatusCheckFailed
+      Dimensions: [{ Name: InstanceId, Value: !Ref AppInstance }]
+      Statistic: Maximum
+      Period: 60
+      EvaluationPeriods: 3
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: breaching
+      AlarmActions: [!Ref AlertTopic]
+  DbCpuAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Database CPU above 80 percent for 15 minutes.
+      Namespace: AWS/RDS
+      MetricName: CPUUtilization
+      Dimensions: [{ Name: DBInstanceIdentifier, Value: !Ref Database }]
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 3
+      Threshold: 80
+      ComparisonOperator: GreaterThanThreshold
+      AlarmActions: [!Ref AlertTopic]
+  DbStorageAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Database free storage below 4 GB.
+      Namespace: AWS/RDS
+      MetricName: FreeStorageSpace
+      Dimensions: [{ Name: DBInstanceIdentifier, Value: !Ref Database }]
+      Statistic: Minimum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 4294967296
+      ComparisonOperator: LessThanThreshold
+      AlarmActions: [!Ref AlertTopic]
+
+Outputs:
+  VpcId:
+    Value: !Ref Vpc
+  InstanceId:
+    Value: !Ref AppInstance
+  InstancePublicDnsName:
+    Description: The origin DNS name for the distribution.
+    Value: !GetAtt AppInstance.PublicDnsName
+  DatabaseEndpoint:
+    Value: !GetAtt Database.Endpoint.Address
+  BucketName:
+    Value: !Ref Bucket
+  OriginVerifySecretName:
+    Value: !Sub 'knest-${Environment}/origin-verify'
+  DeployDocumentName:
+    Value: !Ref DeployDocument

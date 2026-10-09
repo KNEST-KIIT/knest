@@ -1,0 +1,106 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  KNEST AWS WAF web ACL for the CloudFront distribution. DEPLOY IN us-east-1
+  (CLOUDFRONT-scope web ACLs only exist there). Three AWS managed rule groups and
+  two rate-based rules, as costed in docs/delivery/AWS-PRODUCTION-BUDGET.md. No
+  paid CAPTCHA or Bot Control (owner decision ARCH-2). STATUS: written, not yet
+  deployed or validated by CloudFormation.
+
+Parameters:
+  Environment:
+    Type: String
+    AllowedValues: [s1, production]
+  AuthRateLimit:
+    Type: Number
+    Default: 100
+    Description: Requests per 5 minutes per IP allowed to /api/auth/*.
+  GlobalRateLimit:
+    Type: Number
+    Default: 2000
+    Description: Requests per 5 minutes per IP allowed to anything.
+
+Resources:
+  WebAcl:
+    Type: AWS::WAFv2::WebACL
+    Properties:
+      Name: !Sub 'knest-${Environment}-web-acl'
+      Scope: CLOUDFRONT
+      DefaultAction: { Allow: {} }
+      VisibilityConfig:
+        SampledRequestsEnabled: true
+        CloudWatchMetricsEnabled: true
+        MetricName: !Sub 'knest-${Environment}-web-acl'
+      Rules:
+        - Name: CommonRuleSet
+          Priority: 10
+          OverrideAction: { None: {} }
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesCommonRuleSet
+              # Application documents are uploaded as multipart bodies up to 10 MB;
+              # the default body-size rule would block them. The application limits and
+              # inspects uploads itself (src/server/applications/actions.ts).
+              RuleActionOverrides:
+                - Name: SizeRestrictions_BODY
+                  ActionToUse: { Count: {} }
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: CommonRuleSet
+        - Name: KnownBadInputs
+          Priority: 20
+          OverrideAction: { None: {} }
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesKnownBadInputsRuleSet
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: KnownBadInputs
+        - Name: IpReputation
+          Priority: 30
+          OverrideAction: { None: {} }
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesAmazonIpReputationList
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: IpReputation
+        - Name: RateLimitAuth
+          Priority: 40
+          Action: { Block: {} }
+          Statement:
+            RateBasedStatement:
+              Limit: !Ref AuthRateLimit
+              AggregateKeyType: IP
+              ScopeDownStatement:
+                ByteMatchStatement:
+                  SearchString: /api/auth/
+                  FieldToMatch: { UriPath: {} }
+                  PositionalConstraint: STARTS_WITH
+                  TextTransformations:
+                    - Priority: 0
+                      Type: LOWERCASE
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: RateLimitAuth
+        - Name: RateLimitGlobal
+          Priority: 50
+          Action: { Block: {} }
+          Statement:
+            RateBasedStatement:
+              Limit: !Ref GlobalRateLimit
+              AggregateKeyType: IP
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: RateLimitGlobal
+
+Outputs:
+  WebAclArn:
+    Value: !GetAtt WebAcl.Arn

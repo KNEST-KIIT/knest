@@ -30,11 +30,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - uses: pnpm/action-setup@v4 # version comes from "packageManager" in package.json
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4 # version comes from "packageManager" in package.json
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 24
           cache: pnpm
@@ -43,6 +43,10 @@ jobs:
 
       - name: Lint
         run: pnpm lint
+
+      # High-signal credential shapes only; fails the build on any hit and never prints the value.
+      - name: Secret scan
+        run: node scripts/scan-secrets.mjs
 
       - name: Typecheck
         run: pnpm typecheck
@@ -80,11 +84,11 @@ jobs:
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/knest_test
       PW_CHANNEL: chrome # preinstalled on GitHub's Ubuntu runners
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 24
           cache: pnpm
@@ -99,3 +103,93 @@ jobs:
       # changed without a committed Payload migration.
       - name: Integration tests
         run: pnpm test:integration
+
+  image:
+    name: Production image builds, migrates and starts
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: knest_image
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d knest_image"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      IMAGE_DB: postgres://postgres:postgres@127.0.0.1:5432/knest_image
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      # Both targets come from one Dockerfile, so the migration and the app are always the same code.
+      - name: Build the migrate and runner targets
+        run: |
+          docker build --target migrate -t knest-migrate:ci .
+          docker build --target runner -t knest-app:ci .
+
+      - name: The runner image is lean and unprivileged
+        run: |
+          test "$(docker run --rm --entrypoint id knest-app:ci -u)" = "1001"
+          docker run --rm --entrypoint sh knest-app:ci -c 'test ! -e /app/.env && test ! -d /app/src && test ! -d /app/tests && test ! -d /app/node_modules/typescript'
+
+      - name: Migrate an empty database from the image
+        run: |
+          docker run --rm --network host \
+            -e DATABASE_URL="$IMAGE_DB" -e DATABASE_SSL=off \
+            -e AUTH_SECRET=ci-only-auth-secret-0123456789abcdef0123456789 \
+            -e PAYLOAD_SECRET=ci-only-payload-secret-0123456789abcdef012345 \
+            knest-migrate:ci
+
+      - name: Start the app image with a production-shaped environment
+        run: |
+          docker run -d --name knest --network host \
+            -e DATABASE_URL="$IMAGE_DB" -e DATABASE_SSL=off \
+            -e AUTH_SECRET=ci-only-auth-secret-0123456789abcdef0123456789 \
+            -e PAYLOAD_SECRET=ci-only-payload-secret-0123456789abcdef012345 \
+            -e SITE_URL=http://127.0.0.1:3000 -e AUTH_URL=http://127.0.0.1:3000 -e AUTH_TRUST_HOST=true \
+            -e CLIENT_IP_SOURCE=x-forwarded-for \
+            -e S3_BUCKET=ci-bucket -e S3_REGION=ap-south-1 -e S3_ACCESS_KEY_ID=ci -e S3_SECRET_ACCESS_KEY=ci \
+            -e SMTP_HOST=127.0.0.1 -e EMAIL_FROM=ci@knest.test \
+            -e TURNSTILE_SECRET_KEY=ci-turnstile-secret -e TURNSTILE_SITE_KEY=ci-site \
+            knest-app:ci
+          for i in $(seq 1 60); do curl -fsS http://127.0.0.1:3000/api/health >/dev/null 2>&1 && break; sleep 2; done
+          curl -fsS http://127.0.0.1:3000/api/health | grep -q '"status":"ok"'
+
+      # The same checks that run against the real distribution, here against the real container.
+      - name: Verify the running image
+        run: node scripts/verify-production.mjs --url http://127.0.0.1:3000 --evidence image-verification.md
+
+      - name: A misconfigured container refuses to serve
+        run: |
+          docker run -d --name knest-bad --network host -e PORT=3999 -e DATABASE_URL="$IMAGE_DB" \
+            -e AUTH_SECRET=short -e PAYLOAD_SECRET=short knest-app:ci
+          sleep 20
+          code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3999/login || true)
+          echo "misconfigured container answered: $code"
+          [ "$code" != "200" ]
+          docker logs knest-bad 2>&1 | grep -q 'Invalid production environment'
+
+      - name: Container log on failure
+        if: failure()
+        run: |
+          docker logs knest || true
+          docker logs knest-bad || true
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: image-verification
+          path: image-verification.md
+          if-no-files-found: ignore

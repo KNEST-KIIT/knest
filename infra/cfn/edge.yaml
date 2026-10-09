@@ -1,0 +1,240 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  KNEST edge: CloudFront distribution, AWS WAF web ACL, the viewer-request
+  function (canonical-host redirects and the private-first access gate) and an
+  HSTS response-headers policy. DEPLOY IN ap-south-1 (CloudFront is global; the WAF web ACL and the ACM
+  certificate come from stacks in us-east-1: waf.yaml and cert.yaml). STATUS: written, tested for syntax and structure
+  by infra/cfn/templates.test.ts, NOT yet deployed and NOT yet validated by
+  CloudFormation (no AWS access at the time of writing).
+
+Parameters:
+  Environment:
+    Type: String
+    AllowedValues: [s1, production]
+    Description: s1 is the disposable spike; production is the one real environment.
+  OriginDomainName:
+    Type: String
+    Description: DNS name CloudFront connects to (the instance's public DNS name, or a load balancer name).
+  OriginPort:
+    Type: Number
+    Default: 3000
+  OriginProtocol:
+    Type: String
+    Default: http-only
+    AllowedValues: [http-only, https-only]
+    Description: >-
+      http-only is only acceptable for the S-1 measurements. Production must use
+      https-only (see AWS-NATIVE-ARCHITECTURE.md section 3 on origin TLS).
+  OriginVerifySecretId:
+    Type: String
+    Description: >-
+      Name of the Secrets Manager secret created by app.yaml that holds the origin
+      verification token. It is added as X-Origin-Verify to every request sent to
+      the origin; the app refuses requests without it. Resolved by CloudFormation
+      at deploy time and never shown.
+  WebAclArn:
+    Type: String
+    Description: ARN of the WAFv2 web ACL from waf.yaml (a us-east-1 stack).
+  AccessHash:
+    Type: String
+    NoEcho: true
+    Default: ''
+    Description: >-
+      SHA-256 hex digest of "user:password" for the private-first access gate.
+      Empty means the site is public. Never put the password here.
+  AcmCertificateArn:
+    Type: String
+    Default: ''
+    Description: ACM certificate in us-east-1 covering the aliases. Empty uses the default *.cloudfront.net certificate.
+  Aliases:
+    Type: CommaDelimitedList
+    Default: ''
+    Description: Alternate domain names to attach (kiitnest.com, www.kiitnest.com, kiitnest.in, www.kiitnest.in). Empty during private verification.
+
+Conditions:
+  HasCertificate: !Not [!Equals [!Ref AcmCertificateArn, '']]
+  HasAliases: !Not [!Equals [!Join ['', !Ref Aliases], '']]
+
+Resources:
+  ViewerRequestFunction:
+    Type: AWS::CloudFront::Function
+    Properties:
+      Name: !Sub 'knest-${Environment}-viewer-request'
+      AutoPublish: true
+      FunctionConfig:
+        Comment: Canonical-host redirects and the optional access gate
+        Runtime: cloudfront-js-2.0
+      FunctionCode: !Sub |
+        // CloudFront Function, viewer-request, runtime cloudfront-js-2.0.
+        //
+        // 1. Redirects the alternate hostnames to the canonical https://kiitnest.com,
+        //    permanently, keeping the path and the query string. Any other hostname (for
+        //    example the distribution's own *.cloudfront.net name used during private
+        //    verification) passes through untouched.
+        // 2. Optional access gate for the private-first phase (HTTP Basic): when
+        //    ACCESS_HASH is not empty, a request must carry credentials whose SHA-256 hex
+        //    digest of "user:password" equals it, otherwise 401. The credentials
+        //    themselves are never in this file or in a template, only their digest. The
+        //    gate also removes the Authorization header so the origin never sees it.
+        //
+        // ACCESS_HASH is replaced by CloudFormation (edge.yaml); an empty value means the
+        // site is public. A test (infra/edge/viewer-request.test.ts) keeps this file and
+        // the template's inline copy identical.
+
+        var crypto = require('crypto');
+        var Buffer = require('buffer').Buffer;
+
+        var CANONICAL_HOST = 'kiitnest.com';
+        var REDIRECT_HOSTS = ['www.kiitnest.com', 'kiitnest.in', 'www.kiitnest.in'];
+        var ACCESS_HASH = '${AccessHash}';
+
+        function queryString(querystring) {
+          var parts = [];
+          for (var key in querystring) {
+            var entry = querystring[key];
+            if (entry.multiValue) {
+              for (var i = 0; i < entry.multiValue.length; i++) {
+                parts.push(entry.multiValue[i].value === '' ? key : key + '=' + entry.multiValue[i].value);
+              }
+            } else {
+              parts.push(entry.value === '' ? key : key + '=' + entry.value);
+            }
+          }
+          return parts.length ? '?' + parts.join('&') : '';
+        }
+
+        function unauthorized() {
+          return {
+            statusCode: 401,
+            statusDescription: 'Unauthorized',
+            headers: {
+              'www-authenticate': { value: 'Basic realm="KNEST (restricted)", charset="UTF-8"' },
+              'cache-control': { value: 'no-store' },
+            },
+          };
+        }
+
+        function handler(event) {
+          var request = event.request;
+          var hostHeader = request.headers.host ? request.headers.host.value : '';
+          var host = hostHeader.toLowerCase().split(':')[0];
+
+          if (REDIRECT_HOSTS.indexOf(host) !== -1) {
+            return {
+              statusCode: 301,
+              statusDescription: 'Moved Permanently',
+              headers: {
+                location: { value: 'https://' + CANONICAL_HOST + request.uri + queryString(request.querystring) },
+                'cache-control': { value: 'public, max-age=3600' },
+              },
+            };
+          }
+
+          if (ACCESS_HASH !== '') {
+            var authorization = request.headers.authorization ? request.headers.authorization.value : '';
+            if (authorization.slice(0, 6) !== 'Basic ') return unauthorized();
+            var decoded = Buffer.from(authorization.slice(6), 'base64').toString('utf8');
+            var digest = crypto.createHash('sha256').update(decoded).digest('hex');
+            if (digest !== ACCESS_HASH) return unauthorized();
+            delete request.headers.authorization;
+          }
+
+          return request;
+        }
+
+  SecurityHeaders:
+    Type: AWS::CloudFront::ResponseHeadersPolicy
+    Properties:
+      ResponseHeadersPolicyConfig:
+        Name: !Sub 'knest-${Environment}-hsts'
+        Comment: HSTS only; the application sets CSP and the other security headers itself.
+        SecurityHeadersConfig:
+          StrictTransportSecurity:
+            AccessControlMaxAgeSec: 31536000
+            IncludeSubdomains: false
+            Preload: false
+            Override: true
+
+  StaticAssetsCachePolicy:
+    Type: AWS::CloudFront::CachePolicy
+    Properties:
+      CachePolicyConfig:
+        Name: !Sub 'knest-${Environment}-static-assets'
+        Comment: Fingerprinted build assets only. No cookies, headers or query strings in the cache key.
+        MinTTL: 0
+        DefaultTTL: 86400
+        MaxTTL: 31536000
+        ParametersInCacheKeyAndForwardedToOrigin:
+          EnableAcceptEncodingGzip: true
+          EnableAcceptEncodingBrotli: true
+          CookiesConfig: { CookieBehavior: none }
+          HeadersConfig: { HeaderBehavior: none }
+          QueryStringsConfig: { QueryStringBehavior: none }
+
+  Distribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: !Sub 'KNEST ${Environment}'
+        HttpVersion: http2and3
+        IPV6Enabled: true
+        PriceClass: PriceClass_All
+        WebACLId: !Ref WebAclArn
+        Aliases: !If [HasAliases, !Ref Aliases, !Ref 'AWS::NoValue']
+        ViewerCertificate: !If
+          - HasCertificate
+          - AcmCertificateArn: !Ref AcmCertificateArn
+            SslSupportMethod: sni-only
+            MinimumProtocolVersion: TLSv1.2_2021
+          - CloudFrontDefaultCertificate: true
+        Origins:
+          - Id: app
+            DomainName: !Ref OriginDomainName
+            OriginCustomHeaders:
+              - HeaderName: X-Origin-Verify
+                HeaderValue: !Sub '{{resolve:secretsmanager:${OriginVerifySecretId}:SecretString}}'
+            CustomOriginConfig:
+              HTTPPort: !Ref OriginPort
+              HTTPSPort: !Ref OriginPort
+              OriginProtocolPolicy: !Ref OriginProtocol
+              OriginSSLProtocols: [TLSv1.2]
+              OriginReadTimeout: 60
+        DefaultCacheBehavior:
+          TargetOriginId: app
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods: [GET, HEAD, OPTIONS, PUT, PATCH, POST, DELETE]
+          CachedMethods: [GET, HEAD]
+          Compress: true
+          # Managed policy "CachingDisabled": nothing dynamic is ever stored.
+          CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+          # Managed policy "AllViewerAndCloudFrontHeaders-2022-06": forwards all
+          # cookies, headers (including Host and CloudFront-Viewer-Address, which the
+          # app uses for the client IP) and query strings.
+          OriginRequestPolicyId: 33f36d7e-f396-46d9-90e0-52428a34d9dc
+          ResponseHeadersPolicyId: !Ref SecurityHeaders
+          FunctionAssociations:
+            - EventType: viewer-request
+              FunctionARN: !GetAtt ViewerRequestFunction.FunctionMetadata.FunctionARN
+        CacheBehaviors:
+          - PathPattern: /_next/static/*
+            TargetOriginId: app
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods: [GET, HEAD]
+            CachedMethods: [GET, HEAD]
+            Compress: true
+            CachePolicyId: !Ref StaticAssetsCachePolicy
+            ResponseHeadersPolicyId: !Ref SecurityHeaders
+            FunctionAssociations:
+              - EventType: viewer-request
+                FunctionARN: !GetAtt ViewerRequestFunction.FunctionMetadata.FunctionARN
+      Tags:
+        - Key: project
+          Value: !Sub 'knest-${Environment}'
+
+Outputs:
+  DistributionId:
+    Value: !Ref Distribution
+  DistributionDomainName:
+    Description: The *.cloudfront.net name used for private verification before DNS points anywhere.
+    Value: !GetAtt Distribution.DomainName
