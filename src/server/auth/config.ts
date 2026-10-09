@@ -3,17 +3,26 @@ import { eq } from 'drizzle-orm'
 import type { NextAuthConfig } from 'next-auth'
 import Google from 'next-auth/providers/google'
 import { db } from '@/db/client'
+import { activeOnly } from './active-only-adapter'
 import { accounts, sessions, users, verificationTokens } from '@/db/schema'
 
 const googleEnabled = Boolean(process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET)
 
 export const authConfig = {
-  adapter: DrizzleAdapter(db, {
-    usersTable: users,
-    accountsTable: accounts,
-    sessionsTable: sessions,
-    verificationTokensTable: verificationTokens,
-  }),
+  // A deactivated account (or one whose row is gone) cannot hold a session: see
+  // active-only-adapter.ts (KN-10).
+  adapter: activeOnly(
+    DrizzleAdapter(db, {
+      usersTable: users,
+      accountsTable: accounts,
+      sessionsTable: sessions,
+      verificationTokensTable: verificationTokens,
+    }),
+    async (userId) => {
+      const row = await db.query.users.findFirst({ where: eq(users.id, userId), columns: { isActive: true } })
+      return row?.isActive === true
+    },
+  ),
   // Database sessions, not JWT: a session can be revoked server-side the moment
   // a role changes or an account is disabled (spec §31).
   session: { strategy: 'database', maxAge: 30 * 24 * 60 * 60 },
@@ -23,6 +32,12 @@ export const authConfig = {
   // the same database session directly — see src/server/auth/session.ts.
   providers: [...(googleEnabled ? [Google] : [])],
   callbacks: {
+    /** Google sign-in must not bypass deactivation (password login already refuses it). */
+    async signIn({ user }) {
+      if (!user.email) return true
+      const row = await db.query.users.findFirst({ where: eq(users.email, user.email), columns: { isActive: true } })
+      return row ? row.isActive : true
+    },
     /**
      * Roles are read from the database on every session read rather than baked
      * into a token, so revoking a staffRole takes effect on the next request.
