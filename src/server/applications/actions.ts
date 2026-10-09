@@ -2,7 +2,7 @@
 
 import { and, desc, eq } from 'drizzle-orm'
 import { db } from '@/db/client'
-import { applicationAnswers, applicationDocuments, applications, users } from '@/db/schema'
+import { applicationAnswers, applicationDocuments, applications, auditLogs, users } from '@/db/schema'
 import { requireUserOrThrow, UnauthorizedError } from '@/server/auth/guards'
 import { sendNotificationEmail, writeNotification } from '@/server/notifications/send'
 import { applicationReceivedTemplate } from '@/server/notifications/templates'
@@ -22,6 +22,15 @@ export async function getApplicationStatusForUser(userId: string, programId: num
     columns: { status: true },
   })
   return existing?.status ?? null
+}
+
+/** Read-only lookup of the signed-in user's application to a program; creates nothing. */
+export async function findApplicationForProgram(userId: string, programId: number) {
+  const existing = await db.query.applications.findFirst({
+    where: and(eq(applications.userId, userId), eq(applications.programId, programId)),
+    columns: { id: true, status: true },
+  })
+  return existing ?? null
 }
 
 /**
@@ -283,6 +292,15 @@ export async function submitApplication(applicationId: string): Promise<ActionRe
       .update(applications)
       .set({ status: 'submitted', submittedAt: new Date(), updatedAt: new Date(), questionSnapshot: program.questions })
       .where(eq(applications.id, applicationId))
+
+    await tx.insert(auditLogs).values({
+      actorUserId: sessionUser.id,
+      action: 'application_submitted',
+      entityType: 'application',
+      entityId: applicationId,
+      before: { status: 'draft' },
+      after: { status: 'submitted', programId: program.id, answers: answers.length, documents: documents.length },
+    })
 
     await writeNotification(tx, notifyInput)
     return { kind: 'submitted' as const }

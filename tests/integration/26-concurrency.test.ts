@@ -312,3 +312,39 @@ describe('questions frozen at submit, and programs that applications depend on (
     expect(await res.text()).toContain('A question from a removed program')
   })
 })
+
+describe('starting and submitting an application (R-06)', () => {
+  it('viewing the apply page creates nothing; pressing Start does; submit leaves an audit row', async () => {
+    const mail = email('explicit')
+    const userId = await createUser({ email: mail, platformRole: 'student' })
+    const me = (await login(mail))!
+    const count = async () => (await db().query('select count(*)::int c from app.applications where user_id = $1', [userId])).rows[0].c as number
+
+    for (let i = 0; i < 3; i++) {
+      const page = await get(`/apply/${programSlug}`, me)
+      expect(page.status).toBe(200)
+      expect(await page.text()).toContain('Start application')
+    }
+    expect(await count()).toBe(0)
+
+    const started = await post('/api/applications/start', me, { programSlug })
+    expect(started.status).toBe(200)
+    expect(await count()).toBe(1)
+    // a second press and a reload are harmless
+    expect((await post('/api/applications/start', me, { programSlug })).status).toBe(200)
+    expect(await count()).toBe(1)
+    const again = await (await get(`/apply/${programSlug}`, me)).text()
+    expect(again).not.toContain('Start application')
+
+    const applicationId = (await db().query('select id from app.applications where user_id = $1', [userId])).rows[0].id as string
+    await post(`/api/applications/${applicationId}/answer`, me, { questionId, value: 'ready' })
+    expect((await post(`/api/applications/${applicationId}/submit`, me)).status).toBe(200)
+    const audit = await db().query(
+      "select actor_user_id, before, after from app.audit_logs where action = 'application_submitted' and entity_id = $1",
+      [applicationId],
+    )
+    expect(audit.rows).toHaveLength(1)
+    expect(audit.rows[0].actor_user_id).toBe(userId)
+    expect(audit.rows[0].after).toMatchObject({ status: 'submitted', answers: 1 })
+  })
+})

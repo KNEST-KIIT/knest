@@ -2,8 +2,9 @@ import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import { requireUser } from '@/server/auth/guards'
 import { getApplicationProgramBySlug } from '@/server/applications/program-questions'
-import { getOwnedApplicationDetail, startApplication } from '@/server/applications/actions'
+import { findApplicationForProgram, getOwnedApplicationDetail } from '@/server/applications/actions'
 import { ApplicationForm } from './application-form'
+import { StartApplication } from './start-application'
 
 export async function generateMetadata({
   params,
@@ -22,15 +23,20 @@ export default async function ApplyPage({ params }: { params: Promise<{ program:
   const program = await getApplicationProgramBySlug(slug)
   if (!program) notFound()
 
-  const result = await startApplication(slug)
-  if (!result.ok) {
-    // Applications aren't open, or the deadline passed — send them back to
-    // the program page, which explains why and offers "notify me" instead
-    // of a dead end here.
-    redirect(`/programs/${slug}`)
+  // Viewing this page never creates anything: a draft is made only when the
+  // person presses Start (R-06).
+  const existing = await findApplicationForProgram(user.id, program.id)
+  if (!existing) {
+    // Not open, or the deadline passed — send them back to the program page,
+    // which explains why and offers "notify me" instead of a dead end here.
+    const closed =
+      program.applicationStatus !== 'open' ||
+      (program.applicationDeadline !== null && new Date(program.applicationDeadline) < new Date())
+    if (closed) redirect(`/programs/${slug}`)
+    return <StartApplication programSlug={slug} programTitle={program.title} />
   }
 
-  const detail = await getOwnedApplicationDetail(result.applicationId, user.id)
+  const detail = await getOwnedApplicationDetail(existing.id, user.id)
   if (!detail) redirect(`/programs/${slug}`)
 
   if (detail.application.status !== 'draft') {
