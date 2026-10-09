@@ -18,7 +18,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
   try {
     const result = await changeApplicationStatus(id, status, body?.note)
-    if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 })
+    if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.code === 'conflict' ? 409 : 400 })
     return NextResponse.json({ ok: true })
   } catch (error) {
     if (error instanceof UnauthorizedError) {

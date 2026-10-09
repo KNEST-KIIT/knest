@@ -10,15 +10,28 @@ export type ApplicationProgram = {
   questions: ApplicationQuestion[]
 }
 
-/** The single place that reads a program's question set — used by both the applicant form and server-side submit validation, so they can never drift apart. */
-export async function getApplicationProgram(programId: number): Promise<ApplicationProgram | null> {
+/**
+ * The single place that reads a program's question set — used by both the applicant form and server-side submit validation, so they can never drift apart.
+ *
+ * A missing or unpublished program is `null`, never a thrown error: findByID
+ * throws NotFound for both, which turned a program being unpublished or
+ * deleted into a 500 on every page that touched an existing application
+ * (R-04). Staff pass `includeUnpublished` so review still sees the questions
+ * an applicant answered after the program was taken down.
+ */
+export async function getApplicationProgram(
+  programId: number,
+  options: { includeUnpublished?: boolean } = {},
+): Promise<ApplicationProgram | null> {
   const payload = await getContentClient()
-  const program = await payload.findByID({
+  const result = await payload.find({
     collection: 'programs',
-    id: programId,
+    where: { id: { equals: programId } },
     depth: 0,
-    overrideAccess: false,
+    limit: 1,
+    overrideAccess: options.includeUnpublished === true,
   })
+  const program = result.docs[0]
   return program ? mapProgram(program) : null
 }
 

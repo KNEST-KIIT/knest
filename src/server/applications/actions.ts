@@ -91,6 +91,18 @@ async function loadOwnedApplication(applicationId: string, userId: string) {
   return application
 }
 
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0]
+
+/** Takes a row lock on the application and reports whether it is still a draft. Every write that must not outlive a submit goes through this, so they serialise with it. */
+async function lockDraft(tx: Tx, applicationId: string): Promise<boolean> {
+  const [row] = await tx
+    .select({ status: applications.status })
+    .from(applications)
+    .where(eq(applications.id, applicationId))
+    .for('update')
+  return row?.status === 'draft'
+}
+
 export async function saveAnswer(
   applicationId: string,
   questionId: string,
@@ -112,15 +124,22 @@ export async function saveAnswer(
     return { ok: false, error: parsed.error.issues[0]?.message ?? 'Check your answer.' }
   }
 
-  await db
-    .insert(applicationAnswers)
-    .values({ applicationId, questionId, value: parsed.data })
-    .onConflictDoUpdate({
-      target: [applicationAnswers.applicationId, applicationAnswers.questionId],
-      set: { value: parsed.data, updatedAt: new Date() },
-    })
-
-  await db.update(applications).set({ updatedAt: new Date() }).where(eq(applications.id, applicationId))
+  // The draft check above was a read; the write re-checks under a row lock so
+  // an answer cannot land after a concurrent submit has already frozen the
+  // application (R-05). Submit takes the same lock.
+  const saved = await db.transaction(async (tx) => {
+    if (!(await lockDraft(tx, applicationId))) return false
+    await tx
+      .insert(applicationAnswers)
+      .values({ applicationId, questionId, value: parsed.data })
+      .onConflictDoUpdate({
+        target: [applicationAnswers.applicationId, applicationAnswers.questionId],
+        set: { value: parsed.data, updatedAt: new Date() },
+      })
+    await tx.update(applications).set({ updatedAt: new Date() }).where(eq(applications.id, applicationId))
+    return true
+  })
+  if (!saved) return { ok: false, error: 'This application has already been submitted.' }
 
   return { ok: true }
 }
@@ -157,22 +176,28 @@ export async function uploadDocument(
   const storageKey = generateStorageKey(file.name)
   await putFile(storageKey, file.buffer)
 
-  await db
-    .insert(applicationDocuments)
-    .values({
-      applicationId,
-      questionId,
-      fileName: file.name,
-      storageKey,
-      mimeType: file.type,
-      fileSize: file.size,
-    })
-    .onConflictDoUpdate({
-      target: [applicationDocuments.applicationId, applicationDocuments.questionId],
-      set: { fileName: file.name, storageKey, mimeType: file.type, fileSize: file.size, uploadedAt: new Date() },
-    })
-
-  await db.update(applications).set({ updatedAt: new Date() }).where(eq(applications.id, applicationId))
+  // Same row lock as saveAnswer and submit: a file cannot be attached to an
+  // application that a concurrent submit has already frozen (R-05).
+  const saved = await db.transaction(async (tx) => {
+    if (!(await lockDraft(tx, applicationId))) return false
+    await tx
+      .insert(applicationDocuments)
+      .values({
+        applicationId,
+        questionId,
+        fileName: file.name,
+        storageKey,
+        mimeType: file.type,
+        fileSize: file.size,
+      })
+      .onConflictDoUpdate({
+        target: [applicationDocuments.applicationId, applicationDocuments.questionId],
+        set: { fileName: file.name, storageKey, mimeType: file.type, fileSize: file.size, uploadedAt: new Date() },
+      })
+    await tx.update(applications).set({ updatedAt: new Date() }).where(eq(applications.id, applicationId))
+    return true
+  })
+  if (!saved) return { ok: false, error: 'This application has already been submitted.' }
 
   return { ok: true }
 }
@@ -213,18 +238,6 @@ export async function submitApplication(applicationId: string): Promise<ActionRe
     return { ok: false, error: 'Verify your email before submitting.', code: 'verify-required' }
   }
 
-  const [answers, documents] = await Promise.all([
-    db.query.applicationAnswers.findMany({ where: eq(applicationAnswers.applicationId, applicationId) }),
-    db.query.applicationDocuments.findMany({ where: eq(applicationDocuments.applicationId, applicationId) }),
-  ])
-
-  // Re-validate what is stored against the program's current questions (KN-31).
-  const problem = findSubmissionProblem(
-    program.questions,
-    answers.map((a) => ({ questionId: a.questionId, value: a.value })),
-    documents.map((d) => d.questionId),
-  )
-  if (problem) return { ok: false, error: problem.message }
 
   // Status update and the notification's DB write commit together
   // (PHASE-7-9-RETROSPECTIVE.md §1) — a crash between the two previously
@@ -247,18 +260,35 @@ export async function submitApplication(applicationId: string): Promise<ActionRe
   // simultaneous submits cannot both succeed: exactly one updates a row and
   // writes the notification; the other is told it was already submitted. (The
   // earlier read-then-write let both through and sent two confirmations.)
-  const submitted = await db.transaction(async (tx) => {
-    const updated = await tx
+  //
+  // Validation runs inside the same transaction, after the row lock: answers
+  // and uploads take that lock too, so what is validated is exactly what is
+  // frozen — nothing can slip in between the check and the status change (R-05).
+  const outcome = await db.transaction(async (tx) => {
+    if (!(await lockDraft(tx, applicationId))) return { kind: 'already' as const }
+
+    const [answers, documents] = await Promise.all([
+      tx.select().from(applicationAnswers).where(eq(applicationAnswers.applicationId, applicationId)),
+      tx.select().from(applicationDocuments).where(eq(applicationDocuments.applicationId, applicationId)),
+    ])
+    // Re-validate what is stored against the program's current questions (KN-31).
+    const problem = findSubmissionProblem(
+      program.questions,
+      answers.map((a) => ({ questionId: a.questionId, value: a.value })),
+      documents.map((d) => d.questionId),
+    )
+    if (problem) return { kind: 'invalid' as const, message: problem.message }
+
+    await tx
       .update(applications)
       .set({ status: 'submitted', submittedAt: new Date(), updatedAt: new Date() })
-      .where(and(eq(applications.id, applicationId), eq(applications.status, 'draft')))
-      .returning({ id: applications.id })
-    if (updated.length === 0) return false
+      .where(eq(applications.id, applicationId))
 
     await writeNotification(tx, notifyInput)
-    return true
+    return { kind: 'submitted' as const }
   })
-  if (!submitted) return { ok: false, error: 'This application has already been submitted.' }
+  if (outcome.kind === 'already') return { ok: false, error: 'This application has already been submitted.' }
+  if (outcome.kind === 'invalid') return { ok: false, error: outcome.message }
 
   await sendNotificationEmail(sessionUser.id, notifyInput.email)
   await track('application_submit', { applicationId, programId: program.id })

@@ -2,7 +2,7 @@
 
 import { and, desc, eq } from 'drizzle-orm'
 import { db } from '@/db/client'
-import { applicationAnswers, applicationDocuments, applications, auditLogs, users } from '@/db/schema'
+import { applicationAnswers, applicationDocuments, applications, auditLogs } from '@/db/schema'
 import type { applicationStatus } from '@/db/schema'
 import { requireAdminArea, requireStaffOrThrow } from '@/server/auth/guards'
 import { sendNotificationEmail, writeNotification } from '@/server/notifications/send'
@@ -13,6 +13,8 @@ import { isLegalTransition } from './transitions'
 import type { ActionResult } from './actions'
 
 type Status = (typeof applicationStatus.enumValues)[number]
+
+const MAX_DECISION_NOTE = 2000
 
 export async function listApplicationsForReview(filters: { programId?: number; status?: Status }) {
   await requireAdminArea('applications')
@@ -46,7 +48,7 @@ export async function getApplicationForReview(applicationId: string) {
   })
   if (!application) return null
 
-  const program = await getApplicationProgram(application.programId)
+  const program = await getApplicationProgram(application.programId, { includeUnpublished: true })
   const [answers, documents] = await Promise.all([
     db.query.applicationAnswers.findMany({ where: eq(applicationAnswers.applicationId, applicationId) }),
     db.query.applicationDocuments.findMany({ where: eq(applicationDocuments.applicationId, applicationId) }),
@@ -70,6 +72,10 @@ export async function changeApplicationStatus(
 ): Promise<ActionResult> {
   const staff = await requireStaffOrThrow('applications')
 
+  if (note !== undefined && note !== null && (typeof note !== 'string' || note.length > MAX_DECISION_NOTE)) {
+    return { ok: false, error: `The note must be text of at most ${MAX_DECISION_NOTE} characters.` }
+  }
+
   const application = await db.query.applications.findFirst({ where: eq(applications.id, applicationId) })
   if (!application) return { ok: false, error: 'That application doesn’t exist.' }
 
@@ -80,7 +86,7 @@ export async function changeApplicationStatus(
     }
   }
 
-  const program = await getApplicationProgram(application.programId)
+  const program = await getApplicationProgram(application.programId, { includeUnpublished: true })
   const { subject, text } = applicationStatusChangedTemplate(program?.title ?? 'your program', newStatus)
   const notifyInput = {
     userId: application.userId,
@@ -99,8 +105,12 @@ export async function changeApplicationStatus(
   // triggered it saw an error. The email send stays outside the transaction
   // for the same reason as submitApplication's.
   const terminal = newStatus === 'accepted' || newStatus === 'rejected'
-  await db.transaction(async (tx) => {
-    await tx
+  //
+  // The update is conditional on the status that was just read, so two
+  // reviewers acting at once cannot both win: the second finds the row already
+  // moved, writes nothing (no audit row, no second notification) and is told so.
+  const moved = await db.transaction(async (tx) => {
+    const updated = await tx
       .update(applications)
       .set({
         status: newStatus,
@@ -108,7 +118,9 @@ export async function changeApplicationStatus(
         decisionNote: note ?? application.decisionNote,
         updatedAt: new Date(),
       })
-      .where(eq(applications.id, applicationId))
+      .where(and(eq(applications.id, applicationId), eq(applications.status, application.status)))
+      .returning({ id: applications.id })
+    if (updated.length === 0) return false
 
     await tx.insert(auditLogs).values({
       actorUserId: staff.id,
@@ -120,7 +132,11 @@ export async function changeApplicationStatus(
     })
 
     await writeNotification(tx, notifyInput)
+    return true
   })
+  if (!moved) {
+    return { ok: false, error: 'Someone else changed this application first. Reload to see its current status.', code: 'conflict' }
+  }
 
   await sendNotificationEmail(application.userId, notifyInput.email)
   if (newStatus === 'accepted') {
