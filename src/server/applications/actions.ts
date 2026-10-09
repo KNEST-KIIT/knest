@@ -7,6 +7,7 @@ import { requireUserOrThrow, UnauthorizedError } from '@/server/auth/guards'
 import { sendNotificationEmail, writeNotification } from '@/server/notifications/send'
 import { applicationReceivedTemplate } from '@/server/notifications/templates'
 import { track } from '@/server/analytics/track'
+import { formatDate } from '@/lib/dates'
 import { generateStorageKey, putFile } from '@/server/storage'
 import { enforceRateLimit, RATE_LIMITS } from '@/server/security/rate-limit'
 import { verifyFileContents } from '@/server/security/file-verify'
@@ -55,7 +56,7 @@ export async function startApplication(
     return { ok: false, error: 'Applications for this program aren’t open right now.' }
   }
   if (program.applicationDeadline && new Date(program.applicationDeadline) < new Date()) {
-    return { ok: false, error: `Applications for this program closed on ${program.applicationDeadline}.` }
+    return { ok: false, error: `Applications for this program closed on ${formatDate(program.applicationDeadline)}.` }
   }
 
   // /apply/[program] calls this on every page view, not just the first —
@@ -232,7 +233,7 @@ export async function submitApplication(applicationId: string): Promise<ActionRe
   if (program.applicationDeadline && new Date(program.applicationDeadline) < new Date()) {
     return {
       ok: false,
-      error: `Applications for this program closed on ${program.applicationDeadline}.`,
+      error: `Applications for this program closed on ${formatDate(program.applicationDeadline)}.`,
     }
   }
 

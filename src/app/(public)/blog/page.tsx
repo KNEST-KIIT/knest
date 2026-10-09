@@ -1,9 +1,9 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { EmptyState, Heading, LinkCard, Section, Tag } from '@/components/ui'
 import { PageHeader } from '@/components/layout/page-header'
 import { listArticles } from '@/server/content/articles'
 import { ARTICLES_EMPTY } from '@/lib/empty-state-copy'
+import { formatDateShort } from '@/lib/dates'
 
 export const metadata: Metadata = {
   title: 'Blog',
@@ -55,11 +55,7 @@ export default async function BlogPage() {
                 </span>
                 {article.publishedAt && (
                   <span>
-                    {new Date(article.publishedAt).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                    })}
+                    {formatDateShort(article.publishedAt)}
                   </span>
                 )}
               </div>

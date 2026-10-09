@@ -1,4 +1,5 @@
 import type { applicationStatus } from '@/db/schema'
+import { absoluteUrl } from '@/lib/site-url'
 
 /**
  * Application email copy, CONTENT_SPEC.md §7 verbatim.
@@ -12,7 +13,7 @@ const STATUS_SUBJECT = (program: string) => `Your application to ${program} — 
 export function applicationReceivedTemplate(program: string) {
   return {
     subject: `We've got your application to ${program}`,
-    text: `Thanks for applying to ${program}. Your application is in and our team will read it. We'll be in touch by the date shown on your dashboard.\n\nYou can track its status any time from /dashboard/applications.`,
+    text: `Thanks for applying to ${program}. Your application is in and our team will read it. We'll be in touch by the date shown on your dashboard.\n\nYou can track its status any time at ${absoluteUrl('/dashboard/applications')}.`,
   }
 }
 
@@ -35,6 +36,6 @@ export function applicationStatusChangedTemplate(
 ) {
   return {
     subject: STATUS_SUBJECT(program),
-    text: `${STATUS_BODY[status](program)}\n\nSee the full update at /dashboard/applications.`,
+    text: `${STATUS_BODY[status](program)}\n\nSee the full update at ${absoluteUrl('/dashboard/applications')}.`,
   }
 }

@@ -11,6 +11,7 @@ import { DUMMY_HASH } from './dummy-hash'
 import { createDatabaseSession, destroyDatabaseSession, revokeAllSessions } from './session'
 import { credentialsSchema, emailSchema, passwordSchema, signupSchema } from './validation'
 import { track } from '@/server/analytics/track'
+import { siteUrl } from '@/lib/site-url'
 
 export type AuthResult = { ok: true } | { ok: false; error: string }
 
@@ -18,13 +19,6 @@ export type AuthResult = { ok: true } | { ok: false; error: string }
 const VERIFY_TTL_MS = 24 * 60 * 60 * 1000
 const RESET_TTL_MS = 60 * 60 * 1000
 
-function siteUrl(): string {
-  const url = process.env.NEXT_PUBLIC_SITE_URL?.trim()
-  if (url) return url
-  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`
-  return 'http://localhost:3000'
-}
 
 export async function loginWithPassword(input: unknown): Promise<AuthResult> {
   const parsed = credentialsSchema.safeParse(input)

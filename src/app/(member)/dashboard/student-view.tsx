@@ -1,5 +1,5 @@
 import { EmptyState, Heading, LinkCard } from '@/components/ui'
-import { formatEventTime } from '@/lib/dates'
+import { formatEventTime, monthAndDay } from '@/lib/dates'
 import { RESOURCES_EMPTY } from '@/lib/empty-state-copy'
 import { pathHref } from '@/server/onboarding/destination'
 import { recommend } from '@/server/onboarding/recommend'
@@ -46,13 +46,12 @@ export async function StudentDashboard({ user }: { user: SessionUser }) {
           ) : (
             <div className="flex flex-col gap-4">
               {events.slice(0, 3).map((event) => {
-                const dateObj = new Date(event.startsAt)
                 return (
                   <LinkCard key={event.id} href={`/events/${event.slug}`} label={`View ${event.title}`} className="!p-4 hover:border-[var(--color-signal)]/50">
                     <div className="flex items-start gap-4">
                       <div className="flex flex-col items-center justify-center rounded-lg border border-[var(--color-line)] bg-[var(--color-paper-soft)] px-3 py-2 text-center min-w-[3.5rem]">
-                        <span className="text-[length:var(--text-small)] font-bold uppercase text-[var(--color-signal)] leading-none">{dateObj.toLocaleDateString('en-US', { month: 'short' })}</span>
-                        <span className="text-xl font-bold leading-none mt-1 text-[var(--color-ink)]">{dateObj.getDate()}</span>
+                        <span className="text-[length:var(--text-small)] font-bold uppercase text-[var(--color-signal)] leading-none">{monthAndDay(event.startsAt).month}</span>
+                        <span className="text-xl font-bold leading-none mt-1 text-[var(--color-ink)]">{monthAndDay(event.startsAt).day}</span>
                       </div>
                       <div>
                         <p className="font-medium text-[var(--color-ink)] line-clamp-1">{event.title}</p>
