@@ -36,3 +36,10 @@ Recorded from the owner's "Owner Decisions and Controlled Execution Approval". T
 - No access-key-shaped string (`AKIA` followed by 16 characters) appears in any tracked file or in the history of the repository.
 - Not established: whether the key was used outside this repository or machine, who created it, its last-used time and its permissions (needs AWS access, blocked by A1), and whether the Vercel project has it as an environment variable (no dashboard access). **No exposure is established; none is ruled out beyond the repository.** If the key is set as a Vercel environment variable, that is a copy to account for in the migration.
 - The migration to role credentials (instance role, no stored key) is designed in `S-1-PREFLIGHT.md` section 6 and starts once the scoped identity exists. The key is not deleted, deactivated or rotated.
+
+## Later the same day: owner direction on the domain and AWS-native hosting
+
+- `kiitnest.com` is the main domain; `kiitnest.in` is the redirect (answers DOM-1).
+- Deploy on AWS only, with **all services AWS-native**, and route the domains through AWS. This supersedes the Cloudflare plan (and DOM-2 option B in `DOMAIN-DISCOVERY-2026-10-09.md`).
+- Effect: `AWS-NATIVE-ARCHITECTURE.md` is the new target design (Route 53, ACM, CloudFront, WAF, EC2, RDS, S3, SES, ECR, SSM, CloudWatch). It lists the new approvals it needs (ARCH-1 to ARCH-5) and a safe order of work that starts with a delegated `staging.kiitnest.com` zone, so the apex and the live Google e-mail are not touched until the nameserver cutover is separately approved.
+- Not changed by this direction: no AWS resource has been created, no DNS has been edited, the maintenance page stays, and the S-1 gates (scoped identity, budget e-mail, teardown roles) still apply.
