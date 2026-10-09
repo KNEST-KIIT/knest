@@ -4,10 +4,12 @@ import net from 'node:net'
 import os from 'node:os'
 import path from 'node:path'
 import { startTestDatabase } from '../support/pg'
+import { startS3Stub } from '../support/s3-stub'
 import { startSmtpStub } from '../support/smtp-stub'
 
 const ROOT = path.resolve(import.meta.dirname, '../..')
 const SECRET = 'integration-test-secret-0123456789abcdef0123456789'
+const S3_TEST_BUCKET = 'knest-it-documents'
 
 function freePort(): Promise<number> {
   return new Promise((resolve, reject) => {
@@ -41,6 +43,7 @@ export default async function setup() {
   const captureFile = path.join(work, 'smtp.jsonl')
   writeFileSync(captureFile, '')
   const smtp = await startSmtpStub(captureFile)
+  const s3 = await startS3Stub(path.join(work, 's3'))
   const port = await freePort()
   const baseUrl = `http://127.0.0.1:${port}`
 
@@ -56,8 +59,13 @@ export default async function setup() {
     SMTP_PORT: String(smtp.port),
     SMTP_USER: '',
     EMAIL_FROM: 'KNEST Tests <no-reply@knest.test>',
-    S3_BUCKET: '',
-    S3_ACCESS_KEY_ID: '',
+    // Every S3_* variable is set explicitly so nothing from a developer's own
+    // .env files can reach the server: documents go to the local stub only.
+    S3_BUCKET: S3_TEST_BUCKET,
+    S3_REGION: 'ap-south-1',
+    S3_ENDPOINT: s3.endpoint,
+    S3_ACCESS_KEY_ID: 'test-access-key-id',
+    S3_SECRET_ACCESS_KEY: 'test-secret-access-key',
     AUTH_GOOGLE_ID: '',
     AUTH_GOOGLE_SECRET: '',
     SEED_PASSWORD: 'integration-seed-password-1',
@@ -114,6 +122,7 @@ ${step.stderr.slice(-1500)}`)
   process.env.DATABASE_URL = db.url
   process.env.TEST_SMTP_CAPTURE = captureFile
   process.env.TEST_SMTP_PORT = String(smtp.port)
+  process.env.TEST_S3_DIR = path.join(s3.dir, S3_TEST_BUCKET)
   process.env.TEST_WORKDIR = work
   process.env.TEST_PORT = String(port)
   process.env.AUTH_SECRET = SECRET
@@ -126,6 +135,7 @@ ${step.stderr.slice(-1500)}`)
       server.kill()
     }
     await smtp.close()
+    await s3.close()
     await db.stop()
     rmSync(work, { recursive: true, force: true })
   }

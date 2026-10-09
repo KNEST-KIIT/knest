@@ -14,8 +14,28 @@ import path from 'node:path'
  * an ephemeral container filesystem.
  */
 
-const s3Configured = Boolean(process.env.S3_BUCKET && process.env.S3_ACCESS_KEY_ID)
+// A bucket is what turns S3 on. Credentials are optional: on AWS the SDK's
+// default chain finds the instance role, so no long-lived key has to be stored.
+const s3Configured = Boolean(process.env.S3_BUCKET)
 const LOCAL_UPLOAD_DIR = path.join(process.cwd(), 'uploads')
+
+// The S3_* vars are not the SDK's default AWS_* names, so pass them explicitly.
+function s3Credentials() {
+  const accessKeyId = process.env.S3_ACCESS_KEY_ID
+  const secretAccessKey = process.env.S3_SECRET_ACCESS_KEY
+  return accessKeyId && secretAccessKey ? { accessKeyId, secretAccessKey } : undefined
+}
+
+// An S3-compatible endpoint (a test stub, MinIO) is optional and implies path-style addressing.
+async function s3Client() {
+  const { S3Client } = await import('@aws-sdk/client-s3')
+  const endpoint = process.env.S3_ENDPOINT || undefined
+  return new S3Client({
+    region: process.env.S3_REGION,
+    credentials: s3Credentials(),
+    ...(endpoint ? { endpoint, forcePathStyle: true } : {}),
+  })
+}
 
 export function generateStorageKey(originalName: string): string {
   const ext = path.extname(originalName).slice(0, 10)
@@ -24,8 +44,8 @@ export function generateStorageKey(originalName: string): string {
 
 export async function putFile(key: string, buffer: Buffer): Promise<void> {
   if (s3Configured) {
-    const { S3Client, PutObjectCommand } = await import('@aws-sdk/client-s3')
-    const client = new S3Client({ region: process.env.S3_REGION })
+    const { PutObjectCommand } = await import('@aws-sdk/client-s3')
+    const client = await s3Client()
     await client.send(
       new PutObjectCommand({ Bucket: process.env.S3_BUCKET, Key: key, Body: buffer }),
     )
@@ -43,8 +63,8 @@ export async function putFile(key: string, buffer: Buffer): Promise<void> {
 
 export async function getFile(key: string): Promise<Buffer> {
   if (s3Configured) {
-    const { S3Client, GetObjectCommand } = await import('@aws-sdk/client-s3')
-    const client = new S3Client({ region: process.env.S3_REGION })
+    const { GetObjectCommand } = await import('@aws-sdk/client-s3')
+    const client = await s3Client()
     const result = await client.send(
       new GetObjectCommand({ Bucket: process.env.S3_BUCKET, Key: key }),
     )

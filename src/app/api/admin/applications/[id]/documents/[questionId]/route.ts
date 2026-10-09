@@ -30,8 +30,13 @@ export async function GET(
   return new NextResponse(new Uint8Array(buffer), {
     headers: {
       'Content-Type': document.mimeType,
-      'Content-Disposition': `attachment; filename="${document.fileName.replace(/"/g, '')}"`,
+      // The stored name is whatever the uploader's browser sent. Quotes, line
+      // breaks and non-ASCII characters in a header value throw or split the
+      // header, so the plain name is reduced to safe ASCII and the real name is
+      // offered separately in the RFC 5987 form.
+      'Content-Disposition': `attachment; filename="${document.fileName.replace(/[^\w. -]/g, '_')}"; filename*=UTF-8''${encodeURIComponent(document.fileName)}`,
       'Content-Length': String(document.fileSize),
+      'X-Content-Type-Options': 'nosniff',
     },
   })
 }

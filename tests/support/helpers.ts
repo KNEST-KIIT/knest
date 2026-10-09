@@ -61,11 +61,15 @@ export async function login(email: string, password = PASSWORD): Promise<Session
   return cookie ? { cookie } : null
 }
 
-let ipCounter = 10
+// Test files run in separate processes against one server, so a shared sequence
+// would hand the same address to several files and trip the per-IP login limit
+// (5 per 15 minutes). Each process starts at its own random point in a /16 of
+// the TEST-NET-2 documentation range.
+let ipCounter = Math.floor(Math.random() * 65_000)
 /** The rate limiter keys on the first x-forwarded-for hop; give each call its own. */
 export function uniqueIp(): string {
-  ipCounter += 1
-  return `198.51.100.${ipCounter % 250}`
+  ipCounter = (ipCounter + 1) % 65_536
+  return `198.51.${(ipCounter >> 8) & 255}.${ipCounter & 255}`
 }
 
 export async function get(path: string, session?: Session | null, headers: Record<string, string> = {}) {
