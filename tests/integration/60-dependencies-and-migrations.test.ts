@@ -35,7 +35,9 @@ describe('migrations (KN-04)', () => {
     const before = new Set(readdirSync(dir))
     const r = spawnSync('npx', ['payload', 'migrate:create', 'drift_check', '--skip-empty'], {
       cwd: ROOT,
-      env: { ...process.env, NODE_ENV: 'development' },
+      // The media collection gains fields only when the S3 plugin is enabled, and production enables it, so the
+      // migrations must describe that schema whether or not the machine running this has a .env that sets a bucket.
+      env: { ...process.env, NODE_ENV: 'development', S3_BUCKET: 'drift-check-bucket', S3_REGION: 'ap-south-1', S3_ACCESS_KEY_ID: 'drift', S3_SECRET_ACCESS_KEY: 'drift' },
       encoding: 'utf8',
       shell: true,
       input: '',
