@@ -24,45 +24,18 @@ beforeAll(async () => {
   if (!s) throw new Error('could not sign in as student')
   sessions.student = s
 
-  // a booking to protect (file 10 also creates one; this keeps the file self-contained)
-  const payload = await payloadClient()
-  const space = await payload.create({
-    collection: 'infrastructure',
-    data: { name: 'Roles Lab', slug: 'roles-lab', _status: 'published' } as never,
-    overrideAccess: true,
-  })
-  await payload.create({
-    collection: 'lab-bookings',
-    data: {
-      infrastructure: space.id,
-      userId: 'roles-user',
-      userEmail: 'roles.booking.pii@example.test',
-      startTime: new Date(Date.now() + 172_800_000).toISOString(),
-      endTime: new Date(Date.now() + 176_400_000).toISOString(),
-      status: 'pending',
-    },
-    overrideAccess: true,
-  })
 })
 
 afterAll(closeDb)
 
-describe('lab-bookings: who can read it over the real REST API (KN-02)', () => {
-  it.each(['reviewer', 'content_admin', 'program_manager', 'startup_manager', 'mentor_manager', 'student'] as const)(
-    '%s is refused',
+describe('lab-bookings: no longer a CMS collection (KN-02)', () => {
+  it.each(['reviewer', 'content_admin', 'program_manager', 'startup_manager', 'mentor_manager', 'lab_admin', 'super_admin', 'student'] as const)(
+    'there is nothing to read for %s',
     async (who) => {
       const res = await get('/api/lab-bookings', sessions[who])
-      const body = await res.text()
-      expect([401, 403], `${who} got ${res.status}`).toContain(res.status)
-      expect(body).not.toContain('roles.booking.pii@example.test')
+      expect(res.status, who).toBe(404)
     },
   )
-
-  it.each(['super_admin', 'lab_admin'] as const)('%s can read it (the route works; the denials above are real)', async (who) => {
-    const res = await get('/api/lab-bookings', sessions[who])
-    expect(res.status).toBe(200)
-    expect(await res.text()).toContain('roles.booking.pii@example.test')
-  })
 })
 
 describe('the Payload admin renders on the upgraded stack', () => {

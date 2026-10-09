@@ -1,6 +1,10 @@
 import type { Metadata } from 'next'
 import { Section, Heading } from '@/components/ui'
+import Link from 'next/link'
 import { requireOnboardedUser } from '@/server/auth/guards'
+import type { StaffRole } from '@/server/auth/roles'
+import { isLabBookingEnabled } from '@/server/features'
+import { isLabAdmin, labsRunBy } from '@/server/labs/access'
 import { listNotificationsForUser } from '@/server/notifications/actions'
 import { NotificationsList } from './notifications-list'
 import { StudentDashboard } from './student-view'
@@ -30,12 +34,22 @@ export default async function DashboardPage() {
         : `Welcome back${firstName ? `, ${firstName}` : ''}.`
 
   const notifications = await listNotificationsForUser(user.id)
+  // Lab heads, assistants and administrators get a link to their console while lab booking is on.
+  const runsLabs = isLabBookingEnabled() && (isLabAdmin((user.staffRole ?? null) as StaffRole | null) || (await labsRunBy(user.id)).length > 0)
 
   return (
     <Section>
       <Heading as="h1" size="display">
         {greeting}
       </Heading>
+
+      {runsLabs && (
+        <p className="mt-6">
+          <Link href="/dashboard/lab-staff" className="font-semibold text-[var(--color-signal)] underline underline-offset-4">
+            Your labs: requests, schedule and reports
+          </Link>
+        </p>
+      )}
 
       {notifications.length > 0 && (
         <div className="mt-8">

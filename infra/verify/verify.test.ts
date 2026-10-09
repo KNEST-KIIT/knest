@@ -31,7 +31,7 @@ function startServer(fault: Fault, options: { gate?: boolean } = {}): Promise<{ 
       res.writeHead(401, { 'www-authenticate': 'Basic realm="x"' }).end()
       return
     }
-    const isPrivate = ['/login', '/signup', '/dashboard', '/admin', '/api/auth/session', '/api/lab-bookings', '/api/health'].includes(url.pathname)
+    const isPrivate = ['/login', '/signup', '/dashboard', '/admin', '/api/auth/session', '/api/staff', '/api/health'].includes(url.pathname)
     const cache = isPrivate ? (fault === 'cacheable-private' ? 'public, s-maxage=600' : 'private, no-store') : 'public, max-age=31536000, immutable'
 
     if (url.pathname === '/api/auth/password/login' && req.method === 'POST') {
@@ -39,7 +39,7 @@ function startServer(fault: Fault, options: { gate?: boolean } = {}): Promise<{ 
       res.writeHead(foreign && fault !== 'accepts-foreign-origin' ? 403 : 401, { 'cache-control': 'no-store' }).end('x')
       return
     }
-    if (url.pathname === '/api/lab-bookings') {
+    if (url.pathname === '/api/staff') {
       res.writeHead(fault === 'open-api' ? 200 : 401, { ...secure, 'cache-control': cache }).end('[]')
       return
     }
@@ -93,7 +93,7 @@ describe('runChecks catches each class of fault', () => {
   it.each([
     ['cacheable-private', 'not cacheable: /login'],
     ['no-security-headers', 'security headers are present'],
-    ['open-api', 'anonymous lab-bookings read is refused'],
+    ['open-api', 'anonymous staff listing is refused'],
     ['accepts-foreign-origin', 'a cross-origin write is refused'],
   ] as [Fault, string][])('%s', async (fault, expected) => {
     const server = await startServer(fault)

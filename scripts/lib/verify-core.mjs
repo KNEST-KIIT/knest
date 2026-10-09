@@ -57,7 +57,7 @@ const result = (name, ok, detail) => ({ name, ok: Boolean(ok), detail })
 const hdr = (r, name) => String(r.headers?.[name] ?? '')
 
 /** Paths that depend on who is signed in or carry private data; none may be cacheable. */
-export const PRIVATE_PATHS = ['/login', '/signup', '/dashboard', '/admin', '/api/auth/session', '/api/lab-bookings?limit=0', '/api/health']
+export const PRIVATE_PATHS = ['/login', '/signup', '/dashboard', '/admin', '/api/auth/session', '/api/staff?limit=0', '/api/health']
 
 export async function runChecks(options) {
   const { baseUrl, basic, expectGate = false, expectWaf = false, originUrl, altHosts = [], connectTo, canonicalOrigin = 'https://kiitnest.com' } = options
@@ -109,8 +109,8 @@ export async function runChecks(options) {
   }
 
   // 6. Anonymous callers cannot read private data or reach the console.
-  const labs = await get('/api/lab-bookings?limit=0')
-  out.push(result('anonymous lab-bookings read is refused', labs.ok && [401, 403].includes(labs.status), labs.ok ? String(labs.status) : labs.error))
+  const staffList = await get('/api/staff?limit=0')
+  out.push(result('anonymous staff listing is refused', staffList.ok && [401, 403].includes(staffList.status), staffList.ok ? String(staffList.status) : staffList.error))
   const admin = await get('/admin')
   out.push(result('the console is hidden from anonymous visitors', admin.ok && [307, 308, 401, 403, 404].includes(admin.status), admin.ok ? String(admin.status) : admin.error))
   const forged = await request(new URL('/api/auth/password/login', base).toString(), {

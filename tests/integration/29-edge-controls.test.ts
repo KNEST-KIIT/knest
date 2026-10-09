@@ -30,7 +30,7 @@ describe('private responses are never cacheable by a shared cache', () => {
     ['/admin', () => staff],
     ['/admin/applications', () => staff],
     ['/api/auth/session', () => member],
-    ['/api/lab-bookings?limit=0', () => null],
+    ['/api/staff?limit=0', () => null],
     ['/api/health', () => null],
   ]
   it.each(cases)('%s', async (path, who) => {

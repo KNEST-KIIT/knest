@@ -83,11 +83,14 @@ describe('deactivating an account (KN-10)', () => {
     const editor = (await login(mail))!
     expect((await get('/admin', editor)).status).toBe(200)
     expect((await get('/api/media?limit=1', editor)).status).toBe(200)
+    const before = await (await fetch(`${BASE()}/api/staff/me`, { headers: { cookie: editor.cookie } })).json()
+    expect(before.user).toBeTruthy()
 
     await post(`/api/admin/members/${id}/active`, superAdmin, { isActive: false })
     expect((await get('/admin', editor)).status).toBe(404)
-    const api = await fetch(`${BASE()}/api/lab-bookings`, { headers: { cookie: editor.cookie } })
-    expect([401, 403]).toContain(api.status)
+    // Payload's own view of who is signed in: the editor is gone, not merely refused one route.
+    const who = await (await fetch(`${BASE()}/api/staff/me`, { headers: { cookie: editor.cookie } })).json()
+    expect(who.user ?? null).toBeNull()
   })
 })
 

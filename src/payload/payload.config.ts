@@ -11,7 +11,6 @@ import { Events } from './collections/events'
 import { Faqs } from './collections/faqs'
 import { Founders } from './collections/founders'
 import { Infrastructure } from './collections/infrastructure'
-import { LabBookings } from './collections/lab-bookings'
 import { Media } from './collections/media'
 import { Mentors } from './collections/mentors'
 import { Metrics } from './collections/metrics'
@@ -57,7 +56,6 @@ export default buildConfig({
     Resources,
     Articles,
     Infrastructure,
-    LabBookings,
     Testimonials,
     Faqs,
     Metrics,
@@ -70,7 +68,7 @@ export default buildConfig({
       group:
         ['programs', 'cohorts', 'startups', 'founders'].includes(c.slug)
           ? 'Incubator'
-          : ['mentors', 'partners', 'infrastructure', 'lab-bookings'].includes(c.slug)
+          : ['mentors', 'partners', 'infrastructure'].includes(c.slug)
             ? 'Ecosystem'
             : ['events', 'resources', 'articles'].includes(c.slug)
               ? 'Content'

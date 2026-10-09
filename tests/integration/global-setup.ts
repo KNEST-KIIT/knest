@@ -65,6 +65,8 @@ export default async function setup() {
     TURNSTILE_SITE_KEY: TURNSTILE_TEST_SITE_KEY,
     TURNSTILE_VERIFY_URL: turnstile.endpoint,
     DATABASE_SSL: 'off',
+    // Lab booking is built and tested locally, but stays off by default everywhere else (HD-16 is open).
+    FEATURE_LAB_BOOKING: 'true',
     SMTP_HOST: '127.0.0.1',
     SMTP_PORT: String(smtp.port),
     SMTP_USER: '',

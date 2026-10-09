@@ -6,7 +6,6 @@ import { Events } from './collections/events'
 import { Faqs } from './collections/faqs'
 import { Founders } from './collections/founders'
 import { Infrastructure } from './collections/infrastructure'
-import { LabBookings } from './collections/lab-bookings'
 import { Media } from './collections/media'
 import { Mentors } from './collections/mentors'
 import { Metrics } from './collections/metrics'
@@ -51,7 +50,6 @@ describe('collection read policy (regression guard for KN-02 / NF-02)', () => {
     faqs: 'public',
     founders: 'published-only',
     infrastructure: 'published-only',
-    'lab-bookings': 'denied',
     media: 'public',
     mentors: 'published-only',
     metrics: 'public',
@@ -63,7 +61,7 @@ describe('collection read policy (regression guard for KN-02 / NF-02)', () => {
     testimonials: 'public',
   }
   const ALL = [
-    Articles, Cohorts, Events, Faqs, Founders, Infrastructure, LabBookings, Media,
+    Articles, Cohorts, Events, Faqs, Founders, Infrastructure, Media,
     Mentors, Metrics, Partners, Programs, Resources, Staff, Startups, Testimonials,
   ]
 
@@ -78,31 +76,8 @@ describe('collection read policy (regression guard for KN-02 / NF-02)', () => {
   }
 })
 
-describe('lab-bookings (KN-02)', () => {
-  const read = LabBookings.access!.read as (a: Args) => unknown
-
-  it('denies anonymous and non-lab staff', async () => {
-    expect(await read(anon)).toBe(false)
-    for (const r of ['reviewer', 'content_admin', 'program_manager', 'startup_manager', 'mentor_manager'] as StaffRole[]) {
-      expect(await read(staff(r))).toBe(false)
-    }
-  })
-
-  it('allows lab_admin and super_admin', async () => {
-    expect(await read(staff('lab_admin'))).toBe(true)
-    expect(await read(staff('super_admin'))).toBe(true)
-  })
-
-  it('also protects the identity fields individually', async () => {
-    for (const name of ['userId', 'userEmail']) {
-      const f = field(LabBookings, name)
-      expect(typeof f.access?.read).toBe('function')
-      expect(await f.access!.read!(anon)).toBe(false)
-      expect(await f.access!.read!(staff('reviewer'))).toBe(false)
-      expect(await f.access!.read!(staff('lab_admin'))).toBe(true)
-    }
-  })
-})
+// Lab bookings left the CMS (they live in the `app` schema, scoped by lab role, see src/server/labs).
+// tests/integration/10-anonymous-api.test.ts proves nothing about them is reachable through the CMS API.
 
 describe('metrics.source (NF-02)', () => {
   it('is hidden from anonymous readers but visible to content staff', async () => {
