@@ -38,6 +38,7 @@ Branch: `delivery/p1-containment` (from `00181d4`). Nothing is pushed, deployed 
 | NF-04 / NF-11 `lab_admin` | VERIFIED | `0a0e187` | |
 | KN-14 return path | VERIFIED | `d58d0af` | Real browser |
 | KN-15 Google button | VERIFIED (disabled state) | `d58d0af` | The enabled state needs real Google credentials and is untested |
+| KN-10 / R-03 deactivation and role-change revocation | VERIFIED (local) | `e95cd4d` | Real cookies against the production build; 8 integration tests + 4 unit tests. No console UI yet. |
 | KN-31 submit validation / KN-13 submit race | VERIFIED (these two parts) | `a18121a` | Draft-on-view and the other races remain open |
 | NF-08 not-found / global-error | IMPLEMENTED | `0b90153` | 404 verified; `global-error` is not exercised by any test |
 

@@ -13,7 +13,7 @@ Dispositions use the mandate vocabulary. `Delivery` uses the tracker vocabulary.
 | KN-07 Seed credentials | CONFIRMED_OPEN | VERIFIED (local) | Verified against a real database (no overwrite, production refused, opt-in reset only). |
 | KN-08 Lab booking out of scope | CONFIRMED_OPEN | IMPLEMENTED | Containment verified (flag off renders none of the booking UI). The contracted rebuild is P3B; the interim code is still in the tree. |
 | KN-09 Dev auth bypass | CONFIRMED_OPEN | VERIFIED | Guard tests in three environments. |
-| KN-10 `isActive` not enforced | CONFIRMED_OPEN | NOT_STARTED | P3A / R-03 |
+| KN-10 `isActive` not enforced | CONFIRMED_OPEN | VERIFIED (local) | Active-only session adapter + signIn guard; deactivate/role-change APIs (super admin only) delete sessions and audit. Real-cookie tests: a live session dies on the next request; reactivation does not resurrect it; staff lose /admin and the Payload API. Staff-console screens still to come. |
 | KN-11 Forgeable analytics | CONFIRMED_OPEN | IMPLEMENTED | Endpoint verified (forged events never stored, flood dropped). The funnel redesign is P6. |
 | KN-12 Program delete breaks applications | PARTIALLY_RESOLVED (lookup throws; the "delete guard" never existed) | NOT_STARTED | P3A / R-04 |
 | KN-13 Race conditions | CONFIRMED_OPEN | IN_PROGRESS | Submit race fixed and verified (10 parallel submits -> 1). Answers/uploads/review/event capacity/booking races still open (R-05). |
