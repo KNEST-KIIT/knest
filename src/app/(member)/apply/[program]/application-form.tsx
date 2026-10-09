@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Field, Heading, Input, LiveRegion, MultiSelect, SingleSelect, Textarea } from '@/components/ui'
 import type { ApplicationQuestion } from '@/server/applications/types'
+import { TurnstileWidget } from '@/components/security/turnstile-widget'
 
 type Props = {
   applicationId: string
@@ -12,6 +13,7 @@ type Props = {
   questions: ApplicationQuestion[]
   initialAnswers: Record<string, unknown>
   initialDocuments: Record<string, string>
+  turnstileSiteKey: string
 }
 
 /** Select/multiselect answers hold the option's stable `value`, not its label — this shows the applicant back what they actually picked. */
@@ -36,13 +38,16 @@ async function postJSON(url: string, body: unknown) {
  * already established. Steps are the program's own question set — nothing
  * here is program-specific in code (spec §18).
  */
-export function ApplicationForm({ applicationId, programTitle, questions, initialAnswers, initialDocuments }: Props) {
+export function ApplicationForm({ applicationId, programTitle, questions, initialAnswers, initialDocuments, turnstileSiteKey }: Props) {
   const router = useRouter()
   const [index, setIndex] = useState(0)
   const [answers, setAnswers] = useState<Record<string, unknown>>(initialAnswers)
   const [documentNames, setDocumentNames] = useState<Record<string, string>>(initialDocuments)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const [captchaReset, setCaptchaReset] = useState(0)
+  const captchaPending = Boolean(turnstileSiteKey) && !captchaToken
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
   const [reviewing, setReviewing] = useState(false)
   const [submitted, setSubmitted] = useState(false)
@@ -107,7 +112,11 @@ export function ApplicationForm({ applicationId, programTitle, questions, initia
   async function submit() {
     setPending(true)
     setError(null)
-    const res = await fetch(`/api/applications/${applicationId}/submit`, { method: 'POST' })
+    const res = await fetch(`/api/applications/${applicationId}/submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ turnstileToken: captchaToken }),
+    })
     const data = await res.json().catch(() => ({}))
     setPending(false)
 
@@ -121,6 +130,9 @@ export function ApplicationForm({ applicationId, programTitle, questions, initia
         return
       }
       setError(data.error ?? 'Something went wrong.')
+      // A Turnstile token is single-use: ask for a fresh one.
+      setCaptchaToken(null)
+      setCaptchaReset((n) => n + 1)
       return
     }
     setSubmitted(true)
@@ -194,9 +206,12 @@ export function ApplicationForm({ applicationId, programTitle, questions, initia
           <button type="button" onClick={() => setReviewing(false)} className="text-[length:var(--text-small)] font-medium">
             ← Back
           </button>
-          <Button onClick={submit} disabled={pending}>
+          <Button onClick={submit} disabled={pending || captchaPending}>
             {pending ? 'Submitting…' : 'Submit application'}
           </Button>
+        </div>
+        <div className="mt-4">
+          <TurnstileWidget siteKey={turnstileSiteKey} action="application-submit" onToken={setCaptchaToken} resetSignal={captchaReset} />
         </div>
       </div>
     )

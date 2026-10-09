@@ -16,7 +16,9 @@ const isVercel = Boolean(process.env.VERCEL)
  */
 const cspDirectives = [
   `default-src 'self'`,
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}`,
+  `script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com${isDev ? " 'unsafe-eval'" : ''}`,
+  // Cloudflare Turnstile renders its challenge in a frame.
+  `frame-src https://challenges.cloudflare.com`,
   `style-src 'self' 'unsafe-inline'`,
   // gravatar.com: the Payload admin UI's own account-menu avatar, confirmed
   // by loading a real /admin page with this policy in report-only mode.
@@ -31,12 +33,40 @@ const cspDirectives = [
 ]
 const cspHeaderValue = cspDirectives.join('; ')
 
+/**
+ * Responses that depend on who is signed in, or that carry private data, must
+ * never be stored by a shared cache (CloudFront, a corporate proxy). The CDN is
+ * also configured not to cache these paths; this is the origin saying so itself.
+ */
+const PRIVATE_PATHS = [
+  '/api/:path*',
+  '/dashboard/:path*',
+  '/admin/:path*',
+  '/apply/:path*',
+  '/onboarding/:path*',
+  '/login',
+  '/signup',
+  '/verify/:path*',
+  '/reset/:path*',
+]
+const noStore = PRIVATE_PATHS.map((source) => ({
+  source,
+  headers: [{ key: 'Cache-Control', value: 'private, no-store' }],
+}))
+
 const nextConfig: NextConfig = {
   output: isVercel ? undefined : 'standalone',
   reactStrictMode: true,
+  experimental: {
+    // With a proxy (src/proxy.ts) Next buffers each request body and silently truncates it at
+    // this size (default 10 MB). Uploads may be exactly 10 MB plus multipart framing, so the
+    // buffer must be larger, or a file at the limit arrives cut off and fails to parse.
+    proxyClientMaxBodySize: '12mb',
+  },
   poweredByHeader: false,
   async headers() {
     return [
+      ...noStore,
       {
         source: '/(.*)',
         headers: [

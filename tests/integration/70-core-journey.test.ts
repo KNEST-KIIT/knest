@@ -1,6 +1,7 @@
 import { chromium, type Browser, type Page } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { BASE, PASSWORD, closeDb, createUser, db, get, login, uniqueIp, type Session } from '../support/helpers'
+import { CAPTCHA, BASE, PASSWORD, closeDb, createUser, db, get, login, uniqueIp, type Session } from '../support/helpers'
+import { stubTurnstileScript } from '../support/turnstile-stub'
 import { payloadClient, richText } from '../support/payload'
 
 /**
@@ -47,6 +48,7 @@ afterAll(async () => {
 
 async function newPage(): Promise<Page> {
   const context = await browser.newContext({ extraHTTPHeaders: { 'x-forwarded-for': uniqueIp() } })
+  await stubTurnstileScript(context)
   return context.newPage()
 }
 
@@ -186,14 +188,14 @@ describe('KN-31 / KN-13: submitting', () => {
       } as never,
     })
 
-    const refused = await fetch(`${BASE()}/api/applications/${applicationId}/submit`, json(student, {}))
+    const refused = await fetch(`${BASE()}/api/applications/${applicationId}/submit`, json(student, CAPTCHA))
     const body = await refused.json()
     expect(refused.status).toBe(400)
     expect(body.error).toContain('Pick a stage')
     expect((await db().query('select status from app.applications where id = $1', [applicationId])).rows[0].status).toBe('draft')
 
     expect((await answer(select!.id!, 'idea')).status).toBe(200)
-    const ok = await fetch(`${BASE()}/api/applications/${applicationId}/submit`, json(student, {}))
+    const ok = await fetch(`${BASE()}/api/applications/${applicationId}/submit`, json(student, CAPTCHA))
     expect(ok.status).toBe(200)
   })
 
@@ -204,7 +206,7 @@ describe('KN-31 / KN-13: submitting', () => {
     const id = started.applicationId as string
 
     const results = await Promise.all(
-      Array.from({ length: 10 }, () => fetch(`${BASE()}/api/applications/${id}/submit`, json(racer, {}))),
+      Array.from({ length: 10 }, () => fetch(`${BASE()}/api/applications/${id}/submit`, json(racer, CAPTCHA))),
     )
     const statuses = results.map((r) => r.status)
     expect(statuses.filter((s) => s === 200)).toHaveLength(1)

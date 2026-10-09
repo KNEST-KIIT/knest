@@ -1,6 +1,7 @@
 import { chromium, type Browser } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { BASE, PASSWORD, closeDb, createUser, db, decodeMailText, readMail, uniqueIp } from '../support/helpers'
+import { CAPTCHA, BASE, PASSWORD, closeDb, createUser, db, decodeMailText, readMail, uniqueIp } from '../support/helpers'
+import { stubTurnstileScript } from '../support/turnstile-stub'
 
 /**
  * Closing evidence for KN-22e (open redirect), KN-22a (login timing) and a
@@ -31,6 +32,7 @@ const ATTACKS = [
 
 async function signIn(next: string) {
   const context = await browser.newContext({ extraHTTPHeaders: { 'x-forwarded-for': uniqueIp() } })
+  await stubTurnstileScript(context)
   const page = await context.newPage()
   const foreign: string[] = []
   page.on('request', (r) => {
@@ -65,6 +67,7 @@ describe('KN-22e: post-login redirect stays on our origin', () => {
   it('sign-up with a hostile next also stays on our origin and sends the verification e-mail over SMTP', async () => {
     const email = `signup-${Date.now()}@auth.test`
     const context = await browser.newContext({ extraHTTPHeaders: { 'x-forwarded-for': uniqueIp() } })
+    await stubTurnstileScript(context)
     const page = await context.newPage()
     const foreign: string[] = []
     page.on('request', (r) => {
@@ -101,7 +104,7 @@ describe('KN-22a: login timing does not reveal which e-mails exist', () => {
     const res = await fetch(`${BASE()}/api/auth/password/login`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-forwarded-for': uniqueIp() },
-      body: JSON.stringify({ email, password: 'wrong-password-entirely' }),
+      body: JSON.stringify({ email, password: 'wrong-password-entirely', ...CAPTCHA }),
     })
     await res.arrayBuffer()
     expect(res.status).toBeGreaterThanOrEqual(400)
@@ -132,7 +135,7 @@ describe('account state', () => {
     const res = await fetch(`${BASE()}/api/auth/password/login`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-forwarded-for': uniqueIp() },
-      body: JSON.stringify({ email: 'off@auth.test', password: PASSWORD }),
+      body: JSON.stringify({ email: 'off@auth.test', password: PASSWORD, ...CAPTCHA }),
     })
     expect(res.status).toBeGreaterThanOrEqual(400)
     const sessions = await db().query(
@@ -148,7 +151,7 @@ describe('sign-up -> e-mailed link -> verified account (nodemailer 10, absolute 
     const signup = await fetch(`${BASE()}/api/auth/password/signup`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-forwarded-for': uniqueIp() },
-      body: JSON.stringify({ name: 'Verify Person', email, password: PASSWORD }),
+      body: JSON.stringify({ name: 'Verify Person', email, password: PASSWORD, ...CAPTCHA }),
     })
     expect(signup.status).toBe(201)
     expect((await db().query('select email_verified from app.users where email = $1', [email])).rows[0].email_verified).toBeNull()

@@ -5,11 +5,15 @@ import { useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ButtonLink, Field, Heading, Input, PasswordInput } from '@/components/ui'
 import { Button } from '@/components/ui/button'
+import { TurnstileWidget } from '@/components/security/turnstile-widget'
 
-export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
+export function LoginForm({ googleEnabled, turnstileSiteKey }: { googleEnabled: boolean; turnstileSiteKey: string }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [pending, setPending] = useState(false)
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const [captchaReset, setCaptchaReset] = useState(0)
+  const captchaPending = Boolean(turnstileSiteKey) && !captchaToken
   const [error, setError] = useState<string | null>(null)
   const emailRef = useRef<HTMLInputElement>(null)
   const next = safeNext(searchParams.get('next'))
@@ -24,13 +28,15 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
     const res = await fetch('/api/auth/password/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: form.get('email'), password: form.get('password') }),
+      body: JSON.stringify({ email: form.get('email'), password: form.get('password'), turnstileToken: captchaToken }),
     })
     const data = await res.json().catch(() => ({}))
 
     if (!res.ok) {
       setError(data.error ?? 'Something went wrong. Try again.')
       setPending(false)
+      setCaptchaToken(null)
+      setCaptchaReset((n) => n + 1)
       emailRef.current?.focus()
       return
     }
@@ -134,11 +140,13 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
           </div>
         )}
 
+        <TurnstileWidget siteKey={turnstileSiteKey} action="login" onToken={setCaptchaToken} resetSignal={captchaReset} />
+
         <Button 
           type="submit" 
           size="lg" 
           fullWidth 
-          disabled={pending}
+          disabled={pending || captchaPending}
           className="mt-2 h-14 text-sm font-bold tracking-widest uppercase bg-gradient-to-r from-[var(--color-signal)] to-[#5a141e] hover:from-[#8f2433] hover:to-[var(--color-signal)] shadow-sm hover:shadow-lg transition-all duration-300 rounded-lg"
         >
           {pending ? (

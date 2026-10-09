@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
+import { s3ClientConfig } from './s3-config'
 
 /**
  * A small storage abstraction so application uploads work in dev without AWS
@@ -19,22 +20,9 @@ import path from 'node:path'
 const s3Configured = Boolean(process.env.S3_BUCKET)
 const LOCAL_UPLOAD_DIR = path.join(process.cwd(), 'uploads')
 
-// The S3_* vars are not the SDK's default AWS_* names, so pass them explicitly.
-function s3Credentials() {
-  const accessKeyId = process.env.S3_ACCESS_KEY_ID
-  const secretAccessKey = process.env.S3_SECRET_ACCESS_KEY
-  return accessKeyId && secretAccessKey ? { accessKeyId, secretAccessKey } : undefined
-}
-
-// An S3-compatible endpoint (a test stub, MinIO) is optional and implies path-style addressing.
 async function s3Client() {
   const { S3Client } = await import('@aws-sdk/client-s3')
-  const endpoint = process.env.S3_ENDPOINT || undefined
-  return new S3Client({
-    region: process.env.S3_REGION,
-    credentials: s3Credentials(),
-    ...(endpoint ? { endpoint, forcePathStyle: true } : {}),
-  })
+  return new S3Client(s3ClientConfig(process.env))
 }
 
 export function generateStorageKey(originalName: string): string {

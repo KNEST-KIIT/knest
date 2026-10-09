@@ -5,6 +5,7 @@ import { getApplicationProgramBySlug } from '@/server/applications/program-quest
 import { findApplicationForProgram, getOwnedApplicationDetail } from '@/server/applications/actions'
 import { ApplicationForm } from './application-form'
 import { StartApplication } from './start-application'
+import { turnstileSiteKey } from '@/server/security/turnstile'
 
 export async function generateMetadata({
   params,
@@ -50,6 +51,7 @@ export default async function ApplyPage({ params }: { params: Promise<{ program:
       questions={program.questions}
       initialAnswers={Object.fromEntries(detail.answers.map((a) => [a.questionId, a.value]))}
       initialDocuments={Object.fromEntries(detail.documents.map((d) => [d.questionId, d.fileName]))}
+      turnstileSiteKey={turnstileSiteKey()}
     />
   )
 }

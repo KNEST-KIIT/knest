@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { afterAll, describe, expect, it } from 'vitest'
-import { BASE, PASSWORD, closeDb, createUser, db, decodeMailText, login, readMail, uniqueIp } from '../support/helpers'
+import { CAPTCHA, BASE, PASSWORD, closeDb, createUser, db, decodeMailText, login, readMail, uniqueIp } from '../support/helpers'
 
 /**
  * Closing evidence for R-08: the e-mailed token is the only copy (the table holds
@@ -50,7 +50,7 @@ describe('password-reset links', () => {
 
   it('are stored as a digest, never as the emailed value', async () => {
     await createUser({ email: mail, platformRole: 'student' })
-    expect((await post('/api/auth/password/reset/request', { email: mail })).status).toBe(200)
+    expect((await post('/api/auth/password/reset/request', { email: mail, ...CAPTCHA })).status).toBe(200)
     const token = await emailedToken(mail, 'reset')
     const stored = await storedFor(`reset-password:${mail}`)
     expect(stored).toEqual([sha256(token)])

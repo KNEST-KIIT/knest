@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { BASE, closeDb, createUser, db, get, login, uniqueIp, type Session } from '../support/helpers'
+import { CAPTCHA, BASE, closeDb, createUser, db, get, login, uniqueIp, type Session } from '../support/helpers'
 import { payloadClient, richText } from '../support/payload'
 
 /**
@@ -118,6 +118,16 @@ describe('uploading an application document', () => {
     expect((await db().query('select count(*)::int c from app.application_documents where application_id = $1', [applicationId])).rows[0].c).toBe(0)
   })
 
+  it('accepts a file of exactly 10 MB (the proxy must not truncate it)', async () => {
+    const { me, applicationId } = await startDraft('exact')
+    const exact = Buffer.concat([PDF, Buffer.alloc(10 * 1024 * 1024 - PDF.length)])
+    expect(exact.length).toBe(10 * 1024 * 1024)
+    const res = await upload(applicationId, me, { name: 'exact.pdf', type: 'application/pdf', bytes: exact })
+    expect(res.status, JSON.stringify(await res.clone().json().catch(() => ({})))).toBe(200)
+    const row = (await db().query('select file_size from app.application_documents where application_id = $1', [applicationId])).rows[0]
+    expect(row.file_size).toBe(10 * 1024 * 1024)
+  })
+
   it('refuses a file over 10 MB before reading it', async () => {
     const { me, applicationId } = await startDraft('big')
     const big = Buffer.concat([PDF, Buffer.alloc(10 * 1024 * 1024 + 1)])
@@ -134,7 +144,7 @@ describe('uploading an application document', () => {
     expect(storedObjects().length).toBe(before)
 
     expect((await upload(owner.applicationId, owner.me, { name: 'a.pdf', type: 'application/pdf', bytes: PDF })).status).toBe(200)
-    expect((await post(`/api/applications/${owner.applicationId}/submit`, owner.me)).status).toBe(200)
+    expect((await post(`/api/applications/${owner.applicationId}/submit`, owner.me, CAPTCHA)).status).toBe(200)
     const late = await upload(owner.applicationId, owner.me, { name: 'late.pdf', type: 'application/pdf', bytes: PDF })
     expect(late.status).toBe(400)
     expect((await late.json()).error).toMatch(/already been submitted/i)

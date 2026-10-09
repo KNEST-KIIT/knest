@@ -5,13 +5,17 @@ import { useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ButtonLink, Field, Heading, Input, PasswordInput } from '@/components/ui'
 import { Button } from '@/components/ui/button'
+import { TurnstileWidget } from '@/components/security/turnstile-widget'
 
-export function SignupForm({ googleEnabled }: { googleEnabled: boolean }) {
+export function SignupForm({ googleEnabled, turnstileSiteKey }: { googleEnabled: boolean; turnstileSiteKey: string }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const returnTo = safeNext(searchParams.get('next'))
   const googleHref = returnTo ? `/api/auth/signin/google?callbackUrl=${encodeURIComponent(returnTo)}` : '/api/auth/signin/google'
   const [pending, setPending] = useState(false)
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const [captchaReset, setCaptchaReset] = useState(0)
+  const captchaPending = Boolean(turnstileSiteKey) && !captchaToken
   const [error, setError] = useState<string | null>(null)
   const nameRef = useRef<HTMLInputElement>(null)
 
@@ -28,6 +32,7 @@ export function SignupForm({ googleEnabled }: { googleEnabled: boolean }) {
         name: form.get('name'),
         email: form.get('email'),
         password: form.get('password'),
+        turnstileToken: captchaToken,
       }),
     })
     const data = await res.json().catch(() => ({}))
@@ -35,6 +40,8 @@ export function SignupForm({ googleEnabled }: { googleEnabled: boolean }) {
     if (!res.ok) {
       setError(data.error ?? 'Something went wrong. Try again.')
       setPending(false)
+      setCaptchaToken(null)
+      setCaptchaReset((n) => n + 1)
       // A failed submit moves focus to the first field, per UX_WIREFRAMES.md §5.
       nameRef.current?.focus()
       return
@@ -152,11 +159,13 @@ export function SignupForm({ googleEnabled }: { googleEnabled: boolean }) {
           </div>
         )}
 
+        <TurnstileWidget siteKey={turnstileSiteKey} action="signup" onToken={setCaptchaToken} resetSignal={captchaReset} />
+
         <Button 
           type="submit" 
           size="lg" 
           fullWidth 
-          disabled={pending}
+          disabled={pending || captchaPending}
           className="mt-4 h-14 text-sm font-bold tracking-widest uppercase bg-gradient-to-r from-[var(--color-signal)] to-[#5a141e] hover:from-[#8f2433] hover:to-[var(--color-signal)] shadow-sm hover:shadow-lg transition-all duration-300 rounded-lg"
         >
           {pending ? (

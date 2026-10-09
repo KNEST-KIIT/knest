@@ -3,20 +3,36 @@
 import { useState } from 'react'
 import { Field, Heading, Input } from '@/components/ui'
 import { Button } from '@/components/ui/button'
+import { TurnstileWidget } from '@/components/security/turnstile-widget'
 
-export function ResetForm() {
+export function ResetForm({ turnstileSiteKey }: { turnstileSiteKey: string }) {
   const [pending, setPending] = useState(false)
   const [sent, setSent] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const [captchaReset, setCaptchaReset] = useState(0)
+  const captchaPending = Boolean(turnstileSiteKey) && !captchaToken
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setPending(true)
+    setError(null)
     const form = new FormData(event.currentTarget)
-    await fetch('/api/auth/password/reset/request', {
+    const res = await fetch('/api/auth/password/reset/request', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: form.get('email') }),
+      body: JSON.stringify({ email: form.get('email'), turnstileToken: captchaToken }),
     })
+    // The endpoint answers the same whether or not the account exists, but a failed human
+    // check is a different thing and must be shown, or the person waits for mail that was never sent.
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      setError(data.error ?? 'Something went wrong. Try again.')
+      setPending(false)
+      setCaptchaToken(null)
+      setCaptchaReset((n) => n + 1)
+      return
+    }
     // Identical response whether or not the account exists (CONTENT_SPEC.md §3)
     // — this endpoint always reports success.
     setSent(true)
@@ -74,11 +90,19 @@ export function ResetForm() {
           )}
         </Field>
         
+        {error && (
+          <p role="alert" className="text-sm text-[var(--color-critical)]">
+            {error}
+          </p>
+        )}
+
+        <TurnstileWidget siteKey={turnstileSiteKey} action="password-reset" onToken={setCaptchaToken} resetSignal={captchaReset} />
+
         <Button 
           type="submit" 
           size="lg" 
           fullWidth 
-          disabled={pending}
+          disabled={pending || captchaPending}
           className="mt-2 text-sm font-semibold tracking-wide uppercase bg-gradient-to-r from-[var(--color-signal)] to-[#5a141e] hover:from-[#8f2433] hover:to-[var(--color-signal)] shadow-md hover:shadow-lg transition-all duration-300"
         >
           {pending ? (

@@ -1,12 +1,12 @@
-import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs'
+import { mkdirSync, readFileSync, rmSync, writeFileSync, existsSync } from 'node:fs'
 import http from 'node:http'
 import path from 'node:path'
 
 /**
  * A minimal S3-compatible server for tests (path-style, no authentication). It
  * stores each object as a file under `dir/<bucket>/<key>` so a test running in
- * another process can read what the application wrote. It understands PUT, GET
- * and HEAD of a single object, including the `aws-chunked` body framing the AWS
+ * another process can read what the application wrote. It understands PUT, GET,
+ * HEAD and DELETE of a single object, including the `aws-chunked` body framing the AWS
  * SDK uses when it sends a checksum trailer. It does not check signatures: it
  * proves that the application's real S3 client code path stores and retrieves
  * bytes, not that AWS accepts the credentials.
@@ -42,6 +42,8 @@ export function startS3Stub(dir: string): Promise<S3Stub> {
       return
     }
     const file = path.join(dir, ...objectPath.split('/'))
+    // Content types are kept beside the objects, not inside the folder tests inspect.
+    const metaFile = path.join(dir + '-meta', ...objectPath.split('/')) + '.json'
 
     if (req.method === 'PUT') {
       const chunks: Buffer[] = []
@@ -53,6 +55,8 @@ export function startS3Stub(dir: string): Promise<S3Stub> {
         if (encoding.includes('aws-chunked') || sha.startsWith('STREAMING-')) body = decodeAwsChunked(body)
         mkdirSync(path.dirname(file), { recursive: true })
         writeFileSync(file, body)
+        mkdirSync(path.dirname(metaFile), { recursive: true })
+        writeFileSync(metaFile, JSON.stringify({ contentType: String(req.headers['content-type'] ?? 'application/octet-stream') }))
         res.writeHead(200, { ETag: '"stub"' }).end()
       })
       return
@@ -65,8 +69,16 @@ export function startS3Stub(dir: string): Promise<S3Stub> {
         return
       }
       const body = readFileSync(file)
-      res.writeHead(200, { 'content-length': body.length, 'content-type': 'application/octet-stream' })
+      const contentType = existsSync(metaFile) ? (JSON.parse(readFileSync(metaFile, 'utf8')) as { contentType: string }).contentType : 'application/octet-stream'
+      res.writeHead(200, { 'content-length': body.length, 'content-type': contentType })
       res.end(req.method === 'HEAD' ? undefined : body)
+      return
+    }
+
+    if (req.method === 'DELETE') {
+      rmSync(file, { force: true })
+      rmSync(metaFile, { force: true })
+      res.writeHead(204).end()
       return
     }
 

@@ -6,6 +6,7 @@ import path from 'node:path'
 import { startTestDatabase } from '../support/pg'
 import { startS3Stub } from '../support/s3-stub'
 import { startSmtpStub } from '../support/smtp-stub'
+import { startTurnstileVerifyStub, TURNSTILE_TEST_SECRET, TURNSTILE_TEST_SITE_KEY } from '../support/turnstile-stub'
 
 const ROOT = path.resolve(import.meta.dirname, '../..')
 const SECRET = 'integration-test-secret-0123456789abcdef0123456789'
@@ -44,6 +45,7 @@ export default async function setup() {
   writeFileSync(captureFile, '')
   const smtp = await startSmtpStub(captureFile)
   const s3 = await startS3Stub(path.join(work, 's3'))
+  const turnstile = await startTurnstileVerifyStub()
   const port = await freePort()
   const baseUrl = `http://127.0.0.1:${port}`
 
@@ -55,6 +57,14 @@ export default async function setup() {
     AUTH_URL: baseUrl,
     AUTH_TRUST_HOST: 'true',
     NEXT_PUBLIC_SITE_URL: baseUrl,
+    SITE_URL: baseUrl,
+    // The suite gives every request its own X-Forwarded-For; production reads CloudFront's header.
+    CLIENT_IP_SOURCE: 'x-forwarded-for',
+    // The human check is enforced in the suite, against a local stand-in for Cloudflare.
+    TURNSTILE_SECRET_KEY: TURNSTILE_TEST_SECRET,
+    TURNSTILE_SITE_KEY: TURNSTILE_TEST_SITE_KEY,
+    TURNSTILE_VERIFY_URL: turnstile.endpoint,
+    DATABASE_SSL: 'off',
     SMTP_HOST: '127.0.0.1',
     SMTP_PORT: String(smtp.port),
     SMTP_USER: '',
@@ -136,6 +146,7 @@ ${step.stderr.slice(-1500)}`)
     }
     await smtp.close()
     await s3.close()
+    await turnstile.close()
     await db.stop()
     rmSync(work, { recursive: true, force: true })
   }

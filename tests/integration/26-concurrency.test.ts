@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { BASE, closeDb, createUser, db, get, login, uniqueIp, type Session } from '../support/helpers'
+import { CAPTCHA, BASE, closeDb, createUser, db, get, login, uniqueIp, type Session } from '../support/helpers'
 import { payloadClient, richText } from '../support/payload'
 
 /**
@@ -170,7 +170,7 @@ describe('draft answers versus submit (R-05)', () => {
     expect((await post(`/api/applications/${applicationId}/answer`, me, { questionId, value: 'first' })).status).toBe(200)
 
     const writes = Array.from({ length: 12 }, (_, i) => post(`/api/applications/${applicationId}/answer`, me, { questionId, value: `edit ${i}` }))
-    const [submit, ...answered] = await Promise.all([post(`/api/applications/${applicationId}/submit`, me), ...writes])
+    const [submit, ...answered] = await Promise.all([post(`/api/applications/${applicationId}/submit`, me, CAPTCHA), ...writes])
     expect(submit!.status).toBe(200)
 
     // every answer that reported success was committed before the submit froze the application
@@ -262,7 +262,7 @@ describe('questions frozen at submit, and programs that applications depend on (
     const me = (await login(mail))!
     const applicationId = (await (await post('/api/applications/start', me, { programSlug: slug })).json()).applicationId as string
     expect((await post(`/api/applications/${applicationId}/answer`, me, { questionId: qid, value: 'my answer' })).status).toBe(200)
-    expect((await post(`/api/applications/${applicationId}/submit`, me)).status).toBe(200)
+    expect((await post(`/api/applications/${applicationId}/submit`, me, CAPTCHA)).status).toBe(200)
 
     const stored = (await db().query('select question_snapshot from app.applications where id = $1', [applicationId])).rows[0].question_snapshot
     expect(stored).toHaveLength(1)
@@ -338,7 +338,7 @@ describe('starting and submitting an application (R-06)', () => {
 
     const applicationId = (await db().query('select id from app.applications where user_id = $1', [userId])).rows[0].id as string
     await post(`/api/applications/${applicationId}/answer`, me, { questionId, value: 'ready' })
-    expect((await post(`/api/applications/${applicationId}/submit`, me)).status).toBe(200)
+    expect((await post(`/api/applications/${applicationId}/submit`, me, CAPTCHA)).status).toBe(200)
     const audit = await db().query(
       "select actor_user_id, before, after from app.audit_logs where action = 'application_submitted' and entity_id = $1",
       [applicationId],

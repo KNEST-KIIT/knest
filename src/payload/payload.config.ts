@@ -2,6 +2,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { postgresAdapter } from '@payloadcms/db-postgres'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
+import { s3Storage } from '@payloadcms/storage-s3'
 import sharp from 'sharp'
 import { buildConfig } from 'payload'
 import { Articles } from './collections/articles'
@@ -21,6 +22,8 @@ import { Staff } from './collections/staff'
 import { Startups } from './collections/startups'
 import { Testimonials } from './collections/testimonials'
 import { Homepage } from './globals/homepage'
+import { databaseSsl } from '../db/ssl'
+import { s3ClientConfig } from '../server/storage/s3-config'
 
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -77,13 +80,24 @@ export default buildConfig({
     },
   })),
   globals: [Homepage],
+  plugins: [
+    // CMS media lives in the same bucket as application documents, under media/. A container's
+    // disk is replaced on every deploy, so media on local disk would be lost. With no S3_BUCKET
+    // (local development) the plugin is off and Payload keeps its own folder.
+    s3Storage({
+      enabled: Boolean(process.env.S3_BUCKET),
+      collections: { media: { prefix: 'media' } },
+      bucket: process.env.S3_BUCKET || '',
+      config: s3ClientConfig(process.env),
+    }),
+  ],
   editor: lexicalEditor(),
   // Required for the Media collection's image sizes.
   sharp,
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: { outputFile: path.resolve(dirname, 'payload-types.ts') },
   db: postgresAdapter({
-    pool: { connectionString: process.env.DATABASE_URL },
+    pool: { connectionString: process.env.DATABASE_URL, ssl: databaseSsl(process.env) },
     // Payload keeps entirely to `cms`; `app` is Drizzle's (spec §32).
     schemaName: 'cms',
     // The cms schema is created by committed migrations (src/migrations), in every

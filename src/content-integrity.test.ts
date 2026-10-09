@@ -34,7 +34,17 @@ const files = walk(SRC).filter((f) => {
   )
 })
 
-const read = (f: string) => readFileSync(f, 'utf8')
+// Each file is read once: the checks below re-scan every file, and re-reading a few
+// hundred files for each banned phrase made this test slow enough to time out under load.
+const cache = new Map<string, string>()
+const read = (f: string) => {
+  let text = cache.get(f)
+  if (text === undefined) {
+    text = readFileSync(f, 'utf8')
+    cache.set(f, text)
+  }
+  return text
+}
 
 describe('content honesty gate', () => {
   it('scans a meaningful number of source files', () => {

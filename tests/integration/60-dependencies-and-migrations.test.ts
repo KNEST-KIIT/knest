@@ -2,7 +2,7 @@ import { spawnSync } from 'node:child_process'
 import { existsSync, readdirSync, rmSync } from 'node:fs'
 import path from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { BASE, closeDb, createUser, db, get, login, readMail, uniqueIp, type Session } from '../support/helpers'
+import { CAPTCHA, BASE, closeDb, createUser, db, get, login, readMail, uniqueIp, type Session } from '../support/helpers'
 import { payloadClient, richText } from '../support/payload'
 
 /**
@@ -131,9 +131,9 @@ describe('core loop on the upgraded stack (partial golden path)', () => {
   })
 
   it('submitting moves it to "submitted" exactly once', async () => {
-    const first = await fetch(`${BASE()}/api/applications/${applicationId}/submit`, json(student, {}))
+    const first = await fetch(`${BASE()}/api/applications/${applicationId}/submit`, json(student, CAPTCHA))
     expect(first.status, (await first.text()).slice(0, 300)).toBe(200)
-    const again = await fetch(`${BASE()}/api/applications/${applicationId}/submit`, json(student, {}))
+    const again = await fetch(`${BASE()}/api/applications/${applicationId}/submit`, json(student, CAPTCHA))
     expect(again.status).toBeGreaterThanOrEqual(400)
     const rows = await db().query('select status from app.applications where id = $1', [applicationId])
     expect(rows.rows[0].status).toBe('submitted')

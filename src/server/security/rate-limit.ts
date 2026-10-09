@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm'
 import { db } from '@/db/client'
+import { clientIpFromHeaders } from './client-ip'
 
 type RateLimitConfig = { capacity: number; refillIntervalSeconds: number }
 
@@ -50,10 +51,9 @@ export async function checkRateLimit(key: string, config: RateLimitConfig): Prom
   return tokens !== undefined && Number(tokens) >= 0
 }
 
-/** IP-keyed limits read the client's address off the proxy-set header — this app is never reached directly. */
+/** IP-keyed limits use the address from the trusted source for this deployment (see client-ip.ts). */
 export function clientIp(request: Request): string {
-  const forwarded = request.headers.get('x-forwarded-for')
-  return forwarded?.split(',')[0]?.trim() || 'unknown'
+  return clientIpFromHeaders((name) => request.headers.get(name), process.env)
 }
 
 export class RateLimitError extends Error {
