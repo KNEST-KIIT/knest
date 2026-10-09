@@ -48,3 +48,11 @@ Slot generation (hours, blackouts, lead, horizon, grid, past); **parallel reques
 ## Explicitly not built (gated, see tracker)
 
 Signed QR passes, two-sided scan, offline outbox, PWA install: blocked on the threat-model review, real-device test protocol results and lab-head review. Door control: not planned (HD-16 question 10).
+
+## Known gaps (found in review, 2026-10-09)
+
+- Requests nobody answers never expire and send no reminder, so they hold their slot and count against the member's open-request limit until someone acts. An expiry rule and a reminder are needed before the module is enabled.
+- A head can approve a request whose start time has already passed.
+- Assistants currently see every approved booking in their lab, with booker name and email. The design above says they see only their own duties; one of the two must change.
+- A recorded attendance outcome cannot be corrected from the screens, although the design implies a correction with a reason.
+- A lab that has been closed for booking cannot be reopened from the screens, because the lab console looks the lab up only while it is active.

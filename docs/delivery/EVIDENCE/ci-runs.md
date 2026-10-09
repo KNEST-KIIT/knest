@@ -12,3 +12,11 @@ Workflow: `.github/workflows/ci.yml` (verification only: no deploy, no cloud cre
 What this adds beyond the local runs: the same suite passes on a clean GitHub-hosted runner (Linux, Chrome preinstalled, Postgres service container), which removes "works on this Windows machine" as an explanation.
 
 What it does not show: the suites added after `ab64190` (see the tracker), any staging or production environment, or behaviour with real S3/SES/Google credentials.
+
+## Failed runs recorded 2026-10-09 (omitted earlier)
+
+| Run | Commit | Result | Cause |
+|---|---|---|---|
+| 37900955747 | `83143e2` | failure | Payload schema drift check: the media collection gains fields only when the S3 plugin is enabled, and CI has no S3 bucket set. |
+| 37914486518 | `1427180` | failure | The same drift check; every other test (273) passed. Fixed in `1fc5fcc` by setting the bucket variables inside the check. |
+| 37915526485 | `1fc5fcc` | success | |

@@ -15,7 +15,7 @@
 | 5 | Component library and shell | DONE (automated) | axe-core pass over every public, member and staff screen at desktop and phone width; skip link, labels, focus ring, reduced motion checked. Manual screen-reader review is separate work. |
 | 6 | Authentication and sessions | DONE | Revocable DB sessions, deactivation ends sessions, role changes revoke, Turnstile, rate limits, hashed tokens. Google sign-in guarded when not configured. |
 | 7 | Account lifecycle | DONE | Verification and reset: hashed single-use tokens, atomic consume, e-mail via SES path (stub-tested). |
-| 8 | Roles and authorisation | DONE | Staff roles and areas tested for every role; lab head, assistant and administrator scoping tested, including that nothing of a lab console is sent to anyone else. |
+| 8 | Roles and authorisation | DONE (one gap) | Staff roles and areas tested for every role; lab head, assistant and administrator scoping tested, including that nothing of a lab console is sent to anyone else. **Gap:** assistants currently see every approved booking in their lab with the booker name and email, not only their own duties as the design says (decision needed). |
 | 9 | Account screens | PARTIAL | Six screens exist; network-failure behaviour to be proven in the browser pass. |
 
 ## Content and public site
@@ -57,7 +57,7 @@
 | # | Module | Status | Notes |
 |---|---|---|---|
 | 39 | Cloudflare Turnstile | DONE | Sign-up, sign-in, reset, application submit, contact; lab booking request included. |
-| 40 | Rate limiting | DONE | Every sensitive endpoint, database-backed; client address from CloudFront in production. |
+| 40 | Rate limiting | PARTIAL | Database-backed limits on sign-in, sign-up, reset, verification, enquiries, uploads, application and booking requests; client address from CloudFront in production. **Gaps found in review:** lab decide, cancel, respond, attendance and manage routes, lab availability, `/api/admin/*`, and no per-account sign-in throttle. |
 | 41 | Browser hardening | PARTIAL | CSP, frame, sniffing, referrer, no-store set by the app; HSTS is set at CloudFront (IAC). |
 | 42 | Upload safety | DONE | No script-capable types; verified by content. |
 | 43 | Secrets, encryption, audit | PARTIAL | Audit rows for review, submit, members, enquiries; CMS publish actions not yet audited. Encryption and secrets are IAC. |
@@ -68,7 +68,7 @@
 | # | Module | Status | Notes |
 |---|---|---|---|
 | 50 | Accessibility | PARTIAL | Automated: 0 serious or critical axe findings across all screens at two widths; no sideways scroll at 375px; fixes made (contrast on dark sections, keyboard access to report tables, reduced motion for animations, wrapping). **Still to do: manual screen-reader and keyboard walk-through by a person.** |
-| 51 | Automated tests | PARTIAL | 349 unit and 274 integration tests (plus one documented expected failure) on the production build with real PostgreSQL; real-browser journeys for student and staff still to add. |
+| 51 | Automated tests | PARTIAL | 349 unit and 274 integration tests (plus one documented expected failure) as reported by vitest on 2026-10-09 against the production build with real PostgreSQL. A static count of `it(` calls is lower because of parameterised tests. Gaps: no run with the lab flag off, the booking rate limit and per-user limit race are untested, and real-browser journeys are being added. |
 | 52 | Performance and search visibility | PARTIAL | Sitemap, robots, noindex-until-launch done; image pipeline, social cards and a Lighthouse budget to add. |
 | 53 | Documentation, training, handover | TODO | Architecture, content-editing guide, lab operations guide, staff walkthrough. |
 

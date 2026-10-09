@@ -44,7 +44,7 @@
 
 | Case | Compute | USD / month |
 |---|---|---|
-| Expected (S-1 confirms 2 GiB is enough) | `t4g.small`, Single-AZ RDS `db.t4g.micro` | **about 45 to 51** (base 40 to 43 plus traffic 3 to 8) |
+| Expected (S-1 confirms 2 GiB is enough) | `t4g.small`, Single-AZ RDS `db.t4g.micro` | **about 45 to 51** (base 40 to 43 plus traffic 3 to 8) **before the origin-TLS addition (about 18 to 25 more for a load balancer, see section 4); the production edge cannot be deployed without one** |
 | If S-1 shows 2 GiB is not enough | `t4g.medium` (0.0224 per hour = 16.35) | about +8.2 |
 | If a failover database is required | RDS Multi-AZ doubles the instance part (+15.3) and storage (+2.6) | about +18 |
 

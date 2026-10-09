@@ -76,6 +76,22 @@ Parameters:
     Description: Cloudflare Turnstile site key (public by design; shown in every page). The matching secret key is pasted into the turnstile-secret Secrets Manager secret by the owner.
     AllowedPattern: '^[0-9A-Za-z_-]{5,}$'
     ConstraintDescription: Paste the site key from the Cloudflare dashboard (letters, digits, underscore, hyphen).
+  FeatureLabBooking:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: Switches lab booking on (FEATURE_LAB_BOOKING). Keep false until the lab operating policy (HD-16) is signed by the people responsible.
+  SiteIndexing:
+    Type: String
+    Default: 'off'
+    AllowedValues: ['on', 'off']
+    Description: Lets search engines index the site (SITE_INDEXING). Keep off until the release manifest says otherwise.
+  EnquiryNotifyEmail:
+    Type: String
+    Default: ''
+    AllowedPattern: '^([^\s@<>]+@[^\s@<>]+)?$'
+    ConstraintDescription: Empty, or a bare address. Empty means contact messages are stored but nobody is emailed.
+    Description: Address that is emailed when someone sends a contact message (ENQUIRY_NOTIFY_EMAIL).
   LogRetentionDays:
     Type: Number
     Default: 7
@@ -93,6 +109,7 @@ Conditions:
   IsProduction: !Equals [!Ref Environment, production]
   IsMultiAz: !Equals [!Ref DbMultiAz, 'true']
   HasAlertEmail: !Not [!Equals [!Ref AlertEmail, '']]
+  HasEnquiryNotifyEmail: !Not [!Equals [!Ref EnquiryNotifyEmail, '']]
 
 Resources:
   # ---------------------------------------------------------------- network
@@ -324,8 +341,18 @@ Resources:
             Statement:
               - Sid: DocumentsAndMedia
                 Effect: Allow
-                Action: ['s3:GetObject', 's3:PutObject']
+                Action: ['s3:GetObject', 's3:PutObject', 's3:DeleteObject']
                 Resource: !Sub '${Bucket.Arn}/*'
+              - Sid: ListTheBucket
+                Effect: Allow
+                Action: ['s3:ListBucket']
+                Resource: !GetAtt Bucket.Arn
+              - Sid: SnapshotBeforeMigrating
+                Effect: Allow
+                Action: ['rds:CreateDBSnapshot', 'rds:DescribeDBSnapshots', 'rds:AddTagsToResource']
+                Resource:
+                  - !Sub 'arn:aws:rds:${AWS::Region}:${AWS::AccountId}:db:${Database}'
+                  - !Sub 'arn:aws:rds:${AWS::Region}:${AWS::AccountId}:snapshot:pre-migrate-*'
               - Sid: PullImages
                 Effect: Allow
                 Action: ['ecr:BatchGetImage', 'ecr:GetDownloadUrlForLayer', 'ecr:BatchCheckLayerAvailability']
@@ -379,6 +406,19 @@ Resources:
   ConfigTurnstileSiteKey:
     Type: AWS::SSM::Parameter
     Properties: { Name: !Sub '/knest-${Environment}/config/turnstile-site-key', Type: String, Value: !Ref TurnstileSiteKey }
+  ConfigFeatureLabBooking:
+    Type: AWS::SSM::Parameter
+    Properties: { Name: !Sub '/knest-${Environment}/config/feature-lab-booking', Type: String, Value: !Ref FeatureLabBooking }
+  ConfigSiteIndexing:
+    Type: AWS::SSM::Parameter
+    Properties: { Name: !Sub '/knest-${Environment}/config/site-indexing', Type: String, Value: !Ref SiteIndexing }
+  ConfigEnquiryNotifyEmail:
+    Type: AWS::SSM::Parameter
+    Condition: HasEnquiryNotifyEmail
+    Properties: { Name: !Sub '/knest-${Environment}/config/enquiry-notify-email', Type: String, Value: !Ref EnquiryNotifyEmail }
+  ConfigDbInstanceId:
+    Type: AWS::SSM::Parameter
+    Properties: { Name: !Sub '/knest-${Environment}/config/db-instance-id', Type: String, Value: !Ref Database }
   ConfigEmailFrom:
     Type: AWS::SSM::Parameter
     Properties: { Name: !Sub '/knest-${Environment}/config/email-from', Type: String, Value: !Ref EmailFromAddress }
@@ -496,10 +536,20 @@ Resources:
                     echo "S3_REGION=${REGION}"
                     echo "EMAIL_TRANSPORT=ses"
                     echo "EMAIL_FROM=$(param email-from)"
+                    echo "FEATURE_LAB_BOOKING=$(param feature-lab-booking)"
+                    echo "SITE_INDEXING=$(param site-indexing)"
+                    NOTIFY=$(param enquiry-notify-email 2>/dev/null || true)
+                    [ -n "$NOTIFY" ] && echo "ENQUIRY_NOTIFY_EMAIL=$NOTIFY"
                   } > /run/knest/app.env
 
                   RUN_OPTS="--env-file /run/knest/app.env -v /opt/knest/rds-global-bundle.pem:/etc/knest/rds-global-bundle.pem:ro"
                   PREVIOUS=$(docker inspect knest 2>/dev/null | jq -r '.[0].Config.Image // empty' || true)
+
+                  # Migrations only move forward, so take a restore point first and stop if it cannot be made.
+                  SNAPSHOT="pre-migrate-$(date -u +%Y%m%d%H%M%S)"
+                  echo "Snapshotting the database as $SNAPSHOT"
+                  aws rds create-db-snapshot --region "$REGION" --db-instance-identifier "$(param db-instance-id)" --db-snapshot-identifier "$SNAPSHOT" >/dev/null
+                  aws rds wait db-snapshot-available --region "$REGION" --db-snapshot-identifier "$SNAPSHOT"
 
                   echo "Migrating with $MIGRATE_IMAGE"
                   docker pull "$MIGRATE_IMAGE" >/dev/null
