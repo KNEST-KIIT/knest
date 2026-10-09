@@ -2,7 +2,7 @@
   "Version": "2012-10-17",
   "Statement": [
     {
-      "Sid": "StayInMumbai",
+      "Sid": "StayInMumbaiAndVirginia",
       "Effect": "Deny",
       "NotAction": [
         "iam:*",
@@ -14,10 +14,19 @@
         "freetier:*",
         "support:*",
         "health:*",
-        "signin:*"
+        "signin:*",
+        "cloudfront:*",
+        "wafv2:*"
       ],
       "Resource": "*",
-      "Condition": { "StringNotEquals": { "aws:RequestedRegion": "ap-south-1" } }
+      "Condition": {
+        "StringNotEquals": {
+          "aws:RequestedRegion": [
+            "ap-south-1",
+            "us-east-1"
+          ]
+        }
+      }
     },
     {
       "Sid": "NeverCreateLongLivedCredentialsOrUsers",
@@ -74,25 +83,36 @@
     {
       "Sid": "S1StackAndNetwork",
       "Effect": "Allow",
-      "Action": ["cloudformation:*"],
+      "Action": [
+        "cloudformation:*"
+      ],
       "Resource": "arn:aws:cloudformation:ap-south-1:*:stack/knest-s1*/*"
     },
     {
       "Sid": "S1ComputeAndDatabase",
       "Effect": "Allow",
-      "Action": ["ec2:*", "rds:*"],
+      "Action": [
+        "ec2:*",
+        "rds:*"
+      ],
       "Resource": "*"
     },
     {
       "Sid": "S1Bucket",
       "Effect": "Allow",
       "Action": "s3:*",
-      "Resource": ["arn:aws:s3:::knest-s1-*", "arn:aws:s3:::knest-s1-*/*"]
+      "Resource": [
+        "arn:aws:s3:::knest-s1-*",
+        "arn:aws:s3:::knest-s1-*/*"
+      ]
     },
     {
       "Sid": "S1LogsAndSecrets",
       "Effect": "Allow",
-      "Action": ["logs:*", "ssm:*"],
+      "Action": [
+        "logs:*",
+        "ssm:*"
+      ],
       "Resource": [
         "arn:aws:logs:ap-south-1:*:log-group:/knest-s1*",
         "arn:aws:logs:ap-south-1:*:log-group:/knest-s1*:*",
@@ -134,7 +154,11 @@
       "Resource": "arn:aws:iam::*:role/knest-s1-*",
       "Condition": {
         "StringEquals": {
-          "iam:PassedToService": ["ec2.amazonaws.com", "scheduler.amazonaws.com", "cloudformation.amazonaws.com"]
+          "iam:PassedToService": [
+            "ec2.amazonaws.com",
+            "scheduler.amazonaws.com",
+            "cloudformation.amazonaws.com"
+          ]
         }
       }
     },
@@ -143,12 +167,20 @@
       "Effect": "Allow",
       "Action": "iam:CreateServiceLinkedRole",
       "Resource": "arn:aws:iam::*:role/aws-service-role/rds.amazonaws.com/*",
-      "Condition": { "StringEquals": { "iam:AWSServiceName": "rds.amazonaws.com" } }
+      "Condition": {
+        "StringEquals": {
+          "iam:AWSServiceName": "rds.amazonaws.com"
+        }
+      }
     },
     {
       "Sid": "S1BudgetsAndTeardownSchedule",
       "Effect": "Allow",
-      "Action": ["budgets:ViewBudget", "budgets:ModifyBudget", "scheduler:*"],
+      "Action": [
+        "budgets:ViewBudget",
+        "budgets:ModifyBudget",
+        "scheduler:*"
+      ],
       "Resource": [
         "arn:aws:budgets::*:budget/knest-s1*",
         "arn:aws:scheduler:ap-south-1:*:schedule/*/knest-s1*",
@@ -158,8 +190,114 @@
     {
       "Sid": "SchedulerList",
       "Effect": "Allow",
-      "Action": ["scheduler:List*", "scheduler:Get*", "budgets:ViewBudget"],
+      "Action": [
+        "scheduler:List*",
+        "scheduler:Get*",
+        "budgets:ViewBudget"
+      ],
       "Resource": "*"
+    },
+    {
+      "Sid": "NoComputeOrDatabaseOutsideMumbai",
+      "Effect": "Deny",
+      "Action": [
+        "ec2:RunInstances",
+        "ec2:CreateVpc",
+        "ec2:CreateVolume",
+        "rds:CreateDBInstance",
+        "rds:CreateDBCluster"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringNotEquals": {
+          "aws:RequestedRegion": "ap-south-1"
+        }
+      }
+    },
+    {
+      "Sid": "CloudFrontTestDistributionAndFunctions",
+      "Effect": "Allow",
+      "Action": [
+        "cloudfront:*"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "WafForTheTestDistribution",
+      "Effect": "Allow",
+      "Action": [
+        "wafv2:*"
+      ],
+      "Resource": [
+        "arn:aws:wafv2:us-east-1:*:global/*/knest-s1-*/*",
+        "arn:aws:wafv2:us-east-1:*:global/managedruleset/*/*",
+        "arn:aws:wafv2:us-east-1:*:global/ipset/knest-s1-*/*",
+        "arn:aws:wafv2:us-east-1:*:global/regexpatternset/knest-s1-*/*"
+      ]
+    },
+    {
+      "Sid": "WafListAndCheck",
+      "Effect": "Allow",
+      "Action": [
+        "wafv2:List*",
+        "wafv2:Get*",
+        "wafv2:CheckCapacity",
+        "wafv2:DescribeManagedRuleGroup"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "EcrRepositoryForS1",
+      "Effect": "Allow",
+      "Action": "ecr:*",
+      "Resource": "arn:aws:ecr:ap-south-1:*:repository/knest-s1*"
+    },
+    {
+      "Sid": "EcrLogin",
+      "Effect": "Allow",
+      "Action": "ecr:GetAuthorizationToken",
+      "Resource": "*"
+    },
+    {
+      "Sid": "GitHubOidcProviderOnly",
+      "Effect": "Allow",
+      "Action": [
+        "iam:CreateOpenIDConnectProvider",
+        "iam:GetOpenIDConnectProvider",
+        "iam:TagOpenIDConnectProvider",
+        "iam:UpdateOpenIDConnectProviderThumbprint"
+      ],
+      "Resource": "arn:aws:iam::*:oidc-provider/token.actions.githubusercontent.com"
+    },
+    {
+      "Sid": "RdsManagedMasterSecretMetadataOnly",
+      "Effect": "Allow",
+      "Action": [
+        "secretsmanager:DescribeSecret",
+        "secretsmanager:ListSecrets",
+        "secretsmanager:TagResource",
+        "secretsmanager:CreateSecret",
+        "secretsmanager:DeleteSecret",
+        "secretsmanager:PutResourcePolicy",
+        "secretsmanager:GetResourcePolicy"
+      ],
+      "Resource": "arn:aws:secretsmanager:ap-south-1:*:secret:rds!*"
+    },
+    {
+      "Sid": "TheOperatorNeverReadsSecretValues",
+      "Effect": "Deny",
+      "Action": "secretsmanager:GetSecretValue",
+      "Resource": "*"
+    },
+    {
+      "Sid": "TheOperatorNeverReadsS1Parameters",
+      "Effect": "Deny",
+      "Action": [
+        "ssm:GetParameter",
+        "ssm:GetParameters",
+        "ssm:GetParametersByPath"
+      ],
+      "Resource": "arn:aws:ssm:ap-south-1:*:parameter/knest-s1/*"
     }
   ]
 }

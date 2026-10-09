@@ -1,78 +1,63 @@
-# AWS-native architecture and domain routing (owner direction, 2026-10-09)
+# AWS-native architecture, ONE production environment (owner decisions of 2026-10-09)
 
-**Status: DESIGN. Nothing is provisioned and no DNS is changed.** Owner direction: `kiitnest.com` is the main domain, `kiitnest.in` redirects to it, every service is AWS-native, and the domains are routed through AWS. This replaces the Cloudflare plan in the earlier blueprint. Prices are my approximate list prices, not yet checked against the AWS price list (needs AWS access).
+**Status: DESIGN. Nothing is provisioned and no DNS is changed.** Final owner decision: deploy directly to AWS production, **no staging environment**, no `staging.kiitnest.com`, no second hosting stack. The disposable S-1 spike is the only sandbox and is not a staging environment. Cost: `AWS-PRODUCTION-BUDGET.md`.
 
-## 1. Services (all AWS)
+## 1. Services
 
 | Layer | Service | Notes |
 |---|---|---|
-| DNS | **Route 53**, two public hosted zones (`kiitnest.com`, `kiitnest.in`) | Registrar stays at GoDaddy; only the **nameservers** change (needs approval, section 4). A registrar transfer to Route 53 is optional and separate. |
-| Certificates | **ACM** (free), in `us-east-1` for CloudFront | DNS-validated through Route 53. Covers `kiitnest.com`, `www`, `kiitnest.in`, `www.kiitnest.in`. |
-| Edge, TLS, redirect | **CloudFront** | One distribution for the app; a second small distribution (or the same one with a CloudFront Function) sends `kiitnest.in` and `www.kiitnest.in` to `https://kiitnest.com` with a 301, and `www.kiitnest.com` to the apex. |
-| Edge protection | **AWS WAF** on CloudFront | Managed rule groups + rate-based rules for login, sign-up, reset and uploads. Replaces Cloudflare Turnstile with AWS WAF CAPTCHA/Challenge actions (see 5: the contract mentions Turnstile). |
-| Compute | **EC2** `t4g` (Graviton) running the container | Provisional pending S-1 memory results; no inbound from the internet except CloudFront. |
-| Database | **RDS PostgreSQL 16**, private subnets, encrypted, automated backups | Multi-AZ is an option decided after S-1 (cost). |
-| Documents and media | **S3** (private, SSE, versioning for documents) | Instance role, no stored keys. A separate private bucket for documents. |
-| Mail from the platform | **SES** (domain identity, DKIM) | DKIM CNAMEs and an SPF include are added beside the existing Google records (section 3). |
-| Secrets and config | **SSM Parameter Store** SecureString (or Secrets Manager if rotation is wanted) | Fetched at start with the instance role. |
-| Container registry | **ECR** (private) | Replaces GHCR (an earlier S-1 proposal). CI pushes to ECR with a GitHub OIDC role (no long-lived AWS key in GitHub). |
-| Deploy and admin access | **SSM Session Manager** | No SSH, no port 22. |
-| Logs, metrics, alarms | **CloudWatch** (logs, alarms), **SNS** for alerts | Alarms: 5xx rate, instance status, RDS storage and CPU, certificate and budget. |
-| Cost guard | **AWS Budgets** | Alerts at 50/80/100%. |
-| Audit trail | **CloudTrail** (management events) | |
+| DNS | Route 53, hosted zones for `kiitnest.com` and `kiitnest.in` | Registrar stays at GoDaddy. Only the nameservers move, at the approved cutover. |
+| Certificates | ACM, **us-east-1** for CloudFront | Public certificate for `kiitnest.com`, `www.kiitnest.com`, `kiitnest.in`, `www.kiitnest.in`. Origin-side TLS is checked separately (see section 3). |
+| Edge | CloudFront | Canonical host `kiitnest.com`. A CloudFront Function permanently redirects `www.kiitnest.com`, `kiitnest.in` and `www.kiitnest.in` to `https://kiitnest.com` keeping the path and query string. |
+| Edge protection | AWS WAF (CLOUDFRONT scope, us-east-1) | Managed rule groups and rate-based rules only. No paid WAF CAPTCHA or Bot Control. |
+| CAPTCHA | **Cloudflare Turnstile** (standalone widget and server-side verification) | Contractual requirement, kept. It needs no Cloudflare DNS or CDN. |
+| Compute | EC2 `t4g` (Graviton) running the container | Sizing confirmed by S-1. |
+| Database | RDS PostgreSQL 16, private subnets, encrypted, 7-day backups | Never public. |
+| Documents, media | S3 (private, encrypted, versioned) | Instance role, no stored keys. |
+| Platform mail | SES (domain identity, DKIM) | Alignment through DKIM so the existing SPF record is not edited (section 4). |
+| Registry, CI/CD | Private ECR; GitHub Actions with OIDC short-lived roles | Role trust scoped to this repository, approved branches and a protected `production` environment. Images deployed by digest. |
+| Operations | SSM Session Manager (no SSH), CloudWatch, SNS alerts, Budgets, CloudTrail | |
 
-Not used: Cloudflare, Vercel, GHCR in production. Vercel remains only until cutover, serving the maintenance page.
+Not used: Cloudflare DNS/CDN, Vercel (after cutover), GHCR, any permanent second environment.
 
-## 2. Request path
+## 2. Request path and the rule that nothing sensitive is cached
 
-Visitor, Route 53, CloudFront (TLS, WAF, redirect rules), origin (EC2 running the container), RDS and S3 in the VPC. The origin security group accepts traffic only from CloudFront (the AWS-managed CloudFront prefix list), plus a secret origin header checked by the app or proxy; the instance has no other inbound. **To verify in S-1:** whether CloudFront's VPC-origin feature can reach the instance privately (preferred) or the prefix-list approach is needed; and that the real client IP is derived only from CloudFront's headers (this closes KN-22c, the spoofable rate-limit key).
+Visitor, Route 53, CloudFront (TLS, WAF, redirect function), the origin (EC2 container), RDS and S3 inside the VPC.
 
-## 3. DNS plan for `kiitnest.com` (zone contents to create before any nameserver change)
+- **CloudFront never caches HTML, API responses or anything session-specific.** The default behaviour uses the managed `CachingDisabled` policy and forwards the session cookie, so every dynamic response reaches the origin. Only fingerprinted build assets (`/_next/static/*`) get a long TTL. The application also sends `Cache-Control: private, no-store` on `/api`, `/dashboard`, `/admin`, `/apply`, `/onboarding` and authentication pages, and this is asserted by an integration test (a second line of defence if a distribution is ever misconfigured).
+- **Origin bypass:** the origin accepts HTTPS only from CloudFront (security group on the AWS-managed CloudFront prefix list) **and** requires a secret origin header, which the application rejects when missing. RDS has no public endpoint.
+- **Client IP:** in production the rate limiter takes the address only from CloudFront's viewer-address header (valid only because the origin cannot be reached any other way), not from the client-supplied `X-Forwarded-For`. This closes KN-22c.
 
-Everything currently in GoDaddy DNS is recreated in Route 53 **exactly**, so e-mail keeps working (see `DOMAIN-DISCOVERY-2026-10-09.md`):
+## 3. Origin networking: decision method
 
-| Keep exactly | `MX @ smtp.google.com. (1)`, `TXT @ google-site-verification=...`, `TXT @ v=spf1 include:dc-bdaca08905._spfm.kiitnest.com ~all` (to be extended for SES), `TXT dc-bdaca08905._spfm v=spf1 include:_spf.google.com ~all`, `TXT _dmarc ...` (quarantine), `CNAME _domainconnect` (optional) |
-| Change | `A/AAAA @` and `www` become Route 53 alias records to the CloudFront distribution (replacing the GoDaddy parking page) |
-| Add | SES DKIM CNAMEs (three), SES MAIL FROM records if used, ACM validation CNAMEs |
+Owner requirement: evaluate CloudFront VPC origins with a private EC2 against a public EC2 restricted to CloudFront, and pick the lowest-cost secure, maintainable option demonstrated by S-1. The comparison is in `AWS-PRODUCTION-BUDGET.md` section 4 (a private instance needs a NAT gateway or about six interface endpoints, roughly USD 40+ per month, which about doubles the bill). **Planned choice: public subnet, inbound only from CloudFront.** S-1 will exercise both options on a CloudFront default hostname (no DNS needed) and record the result; I will not choose by assertion. Origin TLS: CloudFront to origin over HTTPS with a certificate on the instance (ACM for CloudFront does not install on EC2); the options (a private-CA/Let's Encrypt-style certificate on the host, or terminating at a small proxy) are tested in S-1 and the simplest that works is chosen.
 
-`kiitnest.in` is a second hosted zone with only the redirect records (A/AAAA aliases for `@` and `www` to the redirect distribution). It has no mail records today; confirm that this stays true.
+## 4. Domain and e-mail migration (direct, no staging subdomain)
 
-## 4. Safe order of work (each step is its own approval where marked)
+Current facts are in `DOMAIN-DISCOVERY-2026-10-09.md`; the saved record snapshot and procedure are in `DNS-MIGRATION.md`.
 
-1. **Staging subdomain first.** Create a Route 53 hosted zone for `staging.kiitnest.com` and delegate it from GoDaddy by adding **NS records for `staging` only** (a small, reversible DNS change that cannot affect mail or the apex). Everything (ACM, CloudFront, WAF, EC2, RDS, SES test) is proven on a real HTTPS hostname before the main domain moves. *Approval needed: the NS delegation record.*
-2. Create the production `kiitnest.com` and `kiitnest.in` zones **empty-but-complete** (all records of section 3 copied) and verify them by querying the Route 53 nameservers directly (`nslookup kiitnest.com <route53-ns>`), comparing every answer to GoDaddy's. *No live change yet.*
-3. **Nameserver cutover** at GoDaddy to the four Route 53 nameservers per zone. This is the moment mail and the site depend on Route 53. Done only after step 2 matches exactly, TTLs lowered a day earlier, and the previous GoDaddy nameservers recorded for rollback (they are `ns43/ns44.domaincontrol.com`). *Approval needed: nameserver change (D1).*
-4. Switch `@` and `www` aliases to CloudFront after the production origin passes staging. *Approval needed: production release (C1).*
-5. DNSSEC: not enabled initially (a mistake can take the domain offline); revisit after stability.
+1. **Inventory and snapshot** every GoDaddy record (done for the records visible; re-confirmed immediately before cutover).
+2. **Build the Route 53 zones** with every existing record reproduced exactly (MX `smtp.google.com` priority 1, Google verification TXT, SPF TXT and its include TXT, DMARC TXT, `_domainconnect`), and prove equivalence with `scripts/dns-compare.mjs`, which queries both name servers directly and diffs every record type. No live change.
+3. **Certificate before cutover.** ACM DNS validation needs a CNAME in the authoritative zone. Before cutover that is GoDaddy, so the only GoDaddy additions before the nameserver change are the ACM validation CNAMEs and the SES DKIM CNAMEs: additive, exact values shown to the owner first, no existing record touched. The same records are also created in Route 53.
+4. **SES without editing SPF.** DMARC passes when either SPF or DKIM aligns. SES mail is DKIM-signed with the `kiitnest.com` domain, so the existing SPF record is left alone. Whether to add an SES SPF include is a separate decision with a before/after.
+5. **Private first.** The production distribution is deployed with access restricted (an edge rule allows only owner-approved addresses, or serves the maintenance page) and reached on its default `*.cloudfront.net` hostname. Verification runs there, on the real production stack, with synthetic accounts and no real student data.
+6. **Cutover (needs the owner's approval of the exact manifest):** lower TTLs a day before; change the four nameservers at GoDaddy to the Route 53 set; watch resolution from several resolvers; open the distribution to the public. **Rollback:** restore GoDaddy's nameservers `ns43.domaincontrol.com` and `ns44.domaincontrol.com` (still holding the old zone, which is left untouched for at least a week).
+7. DNSSEC stays off until after stability.
 
-## 5. Things in the earlier plan that change or conflict
+## 5. What changed in the plan
 
-- **Cloudflare Turnstile** is named in the contract (unverified copy) and in HD-06 inputs. AWS-native replacement: WAF CAPTCHA/Challenge. Whether KIIT accepts this substitution is a contract question for you; I will not change the contract.
-- **GHCR private image + token (S1-2)** is replaced by **ECR + GitHub OIDC role**. That adds an IAM OIDC provider and a CI role scoped to pushing one repository.
-- S-1 grows from compute + database to also test the edge on the staging subdomain (CloudFront + ACM + WAF + Route 53 + SES identity). That is a separate sandbox stage, **S-2**, after S-1.
+- Removed: `staging.kiitnest.com` delegation, S-2 staging stage, any permanent second environment.
+- Kept: S-1 as a disposable spike. Its scope grows slightly to include a CloudFront test distribution on a default hostname (to compare origin options) and an ECR push through the OIDC role (to prove image delivery), both inside the USD 25 ceiling and deleted at teardown.
+- Turnstile is implemented in the application (verification on the server, configurable verify URL so tests need no internet).
+- Verification that would have run on staging now runs in three places before the public sees anything: the local and CI test suites (real PostgreSQL, real browser, production build, production Docker build), the S-1 spike, and a private production smoke test.
 
-## 6. Cost view (approximate, not verified against the AWS price list)
+## 6. Open items for the owner
 
-| Item | Per month, production |
+| # | Item |
 |---|---|
-| EC2 `t4g.small` + public IPv4 + EBS | about 20 |
-| RDS `db.t4g.micro` Single-AZ + 20 GB (Multi-AZ doubles the instance part) | about 15 to 30 |
-| Route 53: 2 hosted zones + low query volume | about 1 to 2 |
-| CloudFront (low traffic) | about 0 to 5 |
-| AWS WAF: 1 web ACL + a few rules + request charges | about 8 to 12 |
-| SES, S3, ECR, CloudWatch, SSM, Budgets, CloudTrail (low volume) | about 3 to 8 |
-| **Total** | **about 50 to 80** (earlier estimate without WAF/CloudFront/Route 53: 35 to 43) |
-
-These are new recurring paid services: they need your approval and a production budget ceiling, separate from the USD 25 S-1 sandbox ceiling.
-
-## 7. Decisions needed
-
-| # | Decision | Recommendation |
-|---|---|---|
-| ARCH-1 | Approve this AWS-native architecture as the target (Route 53, ACM, CloudFront, WAF, EC2, RDS, S3, SES, ECR, SSM, CloudWatch, Budgets, CloudTrail) | Approve |
-| ARCH-2 | Confirm the WAF CAPTCHA/Challenge substitution for Turnstile, or tell me KIIT requires Turnstile | Approve the substitution |
-| ARCH-3 | ECR with a GitHub OIDC role instead of GHCR | Approve |
-| ARCH-4 | Add an S-2 sandbox stage for the edge on a `staging.kiitnest.com` delegation, with the NS delegation record in GoDaddy | Approve |
-| ARCH-5 | Indicative production budget (section 6) and a production ceiling to approve later, once S-1 and S-2 give real numbers | Defer the number until S-1 and S-2 results |
-| DOM-1 | `kiitnest.com` main, `kiitnest.in` redirect | **Answered by the owner** |
-| Still open | The scoped AWS identity (S-1-PREFLIGHT section 2), the budget alert e-mail, the extra teardown roles (S1-1), the privacy and terms approver (HD-06), the commercial document |
+| 1 | The scoped AWS identity (`S-1-PREFLIGHT.md` section 2; the policy was widened for the S-1 edge and ECR checks, so use the current `infra/s1/operator-policy.json`). |
+| 2 | The budget alert e-mail address. |
+| 3 | Approval of the exact teardown role policies (`infra/s1/teardown-roles.json`). |
+| 4 | Approval of the exact GoDaddy additions before cutover (ACM and SES CNAMEs): values are produced after the zones exist. |
+| 5 | The production bill (`AWS-PRODUCTION-BUDGET.md`) and a production ceiling. |
+| 6 | The privacy and terms approver (HD-06) and the other institutional inputs. |

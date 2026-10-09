@@ -11,7 +11,7 @@
 | G3 | A6 budget e-mail provided and verified | **NOT PROVIDED** |
 | G4 | EC2 reaches SSM and pulls the image with no inbound SSH | Design in section 3; proven only at provisioning |
 | G5 | RDS has no public endpoint; components isolated | Design in section 3; proven by `describe-db-instances` after provisioning |
-| G6 | Every charge is inside the USD 25 ceiling | Section 4 (est. about USD 6 for a 5-day run, about USD 16.5 for the full 14 days, gross, before credits) |
+| G6 | Every charge is inside the USD 25 ceiling | Section 4 (est. about USD 6 for a 5-day run, about USD 15 for the full 14 days, gross, before credits) |
 | G7 | Expiry is an automated teardown, not just tags | Design in section 5; **needs your approval of two extra roles (decision S1-1 below)** |
 | G8 | Image: private package, no secrets, deployed by digest | Section 7; **needs a read-only pull token created by you (decision S1-2)** |
 | G9 | Template and teardown reviewed before use | To write; reviewed with you before anything is created |
@@ -41,19 +41,21 @@ First thing I then run, read-only: `sts get-caller-identity`, account alias, con
 
 | Item | Basis | 5-day run | 14-day backstop |
 |---|---|---|---|
-| EC2 `t4g.small` | on-demand, about 0.018 USD per hour | about 2.1 | about 6.0 |
-| Public IPv4 (EC2) | about 0.005 USD per hour per address | about 0.6 | about 1.7 |
+| EC2 `t4g.small` | 0.0112 USD per hour (AWS price list, Mumbai) | about 1.3 | about 3.8 |
+| Public IPv4 (EC2) | 0.005 USD per hour per address | about 0.6 | about 1.7 |
 | EBS 20 GB gp3 | about 0.09 USD per GB-month | about 0.3 | about 0.9 |
-| RDS `db.t4g.micro` Single-AZ | about 0.018 USD per hour | about 2.2 | about 6.1 |
-| RDS 20 GB gp3 storage (1-day backups, within the free backup allowance) | about 0.14 USD per GB-month | about 0.5 | about 1.3 |
+| RDS `db.t4g.micro` Single-AZ | 0.021 USD per hour (AWS price list, Mumbai) | about 2.5 | about 7.1 |
+| RDS 20 GB gp3 storage (1-day backups, within the free backup allowance) | 0.131 USD per GB-month (AWS price list) | about 0.4 | about 1.2 |
+| CloudFront test distribution and ECR (a few hundred MB) | free tier / 0.10 per GB-month | about 0 | about 0.1 |
+| Secrets Manager (RDS-managed master password) | 0.40 per secret per month, prorated | about 0.1 | about 0.2 |
 | Optional `t4g.medium` for 8 hours | only if 2 GiB fails | up to 0.3 | up to 0.3 |
 | CloudWatch Logs (7-day retention) | ingestion + storage | about 0.3 | about 0.5 |
 | Data transfer | small; first 100 GB out per month free; image pull is inbound | about 0 | about 0 |
 | SSM, Parameter Store (standard), Budgets (first two), Scheduler (low volume), S3 test bucket | | about 0 | about 0 |
 | NAT gateway, interface VPC endpoints, ELB, Elastic IP not attached | **not used** | 0 | 0 |
-| **Total (gross, before credits)** | | **about 6** | **about 16.5** |
+| **Total (gross, before credits)** | | **about 6** | **about 15** |
 
-These are my estimates from approximate public list prices (not yet checked against the AWS price list, which needs AWS access); the weekly figure in `S-1-APPROVAL-PACKET.md` (about USD 8-9) was a little lower than this table implies for the instance lines, so treat this table as the better estimate. Replace both with Cost Explorer actuals at the end. The ceiling applies to gross spend, not to credits. **Cost-watch procedure:** at each stage I read Cost Explorer (daily, with the hour lag it has), record the figure in `EVIDENCE/S-1.md`, and stop and tear down if the running total plus the remaining plan could reach USD 20. Budget alerts at 50/80/100% (USD 12.50 / 20 / 25) are added once G3 is satisfied, with an extra alert on forecast. A budget does not stop spend by itself; my teardown does.
+The EC2 and RDS lines are from AWS's public price list for Mumbai (read 2026-10-09; an earlier version of this table used guessed prices, which these figures replace). The other lines are published rates to re-check in the AWS Pricing Calculator. Replace all with Cost Explorer actuals at the end. The ceiling applies to gross spend, not to credits. **Cost-watch procedure:** at each stage I read Cost Explorer (daily, with the hour lag it has), record the figure in `EVIDENCE/S-1.md`, and stop and tear down if the running total plus the remaining plan could reach USD 20. Budget alerts at 50/80/100% (USD 12.50 / 20 / 25) are added once G3 is satisfied, with an extra alert on forecast. A budget does not stop spend by itself; my teardown does.
 
 ## 5. Automated teardown (G7)
 
@@ -89,3 +91,11 @@ Tags alone delete nothing. Design:
 | S1-2 | Private GHCR plus a read-only pull token you create and store in SSM | Approve |
 
 Once G1, G3, S1-1 and S1-2 are settled and the template is reviewed, provisioning is allowed within the USD 25 ceiling. Until then the repository work continues.
+
+## 9. Updates after the owner's decisions of 2026-10-09 (AWS-native, one production environment)
+
+- **S1-2 is superseded.** The image goes to a **private ECR** repository through a GitHub **OIDC** role with short-lived credentials. There is no pull token, no GHCR package and no long-lived GitHub key. The host pulls from ECR with its instance role, by digest.
+- **S-1 scope grows slightly, inside the same USD 25 ceiling and the same teardown:** (a) an ECR push from GitHub Actions through the OIDC role and a pull on the host by digest; (b) a CloudFront test distribution on its default `*.cloudfront.net` hostname (no DNS involved) to compare a public EC2 origin restricted to CloudFront against a CloudFront VPC origin with a private instance, including origin-bypass attempts, SSM/ECR/SES/Turnstile/Google connectivity, and NAT or endpoint cost; (c) a WAF web ACL attached to it with the planned rules.
+- **There is no S-2 and no staging.** Production verification is private-first on the production stack (`AWS-NATIVE-ARCHITECTURE.md` section 4).
+- **S1-1 now has exact policies** to review: `infra/s1/teardown-roles.json` holds the trust and permission documents for the two `knest-s1-*` teardown roles, with notes on what each can and cannot do.
+- **The operator policy** (`infra/s1/operator-policy.json`, still one policy, 5.2k of the 6.1k character limit) was widened for the above: us-east-1 is allowed only for CloudFront-scope WAF (compute and databases are still denied outside Mumbai), and CloudFront, WAF, ECR and the GitHub OIDC provider were added, limited to `knest-s1*` names where AWS supports it (CloudFront has weak resource scoping, so the operator has account-wide CloudFront rights for the sandbox). The operator can never read secret values or the `knest-s1` parameters.

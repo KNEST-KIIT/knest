@@ -43,3 +43,10 @@ Recorded from the owner's "Owner Decisions and Controlled Execution Approval". T
 - Deploy on AWS only, with **all services AWS-native**, and route the domains through AWS. This supersedes the Cloudflare plan (and DOM-2 option B in `DOMAIN-DISCOVERY-2026-10-09.md`).
 - Effect: `AWS-NATIVE-ARCHITECTURE.md` is the new target design (Route 53, ACM, CloudFront, WAF, EC2, RDS, S3, SES, ECR, SSM, CloudWatch). It lists the new approvals it needs (ARCH-1 to ARCH-5) and a safe order of work that starts with a delegated `staging.kiitnest.com` zone, so the apex and the live Google e-mail are not touched until the nameserver cutover is separately approved.
 - Not changed by this direction: no AWS resource has been created, no DNS has been edited, the maintenance page stays, and the S-1 gates (scoped identity, budget e-mail, teardown roles) still apply.
+
+## Final deployment decision (same day): one production environment, no staging
+
+- No staging environment, no `staging.kiitnest.com`, no second hosting stack. Direct AWS production, private-first, then public after the release gate and an approved cutover manifest. The disposable S-1 spike remains, under its own USD 25 ceiling.
+- ARCH-1: conditional yes (AWS-native target; evaluate CloudFront VPC origin against a restricted public origin; never cache authenticated responses; ACM in us-east-1). ARCH-2: **Turnstile is kept**; no WAF CAPTCHA or Bot Control. ARCH-3: ECR with GitHub OIDC (no long-lived keys, digest deploys, protected production environment). ARCH-4 (staging delegation): **withdrawn by the later decision**.
+- Documents: `AWS-NATIVE-ARCHITECTURE.md` (rewritten), `AWS-PRODUCTION-BUDGET.md` (one-environment bill from AWS's price list: about USD 45 to 51 per month expected, base about 40 to 43), `infra/s1/operator-policy.json` (single policy, widened for the S-1 edge and ECR checks), `infra/s1/teardown-roles.json` (exact trust and permission documents for approval).
+- Not yet provided by the owner: the AWS scoped identity, the budget e-mail, approval of the teardown roles, the HD-06 approver and other institutional inputs. Nothing has been created in AWS and no DNS has been changed.

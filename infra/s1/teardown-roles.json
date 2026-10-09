@@ -1,0 +1,159 @@
+{
+  "_readme": "Exact trust and permission documents for the two teardown roles requested as decision S1-1. NOTHING here has been created. <ACCOUNT_ID> is filled in only after the account is confirmed (A1). Both roles are named knest-s1-* and are deleted by the final teardown step. Review every statement; none uses a wildcard principal.",
+  "roles": [
+    {
+      "name": "knest-s1-scheduler",
+      "purpose": "Lets EventBridge Scheduler run ONE action at the expiry time: delete the knest-s1 stacks. It cannot do anything else.",
+      "trustPolicy": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": { "Service": "scheduler.amazonaws.com" },
+            "Action": "sts:AssumeRole",
+            "Condition": {
+              "StringEquals": { "aws:SourceAccount": "<ACCOUNT_ID>" },
+              "ArnLike": { "aws:SourceArn": "arn:aws:scheduler:*:<ACCOUNT_ID>:schedule/knest-s1/*" }
+            }
+          }
+        ]
+      },
+      "permissionsPolicy": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Sid": "DeleteOnlyTheS1Stacks",
+            "Effect": "Allow",
+            "Action": "cloudformation:DeleteStack",
+            "Resource": [
+              "arn:aws:cloudformation:ap-south-1:<ACCOUNT_ID>:stack/knest-s1/*",
+              "arn:aws:cloudformation:us-east-1:<ACCOUNT_ID>:stack/knest-s1-edge/*"
+            ]
+          },
+          {
+            "Sid": "HandTheDeleteToTheServiceRoleOnly",
+            "Effect": "Allow",
+            "Action": "iam:PassRole",
+            "Resource": "arn:aws:iam::<ACCOUNT_ID>:role/knest-s1-cfn-service",
+            "Condition": { "StringEquals": { "iam:PassedToService": "cloudformation.amazonaws.com" } }
+          }
+        ]
+      },
+      "cannotDo": ["create or change anything", "read data", "touch any stack other than knest-s1 and knest-s1-edge", "assume any other role"]
+    },
+    {
+      "name": "knest-s1-cfn-service",
+      "purpose": "The role CloudFormation uses to delete (and create) the resources of the knest-s1 stacks, so that deletion works at expiry without a person signed in.",
+      "trustPolicy": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": { "Service": "cloudformation.amazonaws.com" },
+            "Action": "sts:AssumeRole",
+            "Condition": {
+              "StringEquals": { "aws:SourceAccount": "<ACCOUNT_ID>" },
+              "ArnLike": {
+                "aws:SourceArn": [
+                  "arn:aws:cloudformation:ap-south-1:<ACCOUNT_ID>:stack/knest-s1/*",
+                  "arn:aws:cloudformation:us-east-1:<ACCOUNT_ID>:stack/knest-s1-edge/*"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "permissionsPolicy": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Sid": "NetworkAndComputeLifecycle",
+            "Effect": "Allow",
+            "Action": ["ec2:*"],
+            "Resource": "*",
+            "Condition": { "StringEquals": { "aws:RequestedRegion": "ap-south-1" } }
+          },
+          {
+            "Sid": "DatabaseLifecycle",
+            "Effect": "Allow",
+            "Action": ["rds:*"],
+            "Resource": "*",
+            "Condition": { "StringEquals": { "aws:RequestedRegion": "ap-south-1" } }
+          },
+          {
+            "Sid": "BucketLogsRegistryParameters",
+            "Effect": "Allow",
+            "Action": ["s3:*", "logs:*", "ecr:*", "ssm:*"],
+            "Resource": [
+              "arn:aws:s3:::knest-s1-*",
+              "arn:aws:s3:::knest-s1-*/*",
+              "arn:aws:logs:ap-south-1:<ACCOUNT_ID>:log-group:/knest-s1*",
+              "arn:aws:logs:ap-south-1:<ACCOUNT_ID>:log-group:/knest-s1*:*",
+              "arn:aws:ecr:ap-south-1:<ACCOUNT_ID>:repository/knest-s1*",
+              "arn:aws:ssm:ap-south-1:<ACCOUNT_ID>:parameter/knest-s1/*"
+            ]
+          },
+          {
+            "Sid": "EcrAuthAndLogGroupDescribe",
+            "Effect": "Allow",
+            "Action": ["ecr:GetAuthorizationToken", "logs:DescribeLogGroups", "ssm:DescribeParameters"],
+            "Resource": "*"
+          },
+          {
+            "Sid": "RolesAndProfilesNamedS1",
+            "Effect": "Allow",
+            "Action": [
+              "iam:CreateRole", "iam:DeleteRole", "iam:GetRole", "iam:TagRole", "iam:UpdateAssumeRolePolicy",
+              "iam:AttachRolePolicy", "iam:DetachRolePolicy", "iam:PutRolePolicy", "iam:DeleteRolePolicy", "iam:GetRolePolicy",
+              "iam:ListRolePolicies", "iam:ListAttachedRolePolicies", "iam:ListInstanceProfilesForRole",
+              "iam:CreateInstanceProfile", "iam:DeleteInstanceProfile", "iam:GetInstanceProfile",
+              "iam:AddRoleToInstanceProfile", "iam:RemoveRoleFromInstanceProfile", "iam:TagInstanceProfile"
+            ],
+            "Resource": [
+              "arn:aws:iam::<ACCOUNT_ID>:role/knest-s1-ec2",
+              "arn:aws:iam::<ACCOUNT_ID>:instance-profile/knest-s1-ec2"
+            ]
+          },
+          {
+            "Sid": "PassTheInstanceRoleToEc2",
+            "Effect": "Allow",
+            "Action": "iam:PassRole",
+            "Resource": "arn:aws:iam::<ACCOUNT_ID>:role/knest-s1-ec2",
+            "Condition": { "StringEquals": { "iam:PassedToService": "ec2.amazonaws.com" } }
+          },
+          {
+            "Sid": "RdsManagedSecret",
+            "Effect": "Allow",
+            "Action": ["secretsmanager:CreateSecret", "secretsmanager:DeleteSecret", "secretsmanager:DescribeSecret", "secretsmanager:TagResource", "secretsmanager:PutResourcePolicy"],
+            "Resource": "arn:aws:secretsmanager:ap-south-1:<ACCOUNT_ID>:secret:rds!*"
+          },
+          {
+            "Sid": "EdgeStackResources",
+            "Effect": "Allow",
+            "Action": ["cloudfront:*", "wafv2:*"],
+            "Resource": "*",
+            "Condition": { "StringEquals": { "aws:RequestedRegion": "us-east-1" } }
+          },
+          {
+            "Sid": "CloudFrontIsGlobalSoItHasNoRegionKey",
+            "Effect": "Allow",
+            "Action": ["cloudfront:*"],
+            "Resource": "*"
+          }
+        ]
+      },
+      "cannotDo": ["be assumed by anything except CloudFormation acting on the two knest-s1 stacks", "create IAM users or access keys", "pass any role other than knest-s1-ec2", "touch Route 53, SES, ACM, the existing knest-media bucket or the knest-app user"],
+      "residualRisk": "ec2:* and rds:* are not limited to tagged resources because many delete and detach actions do not support tag conditions. The role can only be assumed by CloudFormation for the two named stacks, and can only be handed to CloudFormation by the operator (PassRole is limited to the stack role in the operator policy) or by the scheduler role above. Account-wide EC2 and RDS delete rights through a stack that someone else controlled would be a risk; the template and its change sets are reviewed before every create."
+    }
+  ],
+  "retainedAfterTeardown": [
+    "The GitHub OIDC identity provider (token.actions.githubusercontent.com), if it was created: it is free, there is only one allowed per account, and production will reuse it. It is deleted only if the owner says so.",
+    "The pre-existing bucket knest-media-<account>, IAM user knest-app, its key and its policy (untouched)."
+  ],
+  "teardownBehaviourToKnow": [
+    "S3: the S-1 bucket has a 1-day object expiry and no versioning so that it is empty by day 14 and the stack can delete it. If it is not empty, only the bucket reports DELETE_FAILED and is removed by the manual teardown.",
+    "ECR: the repository uses EmptyOnDelete so images do not block deletion.",
+    "RDS: DeletionPolicy is Delete with no final snapshot, DeletionProtection off, automated backups removed. The template must set this explicitly because the CloudFormation default for a database instance is to take a snapshot.",
+    "Two schedules are used because CloudFront and CloudFront-scope WAF live in us-east-1: knest-s1-expire-edge (deletes knest-s1-edge first) and knest-s1-expire (deletes knest-s1, two hours later)."
+  ]
+}
