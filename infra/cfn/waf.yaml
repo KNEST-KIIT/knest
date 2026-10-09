@@ -13,10 +13,12 @@ Parameters:
   AuthRateLimit:
     Type: Number
     Default: 100
+    MinValue: 10
     Description: Requests per 5 minutes per IP allowed to /api/auth/*.
   GlobalRateLimit:
     Type: Number
     Default: 2000
+    MinValue: 10
     Description: Requests per 5 minutes per IP allowed to anything.
 
 Resources:

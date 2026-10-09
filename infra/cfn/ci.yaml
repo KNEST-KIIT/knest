@@ -26,9 +26,18 @@ Parameters:
   ExistingOidcProviderArn:
     Type: String
     Default: ''
+    AllowedPattern: '^(arn:aws:iam::[0-9]{12}:oidc-provider/token\.actions\.githubusercontent\.com)?$'
+    ConstraintDescription: Must be empty or the ARN of the existing GitHub OIDC provider.
   RepositoryName:
     Type: String
     Default: knest-app
+
+Rules:
+  ProviderArnWhenNotCreating:
+    RuleCondition: !Equals [!Ref CreateOidcProvider, 'false']
+    Assertions:
+      - Assert: !Not [!Equals [!Ref ExistingOidcProviderArn, '']]
+        AssertDescription: With CreateOidcProvider=false, ExistingOidcProviderArn must name the existing provider.
 
 Conditions:
   IsProduction: !Equals [!Ref Environment, production]
@@ -37,8 +46,8 @@ Conditions:
 Resources:
   Repository:
     Type: AWS::ECR::Repository
-    DeletionPolicy: Delete # DELETION
-    UpdateReplacePolicy: Delete # DELETION
+    DeletionPolicy: Retain # DELETION
+    UpdateReplacePolicy: Retain # DELETION
     Properties:
       RepositoryName: !Ref RepositoryName
       ImageTagMutability: IMMUTABLE

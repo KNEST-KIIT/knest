@@ -23,15 +23,27 @@ Parameters:
   VpcCidr:
     Type: String
     Default: 10.20.0.0/16
+    # The subnets are cut as four /24 blocks (Fn::Cidr with 8 host bits), which needs a /16.
+    AllowedPattern: '^([0-9]{1,3}\.){3}[0-9]{1,3}/16$'
+    ConstraintDescription: Must be an IPv4 /16 block, for example 10.20.0.0/16.
   InstanceType:
     Type: String
     Default: t4g.small
   DbInstanceClass:
     Type: String
     Default: db.t4g.micro
+  DbEngineVersion:
+    Type: String
+    Default: '16.11'
+    # A bare major ('16') and 16.1 to 16.8 are flagged deprecated for new instances; pin a
+    # current minor. AutoMinorVersionUpgrade moves it forward within 16 afterwards.
+    AllowedPattern: '^16\.[0-9]+$'
+    Description: PostgreSQL 16 minor version (the parameter group family is postgres16).
   DbAllocatedStorageGb:
     Type: Number
     Default: 20
+    MinValue: 20
+    MaxValue: 65536
   DbMultiAz:
     Type: String
     Default: 'false'
@@ -42,6 +54,9 @@ Parameters:
   AppPort:
     Type: Number
     Default: 3000
+    MinValue: 1024
+    MaxValue: 65535
+    Description: Host port CloudFront connects to. The deploy document publishes the container's port 3000 on it.
   LatestAmiId:
     Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
     Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64
@@ -54,9 +69,17 @@ Parameters:
   EmailFromAddress:
     Type: String
     Description: Address platform mail is sent from (an SES-verified identity).
+    AllowedPattern: '^[^\s@<>]+@[^\s@<>]+$'
+    ConstraintDescription: Must be a bare address such as no-reply@kiitnest.com (it is matched exactly by the ses:FromAddress condition).
+  TurnstileSiteKey:
+    Type: String
+    Description: Cloudflare Turnstile site key (public by design; shown in every page). The matching secret key is pasted into the turnstile-secret Secrets Manager secret by the owner.
+    AllowedPattern: '^[0-9A-Za-z_-]{5,}$'
+    ConstraintDescription: Paste the site key from the Cloudflare dashboard (letters, digits, underscore, hyphen).
   LogRetentionDays:
     Type: Number
     Default: 7
+    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1096, 1827, 2192, 2557, 2922, 3288, 3653]
   AlertEmail:
     Type: String
     Default: ''
@@ -148,6 +171,19 @@ Resources:
         - { IpProtocol: tcp, FromPort: 443, ToPort: 443, CidrIp: 0.0.0.0/0, Description: 'AWS APIs (SSM, ECR, S3, SES, Secrets Manager), Cloudflare Turnstile, Google sign-in' }
       Tags: [{ Key: Name, Value: !Sub 'knest-${Environment}-app' }]
 
+  # A separate resource, not an inline egress rule: the database group's ingress already
+  # names the app group, so naming the database group here inline would be a circular
+  # dependency. Without this rule the app host's 443-only egress would block PostgreSQL.
+  AppToDatabaseEgress:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref AppSecurityGroup
+      IpProtocol: tcp
+      FromPort: 5432
+      ToPort: 5432
+      DestinationSecurityGroupId: !Ref DatabaseSecurityGroup
+      Description: PostgreSQL to the database only
+
   DatabaseSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -182,7 +218,7 @@ Resources:
     UpdateReplacePolicy: Snapshot # DELETION
     Properties:
       Engine: postgres
-      EngineVersion: '16'
+      EngineVersion: !Ref DbEngineVersion
       DBInstanceClass: !Ref DbInstanceClass
       AllocatedStorage: !Ref DbAllocatedStorageGb
       StorageType: gp3
@@ -340,6 +376,9 @@ Resources:
   ConfigDbSecretArn:
     Type: AWS::SSM::Parameter
     Properties: { Name: !Sub '/knest-${Environment}/config/db-secret-arn', Type: String, Value: !GetAtt Database.MasterUserSecret.SecretArn }
+  ConfigTurnstileSiteKey:
+    Type: AWS::SSM::Parameter
+    Properties: { Name: !Sub '/knest-${Environment}/config/turnstile-site-key', Type: String, Value: !Ref TurnstileSiteKey }
   ConfigEmailFrom:
     Type: AWS::SSM::Parameter
     Properties: { Name: !Sub '/knest-${Environment}/config/email-from', Type: String, Value: !Ref EmailFromAddress }
@@ -353,6 +392,9 @@ Resources:
   # --------------------------------------------------------------- the host
   AppInstance:
     Type: AWS::EC2::Instance
+    # The boot script downloads packages and the RDS CA bundle, so the default route (and with
+    # it the gateway attachment) must exist before the instance starts.
+    DependsOn: PublicDefaultRoute
     Properties:
       ImageId: !Ref LatestAmiId
       InstanceType: !Ref InstanceType
@@ -393,6 +435,11 @@ Resources:
           Environment:
             type: String
             default: !Ref Environment
+          HostPort:
+            type: String
+            default: !Sub '${AppPort}'
+            description: Host port the container is published on (must match the security group and the distribution origin port).
+            allowedPattern: '^[0-9]{4,5}$'
           AppImage:
             type: String
             description: Full ECR URI of the app image, by digest (ends in @sha256:...). A tag is refused.
@@ -410,6 +457,7 @@ Resources:
                 - |
                   set -euo pipefail
                   ENVIRONMENT="{{ Environment }}"
+                  HOST_PORT="{{ HostPort }}"
                   APP_IMAGE="{{ AppImage }}"
                   MIGRATE_IMAGE="{{ MigrateImage }}"
                   TOKEN=$(curl -fsS -X PUT http://169.254.169.254/latest/api/token -H 'X-aws-ec2-metadata-token-ttl-seconds: 120')
@@ -428,6 +476,8 @@ Resources:
                   SITE_URL=$(param site-url)
                   umask 077
                   mkdir -p /run/knest
+                  # The environment file holds secrets: remove it however this script ends.
+                  trap 'rm -f /run/knest/app.env' EXIT
                   {
                     echo "NODE_ENV=production"
                     echo "DATABASE_URL=postgres://${DB_USER}:${DB_PASSWORD}@$(param db-endpoint):5432/knest"
@@ -440,6 +490,8 @@ Resources:
                     echo "AUTH_URL=${SITE_URL}"
                     echo "AUTH_TRUST_HOST=true"
                     echo "CLIENT_IP_SOURCE=cloudfront"
+                    echo "TURNSTILE_SITE_KEY=$(param turnstile-site-key)"
+                    echo "TURNSTILE_SECRET_KEY=$(secret "knest-$ENVIRONMENT/turnstile-secret")"
                     echo "S3_BUCKET=$(param bucket)"
                     echo "S3_REGION=${REGION}"
                     echo "EMAIL_TRANSPORT=ses"
@@ -457,7 +509,7 @@ Resources:
                   docker pull "$APP_IMAGE" >/dev/null
                   docker rm -f knest >/dev/null 2>&1 || true
                   start() {
-                    docker run -d --name knest --restart unless-stopped $RUN_OPTS -p 3000:3000 \
+                    docker run -d --name knest --restart unless-stopped $RUN_OPTS -p "${HOST_PORT}:3000" \
                       --log-driver awslogs --log-opt "awslogs-region=$REGION" --log-opt "awslogs-group=/knest-$ENVIRONMENT" --log-opt "awslogs-stream=app-$(date +%s)" "$1" >/dev/null
                   }
                   start "$APP_IMAGE"

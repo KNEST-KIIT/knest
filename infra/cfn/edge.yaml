@@ -14,10 +14,14 @@ Parameters:
     Description: s1 is the disposable spike; production is the one real environment.
   OriginDomainName:
     Type: String
+    AllowedPattern: '^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$'
+    ConstraintDescription: Must be a DNS name without scheme, port or path.
     Description: DNS name CloudFront connects to (the instance's public DNS name, or a load balancer name).
   OriginPort:
     Type: Number
     Default: 3000
+    MinValue: 1
+    MaxValue: 65535
   OriginProtocol:
     Type: String
     Default: http-only
@@ -32,24 +36,47 @@ Parameters:
       verification token. It is added as X-Origin-Verify to every request sent to
       the origin; the app refuses requests without it. Resolved by CloudFormation
       at deploy time and never shown.
+    # Interpolated into a dynamic reference: ":" and "}" would let a value rewrite it.
+    AllowedPattern: '^[A-Za-z0-9/_+=.@-]{1,512}$'
+    ConstraintDescription: A Secrets Manager secret name (letters, digits and /_+=.@-).
   WebAclArn:
     Type: String
+    AllowedPattern: '^arn:aws:wafv2:us-east-1:[0-9]{12}:global/webacl/[A-Za-z0-9_-]+/[0-9a-f-]+$'
+    ConstraintDescription: Must be the ARN of a CLOUDFRONT-scope web ACL in us-east-1 (output WebAclArn of waf.yaml).
     Description: ARN of the WAFv2 web ACL from waf.yaml (a us-east-1 stack).
   AccessHash:
     Type: String
     NoEcho: true
     Default: ''
+    # Interpolated into the function's JavaScript source: only a hex digest (or nothing) may pass.
+    AllowedPattern: '^([0-9a-f]{64})?$'
+    ConstraintDescription: Must be empty or a 64-character lowercase hex SHA-256 digest.
     Description: >-
       SHA-256 hex digest of "user:password" for the private-first access gate.
       Empty means the site is public. Never put the password here.
   AcmCertificateArn:
     Type: String
     Default: ''
+    AllowedPattern: '^(arn:aws:acm:us-east-1:[0-9]{12}:certificate/[0-9a-f-]+)?$'
+    ConstraintDescription: Must be empty or an ACM certificate ARN in us-east-1.
     Description: ACM certificate in us-east-1 covering the aliases. Empty uses the default *.cloudfront.net certificate.
   Aliases:
     Type: CommaDelimitedList
     Default: ''
     Description: Alternate domain names to attach (kiitnest.com, www.kiitnest.com, kiitnest.in, www.kiitnest.in). Empty during private verification.
+
+# Cross-parameter guards, so a bad combination fails at validation, before anything is created.
+Rules:
+  ProductionOriginUsesTls:
+    RuleCondition: !Equals [!Ref Environment, production]
+    Assertions:
+      - Assert: !Equals [!Ref OriginProtocol, https-only]
+        AssertDescription: Production must connect to the origin over HTTPS (the X-Origin-Verify token would otherwise cross the internet in clear text). http-only is for the S-1 spike.
+  AliasesNeedACertificate:
+    RuleCondition: !Not [{ 'Fn::Contains': [!Ref Aliases, ''] }]
+    Assertions:
+      - Assert: !Not [!Equals [!Ref AcmCertificateArn, '']]
+        AssertDescription: Alternate domain names need an ACM certificate (AcmCertificateArn).
 
 Conditions:
   HasCertificate: !Not [!Equals [!Ref AcmCertificateArn, '']]

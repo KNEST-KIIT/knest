@@ -13,6 +13,8 @@ Parameters:
   CloudFrontDomainName:
     Type: String
     Default: ''
+    AllowedPattern: '^([a-z0-9]+\.cloudfront\.net)?$'
+    ConstraintDescription: Must be empty or the distribution's d....cloudfront.net name.
     Description: The distribution's d....cloudfront.net name. Leave empty until the cutover manifest is approved.
   AcmComName1: { Type: String, Default: '' }
   AcmComValue1: { Type: String, Default: '' }
@@ -22,9 +24,9 @@ Parameters:
   AcmInValue1: { Type: String, Default: '' }
   AcmInName2: { Type: String, Default: '' }
   AcmInValue2: { Type: String, Default: '' }
-  SesDkimToken1: { Type: String, Default: '' }
-  SesDkimToken2: { Type: String, Default: '' }
-  SesDkimToken3: { Type: String, Default: '' }
+  SesDkimToken1: { Type: String, Default: '', AllowedPattern: '^([a-z0-9]{20,40})?$' }
+  SesDkimToken2: { Type: String, Default: '', AllowedPattern: '^([a-z0-9]{20,40})?$' }
+  SesDkimToken3: { Type: String, Default: '', AllowedPattern: '^([a-z0-9]{20,40})?$' }
 
 Conditions:
   HasCloudFront: !Not [!Equals [!Ref CloudFrontDomainName, '']]
@@ -38,14 +40,20 @@ Conditions:
     - !Not [!Equals [!Ref SesDkimToken3, '']]
 
 Resources:
+  # Retained: deleting a zone and recreating it issues a different set of nameservers, which
+  # would take mail and the site offline until the registrar is updated again.
   ZoneCom:
     Type: AWS::Route53::HostedZone
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       Name: kiitnest.com
       HostedZoneConfig: { Comment: KNEST canonical domain }
 
   ZoneIn:
     Type: AWS::Route53::HostedZone
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       Name: kiitnest.in
       HostedZoneConfig: { Comment: KNEST redirect domain (redirects to kiitnest.com at the edge) }
