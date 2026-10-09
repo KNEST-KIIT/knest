@@ -58,8 +58,8 @@ export default async function ProgramDetailPage({ params }: { params: Promise<{ 
         </div>
       </div>
 
-      <div className="mt-12 grid gap-12 lg:grid-cols-[1fr_320px]">
-        <div className="flex flex-col gap-12">
+      <div className="mt-12 grid grid-cols-[minmax(0,1fr)] gap-12 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="flex min-w-0 flex-col gap-12 [overflow-wrap:anywhere]">
           <section>
             <Heading as="h2" size="heading">
               Who this is for

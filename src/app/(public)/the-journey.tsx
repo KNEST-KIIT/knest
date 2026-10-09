@@ -69,7 +69,7 @@ export function TheJourney({
         {/* Header Block */}
         <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-white/10 pb-5 gap-6">
           <div>
-            <p className="text-xs uppercase tracking-[0.25em] font-bold text-[var(--color-signal)]">
+            <p className="text-xs uppercase tracking-[0.25em] font-bold text-[var(--color-signal-on-ink)]">
               Six stages
             </p>
             <Heading as="h2" size="display" className="mt-2 tracking-tight text-[var(--color-paper)] text-3xl md:text-5xl font-bold">
@@ -129,7 +129,7 @@ export function TheJourney({
                     transition={{ type: 'spring', stiffness: 400, damping: 35 }}
                   />
                 )}
-                <div className="font-mono text-xs font-bold text-[var(--color-signal)]">
+                <div className="font-mono text-xs font-bold text-[var(--color-signal-on-ink)]">
                   0{i + 1}
                 </div>
                 <div className="mt-1 text-xs md:text-sm font-semibold tracking-tight truncate">
@@ -154,7 +154,7 @@ export function TheJourney({
             <div className="lg:col-span-7 flex flex-col justify-between border border-white/10 bg-white/[0.03] p-6 md:p-10 relative">
               <div>
                 <div className="flex items-center gap-3">
-                  <span className="font-mono text-xs font-bold uppercase tracking-widest text-[var(--color-signal)]">
+                  <span className="font-mono text-xs font-bold uppercase tracking-widest text-[var(--color-signal-on-ink)]">
                     Phase 0{activeIdx + 1}
                   </span>
                   <span className="text-white/20">•</span>
@@ -173,7 +173,7 @@ export function TheJourney({
 
                 {/* Programs for this stage */}
                 <div className="mt-8 border-t border-white/10 pt-6">
-                  <p className="text-xs uppercase tracking-[0.2em] font-bold text-[var(--color-signal)] mb-4">
+                  <p className="text-xs uppercase tracking-[0.2em] font-bold text-[var(--color-signal-on-ink)] mb-4">
                     Programs for this stage
                   </p>
 
@@ -188,7 +188,7 @@ export function TheJourney({
                           <span className="text-sm font-medium text-white group-hover/prog:text-[var(--color-paper)] transition-colors line-clamp-1">
                             {program.title}
                           </span>
-                          <span className="text-xs font-bold text-[var(--color-signal)] ml-2 transition-transform group-hover/prog:translate-x-1">
+                          <span className="text-xs font-bold text-[var(--color-signal-on-ink)] ml-2 transition-transform group-hover/prog:translate-x-1">
                             →
                           </span>
                         </Link>
@@ -213,7 +213,7 @@ export function TheJourney({
                     <button
                       type="button"
                       onClick={() => setActiveIdx((prev) => (prev < stagePrograms.length - 1 ? prev + 1 : 0))}
-                      className="font-bold text-[var(--color-signal)] hover:underline uppercase tracking-wider"
+                      className="font-bold text-[var(--color-signal-on-ink)] hover:underline uppercase tracking-wider"
                     >
                       {nextStage ? `Next: ${nextStage} →` : 'Back to Start (Exploring) ↺'}
                     </button>

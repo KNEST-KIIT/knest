@@ -1,0 +1,1 @@
+ALTER TYPE "app"."notification_type" ADD VALUE 'event_registered';

@@ -10,7 +10,10 @@ export function proxy(request: NextRequest) {
   if (!decision.allow) {
     return new NextResponse('Forbidden', { status: decision.status, headers: { 'cache-control': 'no-store' } })
   }
-  return NextResponse.next()
+  const response = NextResponse.next()
+  // Until the release manifest turns indexing on, nothing here may appear in a search engine.
+  if (process.env.SITE_INDEXING !== 'on') response.headers.set('x-robots-tag', 'noindex, nofollow')
+  return response
 }
 
 export const config = { matcher: '/:path*' }

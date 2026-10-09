@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { UnauthorizedError } from '@/server/auth/guards'
+import { limitByUser } from '@/server/security/route-limits'
 import {
   completeOnboarding,
   saveGoalsStep,
@@ -21,6 +22,8 @@ const HANDLERS = {
 } as const
 
 export async function POST(request: Request) {
+  const limited = await limitByUser('onboardingStep')
+  if (limited) return limited
   const body = await request.json().catch(() => null)
   const step = body?.step as keyof typeof HANDLERS | undefined
   const handler = step ? HANDLERS[step] : undefined

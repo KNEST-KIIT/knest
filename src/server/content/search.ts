@@ -1,6 +1,6 @@
 import { getContentClient } from './payload-client'
 
-export type SearchResultType = 'program' | 'startup' | 'event' | 'resource'
+export type SearchResultType = 'program' | 'startup' | 'mentor' | 'event' | 'resource'
 
 export type SearchResult = {
   type: SearchResultType
@@ -18,11 +18,9 @@ export type SearchResult = {
  * already-fetched list. `overrideAccess: false` on every query, same
  * discipline as every other content-layer read — a draft never appears.
  *
- * Mentors and Partners are deliberately excluded — both are already
- * need-first/browse-first surfaces by design (PHASE-7-9-IMPLEMENTATION-
- * PLAN.md §4.5/§4.6); a name-substring search over a small, staff-curated
- * directory would be a second, worse way to find the same thing the
- * expertise filter already does well.
+ * Mentors are included because the contract's site-wide search covers
+ * programmes, startups, mentors, events and resources (module 19), even though the
+ * mentor directory also has its own expertise filter. Partners are not searched.
  */
 export async function search(query: string): Promise<SearchResult[]> {
   const trimmed = query.trim()
@@ -30,7 +28,7 @@ export async function search(query: string): Promise<SearchResult[]> {
 
   const payload = await getContentClient()
 
-  const [programs, startups, events, resources] = await Promise.all([
+  const [programs, startups, mentors, events, resources] = await Promise.all([
     payload.find({
       collection: 'programs',
       where: { or: [{ title: { contains: trimmed } }, { tagline: { contains: trimmed } }] },
@@ -42,6 +40,14 @@ export async function search(query: string): Promise<SearchResult[]> {
     payload.find({
       collection: 'startups',
       where: { or: [{ name: { contains: trimmed } }, { tagline: { contains: trimmed } }] },
+      depth: 0,
+      limit: 20,
+      sort: '-createdAt',
+      overrideAccess: false,
+    }),
+    payload.find({
+      collection: 'mentors',
+      where: { or: [{ name: { contains: trimmed } }, { title: { contains: trimmed } }, { organization: { contains: trimmed } }, { bio: { contains: trimmed } }] },
       depth: 0,
       limit: 20,
       sort: '-createdAt',
@@ -82,6 +88,13 @@ export async function search(query: string): Promise<SearchResult[]> {
       title: s.name,
       summary: s.tagline,
       href: `/startups/${s.slug}`,
+    })),
+    ...mentors.docs.map((m) => ({
+      type: 'mentor' as const,
+      id: m.id,
+      title: m.name,
+      summary: [m.title, m.organization].filter(Boolean).join(', '),
+      href: `/mentors/${m.slug}`,
     })),
     ...events.docs.map((e) => ({
       type: 'event' as const,

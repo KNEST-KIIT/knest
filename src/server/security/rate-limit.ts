@@ -18,6 +18,18 @@ export const RATE_LIMITS = {
   fileUpload: { capacity: 20, refillIntervalSeconds: 60 * 60 },
   // Fire-and-forget selector clicks: far above what a person produces, far below flooding.
   analyticsTrack: { capacity: 60, refillIntervalSeconds: 10 * 60 },
+  // Public contact form: a person sends a few, a bot sends hundreds.
+  enquirySubmit: { capacity: 3, refillIntervalSeconds: 60 * 60 },
+  // Sends an e-mail: bounded per address as well as per connection.
+  verifySend: { capacity: 5, refillIntervalSeconds: 60 * 60 },
+  // Guessing a 256-bit token is hopeless; this stops hammering anyway.
+  tokenConfirm: { capacity: 20, refillIntervalSeconds: 60 * 60 },
+  // Autosave while typing: generous, but not unlimited.
+  answerSave: { capacity: 600, refillIntervalSeconds: 60 * 60 },
+  onboardingStep: { capacity: 120, refillIntervalSeconds: 60 * 60 },
+  eventRegister: { capacity: 60, refillIntervalSeconds: 60 * 60 },
+  notificationRead: { capacity: 300, refillIntervalSeconds: 60 * 60 },
+  labRequest: { capacity: 20, refillIntervalSeconds: 60 * 60 },
 } as const satisfies Record<string, RateLimitConfig>
 
 /**

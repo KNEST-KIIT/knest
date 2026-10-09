@@ -6,6 +6,9 @@ import { eventRegistrations } from '@/db/schema'
 import { requireUserOrThrow } from '@/server/auth/guards'
 import { getEventById } from '@/server/content/events'
 import { track } from '@/server/analytics/track'
+import { formatEventTime } from '@/lib/dates'
+import { notify } from '@/server/notifications/send'
+import { eventRegisteredTemplate } from '@/server/notifications/templates'
 
 export type ActionResult = { ok: true } | { ok: false; error: string }
 
@@ -47,10 +50,25 @@ export async function registerForEvent(eventId: number): Promise<ActionResult> {
       })
       if (!alreadyRegistered && (row?.value ?? 0) >= event.capacity) return 'full' as const
     }
-    await tx.insert(eventRegistrations).values({ userId: user.id, eventId }).onConflictDoNothing()
-    return 'registered' as const
+    const inserted = await tx.insert(eventRegistrations).values({ userId: user.id, eventId }).onConflictDoNothing().returning({ eventId: eventRegistrations.eventId })
+    return inserted.length > 0 ? ('registered' as const) : ('already' as const)
   })
   if (outcome === 'full') return { ok: false, error: 'This event is full.' }
+
+  // A confirmation goes out only for a registration that was actually created: pressing the button
+  // twice, or two tabs, must not send two e-mails. The registration is already safely stored, so a
+  // failure to notify never undoes it.
+  if (outcome === 'registered') {
+    const { subject, text } = eventRegisteredTemplate({ title: event.title, when: formatEventTime(event.startsAt), location: event.location, path: `/events/${event.slug}` })
+    await notify({
+      userId: user.id,
+      type: 'event_registered',
+      title: subject,
+      body: `${formatEventTime(event.startsAt)}${event.location ? ` · ${event.location}` : ''}`,
+      href: `/events/${event.slug}`,
+      email: { subject, text },
+    }).catch((error) => console.error('Failed to send event confirmation:', error))
+  }
 
   await track('event_register', { eventId })
 

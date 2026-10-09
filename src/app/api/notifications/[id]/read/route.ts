@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server'
 import { UnauthorizedError } from '@/server/auth/guards'
 import { markNotificationRead } from '@/server/notifications/actions'
+import { limitByUser } from '@/server/security/route-limits'
 
 export async function POST(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
+  const limited = await limitByUser('notificationRead')
+  if (limited) return limited
 
   try {
     const result = await markNotificationRead(id)

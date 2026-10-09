@@ -1,12 +1,10 @@
 import type { Metadata } from 'next'
 import { displayFont, textFont } from '@/styles/fonts'
+import { siteUrl as getSiteUrl } from '@/lib/site-url'
 import '@/styles/globals.css'
+import { MotionProvider } from '@/components/motion-provider'
 
-const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
-  (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : null) ||
-  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
-  'http://localhost:3000'
+const siteUrl = getSiteUrl()
 
 export const metadata: Metadata = {
   title: { default: 'KNEST', template: '%s — KNEST' },
@@ -23,7 +21,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning className={`${displayFont.variable} ${textFont.variable}`}>
-      <body>{children}</body>
+      <body>
+        <MotionProvider>{children}</MotionProvider>
+      </body>
     </html>
   )
 }

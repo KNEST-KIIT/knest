@@ -247,7 +247,7 @@ export default async function EcosystemPage() {
       {/* The Synergy Effect (Alumni as the Bridge) */}
       <Section className="border-b border-[var(--color-line)] bg-[var(--color-ink)] text-[var(--color-paper)] py-10 md:py-14">
         <div className="max-w-3xl">
-          <p className="text-xs uppercase tracking-[0.2em] font-bold text-[var(--color-signal)]">
+          <p className="text-xs uppercase tracking-[0.2em] font-bold text-[var(--color-signal-on-ink)]">
             The Synergy Effect
           </p>
           <Heading as="h2" size="display" className="mt-2 text-white text-3xl md:text-4xl">
@@ -261,7 +261,7 @@ export default async function EcosystemPage() {
         <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {SYNERGY_POINTS.map((pt, i) => (
             <div key={pt.label} className="border border-[var(--color-line-invert)] bg-white/5 p-8 backdrop-blur-sm">
-              <span className="font-[family-name:var(--font-display)] text-2xl font-bold text-[var(--color-signal)]">
+              <span className="font-[family-name:var(--font-display)] text-2xl font-bold text-[var(--color-signal-on-ink)]">
                 0{i + 1}
               </span>
               <h3 className="mt-3 font-[family-name:var(--font-display)] text-xl font-bold text-white">

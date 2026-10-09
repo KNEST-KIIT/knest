@@ -1,8 +1,10 @@
 'use server'
 
-import { and, desc, eq } from 'drizzle-orm'
+import { and, count, desc, eq, ilike, inArray, ne, or } from 'drizzle-orm'
 import { db } from '@/db/client'
-import { applicationAnswers, applicationDocuments, applications, auditLogs } from '@/db/schema'
+import { applicationAnswers, applicationDocuments, applications, auditLogs, users } from '@/db/schema'
+import { likePattern } from '@/lib/pagination'
+import { REVIEW_PAGE_SIZE } from './review-constants'
 import type { applicationStatus } from '@/db/schema'
 import { requireAdminArea, requireStaffOrThrow } from '@/server/auth/guards'
 import { sendNotificationEmail, writeNotification } from '@/server/notifications/send'
@@ -16,27 +18,50 @@ type Status = (typeof applicationStatus.enumValues)[number]
 
 const MAX_DECISION_NOTE = 2000
 
-export async function listApplicationsForReview(filters: { programId?: number; status?: Status }) {
+
+/**
+ * The reviewer queue: submitted applications only (a draft is the applicant's own work in progress
+ * and is not for staff to read), newest submission first, filterable by program and status and
+ * searchable by applicant name or e-mail, one page at a time.
+ */
+export async function listApplicationsForReview(filters: { programId?: number; status?: Status; q?: string; page?: number }) {
   await requireAdminArea('applications')
 
-  const conditions = []
+  const conditions = [ne(applications.status, 'draft')]
   if (filters.programId) conditions.push(eq(applications.programId, filters.programId))
-  if (filters.status) conditions.push(eq(applications.status, filters.status))
+  if (filters.status && filters.status !== 'draft') conditions.push(eq(applications.status, filters.status))
+  const q = filters.q?.trim()
+  if (q) {
+    const pattern = likePattern(q)
+    conditions.push(
+      inArray(applications.userId, db.select({ id: users.id }).from(users).where(or(ilike(users.name, pattern), ilike(users.email, pattern)))),
+    )
+  }
+  const where = and(...conditions)
+  const page = Math.max(1, filters.page ?? 1)
 
-  const rows = await db.query.applications.findMany({
-    where: conditions.length > 0 ? and(...conditions) : undefined,
-    orderBy: [desc(applications.submittedAt)],
+  const [total] = await db.select({ value: count() }).from(applications).where(where)
+  const found = await db.query.applications.findMany({
+    where,
+    orderBy: [desc(applications.submittedAt), desc(applications.id)],
+    limit: REVIEW_PAGE_SIZE,
+    offset: (page - 1) * REVIEW_PAGE_SIZE,
     with: { user: { columns: { id: true, name: true, email: true } } },
   })
+  const rows = found
 
   // One batched lookup for every program referenced, not one per row (§5.2).
   const programs = await getProgramTitlesByIds([...new Set(rows.map((row) => row.programId))])
 
-  return rows.map((row) => ({
-    application: row,
-    applicant: row.user,
-    programTitle: programs.get(row.programId)?.title ?? 'Unknown program',
-  }))
+  return {
+    total: total?.value ?? 0,
+    page,
+    rows: rows.map((row) => ({
+      application: row,
+      applicant: row.user,
+      programTitle: programs.get(row.programId)?.title ?? 'Unknown program',
+    })),
+  }
 }
 
 export async function getApplicationForReview(applicationId: string) {

@@ -33,7 +33,7 @@ export default async function BlogPage() {
           {articles.map((article) => (
             <LinkCard
               key={article.id || article.slug}
-              href={`/resources`}
+              href={`/blog/${article.slug}`}
               label={`Read ${article.title}`}
               className="flex flex-col justify-between"
             >

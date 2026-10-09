@@ -7,12 +7,13 @@ import { track } from '@/server/analytics/track'
 
 export const metadata: Metadata = {
   title: 'Search',
-  description: 'Search programs, startups, events and resources.',
+  description: 'Search programs, startups, mentors, events and resources.',
 }
 
 const TYPE_LABELS: Record<SearchResultType, string> = {
   program: 'Program',
   startup: 'Startup',
+  mentor: 'Mentor',
   event: 'Event',
   resource: 'Resource',
 }

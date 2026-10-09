@@ -19,6 +19,10 @@ export const ADMIN_AREAS = {
   mentors: ['mentor_manager'],
   infrastructure: ['lab_admin'],
   users: [],
+  // Contact-form messages: content admins and super admins.
+  enquiries: ['content_admin'],
+  // The audit trail of staff actions: super admin only.
+  audit: [],
   settings: [],
   // Cross-program, ecosystem-wide — super_admin only, same as users/settings.
   analytics: [],

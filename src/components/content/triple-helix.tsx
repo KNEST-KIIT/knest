@@ -34,7 +34,7 @@ export function TripleHelix() {
   return (
     <div className="w-full">
       {/* High-Impact Visual Triangle Stage on Creamy Warm Parchment Background */}
-      <div className="w-full bg-[#fbf8f0] border-2 border-[var(--color-line)] p-6 sm:p-10 md:p-14 relative shadow-xl overflow-visible">
+      <div className="w-full bg-[#fbf8f0] border-2 border-[var(--color-line)] p-6 sm:p-10 md:p-14 relative shadow-xl overflow-x-clip">
         {/* Soft Ambient Oxblood Brand Accent */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[720px] h-[720px] bg-[var(--color-signal)]/6 rounded-full blur-3xl pointer-events-none" />
 

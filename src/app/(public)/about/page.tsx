@@ -261,7 +261,7 @@ export default function AboutPage() {
       {/* Expected 5-Year Outcomes */}
       <Section className="border-b border-[var(--color-line)] bg-[var(--color-ink)] text-[var(--color-paper)] py-10 md:py-14">
         <div className="max-w-3xl">
-          <p className="text-xs uppercase tracking-[0.2em] font-bold text-[var(--color-signal)]">
+          <p className="text-xs uppercase tracking-[0.2em] font-bold text-[var(--color-signal-on-ink)]">
             Our five-year goals
           </p>
           <Heading as="h2" size="display" className="mt-2 text-white text-3xl md:text-4xl">
@@ -275,7 +275,7 @@ export default function AboutPage() {
         <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {OUTCOMES.map((item) => (
             <div key={item.label} className="border border-[var(--color-line-invert)] bg-white/5 p-6 backdrop-blur-sm">
-              <span className="font-[family-name:var(--font-display)] text-3xl font-bold text-[var(--color-signal)]">
+              <span className="font-[family-name:var(--font-display)] text-3xl font-bold text-[var(--color-signal-on-ink)]">
                 {item.metric}
               </span>
               <h3 className="mt-2 font-[family-name:var(--font-display)] text-base font-bold text-white">

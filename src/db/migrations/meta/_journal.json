@@ -57,6 +57,27 @@
       "when": 1791523205505,
       "tag": "0007_application_question_snapshot",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791532077645,
+      "tag": "0008_enquiries",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791532911084,
+      "tag": "0009_event_registered_notification",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791533599659,
+      "tag": "0010_lab_booking",
+      "breakpoints": true
     }
   ]
 }

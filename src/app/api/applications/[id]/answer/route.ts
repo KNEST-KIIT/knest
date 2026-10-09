@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server'
 import { UnauthorizedError } from '@/server/auth/guards'
 import { saveAnswer } from '@/server/applications/actions'
+import { limitByUser } from '@/server/security/route-limits'
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
+  const limited = await limitByUser('answerSave')
+  if (limited) return limited
   const body = await request.json().catch(() => null)
   const questionId = body?.questionId as string | undefined
   if (!questionId) return NextResponse.json({ error: 'Missing question.' }, { status: 400 })

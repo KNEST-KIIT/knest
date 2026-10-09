@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server'
 import { UnauthorizedError } from '@/server/auth/guards'
 import { registerForEvent } from '@/server/events/actions'
+import { limitByUser } from '@/server/security/route-limits'
 
 export async function POST(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const eventId = Number(id)
   if (!Number.isInteger(eventId)) return NextResponse.json({ error: 'Invalid event.' }, { status: 400 })
+  const limited = await limitByUser('eventRegister')
+  if (limited) return limited
 
   try {
     const result = await registerForEvent(eventId)

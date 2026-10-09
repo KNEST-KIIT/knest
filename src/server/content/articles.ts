@@ -22,6 +22,19 @@ export async function listFounderArticles(limit = 6) {
   return result.docs
 }
 
+/** One published article by slug, or null. A draft or missing article is null, never an error. */
+export async function getArticleBySlug(slug: string) {
+  const payload = await getContentClient()
+  const result = await payload.find({
+    collection: 'articles',
+    where: { slug: { equals: slug } },
+    depth: 1,
+    limit: 1,
+    overrideAccess: false,
+  })
+  return result.docs[0] ?? null
+}
+
 export async function listArticles(limit = 12) {
   const payload = await getContentClient()
 
