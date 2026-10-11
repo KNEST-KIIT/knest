@@ -248,7 +248,7 @@ describe('a student first visit', () => {
     await page.getByRole('link', { name: 'Dashboard — 2 unread notifications' }).first().waitFor()
 
     await Promise.all([page.waitForResponse((r) => /\/api\/notifications\/.+\/read/.test(r.url()) && r.ok()), page.getByRole('button', { name: 'Mark read' }).first().click()])
-    await page.getByText('1 unread').waitFor()
+    await page.getByText('1 unread', { exact: true }).waitFor()
     expect((await one('select count(*)::int c from app.notifications where user_id = $1 and read_at is not null', [userId])).c).toBe(1)
 
     await Promise.all([page.waitForResponse((r) => /\/api\/notifications\/.+\/read/.test(r.url()) && r.ok()), page.getByRole('button', { name: 'Mark read' }).click()])
