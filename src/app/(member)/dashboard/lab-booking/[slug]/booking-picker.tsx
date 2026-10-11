@@ -127,6 +127,7 @@ export function BookingPicker({
       </div>
 
       <div aria-live="polite">
+        {!date && !loading && <p className="text-[var(--color-ink-muted)]">Choose a date to see the times that are open. Bookings open up to {horizonDays} days ahead.</p>}
         {loading && <p className="text-[var(--color-ink-muted)]">Loading times…</p>}
         {!loading && date && slots && slots.length === 0 && <p className="text-[var(--color-ink-muted)]">Nothing can be booked on that day: the lab is closed, or it is too soon or too far ahead.</p>}
         {!loading && slots && slots.length > 0 && (
@@ -192,9 +193,12 @@ export function BookingPicker({
       <TurnstileWidget siteKey={turnstileSiteKey} action="lab-booking" onToken={setCaptchaToken} resetSignal={captchaReset} />
 
       <div>
-        <Button type="submit" size="lg" disabled={pending || captchaPending || selected.length === 0} aria-busy={pending}>
+        <Button type="submit" size="lg" disabled={pending || captchaPending || selected.length === 0} aria-busy={pending} aria-describedby="send-hint">
           {pending ? 'Sending…' : 'Send request'}
         </Button>
+        <p id="send-hint" className="mt-2 text-xs text-[var(--color-ink-muted)]">
+          {selected.length === 0 ? 'Pick a time above to send your request.' : captchaPending ? 'Waiting for the security check to finish.' : 'The lab head will reply by email and on this page.'}
+        </p>
       </div>
     </form>
   )
