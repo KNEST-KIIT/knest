@@ -49,6 +49,12 @@ Exact records are in `CUTOVER-RUNBOOK.md`: two ACM validation CNAMEs for `kiitne
    ```
    Verify in the command output: `runtime role: knest_app created ... privileges applied`, `App identity: runtime role knest_app`, `healthy`. Then run item 1.
 
+### Item 5 status (2026-10-11 late)
+
+- CI is green on `c477da7` and the release workflow built and scanned the images: app `sha256:113a8d672d6731437fb157bc58f1cb2f3c546f0e878f2d9a8936ad63c098c7fc`, migrate `sha256:4e62415785319b56946dc0076f592ccd20b4552261711d068cb3115a5a5103dd`.
+- The template change set `release-r1` was applied once and **rolled back by CloudFormation** (`DeployDocument` needs replacement and has a custom name). Fixed in the template with `UpdateMethod: NewVersion` (commit after `c477da7`). Re-run step 2 with a fresh change set name; expect `DeployDocument` as `Modify` with replacement `False`.
+- An SSM deploy of the new digests (command `8cd6b03e-a29e-4050-a69b-5bd0dd2339a7`) was started with the OLD document, so it migrates with the master identity and runs the app as master (the safe fallback). Read its result with `aws ssm list-command-invocations --command-id 8cd6b03e-a29e-4050-a69b-5bd0dd2339a7 --details`. The AWS session expired before it could be read. After step 2, run step 3 again so the runtime role is created and used.
+
 ## 6. Real Turnstile keys (Cloudflare dashboard, human)
 
 Create a Turnstile widget for `kiitnest.com` and the preview hostname, then:

@@ -499,6 +499,8 @@ Resources:
   DeployDocument:
     Type: AWS::SSM::Document
     Properties:
+      # A new version in place: without this a Content change replaces the document, which a custom name forbids.
+      UpdateMethod: NewVersion
       DocumentType: Command
       Name: !Sub 'knest-${Environment}-deploy'
       Content:

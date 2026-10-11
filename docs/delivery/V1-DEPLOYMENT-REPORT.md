@@ -126,3 +126,7 @@ Status: **private preview only. Public launch has not happened and is gated on H
 ### Not claimed
 
 Restore, rollback, alarm-to-person, capacity and hosted accessibility drills for the exact release SHA are **not run** (`DRILLS.md` D4 to D8). The runtime role is proven locally, not yet on RDS.
+
+### Late status
+
+CI green on `c477da7`. Release images built and scanned (app `sha256:113a8d67...`, migrate `sha256:4e624157...`). The app stack template update was rolled back by CloudFormation (custom-named SSM document replacement); fixed with `UpdateMethod: NewVersion`, to be re-applied. The delegated AWS session expired during the follow-up deploy, so the result of SSM command `8cd6b03e-a29e-4050-a69b-5bd0dd2339a7` was not read; check it and `/api/health` first. The live container is either the previous release or the new image running as the master identity (fallback), never a broken state: the document rolls back if unhealthy.
