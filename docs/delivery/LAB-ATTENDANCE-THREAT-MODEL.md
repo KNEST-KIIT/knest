@@ -1,8 +1,10 @@
 # Lab attendance: QR and offline threat model
 
-**Purpose:** validate the threat model *before* the attendance mechanism (blueprint LB-07, LB-08, LB-10) is implemented. **No code is to be written for QR passes, scanning or offline sync until sections 6 and 7 are signed off.**
+**Purpose:** validate the threat model *before* the attendance mechanism (blueprint LB-07, LB-08, LB-10) is enabled anywhere real.
 
-**Status:** DRAFT for review by the owner and a KIIT lab head. Nothing here has been tested on a device. Statements about browser behaviour come from published compatibility data (Background Sync is unsupported on Safari and Firefox; `BarcodeDetector` is experimental and not available everywhere), not from tests on KIIT's phones.
+**Status (updated 2026-10-12): NOT SIGNED OFF.** The review by a KIIT lab head and the owner has not happened, and the real-device protocol has not been run. The recommended mechanism in section 3 has been **built and tested locally behind `FEATURE_LAB_ATTENDANCE_QR`, which is off by default and also requires `FEATURE_LAB_BOOKING`**. That change of state replaces the earlier rule that no code may be written: the code exists so the review and the device runs have something real to test, **not** because the review is done. **Enabling the flag in any environment that real people use needs sections 6.1 to 6.5 completed and the decision record in section 7 signed by KIIT and a lab head.** Nothing in this document or in the code claims that sign-off. Statements about browser behaviour come from published compatibility data (Background Sync is unsupported on Safari and Firefox; `BarcodeDetector` is experimental and not available everywhere), not from tests on KIIT's phones.
+
+**Assurance level built: RECORD ATTENDANCE.** The code records who was in a lab during a slot. It does not open a door and nothing in it can. Live relay (T2) is accepted as a residual risk by design and is stated to users as "recorded", never as "access granted". If KIIT later wants a QR to open a door, that is a new decision with a new threat model, not a flag.
 
 ## 1. What is being protected
 
@@ -83,6 +85,27 @@ The R1 baseline proposed a rotating code derived from a per-booking shared secre
 | Application-level outbox; Background Sync as an optional extra | PROPOSED |
 | Manual attendance allowed, labelled, reported separately | PROPOSED |
 | Accepting T2 (live relay) as a residual risk | NEEDS OWNER AND KIIT DECISION |
-| Implementation of LB-07, LB-08, LB-10 | **BLOCKED** until sections 6.1-6.5 are complete |
+| Implementation of LB-07, LB-08, LB-10 | BUILT LOCALLY behind `FEATURE_LAB_ATTENDANCE_QR` (off). **Enabling it is BLOCKED** until sections 6.1-6.5 are complete and this record is signed |
+| Assurance level: record attendance, no door control | DECIDED by the delivery team for the build; still needs KIIT confirmation (HD-16 question 10) |
+| Key per person (per user, any number of their devices, at most five), not per booking | DECIDED for the build: a lost phone is one revocation, not one per booking |
+| Scan events say whether the device was online; only offline events get clock correction | DECIDED after security review, 2026-10-12 |
+
+### 7.1 What the build does about each threat (for the reviewer)
+
+| Threat | In the code | Where it is tested |
+|---|---|---|
+| T1 screenshot | 30 s step, one step of tolerance each way; token carries action and booking | `src/lib/lab-qr/protocol.test.ts` (expired, drift), `tests/integration/44-lab-attendance-qr.test.ts` |
+| T2 live relay | **Not mitigated by software.** Two-way exchange plus the assistant looking at the person | stated, not testable |
+| T3 stolen assistant phone | Asymmetric keys: a phone holds only its owner's private key | forged-pass tests |
+| T4 replay | Event UUID (idempotent), single-use pass nonce per key, scanner must own the key | protocol and integration tests |
+| T5 clock | Offline events corrected by measured skew and reviewed above 5 min or 24 h; online events held to server time | protocol tests |
+| T6 lost offline data | App-level outbox, unsent count and age warning, nothing shown verified before the server says so | `client.test.ts`; eviction behaviour is a **device test (T8)** |
+| T7 fabricated manual | Reason required, labelled manual, reported separately | existing lab module tests |
+| T9 XSS key theft | Non-extractable keys, no third-party script on the page, CSP from the hardening branch | key tests; CSP review by HARDENING |
+| T10 privacy | Roster has names only, 24 h expiry, wiped on log out and when another person signs in; no personal data in QR payloads | `session.test.ts`, `roster` integration test |
+| T11 shared tablet | Keys and caches belong to a signed-in person | `session.test.ts` |
+| T12 repudiation | Every signed event token is stored verbatim | integration test |
+| T13 no camera | Typed or pasted code path with the same checks; manual record path | `parts.tsx` flow; **needs the T12 device run** |
+| T14 lost phone | Owner or lab head revokes; later scans refused, earlier-but-late scans held for review | protocol and integration tests |
 
 Nothing in this document is a promise that the attendance system will be secure, only a statement of what it can and cannot prove.
