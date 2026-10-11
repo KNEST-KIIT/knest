@@ -5,10 +5,12 @@ import { getSessionUser } from '@/server/auth/guards'
 import { enabledSections, getHomepage } from '@/server/content/homepage'
 import { listPrograms } from '@/server/content/programs'
 import { track } from '@/server/analytics/track'
+import { getEcosystemCounts } from '@/server/content/ecosystem-counts'
+import { buildEcosystemGroups } from '@/server/content/ecosystem-groups'
+import { EcosystemSection } from './ecosystem-section'
 import { Hero } from './hero'
 import { JourneySelector } from './journey-selector'
 import { TheJourney } from './the-journey'
-import { BuiltWithKnest } from './built-with-knest'
 import { Narrative } from './narrative'
 
 export const metadata: Metadata = {
@@ -26,7 +28,7 @@ const OFFER_ITEMS = [
 ]
 
 export default async function HomePage() {
-  const [homepage, user, programsResult] = await Promise.all([
+  const [homepage, user, programsResult, counts] = await Promise.all([
     getHomepage(),
     getSessionUser(),
     // The front door must survive a CMS outage, and say so honestly: the journey
@@ -38,6 +40,7 @@ export default async function HomePage() {
         return { programs: [], unavailable: true as const }
       },
     ),
+    getEcosystemCounts(),
     track('landing_view'),
   ])
   const sections = enabledSections(homepage)
@@ -123,7 +126,7 @@ export default async function HomePage() {
             )
 
           case 'ecosystem':
-            return null
+            return <EcosystemSection key={key} groups={buildEcosystemGroups(counts)} />
 
           case 'startups':
             return null
