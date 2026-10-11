@@ -9,19 +9,20 @@ import type { DeviceStore } from './store'
 
 export type CachedRoster<T> = { userId: string; fetchedAt: number; expiresAt: number; entries: T[] }
 
-const KEY = 'current'
+/** One record per kind of cache held in the `roster` store. */
+export type CacheKind = 'roster' | 'passes'
 
-export async function saveRoster<T>(store: DeviceStore, userId: string, entries: T[], now = Date.now()): Promise<void> {
+export async function saveRoster<T>(store: DeviceStore, userId: string, entries: T[], now = Date.now(), kind: CacheKind = 'roster'): Promise<void> {
   const record: CachedRoster<T> = { userId, fetchedAt: now, expiresAt: now + ROSTER_CACHE_TTL_MS, entries }
-  await store.put('roster', KEY, record)
+  await store.put('roster', kind, record)
 }
 
 /** Returns the cache only if it belongs to this user and has not expired; otherwise wipes it. */
-export async function loadRoster<T>(store: DeviceStore, userId: string, now = Date.now()): Promise<CachedRoster<T> | null> {
-  const record = await store.get<CachedRoster<T>>('roster', KEY)
+export async function loadRoster<T>(store: DeviceStore, userId: string, now = Date.now(), kind: CacheKind = 'roster'): Promise<CachedRoster<T> | null> {
+  const record = await store.get<CachedRoster<T>>('roster', kind)
   if (!record) return null
   if (record.userId !== userId || record.expiresAt <= now || record.fetchedAt > now + 5 * 60 * 1000) {
-    await store.delete('roster', KEY)
+    await store.delete('roster', kind)
     return null
   }
   return record

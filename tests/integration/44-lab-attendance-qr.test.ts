@@ -130,9 +130,20 @@ afterAll(closeDb)
 
 describe('device keys', () => {
   it('need a sign-in', async () => {
-    expect((await api('/api/lab-attendance/keys', null, {}, 'GET')).status).toBe(401)
+    expect((await api('/api/lab-attendance/keys', null, undefined, 'GET')).status).toBe(401)
     expect((await api('/api/lab-attendance/roster', null, undefined, 'GET')).status).toBe(401)
     expect((await api('/api/lab-attendance/scans', null, { clientNowMs: Date.now(), events: ['x'] })).status).toBe(401)
+  })
+
+  it('tell a device who it is working for and list its bookings', async () => {
+    const b = await makeBooker('me-a')
+    const me = await json(await api('/api/lab-attendance/me', b.session, undefined, 'GET'))
+    expect(me.body).toMatchObject({ ok: true, userId: b.id, isStaff: false })
+    expect((await json(await api('/api/lab-attendance/me', assistant, undefined, 'GET'))).body.isStaff).toBe(true)
+    const passes = await json(await api('/api/lab-attendance/passes', b.session, undefined, 'GET'))
+    const mine = (passes.body.passes as { bookingId: string; staffKeys: { keyId: string }[] }[]).find((p) => p.bookingId === b.bookingId)!
+    expect(mine.staffKeys.map((k) => k.keyId)).toEqual(expect.arrayContaining([assistantDevice.keyId]))
+    expect((await api('/api/lab-attendance/me', null, undefined, 'GET')).status).toBe(401)
   })
 
   it('register once, idempotently, with a proof bound to the account', async () => {

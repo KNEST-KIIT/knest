@@ -214,6 +214,7 @@ export type RosterEntry = {
   bookingId: string
   labId: string
   labName: string
+  labSlug: string
   startsAt: string
   endsAt: string
   /** Display name for the visual ID check. No e-mail address is ever sent to a scanning device. */
@@ -249,7 +250,7 @@ export async function getRoster(now = new Date()) {
         ),
       )
   const rows = await db
-    .select({ booking: labBookings, labName: labs.name, studentName: users.name })
+    .select({ booking: labBookings, labName: labs.name, labSlug: labs.slug, studentName: users.name })
     .from(labBookings)
     .innerJoin(labs, eq(labs.id, labBookings.labId))
     .innerJoin(users, eq(users.id, labBookings.userId))
@@ -262,6 +263,7 @@ export async function getRoster(now = new Date()) {
     bookingId: r.booking.id,
     labId: r.booking.labId,
     labName: r.labName,
+    labSlug: r.labSlug,
     startsAt: r.booking.startsAt.toISOString(),
     endsAt: r.booking.endsAt.toISOString(),
     studentName: r.studentName?.trim() || 'Member',
@@ -270,6 +272,63 @@ export async function getRoster(now = new Date()) {
   }))
   const myKeys = (await activeKeysFor([user.id])).get(user.id) ?? []
   return { ok: true as const, generatedAt: now.toISOString(), expiresAt: new Date(now.getTime() + ROSTER_CACHE_TTL_MS).toISOString(), entries, myKeys }
+}
+
+/** Who the device is signed in as, and whether they run any lab. The page caches this for offline use. */
+export async function getMe() {
+  const user = await requireUserOrThrow()
+  const memberships = await db.select({ labId: labStaff.labId }).from(labStaff).where(eq(labStaff.userId, user.id)).limit(1)
+  const staff = memberships.length > 0 || isLabAdmin(await staffRoleOf(user.id))
+  const row = await db.query.users.findFirst({ where: eq(users.id, user.id), columns: { name: true } })
+  return { ok: true as const, userId: user.id, name: row?.name?.trim() || 'Member', isStaff: staff }
+}
+
+export type MyPass = {
+  bookingId: string
+  labId: string
+  labName: string
+  startsAt: string
+  endsAt: string
+  status: string
+  staffKeys: KeyEntry[]
+  checks: BookingCheckSummary
+}
+
+/**
+ * The booker's own approved bookings that are running now or start within 24 hours, with the public
+ * keys of the lab's staff, so the pass screen can run from a device-side cache with no network.
+ */
+export async function listMyPasses(now = new Date()) {
+  const user = await requireUserOrThrow()
+  const rows = await db
+    .select({ booking: labBookings, labName: labs.name })
+    .from(labBookings)
+    .innerJoin(labs, eq(labs.id, labBookings.labId))
+    .where(
+      and(
+        eq(labBookings.userId, user.id),
+        inArray(labBookings.status, ['approved', 'completed']),
+        lte(labBookings.startsAt, new Date(now.getTime() + ROSTER_CACHE_TTL_MS)),
+        gte(labBookings.endsAt, new Date(now.getTime() - 60 * 60 * 1000)),
+      ),
+    )
+    .orderBy(asc(labBookings.startsAt))
+    .limit(20)
+  const labIds = [...new Set(rows.map((r) => r.booking.labId))]
+  const staff = labIds.length ? await db.select({ labId: labStaff.labId, userId: labStaff.userId }).from(labStaff).where(inArray(labStaff.labId, labIds)) : []
+  const keys = await activeKeysFor([...new Set(staff.map((s) => s.userId))])
+  const checks = await summariseChecks(rows.map((r) => r.booking.id))
+  const passes: MyPass[] = rows.map((r) => ({
+    bookingId: r.booking.id,
+    labId: r.booking.labId,
+    labName: r.labName,
+    startsAt: r.booking.startsAt.toISOString(),
+    endsAt: r.booking.endsAt.toISOString(),
+    status: r.booking.status,
+    staffKeys: staff.filter((s) => s.labId === r.booking.labId).flatMap((s) => keys.get(s.userId) ?? []),
+    checks: checks.get(r.booking.id)!,
+  }))
+  return { ok: true as const, generatedAt: now.toISOString(), expiresAt: new Date(now.getTime() + ROSTER_CACHE_TTL_MS).toISOString(), passes }
 }
 
 export async function getBookingChecks(bookingId: string) {
