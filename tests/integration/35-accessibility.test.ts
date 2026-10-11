@@ -311,3 +311,64 @@ describe('things a scanner cannot see', () => {
     }
   })
 })
+
+/**
+ * A resting-page scan never opens a menu or triggers an error. These scan the same pages after the
+ * interaction, which is where the source review (docs/handover/ACCESSIBILITY-REVIEW.md) found most
+ * of its problems.
+ */
+describe('states a resting-page scan does not reach', () => {
+  const axeOn = async (page: Page, label: string) => {
+    const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze()
+    const lines = results.violations.map((v) => `${v.impact} ${v.id}: ${v.help} (${v.nodes.length}; first: ${v.nodes[0]?.target.join(' ')})`)
+    if (lines.length) console.log(`[axe] ${label}\n  ${lines.join('\n  ')}`)
+    return brief(results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical'))
+  }
+
+  it('the open mobile menu has no serious or critical violations', async () => {
+    const context = await contextFor(null, { width: 375, height: 740 })
+    try {
+      const page = await context.newPage()
+      await page.goto(`${BASE()}/about`, { waitUntil: 'networkidle' })
+      await page.getByRole('button', { name: 'Open menu', exact: true }).click()
+      await page.locator('#mobile-nav').waitFor()
+      await page.waitForTimeout(500)
+      expect(await axeOn(page, 'about with mobile menu open')).toEqual([])
+    } finally {
+      await context.close()
+    }
+  })
+
+  it('the sign-in form in its error state has no serious or critical violations', async () => {
+    const context = await contextFor(null, { width: 1280, height: 900 })
+    try {
+      const page = await context.newPage()
+      await page.route('**/api/auth/password/login', (route) => route.abort('failed'))
+      await page.goto(`${BASE()}/login`, { waitUntil: 'networkidle' })
+      await page.getByLabel('Email address', { exact: true }).fill('offline@example.test')
+      await page.getByLabel('Password', { exact: true }).fill('Offline-example-password-123')
+      await page.getByRole('button', { name: /Log In/ }).click()
+      await page.getByRole('alert').filter({ hasText: 'couldn’t confirm' }).waitFor()
+      expect(await axeOn(page, 'login with error')).toEqual([])
+    } finally {
+      await context.close()
+    }
+  })
+
+  it('the lab booking picker with a date chosen and slots loaded has no serious or critical violations', async () => {
+    const context = await contextFor('member', { width: 375, height: 900 })
+    try {
+      const page = await context.newPage()
+      await page.goto(`${BASE()}/dashboard/lab-booking/${labSlug}`, { waitUntil: 'networkidle' })
+      const date = page.locator('input[type="date"]').first()
+      if (await date.count()) {
+        const chosen = istParts(new Date(Date.now() + 4 * 86_400_000)).date
+        await date.fill(chosen)
+        await page.waitForTimeout(1500)
+      }
+      expect(await axeOn(page, 'lab picker with slots')).toEqual([])
+    } finally {
+      await context.close()
+    }
+  })
+})

@@ -329,3 +329,7 @@ These are the points where the code can only say what should happen. Test each w
 3. Findings 7, 8, 9 and 10, then add axe scans for the states the suite misses: menu open, picker with slots loaded, each form in an error state, and `/admin/applications/[id]`.
 4. Moderate items, then Minor items in routine maintenance.
 5. Add an automated check that any `<select>` or `<input type="date">` with an `onChange` that calls `fetch` or `router.push` is flagged, and one that fails if `--color-line-strong` (or any `var(--color-*)`) is used but not defined in `tokens.css`.
+
+---
+
+A step-by-step manual test script for a human reviewer, with a result table and a release rule, is in `docs/handover/ACCESSIBILITY-MANUAL-TEST.md`. It turns the list above into a procedure; this file stays the evidence of what the code reading found.
