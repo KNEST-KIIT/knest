@@ -12,13 +12,13 @@
 
 ARG NODE_VERSION=24
 
-FROM node:${NODE_VERSION}-bookworm-slim AS base
+FROM node:${NODE_VERSION}-alpine AS base
 ENV PNPM_HOME=/pnpm \
     PATH=/pnpm:$PATH \
     NEXT_TELEMETRY_DISABLED=1
-# Pull in Debian security fixes published since the node image was built, so the ECR
-# scan gate sees current OS packages. Nothing is added; the apt lists are dropped.
-RUN apt-get update     && apt-get -y --no-install-recommends upgrade     && rm -rf /var/lib/apt/lists/*
+# Pull in security fixes published since the node image was built, so the ECR scan gate
+# sees current OS packages. Nothing is added.
+RUN apk upgrade --no-cache
 # The pnpm version comes from "packageManager" in package.json.
 RUN corepack enable
 WORKDIR /app
@@ -42,15 +42,15 @@ ENV NODE_ENV=production
 CMD ["pnpm", "migrate"]
 
 # The web server: Next.js standalone output only. No source, no dev dependencies.
-FROM node:${NODE_VERSION}-bookworm-slim AS runner
+FROM node:${NODE_VERSION}-alpine AS runner
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     PORT=3000 \
     HOSTNAME=0.0.0.0
-# Pull in Debian security fixes published since the node image was built, so the ECR
-# scan gate sees current OS packages. Nothing is added; the apt lists are dropped.
-RUN apt-get update     && apt-get -y --no-install-recommends upgrade     && rm -rf /var/lib/apt/lists/*
-RUN groupadd --system --gid 1001 app && useradd --system --uid 1001 --gid app --no-create-home app
+# Pull in security fixes published since the node image was built, so the ECR scan gate
+# sees current OS packages. Nothing is added.
+RUN apk upgrade --no-cache
+RUN addgroup -S -g 1001 app && adduser -S -u 1001 -G app -H app
 WORKDIR /app
 # postbuild copies .next/static and public into the standalone folder.
 COPY --from=build --chown=app:app /app/.next/standalone ./
