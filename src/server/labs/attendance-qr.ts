@@ -22,7 +22,6 @@ export type QrResult<T = object> = ({ ok: true } & T) | { ok: false; error: stri
 const fail = (error: string, code: QrCode): { ok: false; error: string; code: QrCode } => ({ ok: false, error, code })
 
 const MAX_ACTIVE_KEYS = 5
-const FUTURE_SLOP_MS = 60 * 1000
 
 // ---------------------------------------------------------------------------------- keys
 
@@ -298,6 +297,8 @@ export type ScanOutcome = {
 
 type EventRow = typeof labScanEvents.$inferSelect
 
+const UNTRUSTED_REJECTIONS = ['malformed', 'unknown-key', 'bad-signature', 'not-your-key'] as const
+
 function isUniqueViolation(error: unknown): boolean {
   const e = error as { code?: string; cause?: { code?: string } } | null
   return e?.code === '23505' || e?.cause?.code === '23505'
@@ -353,6 +354,11 @@ async function persist(
   clientNowMs: number,
   now: Date,
 ): Promise<ScanOutcome> {
+  // A rejection whose envelope is not provably the submitter's own is never stored. Otherwise anyone
+  // who saw an event token could mutate it, keep its id, and use up that id so the real one is refused.
+  if (decision.status === 'rejected' && (UNTRUSTED_REJECTIONS as readonly string[]).includes(decision.code)) {
+    return { id: event.id, status: 'rejected', code: decision.code, check: null, duplicate: false }
+  }
   const detail = decision.status === 'accepted' ? decision : decision.status === 'review' ? decision.detail : null
   // A rejected event is kept only when its booking exists (foreign key) and the signer was a person we know.
   const booking = await db.query.labBookings.findFirst({ where: eq(labBookings.id, event.bk), columns: { id: true } })
