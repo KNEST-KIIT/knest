@@ -12,6 +12,9 @@ type RateLimitConfig = { capacity: number; refillIntervalSeconds: number }
  */
 export const RATE_LIMITS = {
   login: { capacity: 5, refillIntervalSeconds: 15 * 60 },
+  // Failed sign-ins per account (hashed e-mail), whatever address they come from. Looser than the per-address
+  // limit so a stranger cannot lock a person out for long, tight enough to stop a distributed guess.
+  loginAccount: { capacity: 10, refillIntervalSeconds: 60 * 60 },
   signup: { capacity: 5, refillIntervalSeconds: 60 * 60 },
   passwordResetRequest: { capacity: 5, refillIntervalSeconds: 60 * 60 },
   applicationStart: { capacity: 10, refillIntervalSeconds: 60 * 60 },
@@ -68,6 +71,24 @@ export async function checkRateLimit(key: string, config: RateLimitConfig): Prom
 
   const tokens = result.rows[0]?.tokens
   return tokens !== undefined && Number(tokens) >= 0
+}
+
+/**
+ * True while the bucket still has a token, without spending one. Used where only failures should
+ * count (sign-in per account): a successful login must never push an account towards a lockout.
+ * A missing bucket is a full bucket.
+ */
+export async function hasRateLimitCapacity(key: string, config: RateLimitConfig): Promise<boolean> {
+  const refillPerSecond = config.capacity / config.refillIntervalSeconds
+  const result = await db.execute<{ tokens: number }>(sql`
+    SELECT LEAST(
+      ${config.capacity}::double precision,
+      tokens + EXTRACT(EPOCH FROM (now() - updated_at)) * ${refillPerSecond}::double precision
+    ) AS tokens
+    FROM app.rate_limits WHERE key = ${key}
+  `)
+  const tokens = result.rows[0]?.tokens
+  return tokens === undefined || Number(tokens) >= 1
 }
 
 /** IP-keyed limits use the address from the trusted source for this deployment (see client-ip.ts). */
