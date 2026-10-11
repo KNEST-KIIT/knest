@@ -74,3 +74,24 @@ export async function deleteFile(key: string): Promise<void> {
   }
   await rm(path.join(LOCAL_UPLOAD_DIR, key), { force: true })
 }
+
+export type StoredObject = { key: string; lastModified: Date; size: number }
+
+/** Every object whose key starts with `prefix`, for reconciliation. S3 only: local development has nothing to reconcile. */
+export async function listFiles(prefix = ''): Promise<StoredObject[]> {
+  if (!s3Configured) return []
+  const { ListObjectsV2Command } = await import('@aws-sdk/client-s3')
+  const client = await s3Client()
+  const found: StoredObject[] = []
+  let token: string | undefined
+  do {
+    const page = await client.send(
+      new ListObjectsV2Command({ Bucket: process.env.S3_BUCKET, Prefix: prefix || undefined, ContinuationToken: token }),
+    )
+    for (const item of page.Contents ?? []) {
+      if (item.Key && item.LastModified) found.push({ key: item.Key, lastModified: item.LastModified, size: item.Size ?? 0 })
+    }
+    token = page.IsTruncated ? page.NextContinuationToken : undefined
+  } while (token)
+  return found
+}

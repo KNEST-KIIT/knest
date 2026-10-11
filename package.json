@@ -17,7 +17,7 @@
     "check": "pnpm run lint && pnpm run typecheck && pnpm run test",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/db/migrate.ts",
-    "migrate": "tsx src/db/migrate.ts && payload migrate",
+    "migrate": "tsx src/db/migrate.ts && payload migrate && tsx src/db/runtime-role.ts",
     "db:seed": "tsx src/db/seed.ts",
     "db:seed:demo": "tsx src/db/seed-demo.ts",
     "db:studio": "drizzle-kit studio",

@@ -106,13 +106,33 @@ ${step.stderr.slice(-1500)}`)
     }
   }
 
+  // 1b. Provision the least-privilege runtime role exactly as the release's migration job does, and run
+  //     the server as that role. The whole suite therefore also proves that the application needs no
+  //     schema rights (src/db/runtime-role.ts). Tests and helpers keep using the owner's URL.
+  const RUNTIME_USER = 'knest_app'
+  const RUNTIME_PASSWORD = 'integration-runtime-password-0123456789'
+  const roleStep = spawnSync('npx', ['tsx', 'src/db/runtime-role.ts'], {
+    cwd: ROOT,
+    env: { ...env, NODE_ENV: 'production', DB_RUNTIME_USER: RUNTIME_USER, DB_RUNTIME_PASSWORD: RUNTIME_PASSWORD },
+    encoding: 'utf8',
+    shell: true,
+    input: '',
+    timeout: 120_000,
+  })
+  if (roleStep.status !== 0) throw new Error(`runtime role step failed:
+${roleStep.stdout.slice(-800)}
+${roleStep.stderr.slice(-800)}`)
+  const runtimeUrl = new URL(db.url)
+  runtimeUrl.username = RUNTIME_USER
+  runtimeUrl.password = RUNTIME_PASSWORD
+
   // 2. The PRODUCTION build, run the way it would be deployed. cwd is a temp
   //    directory so Payload's relative media directory lands there, not in the repo.
   let server: ChildProcess | null = null
   if (existsSync(path.join(ROOT, '.next', 'BUILD_ID'))) {
     server = spawn('npx', ['next', 'start', ROOT, '-p', String(port), '-H', '127.0.0.1'], {
       cwd: work,
-      env: { ...env, NODE_ENV: 'production', PATH: process.env.PATH },
+      env: { ...env, DATABASE_URL: runtimeUrl.toString(), NODE_ENV: 'production', PATH: process.env.PATH },
       shell: true,
       stdio: ['ignore', 'pipe', 'pipe'],
     })

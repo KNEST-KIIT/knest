@@ -53,7 +53,22 @@ async function ses(): Promise<SesLikeClient> {
   return client
 }
 
-export async function sendEmail(input: Message): Promise<void> {
+/**
+ * The public entry point. Mail is written to the durable outbox first and then attempted at
+ * once; a failed attempt is retried by the worker (src/server/email/outbox.ts), so a provider
+ * outage no longer loses a verification or reset link. If the outbox itself cannot be written
+ * (the database is down) the message is attempted directly and that error reaches the caller.
+ *
+ * EMAIL_OUTBOX=off sends directly with no retry (unit tests and tools that have no database).
+ */
+export async function sendEmail(input: Message, options: { ttlMs?: number } = {}): Promise<void> {
+  if (process.env.EMAIL_OUTBOX === 'off') return sendEmailDirect(input)
+  const { sendDurably } = await import('./outbox')
+  return sendDurably(input, options.ttlMs)
+}
+
+/** One immediate attempt through the configured transport. Throws on failure. */
+export async function sendEmailDirect(input: Message): Promise<void> {
   const from = process.env.EMAIL_FROM ?? DEFAULT_FROM
 
   if (process.env.EMAIL_TRANSPORT === 'ses') {
