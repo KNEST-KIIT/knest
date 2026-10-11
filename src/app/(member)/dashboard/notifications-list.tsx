@@ -18,21 +18,31 @@ type NotificationRow = {
 
 /**
  * The first UI in the app to read the notifications table (retrospective
- * §6). Marking read is optimistic — no full reload — matching the
- * RegisterButton pattern from 7-9.3.
+ * §6). An item changes to read only after the server has confirmed it, and a
+ * failure is said out loud: a list that shows "read" for something the server
+ * still holds as unread would come back unread on the next load.
  */
 export function NotificationsList({ notifications }: { notifications: NotificationRow[] }) {
   const router = useRouter()
   const [items, setItems] = useState(notifications)
   const [pendingId, setPendingId] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   const unreadCount = items.filter((n) => !n.readAt).length
 
   async function markRead(id: string) {
     setPendingId(id)
+    setError(null)
     const res = await formRequest(`/api/notifications/${id}/read`, { method: 'POST' })
     setPendingId(null)
-    if (!res.ok) return
+    if (!res.ok) {
+      setError(
+        res.status === 401
+          ? 'Your session has ended. Log in again to update your notifications.'
+          : 'We couldn’t mark that as read. Check your connection and try again.',
+      )
+      return
+    }
     setItems((prev) => prev.map((n) => (n.id === id ? { ...n, readAt: new Date() } : n)))
     router.refresh()
   }
@@ -52,6 +62,12 @@ export function NotificationsList({ notifications }: { notifications: Notificati
         )}
       </div>
       <LiveRegion message={unreadCount > 0 ? `${unreadCount} unread notifications` : 'All notifications read'} />
+
+      {error && (
+        <p role="alert" className="mt-3 text-[length:var(--text-small)] text-[var(--color-critical)]">
+          {error}
+        </p>
+      )}
 
       <ul className="mt-4 flex flex-col divide-y divide-[var(--color-line)]">
         {items.map((n) => (

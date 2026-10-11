@@ -10,8 +10,12 @@ export const metadata: Metadata = { title: 'Your events' }
 export default async function DashboardEventsPage() {
   const user = await requireUser('/dashboard/events')
   const rows = await listRegisteredEventsForUser(user.id)
-  const upcoming = rows.filter((r) => r.event && new Date(r.event.startsAt) > new Date())
-  const past = rows.filter((r) => r.event && new Date(r.event.startsAt) <= new Date())
+  // An event that has started but not ended is still upcoming for this list;
+  // registration closes on the end time too, so the two agree.
+  const now = new Date().getTime()
+  const endOf = (e: { startsAt: string; endsAt?: string | null }) => new Date(e.endsAt ?? e.startsAt).getTime()
+  const upcoming = rows.filter((r) => r.event && endOf(r.event) >= now)
+  const past = rows.filter((r) => r.event && endOf(r.event) < now)
 
   return (
     <Section>

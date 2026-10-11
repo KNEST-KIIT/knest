@@ -39,10 +39,10 @@ export async function StudentDashboard({ user }: { user: SessionUser }) {
         {/* Calendar / Events Widget */}
         <div className="lg:col-span-12 flex flex-col rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-white p-6 shadow-sm">
           <Heading as="h2" size="heading" className="mb-6" uppercase={false}>
-            Upcoming Events
+            Events for you
           </Heading>
           {events.length === 0 ? (
-            <EmptyState headingLevel="h3" className="mt-2 flex-1 border-none shadow-none" heading="Nothing on your calendar." body="New sessions are added regularly." />
+            <EmptyState headingLevel="h3" className="mt-2 flex-1 border-none shadow-none" heading="No events match your stage yet." body="New sessions are added regularly. Browse all events to see what is on." />
           ) : (
             <div className="flex flex-col gap-4">
               {events.slice(0, 3).map((event) => {
