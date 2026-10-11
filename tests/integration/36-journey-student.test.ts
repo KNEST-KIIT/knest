@@ -1,7 +1,7 @@
 import type { Browser, Page } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { BASE, closeDb, db, PASSWORD } from '../support/helpers'
-import { answerOnboarding, launchBrowser, linkIn, mailsTo, newPage, ONBOARDING_CTA, signInThroughForm, waitForMailText } from '../support/journey'
+import { BASE, closeDb, db, decodeMailText, PASSWORD } from '../support/helpers'
+import { answerOnboarding, launchBrowser, linkIn, mailsTo, newPage, ONBOARDING_CTA, signInThroughForm, verifyPathIn, waitForMailText } from '../support/journey'
 import { payloadClient, richText } from '../support/payload'
 
 /**
@@ -69,12 +69,19 @@ afterAll(async () => {
 })
 
 describe('a student first visit', () => {
-  it('signs up and is taken to onboarding, with an unverified account and a verification e-mail on its way', async () => {
+  it('signs up, opens the link from the mailbox, and is taken to onboarding as a verified, signed-in account', async () => {
+    // Sign-up itself issues no session (KN-22b): it ends on "Check your email", and the link signs the person in.
     await page.goto(`${BASE()}/signup`, { waitUntil: 'networkidle' })
     await page.getByLabel('Full name').fill(NAME)
     await page.getByLabel('Email address').fill(EMAIL)
     await page.getByLabel('Create password').fill(PASSWORD)
-    await Promise.all([page.waitForURL((u) => u.pathname === '/onboarding', { timeout: 60_000 }), page.getByRole('button', { name: /create account/i }).click()])
+    await Promise.all([page.waitForURL((u) => u.pathname === '/verify', { timeout: 60_000 }), page.getByRole('button', { name: /create account/i }).click()])
+    expect((await one('select count(*)::int c from app.sessions s join app.users u on u.id = s.user_id where u.email = $1', [EMAIL])).c).toBe(0)
+
+    const mailText = await waitForMailText(EMAIL, /verify\/confirm/i)
+    await page.goto(`${BASE()}${verifyPathIn(mailText)}`)
+    await page.getByText('You’re signed in.').waitFor({ timeout: 30_000 })
+    await Promise.all([page.waitForURL((u) => u.pathname === '/onboarding', { timeout: 60_000 }), page.getByRole('link', { name: 'Continue.' }).click()])
 
     expect(await page.getByRole('heading', { level: 1 }).textContent()).toContain('Who are you?')
     const user = await one<{ id: string; name: string; platform_role: string; email_verified: Date | null; onboarding_completed_at: Date | null; password_hash: string }>(
@@ -82,12 +89,12 @@ describe('a student first visit', () => {
       [EMAIL],
     )
     userId = user.id
-    expect(user).toMatchObject({ name: NAME, platform_role: 'student', email_verified: null, onboarding_completed_at: null })
+    expect(user).toMatchObject({ name: NAME, platform_role: 'student', onboarding_completed_at: null })
+    expect(user.email_verified).not.toBeNull()
     expect(user.password_hash).toMatch(/^\$2[aby]\$/) // stored hashed, never as typed
     expect((await one('select count(*)::int c from app.sessions where user_id = $1', [userId])).c).toBe(1)
 
-    const text = await waitForMailText(EMAIL, /verify\/confirm/i)
-    expect(text).toContain('/verify/confirm?email=')
+    expect(mailText).toContain('/verify/confirm?email=')
   })
 
   it('finishes onboarding and lands on a page that fits the answers', async () => {
@@ -168,6 +175,9 @@ describe('a student first visit', () => {
   })
 
   it('is stopped at submit until the e-mail address is confirmed, and the draft is kept', async () => {
+    // Sign-up now verifies the address, but an account can still be unverified: someone who signs
+    // up, skips the link and later logs in with the password. Put this account in that state.
+    await db().query('update app.users set email_verified = null where id = $1', [userId])
     await Promise.all([page.waitForURL((u) => u.pathname === '/verify', { timeout: 30_000 }), page.getByRole('button', { name: 'Submit application' }).click()])
     expect(await page.getByRole('heading', { level: 1 }).textContent()).toContain('Check your email')
     await page.getByText(EMAIL).waitFor()
@@ -175,8 +185,15 @@ describe('a student first visit', () => {
     expect((await one("select count(*)::int c from app.notifications where application_id = $1 and type = 'application_received'", [applicationId])).c).toBe(0)
   })
 
-  it('confirms the address from the e-mailed link, once', async () => {
-    const link = linkIn(await waitForMailText(EMAIL, /verify\/confirm/))
+  it('asks for a new link from the check-your-email page, and confirms from it once', async () => {
+    const verifyMails = () => mailsTo(EMAIL).filter((m) => /verify\/confirm/.test(m.body) || /verify\/confirm/.test(decodeMailText(m.body)))
+    const before = verifyMails().length
+    await page.getByRole('button', { name: 'Send it again' }).click()
+    await page.getByText('Sent. Check your inbox.').waitFor({ timeout: 30_000 })
+    const until = Date.now() + 20_000
+    while (verifyMails().length <= before && Date.now() < until) await new Promise((r) => setTimeout(r, 250))
+    expect(verifyMails().length).toBeGreaterThan(before)
+    const link = linkIn(decodeMailText(verifyMails().at(-1)!.body))
     await page.goto(link)
     await page.getByRole('heading', { level: 1, name: 'Email confirmed.' }).waitFor({ timeout: 30_000 })
     expect((await one<{ email_verified: Date | null }>('select email_verified from app.users where id = $1', [userId])).email_verified).not.toBeNull()

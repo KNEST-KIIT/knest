@@ -73,3 +73,36 @@ export async function answerOnboarding(page: Page) {
 
 /** The closing button of onboarding, whatever the recommender chose to call it. */
 export const ONBOARDING_CTA = /find a program|see programs|see what.s on|get in touch|complete profile/i
+
+/** The verification path (with its query) inside a mail body. The host in the mail is the build machine's, so only the path is used. */
+export function verifyPathIn(text: string): string {
+  const match = /\/verify\/confirm\?[^\s"<>]+/.exec(text)
+  if (!match) throw new Error('no verification link in: ' + text.slice(0, 300))
+  return match[0]
+}
+
+/**
+ * Sign-up as a person experiences it: fill the form, land on "Check your email", open the link
+ * from the mailbox, and continue from there. Sign-up itself issues no session (KN-22b), so the
+ * link is what signs the new account in.
+ */
+export async function signUpThroughForm(
+  page: Page,
+  input: { name: string; email: string; next?: string; password?: string },
+): Promise<void> {
+  await page.goto(`${BASE()}/signup${input.next ? `?next=${encodeURIComponent(input.next)}` : ''}`, { waitUntil: 'networkidle' })
+  await page.getByLabel('Full name').fill(input.name)
+  await page.getByLabel('Email address').fill(input.email)
+  await page.getByLabel('Create password').fill(input.password ?? PASSWORD)
+  await Promise.all([
+    page.waitForURL((u) => u.pathname === '/verify', { timeout: 60_000 }),
+    page.getByRole('button', { name: /create account/i }).click(),
+  ])
+  const text = await waitForMailText(input.email, /verify\/confirm/i)
+  await page.goto(`${BASE()}${verifyPathIn(text)}`)
+  await page.getByText('You’re signed in.').waitFor({ timeout: 30_000 })
+  await Promise.all([
+    page.waitForURL((u) => u.pathname.startsWith('/onboarding'), { timeout: 60_000 }),
+    page.getByRole('link', { name: 'Continue.' }).click(),
+  ])
+}
