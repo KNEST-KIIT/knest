@@ -21,6 +21,7 @@ import { Staff } from './collections/staff'
 import { Startups } from './collections/startups'
 import { Testimonials } from './collections/testimonials'
 import { Homepage } from './globals/homepage'
+import { auditGlobalAfterChange, withAudit } from './audit-hooks'
 import { databaseSsl } from '../db/ssl'
 import { s3ClientConfig } from '../server/storage/s3-config'
 
@@ -61,7 +62,10 @@ export default buildConfig({
     Metrics,
     Media,
     Staff,
-  ].map((c) => ({
+  ]
+    // The staff mirror is rewritten on every admin request; auditing it would drown the trail.
+    .map((c) => (c.slug === 'staff' ? c : withAudit(c)))
+    .map((c) => ({
     ...c,
     admin: {
       ...c.admin,
@@ -77,7 +81,7 @@ export default buildConfig({
                 : 'Other',
     },
   })),
-  globals: [Homepage],
+  globals: [{ ...Homepage, hooks: { ...Homepage.hooks, afterChange: [...(Homepage.hooks?.afterChange ?? []), auditGlobalAfterChange] } }],
   plugins: [
     // CMS media lives in the same bucket as application documents, under media/. A container's
     // disk is replaced on every deploy, so media on local disk would be lost. With no S3_BUCKET
