@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { Heading } from '@/components/ui'
 import { requireAdminArea } from '@/server/auth/guards'
-import { FUNNEL_EVENTS, getActivatedBuildersCount, getEventCounts, type FunnelStage } from '@/server/analytics/funnel'
+import { FUNNEL_EVENTS, getActivatedBuildersCount, getEventCounts, getTableTruth, type FunnelStage } from '@/server/analytics/funnel'
 
 export const metadata: Metadata = { title: 'Analytics — Admin' }
 
@@ -30,7 +30,7 @@ const EVENT_LABELS: Record<string, string> = {
 
 export default async function AnalyticsPage() {
   await requireAdminArea('analytics')
-  const [counts, activatedBuilders] = await Promise.all([getEventCounts(), getActivatedBuildersCount()])
+  const [counts, activatedBuilders, truth] = await Promise.all([getEventCounts(), getActivatedBuildersCount(), getTableTruth()])
   const totalEvents = Object.values(counts).reduce((sum, n) => sum + n, 0)
 
   return (
@@ -74,6 +74,11 @@ export default async function AnalyticsPage() {
                       <p className="mt-1 font-[family-name:var(--font-display)] text-[length:var(--text-heading)]">
                         {counts[event] ?? 0}
                       </p>
+                      {event in truth && (
+                        <p className="mt-1 text-[length:var(--text-small)] text-[var(--color-ink-muted)]">
+                          Records in the database: {truth[event]}
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>

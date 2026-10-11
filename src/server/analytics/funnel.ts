@@ -1,6 +1,6 @@
-import { and, count, inArray, isNotNull } from 'drizzle-orm'
+import { and, count, eq, inArray, isNotNull, ne } from 'drizzle-orm'
 import { db } from '@/db/client'
-import { analyticsEvents, users } from '@/db/schema'
+import { analyticsEvents, applications, eventRegistrations, users } from '@/db/schema'
 
 export type FunnelStage = 'acquisition' | 'activation' | 'intent' | 'engagement' | 'outcomes'
 
@@ -56,4 +56,26 @@ export async function getActivatedBuildersCount(): Promise<number> {
     )
 
   return row?.value ?? 0
+}
+
+/**
+ * The same business outcomes counted from the tables that own them. Event rows are best-effort
+ * (a blocked script or a dropped request loses one); the tables are the truth, so the dashboard
+ * shows both and a gap is visible instead of silently trusted.
+ */
+export async function getTableTruth(): Promise<Record<string, number>> {
+  const [signups, started, submitted, accepted, registered] = await Promise.all([
+    db.select({ value: count() }).from(users),
+    db.select({ value: count() }).from(applications),
+    db.select({ value: count() }).from(applications).where(ne(applications.status, 'draft')),
+    db.select({ value: count() }).from(applications).where(eq(applications.status, 'accepted')),
+    db.select({ value: count() }).from(eventRegistrations),
+  ])
+  return {
+    signup: signups[0]?.value ?? 0,
+    application_start: started[0]?.value ?? 0,
+    application_submit: submitted[0]?.value ?? 0,
+    application_accepted: accepted[0]?.value ?? 0,
+    event_register: registered[0]?.value ?? 0,
+  }
 }
