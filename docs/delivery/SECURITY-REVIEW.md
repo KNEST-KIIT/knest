@@ -30,8 +30,12 @@ an owner.
 | S-12 | Info | V14 headers | HSTS exists only at CloudFront; origin does not send it | OPEN (documented) |
 | S-13 | Low | V2 | No second factor for staff and administrators | OPEN (decision) |
 | S-14 | Low | V2 | Edge access gate compares hash with non-constant-time `!==` | OPEN (accept) |
+| S-15 | Low | V13 | QR attendance: unsigned client clock decides the effective scan time | OPEN (ATTENDANCE, unmerged branch) |
 
-No Critical or High finding. Nothing found that lets an anonymous or student account read another
+Other branches were read for security-relevant changes where they touch shared code: `agent/content`
+(calendar file route: text escaped, folded, slug-derived filename, published events only; search
+query logging now drops text that looks personal) and `agent/labs` (department administration
+route). No finding from those two. No Critical or High finding. Nothing found that lets an anonymous or student account read another
 person's data, change a role, or read an applicant document.
 
 ## Findings
@@ -187,6 +191,23 @@ institutional domain for staff, or TOTP; this is a product decision with cost, n
 timing signal reveals a prefix of a hash of an unknown preimage, which is not exploitable. The gate
 is a temporary pre-launch control. Accept.
 
+### S-15 QR attendance: scan time chosen by the scanner (Low, OPEN, branch `agent/attendance`, not merged)
+
+Read from `origin/agent/attendance` (`src/lib/lab-qr/decide.ts`, `src/server/labs/attendance-qr.ts`),
+read-only, no tests run by this review. The protocol is carefully built: domain-separated
+signatures, strict payload shapes, device key bound to the submitting session, non-extractable
+private keys, revocation handled, a per-person limit and a 404 while the flag is off.
+
+One weakness: `clientNowMs` is unsigned and chosen by the submitter, and `event.at` is signed only
+by the same submitter. `effectiveAtMs = event.at - (clientNowMs - serverNowMs)`, so a scanner that
+sets `clientNowMs = event.at + small` lands near server time, which skips the clock-skew,
+late-sync and future-dated review triggers and lets it pick the time against which the pass step
+is checked. Impact is limited because a verified check needs both sides inside `PAIR_WINDOW_MS`
+and the staff side is a live pass from a key-bound device; the student side could replay a
+photographed old desk code. Fix (owner ATTENDANCE, told directly): sign `clientNowMs` inside the
+scan payload and reject `at > clientNowMs + 5 s`; apply skew correction only to events flagged
+offline in the signed payload. Mark closed when that lands with a test.
+
 ## Areas reviewed with no finding
 
 | ASVS area | Evidence |
@@ -220,5 +241,6 @@ is a temporary pre-launch control. Accept.
 | To | Item |
 |---|---|
 | CONTENT | S-08: `maxDepth` and limit ceiling on the Payload config, with an admin UI check |
+| ATTENDANCE | S-15: sign the client clock in the scan payload; bound skew correction to offline events |
 | Infrastructure owner | S-08 WAF rate rule on `/api/*`; S-11 restrict `cloudfront:GetDistributionConfig` and write the rotation step |
 | Lead and owner | S-01 nonce-based CSP as a measured change; S-13 staff second factor decision |

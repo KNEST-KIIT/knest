@@ -32,6 +32,6 @@ What it does not show: the suites added after `ab64190` (see the tracker), any s
 | 38167379943, 38167242434 | `99ba3a4`, `550b0eb` | cancelled | Superseded by the next push (concurrency group). |
 | 38153378607 | `d982b23` | success | |
 | 38148772768, 38148141555 | `c477da7` | success | |
-| 38147250787 | `b98c1d9` | **failure** | Superseded by the S3 stand-in fix in `c477da7`. |
+| 38147250787 | `b98c1d9` | **failure** | Integration tests step failed; cause not examined by this pass. The next commit `c477da7` (S3 stand-in answers ListObjectsV2) went green. |
 | 38124570347 | `37f342e` | success | |
 | 38118846905 | `b4ff4b9` | success | Release image commit named in the V1 deployment report. |
