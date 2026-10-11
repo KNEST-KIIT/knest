@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { LogoutButton } from '@/components/layout/logout-button'
 import { SkipLink } from '@/components/layout/skip-link'
 import { requireStaff } from '@/server/auth/guards'
 import { canAccessArea, type AdminArea } from '@/server/auth/roles'
@@ -45,9 +46,12 @@ export default async function StaffLayout({ children }: { children: React.ReactN
               ))}
             </nav>
           </div>
-          <Link href="/admin" className="text-[length:var(--text-small)] text-[var(--color-ink-muted)]">
-            Full admin (content, programs, startups) →
-          </Link>
+          <div className="flex flex-wrap items-center gap-4">
+            <Link href="/admin" className="text-[length:var(--text-small)] text-[var(--color-ink-muted)]">
+              Full admin (content, programs, startups) →
+            </Link>
+            <LogoutButton className="h-9 rounded-[var(--radius-sm)] border border-[var(--color-line-strong)] bg-white px-3 text-[length:var(--text-small)] font-medium" />
+          </div>
         </header>
         <main id="main" className="mx-auto w-full max-w-[1100px] px-6 py-10">
           {children}

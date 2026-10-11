@@ -1,5 +1,7 @@
 'use client'
 
+import { formRequest } from '@/lib/form-request'
+
 import { useCallback, useEffect, useState } from 'react'
 import { TurnstileWidget } from '@/components/security/turnstile-widget'
 import { Button } from '@/components/ui/button'
@@ -42,7 +44,7 @@ export function BookingPicker({
       if (!forDate) return
       setLoading(true)
       setSelected([])
-      const res = await fetch(`/api/labs/${slug}/availability?date=${forDate}`).catch(() => null)
+      const res = await formRequest(`/api/labs/${slug}/availability?date=${forDate}`).catch(() => null)
       const data = await res?.json().catch(() => null)
       setLoading(false)
       if (!res?.ok) {
@@ -88,7 +90,7 @@ export function BookingPicker({
     const form = new FormData(event.currentTarget)
     setPending(true)
     setMessage(null)
-    const res = await fetch(`/api/labs/${slug}/request`, {
+    const res = await formRequest(`/api/labs/${slug}/request`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

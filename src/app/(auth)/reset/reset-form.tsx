@@ -1,5 +1,7 @@
 'use client'
 
+import { formRequest } from '@/lib/form-request'
+
 import { useState } from 'react'
 import { Field, Heading, Input } from '@/components/ui'
 import { Button } from '@/components/ui/button'
@@ -18,7 +20,7 @@ export function ResetForm({ turnstileSiteKey }: { turnstileSiteKey: string }) {
     setPending(true)
     setError(null)
     const form = new FormData(event.currentTarget)
-    const res = await fetch('/api/auth/password/reset/request', {
+    const res = await formRequest('/api/auth/password/reset/request', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: form.get('email'), turnstileToken: captchaToken }),

@@ -1,5 +1,7 @@
 'use client'
 
+import { formRequest } from '@/lib/form-request'
+
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
@@ -11,7 +13,7 @@ export function MarkHandled({ id }: { id: string }) {
   async function mark() {
     setPending(true)
     setError(null)
-    const res = await fetch(`/api/admin/enquiries/${id}/handled`, { method: 'POST' }).catch(() => null)
+    const res = await formRequest(`/api/admin/enquiries/${id}/handled`, { method: 'POST' }).catch(() => null)
     if (!res?.ok) {
       setError('That did not save. Try again.')
       setPending(false)

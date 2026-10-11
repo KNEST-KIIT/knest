@@ -87,6 +87,25 @@ beforeAll(async () => {
 afterAll(closeDb)
 
 describe('uploading an application document', () => {
+  it('rejects an unknown question before storing any object', async () => {
+    const { me, applicationId } = await startDraft('unknown-question')
+    const before = storedObjects().length
+    const response = await upload(applicationId, me, { name: 'deck.pdf', type: 'application/pdf', bytes: PDF }, 'forged-question')
+    expect(response.status).toBe(400)
+    expect(storedObjects().length).toBe(before)
+  })
+
+  it('removes the replaced object after the new document commits', async () => {
+    const { me, applicationId } = await startDraft('replace')
+    expect((await upload(applicationId, me, { name: 'old.pdf', type: 'application/pdf', bytes: PDF })).status).toBe(200)
+    const oldKey = (await db().query('select storage_key from app.application_documents where application_id = $1', [applicationId])).rows[0].storage_key
+    expect((await upload(applicationId, me, { name: 'new.pdf', type: 'application/pdf', bytes: PDF })).status).toBe(200)
+    const newKey = (await db().query('select storage_key from app.application_documents where application_id = $1', [applicationId])).rows[0].storage_key
+    expect(newKey).not.toBe(oldKey)
+    expect(storedObjects()).toContain(newKey)
+    expect(storedObjects()).not.toContain(oldKey)
+  })
+
   it('stores a real PDF in object storage and lets staff download exactly those bytes', async () => {
     const { me, applicationId } = await startDraft('happy')
     const res = await upload(applicationId, me, { name: 'résumé "deck".pdf', type: 'application/pdf', bytes: PDF })
@@ -98,7 +117,10 @@ describe('uploading an application document', () => {
     expect(storedObjects()).toContain(row.storage_key)
     expect(readFileSync(path.join(process.env.TEST_S3_DIR!, ...String(row.storage_key).split('/'))).equals(PDF)).toBe(true)
 
-    const download = await get(`/api/admin/applications/${applicationId}/documents/${fileQuestionId}`, staff)
+    const downloadPath = `/api/admin/applications/${applicationId}/documents/${fileQuestionId}`
+    expect((await get(downloadPath, staff)).status).toBe(404)
+    expect((await post(`/api/applications/${applicationId}/submit`, me, CAPTCHA)).status).toBe(200)
+    const download = await get(downloadPath, staff)
     expect(download.status).toBe(200)
     expect(Buffer.from(await download.arrayBuffer()).equals(PDF)).toBe(true)
     expect(download.headers.get('x-content-type-options')).toBe('nosniff')

@@ -110,7 +110,7 @@ export default async function MentorsPage({
         <p className="mt-3 max-w-[52ch] text-[var(--color-ink-soft)]">
           Mentor profiles are added by KNEST, not self-serve — every mentor here is someone the
           team has vouched for. If you&rsquo;d like to be one,{' '}
-          <Link href="/about#contact" className="underline underline-offset-2">
+          <Link href="/contact" className="underline underline-offset-2">
             get in touch
           </Link>
           .

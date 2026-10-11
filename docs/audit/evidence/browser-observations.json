@@ -1,0 +1,61 @@
+[
+  {
+    "route": "/",
+    "width": 1280,
+    "status": 200,
+    "overflow": 12,
+    "pageErrors": []
+  },
+  {
+    "route": "/login",
+    "width": 1280,
+    "status": 200,
+    "overflow": 0,
+    "pageErrors": []
+  },
+  {
+    "route": "/contact",
+    "width": 1280,
+    "status": 200,
+    "overflow": 12,
+    "pageErrors": []
+  },
+  {
+    "route": "/",
+    "width": 375,
+    "status": 200,
+    "overflow": 0,
+    "pageErrors": []
+  },
+  {
+    "mobileButtons": [
+      "Open menu",
+      "Previous stage",
+      "Next stage",
+      "01\nExploring",
+      "02\nIdea",
+      "03\nValidation",
+      "04\nMVP",
+      "05\nEarly revenue",
+      "06\nScaling",
+      "NEXT: IDEA →"
+    ]
+  },
+  {
+    "menuResizeBodyOverflow": "hidden"
+  },
+  {
+    "route": "/login",
+    "width": 375,
+    "status": 200,
+    "overflow": 0,
+    "pageErrors": []
+  },
+  {
+    "route": "/contact",
+    "width": 375,
+    "status": 200,
+    "overflow": 0,
+    "pageErrors": []
+  }
+]

@@ -1,5 +1,7 @@
 'use client'
 
+import { formRequest } from '@/lib/form-request'
+
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
@@ -23,11 +25,12 @@ export function MemberActions({ id, isActive, staffRole, isSelf }: { id: string;
   const router = useRouter()
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [selectedRole, setSelectedRole] = useState(staffRole ?? '')
 
   async function call(path: string, body: unknown) {
     setPending(true)
     setError(null)
-    const res = await fetch(`/api/admin/members/${id}/${path}`, {
+    const res = await formRequest(`/api/admin/members/${id}/${path}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -46,9 +49,9 @@ export function MemberActions({ id, isActive, staffRole, isSelf }: { id: string;
       <div className="flex flex-wrap items-center gap-2">
         <select
           aria-label="Staff role"
-          defaultValue={staffRole ?? ''}
+          value={selectedRole}
           disabled={pending || isSelf}
-          onChange={(e) => call('staff-role', { staffRole: e.target.value || null })}
+          onChange={(e) => setSelectedRole(e.target.value)}
           className="h-9 rounded-[var(--radius-sm)] border border-[var(--color-line-strong)] bg-white px-2 text-[length:var(--text-small)]"
         >
           {STAFF_ROLES.map((r) => (
@@ -57,6 +60,14 @@ export function MemberActions({ id, isActive, staffRole, isSelf }: { id: string;
             </option>
           ))}
         </select>
+        <button
+          type="button"
+          disabled={pending || isSelf || selectedRole === (staffRole ?? '')}
+          onClick={() => call('staff-role', { staffRole: selectedRole || null })}
+          className="h-9 rounded-[var(--radius-sm)] border border-[var(--color-line-strong)] bg-white px-3 text-[length:var(--text-small)] font-medium"
+        >
+          Apply role
+        </button>
         <button
           type="button"
           disabled={pending || isSelf}

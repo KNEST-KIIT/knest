@@ -68,6 +68,7 @@ export default async function setup() {
     // Lab booking is built and tested locally, but stays off by default everywhere else (HD-16 is open).
     FEATURE_LAB_BOOKING: 'true',
     SMTP_HOST: '127.0.0.1',
+    EMAIL_TRANSPORT: 'smtp',
     SMTP_PORT: String(smtp.port),
     SMTP_USER: '',
     EMAIL_FROM: 'KNEST Tests <no-reply@knest.test>',

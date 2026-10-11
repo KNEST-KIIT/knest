@@ -1,5 +1,7 @@
 'use client'
 
+import { formRequest } from '@/lib/form-request'
+
 import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Field, Heading, PasswordInput } from '@/components/ui'
@@ -17,7 +19,7 @@ export function ResetConfirmForm({ email, token }: { email: string; token: strin
     setError(null)
 
     const form = new FormData(event.currentTarget)
-    const res = await fetch('/api/auth/password/reset/confirm', {
+    const res = await formRequest('/api/auth/password/reset/confirm', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, token, password: form.get('password') }),

@@ -132,7 +132,7 @@ export default async function InvestPage() {
           investor — reach out and we&rsquo;ll connect you with the right people.
         </p>
         <Link
-          href="/about#contact"
+          href="/contact"
           className="mt-6 inline-flex h-12 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-signal)] px-6 font-medium text-white hover:bg-[var(--color-signal-deep)]"
         >
           Get in touch

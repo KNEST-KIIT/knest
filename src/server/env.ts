@@ -21,6 +21,7 @@ const productionSchema = z.object({
     AUTH_SECRET: secret,
     PAYLOAD_SECRET: secret,
     SITE_URL: url.optional(),
+    AUTH_URL: url.optional(),
     NEXT_PUBLIC_SITE_URL: url.optional(),
     CLIENT_IP_SOURCE: z.enum(['cloudfront', 'x-forwarded-for']).optional(),
     ORIGIN_VERIFY_SECRET: secret.optional(),
@@ -60,8 +61,21 @@ function crossChecks(env: Env): string[] {
     } catch {
       // the schema reports a malformed URL
     }
-    const local = host === 'localhost' || host === '127.0.0.1'
+    const local = host === 'localhost' || host === '127.0.0.1' || host === '[::1]'
     if (host && !local && !site.startsWith('https://')) problems.push('SITE_URL: must be https:// outside localhost')
+    if (host && !local) {
+      if (!env.ORIGIN_VERIFY_SECRET) problems.push('ORIGIN_VERIFY_SECRET: is required for hosted production')
+      if (env.CLIENT_IP_SOURCE !== 'cloudfront') problems.push('CLIENT_IP_SOURCE: must be cloudfront for hosted production')
+      if (env.DATABASE_SSL !== 'verify') problems.push('DATABASE_SSL: must be verify for hosted production')
+      if (!env.AUTH_URL) problems.push('AUTH_URL: is required for hosted production')
+      else {
+        try {
+          if (new URL(env.AUTH_URL).origin !== new URL(site).origin) problems.push('AUTH_URL: must match the SITE_URL origin')
+        } catch {
+          // The schema reports malformed URLs without exposing their values.
+        }
+      }
+    }
   }
   if (Boolean(env.S3_ACCESS_KEY_ID) !== Boolean(env.S3_SECRET_ACCESS_KEY)) {
     problems.push('S3_SECRET_ACCESS_KEY: S3_ACCESS_KEY_ID and S3_SECRET_ACCESS_KEY must be set together (or neither, to use the instance role)')

@@ -2,17 +2,26 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { formRequest } from '@/lib/form-request'
 
 export function ResendButton({ email }: { email: string }) {
   const [state, setState] = useState<'idle' | 'sending' | 'sent'>('idle')
+  const [error, setError] = useState<string | null>(null)
 
   async function resend() {
     setState('sending')
-    await fetch('/api/auth/password/verify/send', {
+    setError(null)
+    const response = await formRequest('/api/auth/password/verify/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email }),
     })
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}))
+      setError(data.error ?? 'We couldn’t send the link. Try again.')
+      setState('idle')
+      return
+    }
     setState('sent')
   }
 
@@ -21,8 +30,11 @@ export function ResendButton({ email }: { email: string }) {
   }
 
   return (
+    <div>
     <Button variant="secondary" size="sm" onClick={resend} disabled={state === 'sending'}>
       {state === 'sending' ? 'Sending…' : 'Send it again'}
     </Button>
+    {error && <p role="alert" className="mt-3 text-[var(--color-critical)]">{error}</p>}
+    </div>
   )
 }

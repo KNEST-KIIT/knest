@@ -1,5 +1,7 @@
 'use client'
 
+import { formRequest } from '@/lib/form-request'
+
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -28,7 +30,7 @@ export function StatusForm({ applicationId, options }: { applicationId: string; 
   async function submit() {
     setPending(true)
     setError(null)
-    const res = await fetch(`/api/admin/applications/${applicationId}/status`, {
+    const res = await formRequest(`/api/admin/applications/${applicationId}/status`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status, note: note || undefined }),

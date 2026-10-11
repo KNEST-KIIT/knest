@@ -28,12 +28,13 @@ const count = async (event?: string) =>
 describe('POST /api/analytics/track', () => {
   it('rejects forged business-outcome events and writes nothing', async () => {
     const before = await count()
+    const acceptedBefore = await count('application_accepted')
     for (const event of ['application_accepted', 'application_submit', 'signup', 'onboarding_completed', 'x'.repeat(300)]) {
       const res = await post({ event, props: { applicationId: 'forged' } }, '203.0.113.10')
       expect(res.status, event.slice(0, 30)).toBe(400)
     }
     expect(await count()).toBe(before)
-    expect(await count('application_accepted')).toBe(0)
+    expect(await count('application_accepted')).toBe(acceptedBefore)
   })
 
   it('rejects malformed and oversized bodies', async () => {

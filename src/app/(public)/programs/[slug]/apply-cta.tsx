@@ -19,8 +19,8 @@ export async function ApplyCta({ program }: { program: Program }) {
         <p className="text-[length:var(--text-small)] text-[var(--color-ink-muted)]">
           {program.applicationOpensAt ? `Opens ${formatDate(program.applicationOpensAt)}` : 'Opening soon'}
         </p>
-        <ButtonLink href={`/programs/${program.slug}`} variant="secondary" size="lg" fullWidth className="mt-3">
-          Notify me
+        <ButtonLink href="/contact" variant="secondary" size="lg" fullWidth className="mt-3">
+          Ask about this cohort
         </ButtonLink>
       </div>
     )
@@ -36,8 +36,8 @@ export async function ApplyCta({ program }: { program: Program }) {
               ? `The next cohort opens ${formatDate(program.nextCohortStart)}.`
               : 'Applications for this cohort have closed.'}
         </p>
-        <ButtonLink href={`/programs/${program.slug}`} variant="secondary" size="lg" fullWidth className="mt-3">
-          Notify me
+        <ButtonLink href="/contact" variant="secondary" size="lg" fullWidth className="mt-3">
+          Ask about the next cohort
         </ButtonLink>
       </div>
     )

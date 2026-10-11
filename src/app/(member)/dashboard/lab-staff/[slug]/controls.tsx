@@ -1,5 +1,7 @@
 'use client'
 
+import { formRequest } from '@/lib/form-request'
+
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { minuteLabel, WEEKDAYS } from '@/lib/lab-format'
@@ -17,7 +19,7 @@ function useCall() {
     setPending(true)
     setError(null)
     setDone(false)
-    const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).catch(() => null)
+    const res = await formRequest(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).catch(() => null)
     const data = await res?.json().catch(() => ({}))
     setPending(false)
     if (!res?.ok) {

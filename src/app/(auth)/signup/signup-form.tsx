@@ -1,5 +1,7 @@
 'use client'
 
+import { formRequest } from '@/lib/form-request'
+
 import { safeNext } from '@/lib/safe-next'
 import { useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -25,7 +27,7 @@ export function SignupForm({ googleEnabled, turnstileSiteKey }: { googleEnabled:
     setError(null)
 
     const form = new FormData(event.currentTarget)
-    const res = await fetch('/api/auth/password/signup', {
+    const res = await formRequest('/api/auth/password/signup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -185,7 +187,7 @@ export function SignupForm({ googleEnabled, turnstileSiteKey }: { googleEnabled:
       <div className="mt-8 pt-6 border-t border-[var(--color-line)]/50 text-center">
         <p className="text-sm text-[var(--color-ink-soft)]">
           Already have an account?{' '}
-          <a href="/login" className="font-semibold text-[var(--color-signal)] hover:underline hover:text-[var(--color-signal-deep)] transition-all">
+          <a href={returnTo ? `/login?next=${encodeURIComponent(returnTo)}` : '/login'} className="font-semibold text-[var(--color-signal)] hover:underline hover:text-[var(--color-signal-deep)] transition-all">
             Log in →
           </a>
         </p>

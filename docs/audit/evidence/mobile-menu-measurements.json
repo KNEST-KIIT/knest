@@ -1,0 +1,15 @@
+{
+  "viewport": {
+    "width": 375,
+    "height": 900
+  },
+  "panel": {
+    "height": 0,
+    "bottom": 72,
+    "top": 72
+  },
+  "headerHeight": 73,
+  "bodyOverflow": "hidden",
+  "afterResizeTo1280BodyOverflow": "hidden",
+  "source": "Root local Chrome inspection during disposable integration run; synthetic content"
+}

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ButtonLink, Logo } from '@/components/ui'
 import { cn } from '@/lib/cn'
+import { LogoutButton } from './logout-button'
 
 const NAV = [
   { href: '/programs', label: 'Programs' },
@@ -40,18 +41,39 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
   // behind it must not scroll and Escape must close it.
   useEffect(() => {
     if (!open) return
+    const desktop = window.matchMedia('(min-width: 1024px)')
+    const closeOnDesktop = () => {
+      if (desktop.matches) setOpen(false)
+    }
+    closeOnDesktop()
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setOpen(false)
         toggleRef.current?.focus()
       }
+      if (e.key === 'Tab') {
+        const targets = [toggleRef.current, ...Array.from(panelRef.current?.querySelectorAll<HTMLElement>('a, button') ?? [])]
+          .filter((target): target is HTMLElement => Boolean(target))
+        const first = targets[0]
+        const last = targets.at(-1)
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault()
+          last?.focus()
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault()
+          first?.focus()
+        }
+      }
     }
+    const previousOverflow = document.body.style.overflow
     document.addEventListener('keydown', onKey)
+    desktop.addEventListener('change', closeOnDesktop)
     document.body.style.overflow = 'hidden'
     panelRef.current?.querySelector<HTMLElement>('a, button')?.focus()
     return () => {
       document.removeEventListener('keydown', onKey)
-      document.body.style.overflow = ''
+      desktop.removeEventListener('change', closeOnDesktop)
+      document.body.style.overflow = previousOverflow
     }
   }, [open])
 
@@ -100,23 +122,26 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
         {/* Right: Log In and Start Building CTA */}
         <div className="hidden items-center gap-3 sm:gap-4 lg:flex shrink-0">
           {signedIn ? (
-            <div className="relative shrink-0">
-              <ButtonLink
-                href="/dashboard"
-                size="sm"
-                aria-label={unreadCount > 0 ? `Dashboard — ${unreadCount} unread notification${unreadCount === 1 ? '' : 's'}` : undefined}
-              >
-                Dashboard
-              </ButtonLink>
-              {unreadCount > 0 && (
-                <span
-                  aria-hidden
-                  className="absolute -right-1.5 -top-1.5 flex size-4 items-center justify-center rounded-full bg-[var(--color-signal)] text-[9px] font-medium text-white"
+            <>
+              <div className="relative shrink-0">
+                <ButtonLink
+                  href="/dashboard"
+                  size="sm"
+                  aria-label={unreadCount > 0 ? `Dashboard — ${unreadCount} unread notification${unreadCount === 1 ? '' : 's'}` : undefined}
                 >
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
-              )}
-            </div>
+                  Dashboard
+                </ButtonLink>
+                {unreadCount > 0 && (
+                  <span
+                    aria-hidden
+                    className="absolute -right-1.5 -top-1.5 flex size-4 items-center justify-center rounded-full bg-[var(--color-signal)] text-[9px] font-medium text-white"
+                  >
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </div>
+              <LogoutButton className="inline-flex h-9 items-center whitespace-nowrap rounded-lg px-3 text-sm font-medium text-[var(--color-ink-soft)] transition-colors hover:bg-black/[0.04] hover:text-[var(--color-ink)]" />
+            </>
           ) : (
             <>
               <Link
@@ -165,7 +190,7 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
         <div
           ref={panelRef}
           id="mobile-nav"
-          className="fixed inset-x-0 bottom-0 top-[4.5rem] z-50 flex flex-col bg-[var(--color-paper)] lg:hidden"
+          className="absolute inset-x-0 top-full z-50 flex h-[calc(100dvh-4.5rem)] flex-col bg-[var(--color-paper)] lg:hidden"
         >
           <nav aria-label="Main" className="flex flex-1 flex-col gap-1 overflow-y-auto px-6 py-6">
             {NAV.map((item) => (
@@ -181,14 +206,17 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
           {/* Pinned inside the safe area so it clears the home indicator. */}
           <div className="flex flex-col gap-3 border-t border-[var(--color-line)] px-6 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
             {signedIn ? (
-              <ButtonLink
-                href="/dashboard"
-                size="lg"
-                fullWidth
-                aria-label={unreadCount > 0 ? `Dashboard — ${unreadCount} unread notification${unreadCount === 1 ? '' : 's'}` : undefined}
-              >
-                Dashboard{unreadCount > 0 && ` (${unreadCount > 9 ? '9+' : unreadCount})`}
-              </ButtonLink>
+              <>
+                <ButtonLink
+                  href="/dashboard"
+                  size="lg"
+                  fullWidth
+                  aria-label={unreadCount > 0 ? `Dashboard — ${unreadCount} unread notification${unreadCount === 1 ? '' : 's'}` : undefined}
+                >
+                  Dashboard{unreadCount > 0 && ` (${unreadCount > 9 ? '9+' : unreadCount})`}
+                </ButtonLink>
+                <LogoutButton className="inline-flex h-12 w-full items-center justify-center rounded-lg border border-[var(--color-line-strong)] text-base font-medium text-[var(--color-ink)]" />
+              </>
             ) : (
               <>
                 <ButtonLink href="/signup" size="lg" fullWidth>

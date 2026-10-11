@@ -19,15 +19,15 @@ const COLUMNS = [
       { href: '/ecosystem#infrastructure', label: 'Infrastructure' },
       { href: '/ecosystem#partners', label: 'Partners' },
       { href: '/mentors', label: 'Mentors' },
-      { href: '/about#contact', label: 'Contact' },
+      { href: '/contact', label: 'Contact' },
     ],
   },
   {
     heading: 'Get involved',
     links: [
       { href: '/programs', label: 'Apply' },
-      { href: '/mentors#become-a-mentor', label: 'Become a mentor' },
-      { href: '/about#partner', label: 'Partner with us' },
+      { href: '/contact', label: 'Become a mentor' },
+      { href: '/contact', label: 'Partner with us' },
       { href: '/invest', label: 'Invest' },
     ],
   },

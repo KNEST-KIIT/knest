@@ -96,6 +96,13 @@ export async function requireUserOrThrow(): Promise<SessionUser> {
   return user
 }
 
+/** Private reads must derive authority from the session, never the caller's ID. */
+export async function requireSelf(userId: string): Promise<SessionUser> {
+  const user = await requireUserOrThrow()
+  if (user.id !== userId) throw new UnauthorizedError(403)
+  return user
+}
+
 export async function requireStaffOrThrow(
   area?: AdminArea,
 ): Promise<SessionUser & { staffRole: StaffRole }> {

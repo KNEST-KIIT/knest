@@ -28,7 +28,7 @@ The header of the staff console has a link to the full admin: "Full admin (conte
 
 There is one account for everyone. Your staff role is a setting on your account. A super admin sets it. Nobody can change their own role.
 
-- If you open an admin address and see "not found", you do not have the role for that screen. This is deliberate. The console does not confirm that a screen exists to people who cannot use it.
+- If you open an admin address and see "not found", you do not have the role for that screen. The E2E engineer observed this in a real browser: a signed-out visitor to `/admin/applications` gets a 404 page, not a sign-in page, and a reviewer gets 404 on Audit, Enquiries and Members. A signed-in student without a staff role was not tested. The code says they get 404 too. The Payload editor at `/admin` itself was not tested. This is deliberate. The console does not confirm that a screen exists to people who cannot use it.
 - Sessions last 30 days. Changing your staff role or deactivating your account ends your sessions at once. You will be asked to sign in again.
 - The staff console header has a **Log out** button. It ends the session on the server. This button is new, and was still uncommitted work when this guide was written, so confirm it is present on the live site.
 - A password needs at least 12 characters. A reset email link works for 1 hour.

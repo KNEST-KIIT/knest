@@ -17,6 +17,7 @@ afterAll(closeDb)
 describe('nodemailer 10', () => {
   it('delivers a message over SMTP with the configured sender', async () => {
     process.env.SMTP_HOST = '127.0.0.1'
+    process.env.EMAIL_TRANSPORT = 'smtp'
     process.env.SMTP_PORT = process.env.TEST_SMTP_PORT ?? '0'
     process.env.EMAIL_FROM = 'KNEST Tests <no-reply@knest.test>'
     const { sendEmail } = await import('@/server/email/send')
@@ -45,6 +46,8 @@ describe('migrations (KN-04)', () => {
     })
     const created = readdirSync(dir).filter((f) => !before.has(f))
     for (const f of created) rmSync(path.join(dir, f), { force: true })
+    expect(r.error, 'Payload schema drift command must complete successfully').toBeUndefined()
+    expect(r.status, `${r.stdout?.slice(-600)}${r.stderr?.slice(-600)}`).toBe(0)
     expect(created, `A collection changed without a migration. Run: pnpm payload migrate:create <name>\n${r.stdout.slice(-600)}`).toEqual([])
   })
 

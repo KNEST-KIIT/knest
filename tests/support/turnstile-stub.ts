@@ -40,13 +40,19 @@ export function startTurnstileVerifyStub(): Promise<TurnstileVerifyStub> {
 }
 
 const FAKE_SCRIPT = `
+window.__turnstileOptions = {};
 window.turnstile = {
   render: function (el, options) {
     el.setAttribute('data-test-turnstile', 'rendered');
+    window.__turnstileOptions['stub-widget'] = options;
     setTimeout(function () { options.callback('${VALID_TOKEN}'); }, 0);
     return 'stub-widget';
   },
-  reset: function () {},
+  // A real widget issues a fresh token after reset(); so does this one.
+  reset: function (id) {
+    var options = window.__turnstileOptions[id || 'stub-widget'];
+    if (options) setTimeout(function () { options.callback('${VALID_TOKEN}'); }, 0);
+  },
   remove: function () {},
 };
 `

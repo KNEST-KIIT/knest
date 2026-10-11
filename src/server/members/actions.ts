@@ -15,8 +15,8 @@ export function isStaffRoleOrNull(value: unknown): value is StaffRole | null {
 }
 
 /** How many ACTIVE super admins exist, optionally ignoring one user. */
-async function otherActiveSuperAdmins(exceptUserId: string): Promise<number> {
-  const rows = await db
+async function otherActiveSuperAdmins(client: Pick<typeof db, 'select'>, exceptUserId: string): Promise<number> {
+  const rows = await client
     .select({ n: sql<number>`count(*)::int` })
     .from(users)
     .where(and(eq(users.staffRole, 'super_admin'), eq(users.isActive, true), ne(users.id, exceptUserId)))
@@ -35,17 +35,22 @@ export async function setMemberActive(userId: string, isActive: boolean): Promis
   const actor = await requireStaffOrThrow('users') // 'users' is super_admin only
   if (userId === actor.id) return { ok: false, error: 'You can’t change your own account here.' }
 
-  const target = await db.query.users.findFirst({
-    where: eq(users.id, userId),
-    columns: { id: true, isActive: true, staffRole: true },
-  })
-  if (!target) return { ok: false, error: 'We couldn’t find that account.' }
+  return db.transaction(async (tx): Promise<MemberResult> => {
+    // Both role changes and deactivation share this lock. Read authority and the
+    // remaining-admin count after acquiring it, so cross-demotions cannot win.
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext('knest:staff-membership'))`)
+    const currentActor = await tx.query.users.findFirst({ where: eq(users.id, actor.id), columns: { isActive: true, staffRole: true } })
+    if (!currentActor?.isActive || currentActor.staffRole !== 'super_admin') return { ok: false, error: 'Your staff access changed. Sign in again.' }
+    const target = await tx.query.users.findFirst({
+      where: eq(users.id, userId),
+      columns: { id: true, isActive: true, staffRole: true },
+    })
+    if (!target) return { ok: false, error: 'We couldn’t find that account.' }
 
-  if (!isActive && target.staffRole === 'super_admin' && (await otherActiveSuperAdmins(userId)) === 0) {
-    return { ok: false, error: 'That is the last active super admin. Add another before deactivating this one.' }
-  }
+    if (!isActive && target.staffRole === 'super_admin' && (await otherActiveSuperAdmins(tx, userId)) === 0) {
+      return { ok: false, error: 'That is the last active super admin. Add another before deactivating this one.' }
+    }
 
-  await db.transaction(async (tx) => {
     await tx.update(users).set({ isActive, updatedAt: new Date() }).where(eq(users.id, userId))
     if (!isActive) await tx.delete(sessions).where(eq(sessions.userId, userId))
     await tx.insert(auditLogs).values({
@@ -56,8 +61,8 @@ export async function setMemberActive(userId: string, isActive: boolean): Promis
       before: { isActive: target.isActive },
       after: { isActive },
     })
+    return { ok: true }
   })
-  return { ok: true }
 }
 
 /**
@@ -72,18 +77,21 @@ export async function setStaffRole(userId: string, role: StaffRole | null): Prom
   const actor = await requireStaffOrThrow('users')
   if (userId === actor.id) return { ok: false, error: 'You can’t change your own staff role.' }
 
-  const target = await db.query.users.findFirst({
-    where: eq(users.id, userId),
-    columns: { id: true, staffRole: true },
-  })
-  if (!target) return { ok: false, error: 'We couldn’t find that account.' }
-  if (target.staffRole === role) return { ok: true }
+  return db.transaction(async (tx): Promise<MemberResult> => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext('knest:staff-membership'))`)
+    const currentActor = await tx.query.users.findFirst({ where: eq(users.id, actor.id), columns: { isActive: true, staffRole: true } })
+    if (!currentActor?.isActive || currentActor.staffRole !== 'super_admin') return { ok: false, error: 'Your staff access changed. Sign in again.' }
+    const target = await tx.query.users.findFirst({
+      where: eq(users.id, userId),
+      columns: { id: true, staffRole: true },
+    })
+    if (!target) return { ok: false, error: 'We couldn’t find that account.' }
+    if (target.staffRole === role) return { ok: true }
 
-  if (target.staffRole === 'super_admin' && role !== 'super_admin' && (await otherActiveSuperAdmins(userId)) === 0) {
-    return { ok: false, error: 'That is the last active super admin. Add another before changing this role.' }
-  }
+    if (target.staffRole === 'super_admin' && role !== 'super_admin' && (await otherActiveSuperAdmins(tx, userId)) === 0) {
+      return { ok: false, error: 'That is the last active super admin. Add another before changing this role.' }
+    }
 
-  await db.transaction(async (tx) => {
     await tx.update(users).set({ staffRole: role, updatedAt: new Date() }).where(eq(users.id, userId))
     await tx.delete(sessions).where(eq(sessions.userId, userId))
     await tx.insert(auditLogs).values({
@@ -94,6 +102,6 @@ export async function setStaffRole(userId: string, role: StaffRole | null): Prom
       before: { staffRole: target.staffRole },
       after: { staffRole: role },
     })
+    return { ok: true }
   })
-  return { ok: true }
 }

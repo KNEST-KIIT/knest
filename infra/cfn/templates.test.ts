@@ -64,7 +64,7 @@ function danglingReferences(template: Template): string[] {
   return problems
 }
 
-describe.each(['app', 'edge', 'waf', 'dns', 'ci', 'cert'])('%s.yaml', (name) => {
+describe.each(['app', 'origin', 'edge', 'waf', 'dns', 'ci', 'cert'])('%s.yaml', (name) => {
   const template = load(name)
   it('parses, and has resources that each declare a type', () => {
     expect(Object.keys(template.Resources).length).toBeGreaterThan(0)
@@ -97,9 +97,11 @@ describe('app.yaml: the properties the design depends on', () => {
     expect(JSON.stringify(t.Resources.DbSubnetGroup!.Properties)).not.toContain('PublicSubnet')
   })
 
-  it('admits traffic to the app host only from CloudFront, with no SSH and no open port', () => {
+  it('closes direct production ingress and keeps the S-1 CloudFront rule isolated', () => {
     const ingress = JSON.stringify(t.Resources.AppSecurityGroup!.Properties!.SecurityGroupIngress)
     expect(ingress).toContain('SourcePrefixListId')
+    expect(ingress).toContain('IsProduction')
+    expect(ingress).toContain('AWS::NoValue')
     expect(ingress).not.toMatch(/CidrIp|"FromPort":22\b/)
   })
 
@@ -141,6 +143,24 @@ describe('app.yaml: the properties the design depends on', () => {
     // and nothing else differs between the two
     const strip = (s: string) => s.replace(/(DeletionPolicy|UpdateReplacePolicy): \w+/g, '$1: X')
     expect(strip(render(read('./app.yaml'), 's1'))).toBe(strip(read('./app.yaml')))
+  })
+})
+
+describe('origin.yaml: the production TLS boundary', () => {
+  const t = load('origin')
+  it('has a certificate-backed HTTPS listener and two load balancer subnets', () => {
+    expect(t.Resources.Listener!.Properties!.Protocol).toBe('HTTPS')
+    expect(t.Resources.Listener!.Properties!.Port).toBe(443)
+    expect(JSON.stringify(t.Resources.Listener!.Properties!.Certificates)).toContain('Certificate')
+    expect((t.Resources.LoadBalancer!.Properties!.Subnets as unknown[]).length).toBe(2)
+  })
+  it('admits CloudFront only and forwards only to the app group', () => {
+    const ingress = JSON.stringify(t.Resources.OriginSecurityGroup!.Properties!.SecurityGroupIngress)
+    expect(ingress).toContain('SourcePrefixListId')
+    expect(ingress).not.toContain('CidrIp')
+    expect(JSON.stringify(t.Resources.OriginToApp!.Properties)).toContain('AppSecurityGroupId')
+    expect(JSON.stringify(t.Resources.AppFromOrigin!.Properties)).toContain('OriginSecurityGroup')
+    expect(t.Resources.TargetGroup!.Properties!.HealthCheckPath).toBe('/api/health')
   })
 })
 

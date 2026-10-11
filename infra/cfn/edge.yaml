@@ -19,12 +19,12 @@ Parameters:
     Description: DNS name CloudFront connects to (the instance's public DNS name, or a load balancer name).
   OriginPort:
     Type: Number
-    Default: 3000
+    Default: 443
     MinValue: 1
     MaxValue: 65535
   OriginProtocol:
     Type: String
-    Default: http-only
+    Default: https-only
     AllowedValues: [http-only, https-only]
     Description: >-
       http-only is only acceptable for the S-1 measurements. Production must use
@@ -72,6 +72,8 @@ Rules:
     Assertions:
       - Assert: !Equals [!Ref OriginProtocol, https-only]
         AssertDescription: Production must connect to the origin over HTTPS (the X-Origin-Verify token would otherwise cross the internet in clear text). http-only is for the S-1 spike.
+      - Assert: !Equals [!Ref OriginPort, '443']
+        AssertDescription: The production origin.yaml listener serves HTTPS on port 443.
   AliasesNeedACertificate:
     RuleCondition: !Not [{ 'Fn::Contains': [!Ref Aliases, ''] }]
     Assertions:

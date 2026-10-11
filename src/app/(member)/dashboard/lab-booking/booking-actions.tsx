@@ -1,5 +1,7 @@
 'use client'
 
+import { formRequest } from '@/lib/form-request'
+
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
@@ -12,7 +14,7 @@ export function BookingActions({ id, status }: { id: string; status: string }) {
   async function call(path: string, body: unknown) {
     setPending(true)
     setError(null)
-    const res = await fetch(`/api/labs/bookings/${id}/${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).catch(() => null)
+    const res = await formRequest(`/api/labs/bookings/${id}/${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).catch(() => null)
     const data = await res?.json().catch(() => ({}))
     setPending(false)
     if (!res?.ok) {

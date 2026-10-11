@@ -1,5 +1,7 @@
 'use client'
 
+import { formRequest } from '@/lib/form-request'
+
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -24,7 +26,7 @@ export function RegisterButton({
     setPending(true)
     setError(null)
     const endpoint = registered ? 'unregister' : 'register'
-    const res = await fetch(`/api/events/${eventId}/${endpoint}`, { method: 'POST' })
+    const res = await formRequest(`/api/events/${eventId}/${endpoint}`, { method: 'POST' })
     const data = await res.json().catch(() => ({}))
     setPending(false)
 

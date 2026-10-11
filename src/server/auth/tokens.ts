@@ -47,10 +47,10 @@ export async function issueToken(purpose: Purpose, email: string, ttlMs: number)
  * check: of two simultaneous requests carrying the same link, exactly one gets
  * the row back and the other gets nothing, so a link cannot be used twice.
  */
-export async function consumeToken(purpose: Purpose, email: string, token: string): Promise<boolean> {
+export async function consumeToken(purpose: Purpose, email: string, token: string, client: Pick<typeof db, 'delete'> = db): Promise<boolean> {
   const identifier = scopedIdentifier(purpose, email)
 
-  const [row] = await db
+  const [row] = await client
     .delete(verificationTokens)
     .where(and(eq(verificationTokens.identifier, identifier), eq(verificationTokens.token, hashToken(token))))
     .returning({ expires: verificationTokens.expires })

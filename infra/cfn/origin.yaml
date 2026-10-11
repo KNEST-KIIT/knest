@@ -1,0 +1,129 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  Production HTTPS origin for KNEST. Deploy in ap-south-1 after app.yaml.
+  A regional ACM certificate terminates TLS at an Application Load Balancer;
+  only CloudFront can reach port 443 and only this load balancer can reach the
+  application port. DNS validation and the origin CNAME must be installed at
+  the authoritative DNS provider. Written and locally checked; not AWS-validated.
+
+Parameters:
+  VpcId: { Type: 'AWS::EC2::VPC::Id' }
+  PublicSubnetAId: { Type: 'AWS::EC2::Subnet::Id' }
+  PublicSubnetBId: { Type: 'AWS::EC2::Subnet::Id' }
+  AppInstanceId: { Type: 'AWS::EC2::Instance::Id' }
+  AppSecurityGroupId: { Type: 'AWS::EC2::SecurityGroup::Id' }
+  AppPort: { Type: Number, Default: 3000, MinValue: 1024, MaxValue: 65535 }
+  CloudFrontPrefixListId:
+    Type: String
+    AllowedPattern: '^pl-[0-9a-f]+$'
+  OriginDomainName:
+    Type: String
+    Default: origin.kiitnest.com
+    AllowedPattern: '^[A-Za-z0-9][A-Za-z0-9.-]+\.[A-Za-z]{2,}$'
+  AlertTopicArn:
+    Type: String
+    AllowedPattern: '^arn:aws:sns:ap-south-1:[0-9]{12}:[A-Za-z0-9_-]+$'
+
+Rules:
+  DifferentSubnets:
+    Assertions:
+      - Assert: !Not [!Equals [!Ref PublicSubnetAId, !Ref PublicSubnetBId]]
+        AssertDescription: Supply the two public subnets from app.yaml, in different Availability Zones.
+
+Resources:
+  Certificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Ref OriginDomainName
+      ValidationMethod: DNS
+
+  OriginSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: HTTPS from CloudFront only.
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - { IpProtocol: tcp, FromPort: 443, ToPort: 443, SourcePrefixListId: !Ref CloudFrontPrefixListId }
+      SecurityGroupEgress:
+        - { IpProtocol: '-1', CidrIp: 127.0.0.1/32, Description: No default outbound access }
+
+  OriginToApp:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref OriginSecurityGroup
+      IpProtocol: tcp
+      FromPort: !Ref AppPort
+      ToPort: !Ref AppPort
+      DestinationSecurityGroupId: !Ref AppSecurityGroupId
+
+  AppFromOrigin:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AppSecurityGroupId
+      IpProtocol: tcp
+      FromPort: !Ref AppPort
+      ToPort: !Ref AppPort
+      SourceSecurityGroupId: !Ref OriginSecurityGroup
+
+  LoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Type: application
+      Scheme: internet-facing
+      SecurityGroups: [!Ref OriginSecurityGroup]
+      Subnets: [!Ref PublicSubnetAId, !Ref PublicSubnetBId]
+      LoadBalancerAttributes:
+        - { Key: routing.http.drop_invalid_header_fields.enabled, Value: 'true' }
+
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      VpcId: !Ref VpcId
+      Protocol: HTTP
+      Port: !Ref AppPort
+      TargetType: instance
+      Targets: [{ Id: !Ref AppInstanceId, Port: !Ref AppPort }]
+      HealthCheckPath: /api/health
+      HealthCheckProtocol: HTTP
+      Matcher: { HttpCode: '200' }
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 2
+      TargetGroupAttributes:
+        - { Key: deregistration_delay.timeout_seconds, Value: '60' }
+
+  Listener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 443
+      Protocol: HTTPS
+      SslPolicy: ELBSecurityPolicy-TLS13-1-2-2021-06
+      Certificates: [{ CertificateArn: !Ref Certificate }]
+      DefaultActions: [{ Type: forward, TargetGroupArn: !Ref TargetGroup }]
+
+  HealthyTargetsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: The production HTTPS origin has no healthy application target.
+      Namespace: AWS/ApplicationELB
+      MetricName: HealthyHostCount
+      Dimensions:
+        - { Name: LoadBalancer, Value: !GetAtt LoadBalancer.LoadBalancerFullName }
+        - { Name: TargetGroup, Value: !GetAtt TargetGroup.TargetGroupFullName }
+      Statistic: Minimum
+      Period: 60
+      EvaluationPeriods: 2
+      Threshold: 1
+      ComparisonOperator: LessThanThreshold
+      TreatMissingData: breaching
+      AlarmActions: [!Ref AlertTopicArn]
+
+Outputs:
+  OriginDomainName:
+    Description: Use as the CloudFront OriginDomainName with port 443 and https-only.
+    Value: !Ref OriginDomainName
+  LoadBalancerDnsName:
+    Description: Add a CNAME from OriginDomainName to this DNS name at the authoritative provider.
+    Value: !GetAtt LoadBalancer.DNSName
+  CertificateArn:
+    Value: !Ref Certificate

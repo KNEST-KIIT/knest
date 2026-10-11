@@ -6,6 +6,9 @@ const good = {
   AUTH_SECRET: 'a'.repeat(40),
   PAYLOAD_SECRET: 'b'.repeat(40),
   NEXT_PUBLIC_SITE_URL: 'https://knest.example',
+  AUTH_URL: 'https://knest.example',
+  ORIGIN_VERIFY_SECRET: 'v'.repeat(40),
+  CLIENT_IP_SOURCE: 'cloudfront',
   DATABASE_SSL: 'verify',
   DATABASE_SSL_CA_FILE: '/etc/knest/rds-global-bundle.pem',
   EMAIL_TRANSPORT: 'ses',
@@ -36,7 +39,7 @@ describe('checkProductionEnv', () => {
   it('needs an explicit database TLS choice, and a CA bundle when verifying', () => {
     const { DATABASE_SSL: _a, ...noChoice } = good
     expect(checkProductionEnv(noChoice).ok).toBe(false)
-    expect(checkProductionEnv({ ...good, DATABASE_SSL: 'off' }).ok).toBe(true)
+    expect(checkProductionEnv({ ...good, DATABASE_SSL: 'off' }).ok).toBe(false)
     const { DATABASE_SSL_CA_FILE: _b, ...noCa } = good
     expect(checkProductionEnv(noCa).ok).toBe(false)
     expect(checkProductionEnv({ ...good, DATABASE_SSL: 'require' }).ok).toBe(false)
@@ -59,7 +62,7 @@ describe('checkProductionEnv', () => {
 
   it('accepts SITE_URL (runtime) or NEXT_PUBLIC_SITE_URL, and needs one of them', () => {
     const { NEXT_PUBLIC_SITE_URL: _omit, ...rest } = good
-    expect(checkProductionEnv({ ...rest, SITE_URL: 'https://kiitnest.com' }).ok).toBe(true)
+    expect(checkProductionEnv({ ...rest, SITE_URL: 'https://kiitnest.com', AUTH_URL: 'https://kiitnest.com' }).ok).toBe(true)
     const none = checkProductionEnv(rest)
     expect(none.ok).toBe(false)
     if (!none.ok) expect(none.problems.join('\n')).toContain('SITE_URL')
@@ -74,6 +77,12 @@ describe('checkProductionEnv', () => {
   it('requires https outside localhost', () => {
     expect(checkProductionEnv({ ...good, NEXT_PUBLIC_SITE_URL: 'http://knest.example' }).ok).toBe(false)
     expect(checkProductionEnv({ ...good, NEXT_PUBLIC_SITE_URL: 'http://127.0.0.1:3100' }).ok).toBe(true)
+  })
+
+  it('requires matching auth origin and CloudFront verification in hosted production', () => {
+    expect(checkProductionEnv({ ...good, AUTH_URL: 'http://knest.example' }).ok).toBe(false)
+    expect(checkProductionEnv({ ...good, ORIGIN_VERIFY_SECRET: undefined }).ok).toBe(false)
+    expect(checkProductionEnv({ ...good, CLIENT_IP_SOURCE: 'x-forwarded-for' }).ok).toBe(false)
   })
 
   it('requires the S3 key pair to be set together or not at all', () => {

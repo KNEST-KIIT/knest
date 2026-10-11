@@ -44,9 +44,18 @@ describe('same-origin writes', () => {
     expect(guardRequest({ method: 'GET', pathname: '/api/x', header: headers({ origin: 'https://evil.example' }) }, sameSite).allow).toBe(true)
   })
 
-  it('allows a write with no Origin header (non-browser clients) and is inactive without a configured site', () => {
+  it('allows non-browser requests but fails closed for browser writes without a configured site', () => {
     expect(guardRequest({ method: 'POST', pathname: '/api/x', header: headers({}) }, sameSite).allow).toBe(true)
-    expect(guardRequest({ method: 'POST', pathname: '/api/x', header: headers({ origin: 'https://evil.example' }) }, {}).allow).toBe(true)
+    expect(guardRequest({ method: 'POST', pathname: '/api/x', header: headers({ origin: 'https://evil.example' }) }, {}).allow).toBe(false)
+  })
+
+  it('requires the origin secret for hosted production, even when configuration is missing', () => {
+    for (const site of [undefined, 'https://kiitnest.com', 'https://127.0.0.1.evil.example']) {
+      const production = { NODE_ENV: 'production', SITE_URL: site }
+      expect(guardRequest({ method: 'GET', pathname: '/', header: headers({}) }, production).allow).toBe(false)
+      expect(guardRequest({ method: 'GET', pathname: '/api/health', header: headers({}) }, production).allow).toBe(true)
+    }
+    expect(guardRequest({ method: 'GET', pathname: '/', header: headers({}) }, { NODE_ENV: 'production', SITE_URL: 'http://127.0.0.1:3000' }).allow).toBe(true)
   })
 
   it('normalises the configured addresses', () => {

@@ -78,11 +78,26 @@ describe('who can open which screen', () => {
 
 describe('the applications queue', () => {
   it('lists submitted applications only: a draft is the applicant’s own work', async () => {
-    await seedApplication('draftperson', programA, 'draft', `Draftperson${stamp}`)
+    const draft = await seedApplication('draftperson', programA, 'draft', `Draftperson${stamp}`)
+    const detail = await (await get(`/admin/applications/${draft.applicationId}`, sessions.reviewer!)).text()
+    // Next may have sent streamed headers before notFound() runs. Assert the
+    // denied response contains no applicant data and carries the 404 boundary.
+    expect(detail).not.toContain(`Draftperson${stamp}`)
+    expect(detail).toContain('NEXT_HTTP_ERROR_FALLBACK;404')
     await seedApplication('submitted-one', programA, 'submitted', `Sunitha Rao ${stamp}`)
     const html = await (await get(`/admin/applications?q=${stamp}`, sessions.program_manager!)).text()
     expect(html).toContain(`Sunitha Rao ${stamp}`)
     expect(html).not.toContain(`Draftperson${stamp}`)
+  })
+
+  it('does not serialize applicant password hashes in reviewer responses', async () => {
+    const fixture = await seedApplication('minimal-applicant', programA, 'submitted')
+    const hash = (await db().query('select password_hash from app.users where id = $1', [fixture.userId])).rows[0].password_hash as string
+    const response = await get(`/admin/applications/${fixture.applicationId}`, sessions.reviewer!)
+    expect(response.status).toBe(200)
+    const html = await response.text()
+    expect(html.includes(hash), 'password hash must not occur anywhere in HTML or RSC payload').toBe(false)
+    expect(html).not.toContain('passwordHash')
   })
 
   it('searches by name and by email, and treats % and _ literally', async () => {

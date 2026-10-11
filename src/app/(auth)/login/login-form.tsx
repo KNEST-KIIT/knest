@@ -1,5 +1,7 @@
 'use client'
 
+import { formRequest } from '@/lib/form-request'
+
 import { safeNext } from '@/lib/safe-next'
 import { useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -25,7 +27,7 @@ export function LoginForm({ googleEnabled, turnstileSiteKey }: { googleEnabled: 
     setError(null)
 
     const form = new FormData(event.currentTarget)
-    const res = await fetch('/api/auth/password/login', {
+    const res = await formRequest('/api/auth/password/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: form.get('email'), password: form.get('password'), turnstileToken: captchaToken }),
@@ -121,7 +123,7 @@ export function LoginForm({ googleEnabled, turnstileSiteKey }: { googleEnabled: 
           </Field>
           <div className="mt-1.5 flex justify-end">
             <a 
-              href="/reset" 
+              href={next ? `/reset?next=${encodeURIComponent(next)}` : '/reset'}
               className="text-[11px] font-medium text-[var(--color-signal)] hover:underline hover:text-[var(--color-signal-deep)] transition-colors"
             >
               Forgot password?
@@ -166,7 +168,7 @@ export function LoginForm({ googleEnabled, turnstileSiteKey }: { googleEnabled: 
       <div className="mt-8 pt-6 border-t border-[var(--color-line)]/50 text-center">
         <p className="text-sm text-[var(--color-ink-soft)]">
           New to KNEST?{' '}
-          <a href="/signup" className="font-semibold text-[var(--color-signal)] hover:underline hover:text-[var(--color-signal-deep)] transition-all">
+          <a href={next ? `/signup?next=${encodeURIComponent(next)}` : '/signup'} className="font-semibold text-[var(--color-signal)] hover:underline hover:text-[var(--color-signal-deep)] transition-all">
             Start your journey →
           </a>
         </p>

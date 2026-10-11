@@ -60,6 +60,11 @@ export function guardRequest(
   env: GuardEnv,
 ): GuardDecision {
   const secret = env.ORIGIN_VERIFY_SECRET
+  const site = env.SITE_URL || env.NEXT_PUBLIC_SITE_URL
+  const local = site ? /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(?=[:/]|$)/.test(site) : false
+  if (env.NODE_ENV === 'production' && !local && !secret && input.pathname !== HEALTH_PATH) {
+    return { allow: false, status: 403, reason: 'origin-verify' }
+  }
   if (secret && input.pathname !== HEALTH_PATH) {
     const presented = input.header('x-origin-verify')
     if (!presented || !safeEqual(presented, secret)) return { allow: false, status: 403, reason: 'origin-verify' }
@@ -68,9 +73,9 @@ export function guardRequest(
   if (UNSAFE_METHODS.has(input.method.toUpperCase())) {
     const origin = input.header('origin')
     const allowed = allowedOrigins(env)
-    // Only enforced when the site's own address is configured; a missing Origin
-    // (non-browser clients) is allowed because the cookie rules cover browsers.
-    if (origin !== null && allowed.size > 0 && !allowed.has(origin)) {
+    // Missing configuration must not disable the browser origin check.
+    // Non-browser clients may omit Origin; authentication remains mandatory.
+    if (origin !== null && !allowed.has(origin)) {
       return { allow: false, status: 403, reason: 'origin-mismatch' }
     }
   }

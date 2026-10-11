@@ -1,5 +1,7 @@
 'use client'
 
+import { formRequest } from '@/lib/form-request'
+
 import { useState } from 'react'
 import { Field, Input, Textarea } from '@/components/ui'
 import { Button } from '@/components/ui/button'
@@ -19,7 +21,7 @@ export function ContactForm({ turnstileSiteKey }: { turnstileSiteKey: string }) 
     setPending(true)
     setError(null)
     const form = new FormData(event.currentTarget)
-    const res = await fetch('/api/enquiries', {
+    const res = await formRequest('/api/enquiries', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

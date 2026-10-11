@@ -1,14 +1,14 @@
-'use server'
+import 'server-only'
 
 import { compare, hash } from 'bcryptjs'
 import { eq } from 'drizzle-orm'
 import { db } from '@/db/client'
-import { users } from '@/db/schema'
+import { sessions, users } from '@/db/schema'
 import { resetPasswordTemplate, verifyEmailTemplate } from '@/server/email/templates'
 import { sendEmail } from '@/server/email/send'
 import { consumeToken, issueToken } from './tokens'
 import { DUMMY_HASH } from './dummy-hash'
-import { createDatabaseSession, destroyDatabaseSession, revokeAllSessions } from './session'
+import { createDatabaseSession, destroyDatabaseSession } from './session'
 import { credentialsSchema, emailSchema, passwordSchema, signupSchema } from './validation'
 import { track } from '@/server/analytics/track'
 import { siteUrl } from '@/lib/site-url'
@@ -117,10 +117,12 @@ export async function confirmEmailVerification(emailInput: string, token: string
   const parsed = emailSchema.safeParse(emailInput)
   if (!parsed.success || !token) return { ok: false, error: 'That link is invalid.' }
 
-  const valid = await consumeToken('verify-email', parsed.data, token)
+  const valid = await db.transaction(async (tx) => {
+    if (!(await consumeToken('verify-email', parsed.data, token, tx))) return false
+    await tx.update(users).set({ emailVerified: new Date(), updatedAt: new Date() }).where(eq(users.email, parsed.data))
+    return true
+  })
   if (!valid) return { ok: false, error: 'That link has expired. Request a new one.' }
-
-  await db.update(users).set({ emailVerified: new Date(), updatedAt: new Date() }).where(eq(users.email, parsed.data))
   return { ok: true }
 }
 
@@ -155,21 +157,19 @@ export async function resetPassword(
     return { ok: false, error: parsedPassword.error.issues[0]?.message ?? 'Check your password.' }
   }
 
-  const valid = await consumeToken('reset-password', parsedEmail.data, token)
+  // Token consumption, password replacement and revocation either all commit
+  // or all roll back. A failed write must not burn the only recovery link.
+  const passwordHash = await hash(parsedPassword.data, 12)
+  const valid = await db.transaction(async (tx) => {
+    if (!(await consumeToken('reset-password', parsedEmail.data, token, tx))) return false
+    const [user] = await tx.update(users)
+      .set({ passwordHash, updatedAt: new Date() })
+      .where(eq(users.email, parsedEmail.data))
+      .returning({ id: users.id })
+    if (user) await tx.delete(sessions).where(eq(sessions.userId, user.id))
+    return Boolean(user)
+  })
   if (!valid) return { ok: false, error: 'That link has expired. Request a new one.' }
-
-  const user = await db.query.users.findFirst({ where: eq(users.email, parsedEmail.data) })
-  if (!user) return { ok: false, error: 'That link is invalid.' }
-
-  await db
-    .update(users)
-    .set({ passwordHash: await hash(parsedPassword.data, 12), updatedAt: new Date() })
-    .where(eq(users.id, user.id))
-
-  // A password reset is a credible signal the old password was compromised or
-  // forgotten under uncertain circumstances — every existing session (and
-  // whoever holds it) is logged out, not just the one making this request.
-  await revokeAllSessions(user.id)
 
   return { ok: true }
 }

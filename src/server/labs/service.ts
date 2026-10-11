@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, gt, gte, inArray, lt } from 'drizzle-orm'
+import { and, asc, count, desc, eq, gt, gte, inArray, lt, or } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/db/client'
 import { auditLogs, labAttendance, labBlackouts, labBookings, labHours, labs, labStaff, users } from '@/db/schema'
@@ -383,7 +383,12 @@ export async function listLabBookings(labId: string, scope: 'open' | 'upcoming' 
       ? and(eq(labBookings.labId, labId), inArray(labBookings.status, ['requested', 'alternative_proposed']))
       : scope === 'upcoming'
         ? and(eq(labBookings.labId, labId), eq(labBookings.status, 'approved'), gte(labBookings.endsAt, now))
-        : and(eq(labBookings.labId, labId), inArray(labBookings.status, ['approved', 'completed', 'no_show', 'rejected', 'cancelled']), lt(labBookings.endsAt, now))
+        : // History: what has finished, and every decision that ended a request early. A declined or cancelled booking
+          // is history the moment it is declined or cancelled, not when its (future) time slot passes.
+          and(
+            eq(labBookings.labId, labId),
+            or(inArray(labBookings.status, ['rejected', 'cancelled']), and(inArray(labBookings.status, ['approved', 'completed', 'no_show']), lt(labBookings.endsAt, now))),
+          )
   return db
     .select({ booking: labBookings, memberName: users.name, memberEmail: users.email })
     .from(labBookings)

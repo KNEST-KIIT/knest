@@ -15,7 +15,14 @@ type Env = { [name: string]: string | undefined }
  * eavesdropping on the wire but not against someone answering as the database.
  */
 export function databaseSsl(env: Env = process.env): DatabaseSsl {
-  if ((env.DATABASE_SSL ?? 'off') !== 'verify') return false
+  const mode = env.DATABASE_SSL ?? 'off'
+  if (mode !== 'off' && mode !== 'verify') throw new Error('DATABASE_SSL must be off or verify.')
+  const host = env.DATABASE_URL ? new URL(env.DATABASE_URL).hostname : undefined
+  const local = host === 'localhost' || host === '127.0.0.1' || host === '[::1]' || host === 'postgres'
+  if (env.NODE_ENV === 'production' && host && !local && mode !== 'verify') {
+    throw new Error('A remote production database requires DATABASE_SSL=verify.')
+  }
+  if (mode === 'off') return false
   const file = env.DATABASE_SSL_CA_FILE
   if (!file) throw new Error('DATABASE_SSL=verify needs DATABASE_SSL_CA_FILE (the certificate authority bundle).')
   return { ca: readFileSync(file, 'utf8'), rejectUnauthorized: true }

@@ -36,7 +36,32 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  verify-source:
+    name: Require passing CI for the exact release SHA
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Check the latest CI run for this commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          RUN=$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs?head_sha=${GITHUB_SHA}&event=push&per_page=20" \
+            --jq '.workflow_runs | sort_by(.created_at) | last')
+          if [ -z "$RUN" ] || [ "$RUN" = "null" ]; then
+            echo "::error::No CI run exists for this release SHA. Push the commit and wait for CI."
+            exit 1
+          fi
+          if ! jq -e --arg sha "$GITHUB_SHA" '.head_sha == $sha and .status == "completed" and .conclusion == "success"' <<< "$RUN" >/dev/null; then
+            echo "::error::The latest CI run for this exact SHA has not passed."
+            exit 1
+          fi
+          echo "CI acceptance: $(jq -r '.html_url' <<< "$RUN")" >> "$GITHUB_STEP_SUMMARY"
+
   build-and-push:
+    needs: verify-source
     name: Build, scan and push (${{ inputs.environment }})
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -104,7 +129,22 @@ jobs:
           tags: ${{ steps.ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}:migrate-${{ github.sha }}
 
       - id: refs
+        # No deployable digest is emitted until both image scans have passed.
+        name: Require completed image scans before accepting the digests
+        env:
+          APP_DIGEST: ${{ steps.app.outputs.digest }}
+          MIGRATE_DIGEST: ${{ steps.migrate.outputs.digest }}
+          ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
         run: |
+          for DIGEST in "$APP_DIGEST" "$MIGRATE_DIGEST"; do
+            aws ecr wait image-scan-complete --repository-name "$ECR_REPOSITORY" --image-id "imageDigest=$DIGEST"
+            aws ecr describe-image-scan-findings --repository-name "$ECR_REPOSITORY" --image-id "imageDigest=$DIGEST" \
+              --query imageScanFindings.findingSeverityCounts --output json > scan-counts.json
+            if ! jq -e 'type == "object" and (((.CRITICAL // 0) + (.HIGH // 0)) == 0)' scan-counts.json >/dev/null; then
+              echo "::error::Image scan has high/critical findings or no usable result. The digest is not accepted."
+              exit 1
+            fi
+          done
           echo "app_image=${{ steps.ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}@${{ steps.app.outputs.digest }}" >> "$GITHUB_OUTPUT"
           echo "migrate_image=${{ steps.ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}@${{ steps.migrate.outputs.digest }}" >> "$GITHUB_OUTPUT"
           {

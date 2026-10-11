@@ -48,6 +48,32 @@ afterAll(closeDb)
 describe('password-reset links', () => {
   const mail = `reset-${stamp}@tokens.test`
 
+  it('rolls back token consumption and password replacement if session revocation fails', async () => {
+    const address = `rollback-${stamp}@tokens.test`
+    const userId = await createUser({ email: address })
+    await login(address)
+    await post('/api/auth/password/reset/request', { email: address, ...CAPTCHA })
+    const token = await emailedToken(address, 'reset')
+    const original = (await db().query('select password_hash from app.users where id = $1', [userId])).rows[0].password_hash
+    // The suite's database is disposable. Force the final write to fail and
+    // prove the earlier writes roll back with it; always remove the trigger.
+    await db().query("create function app.test_reset_failure() returns trigger language plpgsql as $$ begin raise exception 'injected revocation failure'; end $$")
+    await db().query('create trigger test_reset_failure before delete on app.sessions for each row execute function app.test_reset_failure()')
+    try {
+      const failed = await post('/api/auth/password/reset/confirm', { email: address, token, password: 'Rollback-new-password-123' })
+      expect(failed.status).toBe(500)
+      const after = (await db().query('select password_hash from app.users where id = $1', [userId])).rows[0].password_hash
+      expect(after === original, 'password must roll back without printing the hash').toBe(true)
+      expect((await storedFor(`reset-password:${address}`)).includes(sha256(token))).toBe(true)
+      expect((await db().query('select count(*)::int n from app.sessions where user_id = $1', [userId])).rows[0].n).toBeGreaterThan(0)
+    } finally {
+      await db().query('drop trigger test_reset_failure on app.sessions')
+      await db().query('drop function app.test_reset_failure()')
+    }
+    expect((await post('/api/auth/password/reset/confirm', { email: address, token, password: 'Rollback-new-password-123' })).status).toBe(200)
+    expect((await db().query('select count(*)::int n from app.sessions where user_id = $1', [userId])).rows[0].n).toBe(0)
+  })
+
   it('are stored as a digest, never as the emailed value', async () => {
     await createUser({ email: mail, platformRole: 'student' })
     expect((await post('/api/auth/password/reset/request', { email: mail, ...CAPTCHA })).status).toBe(200)

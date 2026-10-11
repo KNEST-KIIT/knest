@@ -1,14 +1,14 @@
-'use server'
+import 'server-only'
 
 import { and, desc, eq } from 'drizzle-orm'
 import { db } from '@/db/client'
 import { applicationAnswers, applicationDocuments, applications, auditLogs, users } from '@/db/schema'
-import { requireUserOrThrow, UnauthorizedError } from '@/server/auth/guards'
+import { requireSelf, requireUserOrThrow, UnauthorizedError } from '@/server/auth/guards'
 import { sendNotificationEmail, writeNotification } from '@/server/notifications/send'
 import { applicationReceivedTemplate } from '@/server/notifications/templates'
 import { track } from '@/server/analytics/track'
 import { formatDate } from '@/lib/dates'
-import { generateStorageKey, putFile } from '@/server/storage'
+import { deleteFile, generateStorageKey, putFile } from '@/server/storage'
 import { enforceRateLimit, RATE_LIMITS } from '@/server/security/rate-limit'
 import { verifyFileContents } from '@/server/security/file-verify'
 import { getApplicationProgram, getApplicationProgramBySlug, getProgramTitlesByIds } from './program-questions'
@@ -16,8 +16,9 @@ import { ALLOWED_UPLOAD_MIME_TYPES, findSubmissionProblem, MAX_UPLOAD_BYTES, sch
 
 export type ActionResult = { ok: true } | { ok: false; error: string; code?: string }
 
-/** Read-only: which status (if any) the signed-in user's application to this program is in. Used by the public program page to decide the apply CTA — no auth throw, just null if nothing exists. */
+/** Read-only status for the signed-in owner, used by the public program CTA. */
 export async function getApplicationStatusForUser(userId: string, programId: number) {
+  await requireSelf(userId)
   const existing = await db.query.applications.findFirst({
     where: and(eq(applications.userId, userId), eq(applications.programId, programId)),
     columns: { status: true },
@@ -27,6 +28,7 @@ export async function getApplicationStatusForUser(userId: string, programId: num
 
 /** Read-only lookup of the signed-in user's application to a program; creates nothing. */
 export async function findApplicationForProgram(userId: string, programId: number) {
+  await requireSelf(userId)
   const existing = await db.query.applications.findFirst({
     where: and(eq(applications.userId, userId), eq(applications.programId, programId)),
     columns: { id: true, status: true },
@@ -172,7 +174,12 @@ export async function uploadDocument(
   if (!ALLOWED_UPLOAD_MIME_TYPES.includes(file.type)) {
     return { ok: false, error: 'We can take PDF, DOC or PPT files.' }
   }
-  if (file.size > MAX_UPLOAD_BYTES) {
+  const program = await getApplicationProgram(application.programId)
+  const question = program?.questions.find((candidate) => candidate.id === questionId)
+  if (!question || question.fieldType !== 'file') {
+    return { ok: false, error: 'That question does not accept a document.' }
+  }
+  if (file.buffer.byteLength > MAX_UPLOAD_BYTES) {
     return { ok: false, error: 'That file is over 10 MB. Try compressing it.' }
   }
   // The declared Content-Type above is client-supplied and trivially spoofed
@@ -189,7 +196,11 @@ export async function uploadDocument(
   // Same row lock as saveAnswer and submit: a file cannot be attached to an
   // application that a concurrent submit has already frozen (R-05).
   const saved = await db.transaction(async (tx) => {
-    if (!(await lockDraft(tx, applicationId))) return false
+    if (!(await lockDraft(tx, applicationId))) return { ok: false as const }
+    const previous = await tx.query.applicationDocuments.findFirst({
+      where: and(eq(applicationDocuments.applicationId, applicationId), eq(applicationDocuments.questionId, questionId)),
+      columns: { storageKey: true },
+    })
     await tx
       .insert(applicationDocuments)
       .values({
@@ -198,16 +209,20 @@ export async function uploadDocument(
         fileName: file.name,
         storageKey,
         mimeType: file.type,
-        fileSize: file.size,
+        fileSize: file.buffer.byteLength,
       })
       .onConflictDoUpdate({
         target: [applicationDocuments.applicationId, applicationDocuments.questionId],
-        set: { fileName: file.name, storageKey, mimeType: file.type, fileSize: file.size, uploadedAt: new Date() },
+        set: { fileName: file.name, storageKey, mimeType: file.type, fileSize: file.buffer.byteLength, uploadedAt: new Date() },
       })
     await tx.update(applications).set({ updatedAt: new Date() }).where(eq(applications.id, applicationId))
-    return true
+    return { ok: true as const, previousKey: previous?.storageKey }
   })
-  if (!saved) return { ok: false, error: 'This application has already been submitted.' }
+  const obsoleteKey = saved.ok ? saved.previousKey : storageKey
+  if (obsoleteKey) {
+    await deleteFile(obsoleteKey).catch(() => console.error('[uploads] obsolete object cleanup failed'))
+  }
+  if (!saved.ok) return { ok: false, error: 'This application has already been submitted.' }
 
   return { ok: true }
 }
@@ -316,8 +331,10 @@ export async function submitApplication(applicationId: string): Promise<ActionRe
 }
 
 export async function listApplicationsForUser(userId: string) {
+  await requireSelf(userId)
   const rows = await db.query.applications.findMany({
     where: eq(applications.userId, userId),
+    columns: { id: true, programId: true, status: true, submittedAt: true, updatedAt: true },
     orderBy: [desc(applications.updatedAt)],
   })
 
@@ -331,6 +348,7 @@ export async function listApplicationsForUser(userId: string) {
 }
 
 export async function getOwnedApplicationDetail(applicationId: string, userId: string) {
+  await requireSelf(userId)
   const application = await loadOwnedApplication(applicationId, userId)
   if (!application) return null
 
@@ -344,5 +362,15 @@ export async function getOwnedApplicationDetail(applicationId: string, userId: s
   const asSubmitted =
     application.questionSnapshot && program ? { ...program, questions: application.questionSnapshot } : program
 
-  return { application, program: asSubmitted, answers, documents }
+  return {
+    application: {
+      id: application.id,
+      programId: application.programId,
+      status: application.status,
+      submittedAt: application.submittedAt,
+    },
+    program: asSubmitted,
+    answers,
+    documents,
+  }
 }

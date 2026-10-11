@@ -7,8 +7,9 @@ Description: >-
   origin-verification secret, log group, an instance role with no stored keys, and
   an SSM document that deploys an image by digest. DEPLOY IN ap-south-1. STATUS:
   written, not deployed, not validated by CloudFormation. Production differs from
-  S-1 only in the lines marked DELETION and in the Environment parameter; both
-  variants are produced from this file by scripts/render-cfn.mjs.
+  S-1 in its retention policy and inbound path: production accepts traffic only
+  through the HTTPS load balancer in origin.yaml. Retention variants are produced
+  from this file by scripts/render-cfn.mjs.
 
 Parameters:
   Environment:
@@ -56,7 +57,7 @@ Parameters:
     Default: 3000
     MinValue: 1024
     MaxValue: 65535
-    Description: Host port CloudFront connects to. The deploy document publishes the container's port 3000 on it.
+    Description: Host port used by the load balancer in production (CloudFront directly in S-1). The deploy document publishes container port 3000 on it.
   LatestAmiId:
     Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
     Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64
@@ -135,6 +136,14 @@ Resources:
       CidrBlock: !Select [0, !Cidr [!GetAtt Vpc.CidrBlock, 4, 8]]
       MapPublicIpOnLaunch: true
       Tags: [{ Key: Name, Value: !Sub 'knest-${Environment}-public' }]
+  PublicSubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      AvailabilityZone: !Ref AvailabilityZoneB
+      CidrBlock: !Select [3, !Cidr [!GetAtt Vpc.CidrBlock, 4, 8]]
+      MapPublicIpOnLaunch: false
+      Tags: [{ Key: Name, Value: !Sub 'knest-${Environment}-public-b' }]
   PrivateSubnetA:
     Type: AWS::EC2::Subnet
     Properties:
@@ -162,6 +171,9 @@ Resources:
   PublicRouteAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties: { SubnetId: !Ref PublicSubnet, RouteTableId: !Ref PublicRouteTable }
+  PublicRouteAssociationB:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties: { SubnetId: !Ref PublicSubnetB, RouteTableId: !Ref PublicRouteTable }
   # The private route table has only the local route: the database subnets cannot reach, or be reached from, the internet.
   PrivateRouteTable:
     Type: AWS::EC2::RouteTable
@@ -176,14 +188,16 @@ Resources:
   AppSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: App host. Inbound only from CloudFront; no SSH.
+      GroupDescription: App host. Production ingress is granted only to the HTTPS load balancer by origin.yaml; no SSH.
       VpcId: !Ref Vpc
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: !Ref AppPort
-          ToPort: !Ref AppPort
-          SourcePrefixListId: !Ref CloudFrontPrefixListId
-          Description: CloudFront origin-facing addresses (the X-Origin-Verify header is the second control)
+      SecurityGroupIngress: !If
+        - IsProduction
+        - !Ref AWS::NoValue
+        - - IpProtocol: tcp
+            FromPort: !Ref AppPort
+            ToPort: !Ref AppPort
+            SourcePrefixListId: !Ref CloudFrontPrefixListId
+            Description: S-1 only. CloudFront origin-facing addresses.
       SecurityGroupEgress:
         - { IpProtocol: tcp, FromPort: 443, ToPort: 443, CidrIp: 0.0.0.0/0, Description: 'AWS APIs (SSM, ECR, S3, SES, Secrets Manager), Cloudflare Turnstile, Google sign-in' }
       Tags: [{ Key: Name, Value: !Sub 'knest-${Environment}-app' }]
@@ -632,8 +646,16 @@ Outputs:
   InstanceId:
     Value: !Ref AppInstance
   InstancePublicDnsName:
-    Description: The origin DNS name for the distribution.
+    Description: S-1 HTTP origin only. Production uses origin.yaml and its certified DNS name.
     Value: !GetAtt AppInstance.PublicDnsName
+  PublicSubnetAId:
+    Value: !Ref PublicSubnet
+  PublicSubnetBId:
+    Value: !Ref PublicSubnetB
+  AppSecurityGroupId:
+    Value: !Ref AppSecurityGroup
+  AlertTopicArn:
+    Value: !Ref AlertTopic
   DatabaseEndpoint:
     Value: !GetAtt Database.Endpoint.Address
   BucketName:

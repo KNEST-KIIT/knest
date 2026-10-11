@@ -1,9 +1,9 @@
-'use server'
+import 'server-only'
 
 import { and, count, desc, eq, isNull } from 'drizzle-orm'
 import { db } from '@/db/client'
 import { notifications } from '@/db/schema'
-import { requireUserOrThrow } from '@/server/auth/guards'
+import { requireSelf, requireUserOrThrow } from '@/server/auth/guards'
 
 export type ActionResult = { ok: true } | { ok: false; error: string }
 
@@ -13,6 +13,7 @@ export type ActionResult = { ok: true } | { ok: false; error: string }
  * nothing ever displaying them).
  */
 export async function listNotificationsForUser(userId: string, limit = 10) {
+  await requireSelf(userId)
   return db.query.notifications.findMany({
     where: eq(notifications.userId, userId),
     orderBy: [desc(notifications.createdAt)],
@@ -21,6 +22,7 @@ export async function listNotificationsForUser(userId: string, limit = 10) {
 }
 
 export async function countUnread(userId: string): Promise<number> {
+  await requireSelf(userId)
   const [row] = await db
     .select({ value: count() })
     .from(notifications)

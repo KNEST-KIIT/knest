@@ -3,11 +3,28 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 const authMock = vi.fn()
 vi.mock('./index', () => ({ auth: (...args: unknown[]) => authMock(...args) }))
 
-import { getSessionUser } from './guards'
+import { getSessionUser, requireSelf } from './guards'
 
 afterEach(() => {
   vi.unstubAllEnvs()
   authMock.mockReset()
+})
+
+describe('private read ownership', () => {
+  it('rejects anonymous reads before returning any private data', async () => {
+    authMock.mockResolvedValue(null)
+    await expect(requireSelf('victim')).rejects.toMatchObject({ status: 401 })
+  })
+
+  it('rejects another user even when they are staff', async () => {
+    authMock.mockResolvedValue({ user: { id: 'staff', staffRole: 'super_admin' } })
+    await expect(requireSelf('victim')).rejects.toMatchObject({ status: 403 })
+  })
+
+  it('permits the signed-in owner', async () => {
+    authMock.mockResolvedValue({ user: { id: 'owner' } })
+    await expect(requireSelf('owner')).resolves.toEqual({ id: 'owner' })
+  })
 })
 
 describe('getSessionUser (KN-09: no development bypass)', () => {

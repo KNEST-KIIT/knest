@@ -1,5 +1,7 @@
 'use client'
 
+import { formRequest } from '@/lib/form-request'
+
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -28,7 +30,7 @@ export function NotificationsList({ notifications }: { notifications: Notificati
 
   async function markRead(id: string) {
     setPendingId(id)
-    const res = await fetch(`/api/notifications/${id}/read`, { method: 'POST' })
+    const res = await formRequest(`/api/notifications/${id}/read`, { method: 'POST' })
     setPendingId(null)
     if (!res.ok) return
     setItems((prev) => prev.map((n) => (n.id === id ? { ...n, readAt: new Date() } : n)))

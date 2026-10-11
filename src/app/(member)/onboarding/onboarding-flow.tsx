@@ -1,5 +1,7 @@
 'use client'
 
+import { formRequest } from '@/lib/form-request'
+
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
@@ -70,7 +72,7 @@ type Props = {
 }
 
 async function postStep(step: string, data?: unknown): Promise<{ ok: boolean; error?: string }> {
-  const res = await fetch('/api/onboarding/step', {
+  const res = await formRequest('/api/onboarding/step', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ step, data }),

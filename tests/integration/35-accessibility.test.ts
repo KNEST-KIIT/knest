@@ -213,6 +213,51 @@ describe('things a scanner cannot see', () => {
     }
   })
 
+  it('opens a full-height mobile menu, contains keyboard focus and releases scroll on desktop', async () => {
+    const context = await contextFor(null, { width: 375, height: 900 })
+    try {
+      const page = await context.newPage()
+      await page.goto(`${BASE()}/about`, { waitUntil: 'networkidle' })
+      await page.getByRole('button', { name: 'Open menu', exact: true }).click()
+      const panel = page.locator('#mobile-nav')
+      const bounds = await panel.boundingBox()
+      expect(bounds?.height).toBeGreaterThan(700)
+      expect(bounds?.width).toBe(375)
+      const login = panel.getByRole('link', { name: 'Log in', exact: true })
+      await login.focus()
+      await page.keyboard.press('Tab')
+      expect(await page.getByRole('button', { name: 'Close menu' }).evaluate((node) => node === document.activeElement)).toBe(true)
+      await page.keyboard.press('Escape')
+      expect(await panel.count()).toBe(0)
+      await page.getByRole('button', { name: 'Open menu', exact: true }).click()
+      await page.setViewportSize({ width: 1280, height: 900 })
+      await page.waitForFunction(() => !document.getElementById('mobile-nav') && document.body.style.overflow !== 'hidden')
+    } finally {
+      await context.close()
+    }
+  })
+
+  it('restores the login controls after a network failure without losing entered values', async () => {
+    const context = await contextFor(null, { width: 1280, height: 900 })
+    try {
+      const page = await context.newPage()
+      await page.route('**/api/auth/password/login', (route) => route.abort('failed'))
+      await page.goto(`${BASE()}/login`, { waitUntil: 'networkidle' })
+      await page.getByLabel('Email address', { exact: true }).fill('offline@example.test')
+      await page.getByLabel('Password', { exact: true }).fill('Offline-example-password-123')
+      await page.getByRole('button', { name: /Log In/ }).click()
+      await page.getByRole('alert').filter({ hasText: 'couldn’t confirm' }).waitFor()
+      await page.waitForFunction(() => {
+        const button = Array.from(document.querySelectorAll('button')).find((node) => node.textContent?.includes('Log In'))
+        return button && !button.disabled
+      })
+      expect(await page.getByLabel('Email address', { exact: true }).inputValue()).toBe('offline@example.test')
+      expect(await page.getByLabel('Password', { exact: true }).inputValue()).toBe('Offline-example-password-123')
+    } finally {
+      await context.close()
+    }
+  })
+
   it('every form field on the sign-in and contact forms has a label a screen reader can announce', async () => {
     const context = await contextFor(null, { width: 1280, height: 900 })
     try {

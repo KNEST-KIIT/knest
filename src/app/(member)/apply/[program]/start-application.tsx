@@ -1,5 +1,7 @@
 'use client'
 
+import { formRequest } from '@/lib/form-request'
+
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -18,7 +20,7 @@ export function StartApplication({ programSlug, programTitle }: { programSlug: s
   async function start() {
     setPending(true)
     setError(null)
-    const res = await fetch('/api/applications/start', {
+    const res = await formRequest('/api/applications/start', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ programSlug }),

@@ -1,9 +1,9 @@
-'use server'
+import 'server-only'
 
 import { and, count, desc, eq, sql } from 'drizzle-orm'
 import { db } from '@/db/client'
 import { eventRegistrations } from '@/db/schema'
-import { requireUserOrThrow } from '@/server/auth/guards'
+import { requireSelf, requireUserOrThrow } from '@/server/auth/guards'
 import { getEventById } from '@/server/content/events'
 import { track } from '@/server/analytics/track'
 import { formatEventTime } from '@/lib/dates'
@@ -89,6 +89,7 @@ export async function unregisterFromEvent(eventId: number): Promise<ActionResult
 }
 
 export async function getRegistrationStatus(userId: string, eventId: number): Promise<boolean> {
+  await requireSelf(userId)
   const existing = await db.query.eventRegistrations.findFirst({
     where: and(eq(eventRegistrations.userId, userId), eq(eventRegistrations.eventId, eventId)),
   })
@@ -104,6 +105,7 @@ export async function getRegistrationCount(eventId: number): Promise<number> {
 }
 
 export async function listRegisteredEventsForUser(userId: string) {
+  await requireSelf(userId)
   const rows = await db.query.eventRegistrations.findMany({
     where: eq(eventRegistrations.userId, userId),
     orderBy: [desc(eventRegistrations.registeredAt)],

@@ -1,5 +1,7 @@
 'use client'
 
+import { formRequest } from '@/lib/form-request'
+
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
@@ -16,7 +18,7 @@ export function CreateLab() {
     const f = new FormData(form)
     setPending(true)
     setError(null)
-    const res = await fetch('/api/admin/labs', {
+    const res = await formRequest('/api/admin/labs', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: f.get('name'), department: f.get('department'), capacity: Number(f.get('capacity')) }),

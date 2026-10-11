@@ -28,7 +28,11 @@ describe('databaseSsl', () => {
   })
 
   it('has no mode that encrypts without verifying', () => {
-    // Anything other than "verify" is treated as off; there is nothing in between.
-    expect(databaseSsl({ DATABASE_SSL: 'require' })).toBe(false)
+    expect(() => databaseSsl({ DATABASE_SSL: 'require' })).toThrow(/off or verify/)
+  })
+
+  it('refuses plaintext for a remote production database but permits local test containers', () => {
+    expect(() => databaseSsl({ NODE_ENV: 'production', DATABASE_URL: 'postgres://example.rds.amazonaws.com/knest' })).toThrow(/requires DATABASE_SSL=verify/)
+    expect(databaseSsl({ NODE_ENV: 'production', DATABASE_URL: 'postgres://127.0.0.1/knest_test' })).toBe(false)
   })
 })

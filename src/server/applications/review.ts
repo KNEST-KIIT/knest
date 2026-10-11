@@ -1,4 +1,4 @@
-'use server'
+import 'server-only'
 
 import { and, count, desc, eq, ilike, inArray, ne, or } from 'drizzle-orm'
 import { db } from '@/db/client'
@@ -57,7 +57,7 @@ export async function listApplicationsForReview(filters: { programId?: number; s
     total: total?.value ?? 0,
     page,
     rows: rows.map((row) => ({
-      application: row,
+      application: { id: row.id, status: row.status, submittedAt: row.submittedAt },
       applicant: row.user,
       programTitle: programs.get(row.programId)?.title ?? 'Unknown program',
     })),
@@ -68,8 +68,8 @@ export async function getApplicationForReview(applicationId: string) {
   await requireAdminArea('applications')
 
   const application = await db.query.applications.findFirst({
-    where: eq(applications.id, applicationId),
-    with: { user: true },
+    where: and(eq(applications.id, applicationId), ne(applications.status, 'draft')),
+    with: { user: { columns: { id: true, name: true, email: true } } },
   })
   if (!application) return null
 
@@ -92,7 +92,13 @@ export async function getApplicationForReview(applicationId: string) {
       }
     : program
 
-  return { application, applicant: application.user, program: asSubmitted, answers, documents }
+  return {
+    application: { id: application.id, status: application.status, submittedAt: application.submittedAt },
+    applicant: application.user,
+    program: asSubmitted,
+    answers,
+    documents,
+  }
 }
 
 /**

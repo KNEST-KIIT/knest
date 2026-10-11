@@ -1,5 +1,7 @@
 'use client'
 
+import { formRequest } from '@/lib/form-request'
+
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -24,7 +26,7 @@ function formatAnswer(raw: unknown, options?: { label: string; value: string }[]
 }
 
 async function postJSON(url: string, body: unknown) {
-  const res = await fetch(url, {
+  const res = await formRequest(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -93,7 +95,7 @@ export function ApplicationForm({ applicationId, programTitle, questions, initia
     const form = new FormData()
     form.append('file', file)
     form.append('questionId', question.id)
-    const res = await fetch(`/api/applications/${applicationId}/documents`, { method: 'POST', body: form })
+    const res = await formRequest(`/api/applications/${applicationId}/documents`, { method: 'POST', body: form })
     const data = await res.json().catch(() => ({}))
     setPending(false)
 
@@ -112,7 +114,7 @@ export function ApplicationForm({ applicationId, programTitle, questions, initia
   async function submit() {
     setPending(true)
     setError(null)
-    const res = await fetch(`/api/applications/${applicationId}/submit`, {
+    const res = await formRequest(`/api/applications/${applicationId}/submit`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ turnstileToken: captchaToken }),

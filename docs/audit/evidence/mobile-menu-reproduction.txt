@@ -1,0 +1,13 @@
+import { chromium } from 'playwright'
+const browser = await chromium.launch({ channel: 'chrome', headless: true })
+try {
+  const page = await browser.newPage({ viewport: { width: 375, height: 900 }, reducedMotion: 'reduce' })
+  await page.goto('http://127.0.0.1:63924/', { waitUntil: 'networkidle' })
+  await page.getByRole('button', { name: 'Open menu' }).click()
+  await page.screenshot({ path: new URL('./audit-visual/mobile-menu-viewport.png', import.meta.url).pathname.replace(/^\/(\w:)/, '$1') })
+  console.log(JSON.stringify(await page.evaluate(() => {
+    const p = document.getElementById('mobile-nav')
+    const r = p.getBoundingClientRect()
+    return { viewport: { width: innerWidth, height: innerHeight }, panel: { top: r.top, bottom: r.bottom, height: r.height }, header: p.closest('header').getBoundingClientRect().height, bodyOverflow: document.body.style.overflow }
+  })))
+} finally { await browser.close() }

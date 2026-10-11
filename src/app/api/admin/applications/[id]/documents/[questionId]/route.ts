@@ -1,7 +1,7 @@
-import { and, eq } from 'drizzle-orm'
+import { and, eq, ne } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
 import { db } from '@/db/client'
-import { applicationDocuments } from '@/db/schema'
+import { applicationDocuments, applications } from '@/db/schema'
 import { requireStaffOrThrow, UnauthorizedError } from '@/server/auth/guards'
 import { getFile } from '@/server/storage'
 
@@ -19,6 +19,12 @@ export async function GET(
     }
     throw error
   }
+
+  const application = await db.query.applications.findFirst({
+    where: and(eq(applications.id, id), ne(applications.status, 'draft')),
+    columns: { id: true },
+  })
+  if (!application) return NextResponse.json({ error: 'Not found.' }, { status: 404 })
 
   const document = await db.query.applicationDocuments.findFirst({
     where: and(eq(applicationDocuments.applicationId, id), eq(applicationDocuments.questionId, questionId)),
