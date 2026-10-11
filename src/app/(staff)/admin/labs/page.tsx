@@ -46,7 +46,7 @@ export default async function AdminLabsPage() {
             {escalations.map((e) => (
               <li key={e.bookingId} className="flex flex-wrap items-center justify-between gap-2 py-3 text-[length:var(--text-small)]">
                 <span>
-                  <strong>{e.labName}</strong>, {e.memberName ?? e.memberEmail}, {rangeLabel(e.startsAt, e.endsAt)}
+                  <strong>{e.labName}</strong>, {e.memberName ? `${e.memberName} (${e.memberEmail})` : e.memberEmail},{rangeLabel(e.startsAt, e.endsAt)}
                   <span className="ml-2 text-[var(--color-ink-muted)]">{e.reason === 'no_head' ? 'This lab has no head.' : `Waiting ${e.waitedHours} hours.`}</span>
                 </span>
                 <Link href={`/dashboard/lab-staff/${e.labSlug}`} className="font-semibold text-[var(--color-signal)] underline underline-offset-4">
