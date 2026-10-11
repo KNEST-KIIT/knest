@@ -4,6 +4,7 @@ import { resultSummary } from '@/lib/result-summary'
 import { searchEmpty } from '@/lib/empty-state-copy'
 import { search, type SearchResultType } from '@/server/content/search'
 import { track } from '@/server/analytics/track'
+import { toLoggedSearch } from '@/lib/search-query-log'
 
 export const metadata: Metadata = {
   title: 'Search',
@@ -20,7 +21,7 @@ const TYPE_LABELS: Record<SearchResultType, string> = {
 
 async function SearchResults({ query }: { query: string }) {
   const results = await search(query)
-  await track('search_query', { query, resultCount: results.length })
+  await track('search_query', { ...toLoggedSearch(query, results.length) })
   const empty = searchEmpty(query)
   const summary = resultSummary(results.length, 'result', {
     hasFilters: true,
@@ -74,7 +75,7 @@ export default async function SearchPage({
         Programs, startups, events and resources — one search across all of it.
       </p>
 
-      <form action="/search" method="get" className="mt-10 flex max-w-[480px] gap-3">
+      <form action="/search" method="get" className="mt-10 flex max-w-60 gap-3">
         <Input
           name="q"
           type="search"
