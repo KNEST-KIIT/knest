@@ -137,7 +137,20 @@ jobs:
           ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
         run: |
           for DIGEST in "$APP_DIGEST" "$MIGRATE_DIGEST"; do
-            aws ecr wait image-scan-complete --repository-name "$ECR_REPOSITORY" --image-id "imageDigest=$DIGEST"
+            # A scan registers a few seconds after the push; the waiter fails at once with
+            # ScanNotFoundException until then, so retry for up to five minutes.
+            ready=false
+            for attempt in $(seq 1 30); do
+              if aws ecr wait image-scan-complete --repository-name "$ECR_REPOSITORY" --image-id "imageDigest=$DIGEST"; then
+                ready=true
+                break
+              fi
+              sleep 10
+            done
+            if [ "$ready" != true ]; then
+              echo "::error::No completed image scan for $DIGEST after five minutes. The digest is not accepted."
+              exit 1
+            fi
             aws ecr describe-image-scan-findings --repository-name "$ECR_REPOSITORY" --image-id "imageDigest=$DIGEST" \
               --output json > scan-result.json
             # ECR omits findingSeverityCounts when a scan finds nothing, so absent counts are zero,
