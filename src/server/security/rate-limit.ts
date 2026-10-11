@@ -30,6 +30,13 @@ export const RATE_LIMITS = {
   eventRegister: { capacity: 60, refillIntervalSeconds: 60 * 60 },
   notificationRead: { capacity: 300, refillIntervalSeconds: 60 * 60 },
   labRequest: { capacity: 20, refillIntervalSeconds: 60 * 60 },
+  // Staff and administrator writes (review decisions, member changes, enquiries, lab management):
+  // a reviewer clears a queue quickly, a stolen session should not be able to churn the system.
+  staffAction: { capacity: 600, refillIntervalSeconds: 60 * 60 },
+  // Lab decisions, cancellations, responses, attendance and management changes by a signed-in member.
+  labAction: { capacity: 120, refillIntervalSeconds: 60 * 60 },
+  // Availability reads while a person browses dates; far above human use.
+  labAvailability: { capacity: 240, refillIntervalSeconds: 60 * 60 },
 } as const satisfies Record<string, RateLimitConfig>
 
 /**

@@ -3,12 +3,15 @@ import { NextResponse } from 'next/server'
 import { db } from '@/db/client'
 import { applicationDocuments, applications } from '@/db/schema'
 import { requireStaffOrThrow, UnauthorizedError } from '@/server/auth/guards'
+import { limitByUser } from '@/server/security/route-limits'
 import { getFile } from '@/server/storage'
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string; questionId: string }> },
 ) {
+  const limited = await limitByUser('staffAction')
+  if (limited) return limited
   const { id, questionId } = await params
 
   try {

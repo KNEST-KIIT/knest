@@ -14,5 +14,5 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
     const slots = await getAvailability(slug, date)
     if (slots === null) return NextResponse.json({ error: 'That lab doesn’t exist.' }, { status: 404 })
     return NextResponse.json({ date, slots })
-  })
+  }, 'labAvailability')
 }

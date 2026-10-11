@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server'
 import { UnauthorizedError } from '@/server/auth/guards'
+import { limitByUser } from '@/server/security/route-limits'
 import { markEnquiryHandled } from '@/server/enquiries/actions'
 
 export async function POST(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const limited = await limitByUser('staffAction')
+  if (limited) return limited
   const { id } = await params
   try {
     const result = await markEnquiryHandled(id)

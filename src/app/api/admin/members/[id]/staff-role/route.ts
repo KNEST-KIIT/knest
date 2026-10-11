@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server'
 import { UnauthorizedError } from '@/server/auth/guards'
+import { limitByUser } from '@/server/security/route-limits'
 import { isStaffRoleOrNull, setStaffRole } from '@/server/members/actions'
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const limited = await limitByUser('staffAction')
+  if (limited) return limited
   const { id } = await params
   const body = await request.json().catch(() => null)
   const role = body?.staffRole
