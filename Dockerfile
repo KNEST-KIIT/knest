@@ -16,6 +16,9 @@ FROM node:${NODE_VERSION}-bookworm-slim AS base
 ENV PNPM_HOME=/pnpm \
     PATH=/pnpm:$PATH \
     NEXT_TELEMETRY_DISABLED=1
+# Pull in Debian security fixes published since the node image was built, so the ECR
+# scan gate sees current OS packages. Nothing is added; the apt lists are dropped.
+RUN apt-get update     && apt-get -y --no-install-recommends upgrade     && rm -rf /var/lib/apt/lists/*
 # The pnpm version comes from "packageManager" in package.json.
 RUN corepack enable
 WORKDIR /app
@@ -44,6 +47,9 @@ ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     PORT=3000 \
     HOSTNAME=0.0.0.0
+# Pull in Debian security fixes published since the node image was built, so the ECR
+# scan gate sees current OS packages. Nothing is added; the apt lists are dropped.
+RUN apt-get update     && apt-get -y --no-install-recommends upgrade     && rm -rf /var/lib/apt/lists/*
 RUN groupadd --system --gid 1001 app && useradd --system --uid 1001 --gid app --no-create-home app
 WORKDIR /app
 # postbuild copies .next/static and public into the standalone folder.
