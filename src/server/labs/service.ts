@@ -4,6 +4,7 @@ import { db } from '@/db/client'
 import { auditLogs, labAttendance, labBlackouts, labBookings, labHours, labs, labStaff, users } from '@/db/schema'
 import { formatEventTime } from '@/lib/dates'
 import { requireUserOrThrow } from '@/server/auth/guards'
+import type { StaffRole } from '@/server/auth/roles'
 import { isLabBookingEnabled } from '@/server/features'
 import { sendNotificationEmail, writeNotification, type NotifyInput } from '@/server/notifications/send'
 import {
@@ -12,10 +13,13 @@ import {
   bookingDecidedTemplate,
   bookingRequestedTemplate,
 } from '@/server/notifications/templates'
-import { actorFor, requireManager, requireStaffOfLab } from './access'
+import { actorFor, canManage, isLabAdmin, requireManager, requireStaffOfLab } from './access'
 import {
   canTransition,
   generateSlots,
+  isBlackedOut,
+  isEscalated,
+  istParts,
   LIVE_STATUSES,
   overlaps,
   problemWithRequest,
@@ -194,6 +198,14 @@ export async function decideBooking(bookingId: string, decision: Decision, now =
   const actor = await actorFor(lab.id)
   requireManager(actor)
 
+  // An administrator who is not this lab's head is stepping in. That is allowed (a head can be absent), but when the lab
+  // has a head the audit trail must say why, so the decision is never silent.
+  const override = actor.isAdmin && actor.role !== 'head'
+  const overrideOfHead = override && (await headsOf(lab.id)).length > 0
+  if (overrideOfHead && (decision.note?.trim().length ?? 0) < 3) {
+    return fail('You are deciding on behalf of the lab head. Add a short reason (for example, the head is away) so the record explains it.', 'invalid')
+  }
+
   const when = `${formatEventTime(booking.startsAt)} to ${formatEventTime(booking.endsAt)}`
   const path = `/dashboard/lab-booking`
   let patch: Partial<typeof labBookings.$inferInsert>
@@ -207,6 +219,11 @@ export async function decideBooking(bookingId: string, decision: Decision, now =
     if (decision.assistantUserId) {
       const member = await db.query.labStaff.findFirst({ where: and(eq(labStaff.labId, lab.id), eq(labStaff.userId, decision.assistantUserId)), columns: { id: true } })
       if (!member) return fail('That person is not on this lab’s staff.', 'invalid')
+    }
+    // Closed dates can be added after a request was made; do not approve into one.
+    const current = await getLabBySlug(lab.slug)
+    if (current && isBlackedOut(istParts(booking.startsAt).date, current.blackouts)) {
+      return fail('The lab has been closed on that date since this was requested. Suggest another time or decline it with a reason.', 'invalid')
     }
     patch = { status: target, assistantUserId: decision.assistantUserId ?? null, decisionNote: decision.note?.trim() || null }
     const t = bookingDecidedTemplate({ lab: lab.name, when, decision: 'approved', note: decision.note, path })
@@ -246,7 +263,7 @@ export async function decideBooking(bookingId: string, decision: Decision, now =
       entityType: 'lab_booking',
       entityId: bookingId,
       before: { status: booking.status },
-      after: { status: target, ...(decision.action === 'propose' ? { proposedStartsAt: decision.startsAt, proposedEndsAt: decision.endsAt } : {}), ...(decision.action === 'approve' && decision.assistantUserId ? { assistantUserId: decision.assistantUserId } : {}) },
+      after: { status: target, ...(override ? { override: true, headPresent: overrideOfHead, reason: decision.note?.trim() || null } : {}), ...(decision.action === 'propose' ? { proposedStartsAt: decision.startsAt, proposedEndsAt: decision.endsAt } : {}), ...(decision.action === 'approve' && decision.assistantUserId ? { assistantUserId: decision.assistantUserId } : {}) },
     })
     await writeNotification(tx, notice)
     return true
@@ -265,6 +282,13 @@ export async function respondToProposal(bookingId: string, accept: boolean, now 
   const { booking, lab } = row
   if (booking.status !== 'alternative_proposed' || !booking.proposedStartsAt || !booking.proposedEndsAt) return fail('There is no suggestion waiting for an answer.', 'state')
   if (accept && booking.proposedStartsAt.getTime() <= now.getTime()) return fail('That suggested time has passed.', 'state')
+  if (accept) {
+    // The lab may have changed its hours or closed that day since the suggestion was made. Notice is not re-checked: the head chose the time.
+    const current = await getLabBySlug(lab.slug)
+    if (!current) return fail('That lab is not taking bookings.', 'not-found')
+    const problem = problemWithRequest({ policy: { ...policyOf(lab), minLeadMinutes: 0 }, hours: current.hours, blackouts: current.blackouts, now, startsAt: booking.proposedStartsAt, endsAt: booking.proposedEndsAt, headcount: booking.headcount })
+    if (problem) return fail(`That suggested time no longer works: ${problem} Ask the lab for another.`, 'invalid')
+  }
 
   try {
     const done = await db.transaction(async (tx) => {
@@ -342,6 +366,8 @@ export async function markAttendance(bookingId: string, outcome: 'attended' | 'n
   const { booking, lab } = row
   const actor = await actorFor(lab.id)
   requireStaffOfLab(actor)
+  // An assistant works their own duties only; a head or administrator may close out any booking of the lab.
+  if (!canManage(actor) && booking.assistantUserId !== actor.id) return fail('That booking is not assigned to you.', 'forbidden')
   if (booking.status !== 'approved') return fail('Attendance can only be recorded for an approved booking that has not been closed.', 'state')
   if (booking.startsAt.getTime() > now.getTime()) return fail('That booking has not started yet.', 'state')
   const why = reason?.trim() ?? ''
@@ -375,10 +401,14 @@ export async function listMyBookings(userId: string) {
     .limit(100)
 }
 
-/** Bookings for one lab, with the booker's name and email, for its head, assistants and admins only (the caller has checked). */
-export async function listLabBookings(labId: string, scope: 'open' | 'upcoming' | 'past') {
+/**
+ * Bookings for one lab, with the booker's name and email, for its staff only (the caller has checked).
+ * `onlyAssignedTo` narrows the list to the bookings one assistant is assigned to: an assistant sees
+ * nobody else's booking. Heads and administrators pass nothing and see the whole lab.
+ */
+export async function listLabBookings(labId: string, scope: 'open' | 'upcoming' | 'past', onlyAssignedTo?: string) {
   const now = new Date()
-  const where =
+  const base =
     scope === 'open'
       ? and(eq(labBookings.labId, labId), inArray(labBookings.status, ['requested', 'alternative_proposed']))
       : scope === 'upcoming'
@@ -393,7 +423,7 @@ export async function listLabBookings(labId: string, scope: 'open' | 'upcoming' 
     .select({ booking: labBookings, memberName: users.name, memberEmail: users.email })
     .from(labBookings)
     .innerJoin(users, eq(users.id, labBookings.userId))
-    .where(where)
+    .where(onlyAssignedTo ? and(base, eq(labBookings.assistantUserId, onlyAssignedTo)) : base)
     .orderBy(scope === 'past' ? desc(labBookings.startsAt) : asc(labBookings.startsAt))
     .limit(200)
 }
@@ -418,3 +448,122 @@ export async function listLabStaff(labId: string) {
     .orderBy(asc(labStaff.role), asc(users.email))
 }
 
+
+// ------------------------------------------------------------------------------ escalation and decision history
+
+export type EscalatedRequest = {
+  bookingId: string
+  labName: string
+  labSlug: string
+  memberName: string | null
+  memberEmail: string
+  startsAt: Date
+  endsAt: Date
+  requestedAt: Date
+  waitedHours: number
+  reason: 'no_head' | 'waiting'
+}
+
+/**
+ * Requests that need an administrator: the lab has no head, or the request has waited longer than
+ * the lab's escalation threshold. Administrators only. Whoever decides still goes through
+ * `decideBooking`, which records the override.
+ */
+export async function listEscalations(now = new Date()): Promise<EscalatedRequest[]> {
+  const user = await requireUserOrThrow()
+  if (!isLabAdmin((user.staffRole ?? null) as StaffRole | null)) return [] // not an administrator: nothing is escalated to them
+  const rows = await db
+    .select({
+      bookingId: labBookings.id,
+      status: labBookings.status,
+      labId: labs.id,
+      labName: labs.name,
+      labSlug: labs.slug,
+      escalateAfterHours: labs.escalateAfterHours,
+      memberName: users.name,
+      memberEmail: users.email,
+      startsAt: labBookings.startsAt,
+      endsAt: labBookings.endsAt,
+      requestedAt: labBookings.createdAt,
+    })
+    .from(labBookings)
+    .innerJoin(labs, eq(labs.id, labBookings.labId))
+    .innerJoin(users, eq(users.id, labBookings.userId))
+    .where(and(eq(labBookings.status, 'requested'), eq(labs.isActive, true), gte(labBookings.startsAt, now)))
+    .orderBy(asc(labBookings.createdAt))
+    .limit(200)
+  if (rows.length === 0) return []
+  const headRows = await db.select({ labId: labStaff.labId }).from(labStaff).where(and(inArray(labStaff.labId, [...new Set(rows.map((r) => r.labId))]), eq(labStaff.role, 'head')))
+  const withHead = new Set(headRows.map((h) => h.labId))
+  const out: EscalatedRequest[] = []
+  for (const r of rows) {
+    const verdict = isEscalated({ status: r.status, requestedAt: r.requestedAt, now, escalateAfterHours: r.escalateAfterHours, hasHead: withHead.has(r.labId) })
+    if (!verdict.escalated || !verdict.reason) continue
+    out.push({
+      bookingId: r.bookingId,
+      labName: r.labName,
+      labSlug: r.labSlug,
+      memberName: r.memberName,
+      memberEmail: r.memberEmail,
+      startsAt: r.startsAt,
+      endsAt: r.endsAt,
+      requestedAt: r.requestedAt,
+      waitedHours: Math.floor((now.getTime() - r.requestedAt.getTime()) / 3_600_000),
+      reason: verdict.reason,
+    })
+  }
+  return out
+}
+
+export type DecisionHistoryEntry = {
+  id: string
+  action: string
+  at: Date
+  actorName: string | null
+  actorEmail: string
+  bookingId: string
+  from: string | null
+  to: string | null
+  note: string | null
+  override: boolean
+}
+
+/** The decisions taken on a lab's bookings, newest first, from the audit trail. Heads and administrators only. */
+export async function listDecisionHistory(labId: string, limit = 50): Promise<DecisionHistoryEntry[]> {
+  const actor = await actorFor(labId)
+  requireManager(actor)
+  const rows = await db
+    .select({
+      id: auditLogs.id,
+      action: auditLogs.action,
+      at: auditLogs.createdAt,
+      entityId: auditLogs.entityId,
+      before: auditLogs.before,
+      after: auditLogs.after,
+      actorName: users.name,
+      actorEmail: users.email,
+    })
+    .from(auditLogs)
+    .innerJoin(labBookings, eq(labBookings.id, auditLogs.entityId))
+    .innerJoin(users, eq(users.id, auditLogs.actorUserId))
+    .where(and(eq(auditLogs.entityType, 'lab_booking'), eq(labBookings.labId, labId)))
+    .orderBy(desc(auditLogs.createdAt))
+    .limit(limit)
+  const text = (v: unknown) => (typeof v === 'string' ? v : null)
+  return rows.map((r) => {
+    const before = (r.before ?? {}) as Record<string, unknown>
+    const after = (r.after ?? {}) as Record<string, unknown>
+    return {
+      id: r.id,
+      action: r.action,
+      at: r.at,
+      actorName: r.actorName,
+      actorEmail: r.actorEmail,
+      bookingId: r.entityId,
+      from: text(before.status),
+      to: text(after.status),
+      note: text(after.reason) ?? text(after.note),
+      override: after.override === true,
+    }
+  })
+}

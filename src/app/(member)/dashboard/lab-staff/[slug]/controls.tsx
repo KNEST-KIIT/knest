@@ -67,11 +67,16 @@ export function DecisionControls({ id, staff, requiresAssistant }: { id: string;
           disabled={pending}
           onClick={() => {
             const assistant = (document.getElementById(`assistant-${id}`) as HTMLSelectElement).value || null
-            void call(endpoint, { action: 'approve', assistantUserId: assistant })
+            const note = (document.getElementById(`approve-note-${id}`) as HTMLInputElement).value
+            void call(endpoint, { action: 'approve', assistantUserId: assistant, note })
           }}
         >
           Approve
         </button>
+        <label className="flex items-center gap-2 text-[length:var(--text-small)]">
+          Note to the person (optional)
+          <input id={`approve-note-${id}`} maxLength={500} className={`${FIELD} min-w-[12rem]`} />
+        </label>
         <button type="button" className={BUTTON} onClick={() => setMode(mode === 'reject' ? 'none' : 'reject')} aria-expanded={mode === 'reject'}>
           Decline…
         </button>
@@ -213,6 +218,8 @@ export type SettingsValues = {
   maxOpenRequests: number
   maxHoursPerWeek: number
   cancelCutoffMinutes: number
+  escalateAfterHours: number
+  departmentId: string | null
   eligibility: 'verified' | 'onboarded'
   requiresAssistant: boolean
 }
@@ -226,9 +233,22 @@ const NUMBER_FIELDS: { key: keyof SettingsValues; label: string; hint?: string }
   { key: 'maxOpenRequests', label: 'Requests waiting, per person' },
   { key: 'maxHoursPerWeek', label: 'Hours per week, per person' },
   { key: 'cancelCutoffMinutes', label: 'Cancel up to (minutes before)' },
+  { key: 'escalateAfterHours', label: 'Escalate a waiting request after (hours)' },
 ]
 
-export function SettingsForm({ slug, values, isAdmin, isActive }: { slug: string; values: SettingsValues; isAdmin: boolean; isActive: boolean }) {
+export function SettingsForm({
+  slug,
+  values,
+  isAdmin,
+  isActive,
+  departments = [],
+}: {
+  slug: string
+  values: SettingsValues
+  isAdmin: boolean
+  isActive: boolean
+  departments?: { id: string; label: string }[]
+}) {
   const { pending, error, done, call } = useCall()
   return (
     <form
@@ -244,6 +264,7 @@ export function SettingsForm({ slug, values, isAdmin, isActive }: { slug: string
           requiresAssistant: f.get('requiresAssistant') === 'on',
         }
         for (const field of NUMBER_FIELDS) settings[field.key] = Number(f.get(field.key))
+        if (isAdmin && departments.length > 0) settings.departmentId = String(f.get('departmentId') ?? '') || null
         void call(`/api/labs/${slug}/manage`, { action: 'update', settings: isAdmin ? { ...settings, isActive: f.get('isActive') === 'on' } : settings })
       }}
     >
@@ -260,6 +281,19 @@ export function SettingsForm({ slug, values, isAdmin, isActive }: { slug: string
           <input name="department" defaultValue={values.department} maxLength={100} className={FIELD} />
         </label>
       </div>
+      {isAdmin && departments.length > 0 && (
+        <label className="flex flex-col text-[length:var(--text-small)] sm:max-w-sm">
+          Place in the department hierarchy
+          <select name="departmentId" defaultValue={values.departmentId ?? ''} className={FIELD}>
+            <option value="">Not placed</option>
+            {departments.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       <label className="flex flex-col text-[length:var(--text-small)]">
         About this lab
         <textarea name="description" defaultValue={values.description} maxLength={2000} rows={3} className="rounded-[var(--radius-sm)] border border-[var(--color-line-strong)] bg-white p-2" />
