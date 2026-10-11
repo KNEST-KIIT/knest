@@ -1,6 +1,6 @@
-import { and, eq, inArray, lte, sql } from 'drizzle-orm'
+import { and, eq, inArray, lt, lte, sql } from 'drizzle-orm'
 import { db } from '@/db/client'
-import { emailOutbox } from '@/db/schema'
+import { auditLogs, emailOutbox } from '@/db/schema'
 import { sendEmailDirect } from './send'
 
 /**
@@ -9,7 +9,13 @@ import { sendEmailDirect } from './send'
  * Lifecycle of a row: pending -> sent | expired | dead. `pending` rows are claimed with a lease
  * (their next_attempt_at is pushed out before sending), so two workers, or a worker and the
  * request that created the row, never send the same message at once.
+ *
+ * A `dead` row (every attempt failed) keeps its body for DEAD_BODY_RETENTION_MS so an operator
+ * can resend it from /admin/mail once the cause is fixed; after that the body is blanked.
+ * `sent` and `expired` rows are blanked at once.
  */
+
+export const DEAD_BODY_RETENTION_MS = 7 * 24 * 60 * 60 * 1000
 
 export const DEFAULT_TTL_MS = 24 * 60 * 60 * 1000
 export const MAX_ATTEMPTS = 8
@@ -44,7 +50,10 @@ async function attempt(id: string, message: Message): Promise<'sent' | 'retry' |
     const failed = row?.attempts ?? 1
     const expired = row ? row.expiresAt.getTime() <= Date.now() : false
     if (failed >= MAX_ATTEMPTS || expired) {
-      await db.update(emailOutbox).set({ status: expired ? 'expired' : 'dead', body: '' }).where(eq(emailOutbox.id, id))
+      await db
+        .update(emailOutbox)
+        .set(expired ? { status: 'expired', body: '' } : { status: 'dead' })
+        .where(eq(emailOutbox.id, id))
       console.error(`email_outbox_dead id=${id} attempts=${failed} reason=${expired ? 'expired' : 'attempts'} error=${description}`)
       return 'dead'
     }
@@ -81,8 +90,50 @@ export async function sendDurably(message: Message, ttlMs = DEFAULT_TTL_MS): Pro
   await attempt(id, message)
 }
 
+export type RequeueResult = 'queued' | 'not_found' | 'not_resendable' | 'no_body'
+
+/**
+ * Puts a dead or expired message back in the queue and makes one attempt now (operator resend).
+ * The row is locked while it is inspected, so two operators pressing Resend send it once.
+ * Needs the stored body: once it has been blanked there is nothing to send.
+ */
+export async function requeue(id: string, actorUserId: string): Promise<RequeueResult> {
+  const message = await db.transaction(async (tx) => {
+    const [row] = await tx.select().from(emailOutbox).where(eq(emailOutbox.id, id)).for('update')
+    if (!row) return 'not_found' as const
+    if (row.status !== 'dead' && row.status !== 'expired') return 'not_resendable' as const
+    if (row.body === '') return 'no_body' as const
+    await tx
+      .update(emailOutbox)
+      .set({
+        status: 'pending',
+        attempts: 0,
+        lastError: null,
+        nextAttemptAt: new Date(Date.now() + LEASE_MS),
+        expiresAt: new Date(Date.now() + DEFAULT_TTL_MS),
+      })
+      .where(eq(emailOutbox.id, id))
+    await tx.insert(auditLogs).values({
+      actorUserId,
+      action: 'email_resent',
+      entityType: 'email_outbox',
+      entityId: id,
+      before: { status: row.status, attempts: row.attempts },
+      after: { status: 'pending' },
+    })
+    return { to: row.toAddress, subject: row.subject, text: row.body }
+  })
+  if (typeof message === 'string') return message
+  await attempt(id, message)
+  return 'queued'
+}
+
 /** Sends every message that is due. Returns how many were attempted. Safe to call from several processes. */
 export async function processDue(limit = 20): Promise<number> {
+  await db
+    .update(emailOutbox)
+    .set({ body: '' })
+    .where(and(eq(emailOutbox.status, 'dead'), lt(emailOutbox.createdAt, new Date(Date.now() - DEAD_BODY_RETENTION_MS))))
   const claimed = await db.transaction(async (tx) => {
     const due = await tx
       .select({ id: emailOutbox.id })

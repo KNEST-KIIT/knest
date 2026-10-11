@@ -9,8 +9,9 @@ export const emailStatus = appSchema.enum('email_status', ['pending', 'sent', 'e
  * reset link: the worker (src/server/email/outbox.ts) retries with a growing delay until the
  * message is sent, runs out of attempts or passes `expires_at`.
  *
- * `body` can contain a single-use link. It is blanked as soon as the row leaves `pending`
- * (sent, expired or dead), so the table does not accumulate live tokens.
+ * `body` can contain a single-use link. It is blanked as soon as the row is sent or expires.
+ * A dead row keeps it for seven days so an operator can resend it; the retry worker then
+ * blanks it, so the table does not accumulate live tokens.
  */
 export const emailOutbox = appSchema.table(
   'email_outbox',
