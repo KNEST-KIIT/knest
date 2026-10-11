@@ -40,7 +40,19 @@ export async function listEvents(filters: EventFilters = {}) {
 export async function listUpcomingEvents(filters: EventFilters = {}) {
   const payload = await getContentClient()
 
-  const where: Where = { and: [{ startsAt: { greater_than: new Date().toISOString() } }] }
+  // Still "upcoming" while it is running: an event with an end time stays listed until
+  // that time passes; one without an end time is listed until it starts.
+  const now = new Date().toISOString()
+  const where: Where = {
+    and: [
+      {
+        or: [
+          { endsAt: { greater_than: now } },
+          { and: [{ endsAt: { exists: false } }, { startsAt: { greater_than: now } }] },
+        ],
+      },
+    ],
+  }
   const and = where.and as Where[]
   if (filters.eventType) and.push({ eventType: { equals: filters.eventType } })
   if (filters.format) and.push({ format: { equals: filters.format } })

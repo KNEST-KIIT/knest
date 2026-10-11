@@ -1,8 +1,9 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Avatar, Heading, Tag } from '@/components/ui'
 import { RichText } from '@/components/content/rich-text'
-import { formatEventTime } from '@/lib/dates'
+import { formatEventTime, hasPassed } from '@/lib/dates'
 import { getEventBySlug } from '@/server/content/events'
 import { getRegistrationCount, getRegistrationStatus } from '@/server/events/actions'
 import { getSessionUser } from '@/server/auth/guards'
@@ -36,13 +37,15 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
 
   const [user, registeredCount] = await Promise.all([getSessionUser(), getRegistrationCount(event.id)])
   const initiallyRegistered = user ? await getRegistrationStatus(user.id, event.id) : false
+  // An event is over once its end time (or, with none, its start) has passed.
+  const finished = hasPassed(event.endsAt ?? event.startsAt)
   const full = Boolean(event.capacity && registeredCount >= event.capacity && !initiallyRegistered)
 
   const mentorSpeakers = (event.mentorSpeakers ?? []).filter((m) => typeof m === 'object')
   const otherSpeakers = event.speakers ?? []
 
   return (
-    <div className="mx-auto w-full max-w-[1280px] px-6 py-16 md:px-10">
+    <div className="mx-auto w-full max-w-160 px-6 py-16 md:px-10">
       <div className="max-w-[68ch]">
         <Tag tone="archive">{TYPE_LABELS[event.eventType ?? 'workshop']}</Tag>
         <Heading as="h1" size="display" className="mt-4">
@@ -51,6 +54,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
         <p className="mt-4 text-[length:var(--text-heading)] text-[var(--color-ink-soft)]">{event.summary}</p>
         <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-[length:var(--text-small)] text-[var(--color-ink-muted)]">
           <span>{formatEventTime(event.startsAt)}</span>
+          {finished && <Tag tone="archive">Finished</Tag>}
           {event.location && <span>{event.location}</span>}
           {event.capacity && <span>{registeredCount} of {event.capacity} spots taken</span>}
         </div>
@@ -102,17 +106,35 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
 
         <aside>
           <div className="sticky top-24 rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-white p-6 shadow-[var(--shadow-raised)]">
-            {event.registrationUrl ? (
-              <a
-                href={event.registrationUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex h-14 w-full items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-signal)] px-6 font-medium text-white hover:bg-[var(--color-signal-deep)]"
-              >
-                Register
-              </a>
+            {finished ? (
+              <div>
+                <p className="font-medium">This event has finished.</p>
+                <Link href="/events" className="mt-3 inline-block text-[var(--color-signal)] underline underline-offset-4">
+                  See upcoming events
+                </Link>
+              </div>
             ) : (
-              <RegisterButton eventId={event.id} slug={slug} initiallyRegistered={initiallyRegistered} full={full} />
+              <>
+                {event.registrationUrl ? (
+                  <a
+                    href={event.registrationUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex h-14 w-full items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-signal)] px-6 font-medium text-white hover:bg-[var(--color-signal-deep)]"
+                  >
+                    Register
+                  </a>
+                ) : (
+                  <RegisterButton eventId={event.id} slug={slug} initiallyRegistered={initiallyRegistered} full={full} />
+                )}
+                <a
+                  href={`/events/${slug}/calendar.ics`}
+                  download
+                  className="mt-4 inline-flex min-h-11 w-full items-center justify-center text-[length:var(--text-small)] text-[var(--color-ink-soft)] underline underline-offset-4 hover:text-[var(--color-ink)]"
+                >
+                  Add to calendar
+                </a>
+              </>
             )}
           </div>
         </aside>
