@@ -145,6 +145,11 @@ Signup is limited to 5 per hour per address and needs Turnstile, which bounds sc
 removing the signal needs verify-first signup, which the product decision (USER_JOURNEYS Journey 1)
 rejects. Recommend leaving as is.
 
+Update from `agent/accounts` (reported by that agent, not reviewed in code by this pass, not
+merged): signup returns an identical 202 for new and existing addresses and sets no session; the
+e-mail verification confirm step issues the session. If that lands, this finding closes and the
+squatting scenario below goes away (an unverified address can no longer hold a session).
+
 Related: an unverified signup under someone else's address creates an account the real owner
 cannot register. Password reset by the real owner still works and deletes every session of the
 account (`actions.ts:169`), so the squatter loses access. Submitting an application requires a
