@@ -1,0 +1,5 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [ { "Effect": "Allow", "Principal": { "Service": "cloudformation.amazonaws.com" }, "Action": "sts:AssumeRole",
+    "Condition": { "StringEquals": { "aws:SourceAccount": "166917387892" } } } ]
+}

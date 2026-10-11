@@ -64,7 +64,7 @@ function danglingReferences(template: Template): string[] {
   return problems
 }
 
-describe.each(['app', 'origin', 'edge', 'waf', 'dns', 'ci', 'cert'])('%s.yaml', (name) => {
+describe.each(['app', 'origin', 'edge', 'waf', 'dns', 'ci', 'cert', 'ses'])('%s.yaml', (name) => {
   const template = load(name)
   it('parses, and has resources that each declare a type', () => {
     expect(Object.keys(template.Resources).length).toBeGreaterThan(0)

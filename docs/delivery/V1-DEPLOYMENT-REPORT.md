@@ -83,3 +83,46 @@ Roughly USD 65 to 76 per month: EC2 and EBS about 10, RDS about 18, ALB about 18
 - Preview gate login: local scratchpad file `preview-gate.txt` (not committed). Only its SHA-256 is in AWS.
 - Release image digests: app `sha256:6705de24...`, migrate `sha256:2e3e57b8...`.
 - Rollback: the SSM document restarts the previous container if the new one is unhealthy; database restore point `pre-migrate-20261011074349`.
+
+## 6. Update 2026-10-11 (delegated continuation)
+
+Status: **private preview only. Public launch has not happened and is gated on HD-06 approval evidence and real Turnstile keys.**
+
+### Decisions taken on the owner's behalf (each with its reason)
+
+| # | Decision | Reason |
+|---|---|---|
+| 1 | Set `SiteUrl` to the CloudFront preview address by change set, then redeploy | Same-origin write checks refuse form posts otherwise; change set showed only the SSM parameter changing |
+| 2 | Treat `/admin` 404 as intended | Integration tests assert 404 for anonymous and student; staff get 200 |
+| 3 | Interim alert and billing owner: `pinakipattnaik@gmail.com` | Owner's instruction; replace with an institutional mailbox before launch |
+| 4 | AWS Budget `knest-production-monthly`, USD 100, alerts at 50 and 80 percent actual and 100 percent forecast | Estimated run rate is 70 to 95; ceiling leaves headroom |
+| 5 | Runtime DB role `knest_app` (row access only), created by the migration job; app falls back to master with a loud warning if a release lacks it | Rollback and first deploy must not break |
+| 6 | Durable mail outbox in the app database, with retries, expiry and an alarm | Smallest change that stops silent loss; no new AWS service |
+| 7 | Orphan reconciliation runs as a daily dry run; deletion needs `STORAGE_RECONCILE=apply` | Counts must be seen before anything is removed; bucket is versioned |
+| 8 | Public cutover uses Route 53 delegation (as `DNS-MIGRATION.md`) | GoDaddy cannot alias an apex to CloudFront |
+| 9 | Scoped operator role plus MFA drafted, allow-list kept as a template and not installed | Settings and identity changes belong to the owner |
+
+### Done and verified
+
+| Item | Evidence |
+|---|---|
+| SiteUrl on the preview address, redeployed | Change set `siteurl-preview` (one Modify); SSM command `5791a6cb...` Success, container `healthy` |
+| Runtime role | Local run: DML allowed; CREATE, DROP, ALTER, TRUNCATE, CREATE ROLE, CREATE SCHEMA denied (`DRILLS.md` D2) |
+| Durable mail | `0011_email_outbox`, worker, alarm; unit tests for policy |
+| Orphan reconciliation | `src/server/storage/reconcile*.ts`, unit tests for guards |
+| Populated upgrade drill | `DRILLS.md` D1, 200 users and 50 enquiries survive 11 to 12 migrations |
+| SES identity stack | `knest-production-ses` CREATE_COMPLETE, three DKIM tokens issued, DNS not yet added |
+| ACM certificate | `knest-production-cert` requested, `PENDING_VALIDATION`, four CNAMEs listed in `CUTOVER-RUNBOOK.md` |
+| Budget and alert address | Budget exists with three notifications; SNS subscription `PendingConfirmation` until the owner clicks the mail |
+
+### Blocked, with the exact commands in `OPERATOR-COMMANDS.md`
+
+- Signed-in smoke test on the live host (classifier blocked the remote run). The script `scripts/hosted-smoke.mjs` and runner are committed.
+- External gate checks (the classifier blocked reading the preview password).
+- GoDaddy record additions (account owner's emailed one-time code).
+- Release of the new image and the app template update (needs CI green on the pushed commit, then the release workflow).
+- Real Turnstile keys, HD-06 approval, SES production access, SNS confirmation.
+
+### Not claimed
+
+Restore, rollback, alarm-to-person, capacity and hosted accessibility drills for the exact release SHA are **not run** (`DRILLS.md` D4 to D8). The runtime role is proven locally, not yet on RDS.

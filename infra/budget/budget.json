@@ -1,0 +1,6 @@
+{
+  "BudgetName": "knest-production-monthly",
+  "BudgetLimit": { "Amount": "100", "Unit": "USD" },
+  "TimeUnit": "MONTHLY",
+  "BudgetType": "COST"
+}

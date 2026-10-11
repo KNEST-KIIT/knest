@@ -1,0 +1,9 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    { "Sid": "OnlyAssumeTheOperatorRole", "Effect": "Allow", "Action": "sts:AssumeRole", "Resource": "arn:aws:iam::166917387892:role/knest-production-operator" },
+    { "Sid": "ManageOwnMfa", "Effect": "Allow",
+      "Action": ["iam:CreateVirtualMFADevice", "iam:EnableMFADevice", "iam:ListMFADevices", "iam:ResyncMFADevice", "iam:ChangePassword", "iam:GetUser"],
+      "Resource": ["arn:aws:iam::166917387892:user/${aws:username}", "arn:aws:iam::166917387892:mfa/${aws:username}"] }
+  ]
+}

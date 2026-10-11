@@ -1,0 +1,46 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  KNEST outgoing mail identity: the kiitnest.com domain in Amazon SES with Easy DKIM
+  (2048-bit). DEPLOY IN ap-south-1, the region the app sends from. Creating it changes
+  nothing visible: the identity stays "pending verification" until the three DKIM CNAME
+  records from the stack outputs exist in the authoritative DNS (GoDaddy now, Route 53
+  after the nameserver cutover through dns.yaml parameters SesDkimToken1..3). The SPF and
+  MX records are NOT touched: DMARC passes on DKIM alignment, and Google Workspace mail is
+  unaffected. A new account is also in the SES sandbox (verified recipients only); leaving
+  it is a separate production-access request, see docs/delivery/EMAIL-SETUP.md.
+
+Parameters:
+  EmailDomain:
+    Type: String
+    Default: kiitnest.com
+    AllowedPattern: '^[a-z0-9]([a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}$'
+
+Resources:
+  # Retained: deleting the identity would also delete its signing keys and invalidate the DNS records.
+  EmailIdentity:
+    Type: AWS::SES::EmailIdentity
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      EmailIdentity: !Ref EmailDomain
+      DkimSigningAttributes:
+        NextSigningKeyLength: RSA_2048_BIT
+      DkimAttributes:
+        SigningEnabled: true
+      FeedbackAttributes:
+        EmailForwardingEnabled: true
+
+Outputs:
+  DkimName1:
+    Description: Add as a CNAME record name (relative to the zone is the part before the domain).
+    Value: !GetAtt EmailIdentity.DkimDNSTokenName1
+  DkimValue1:
+    Value: !GetAtt EmailIdentity.DkimDNSTokenValue1
+  DkimName2:
+    Value: !GetAtt EmailIdentity.DkimDNSTokenName2
+  DkimValue2:
+    Value: !GetAtt EmailIdentity.DkimDNSTokenValue2
+  DkimName3:
+    Value: !GetAtt EmailIdentity.DkimDNSTokenName3
+  DkimValue3:
+    Value: !GetAtt EmailIdentity.DkimDNSTokenValue3

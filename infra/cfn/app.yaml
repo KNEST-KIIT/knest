@@ -314,6 +314,21 @@ Resources:
         PasswordLength: 48
         ExcludePunctuation: true
 
+  # The database identity the web container runs as. The login role itself is created by the
+  # migration job (src/db/runtime-role.ts) using this generated password, so the role that serves
+  # requests can read and write rows but cannot change the schema. The master secret stays with
+  # the migration step only.
+  DbRuntimeSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub 'knest-${Environment}/db-runtime'
+      Description: Credentials of the least-privilege database role the app runs as (created by the migration job).
+      GenerateSecretString:
+        SecretStringTemplate: '{"username":"knest_app"}'
+        GenerateStringKey: password
+        PasswordLength: 40
+        ExcludePunctuation: true
+
   # The two session and CMS secrets, generated here so no person ever handles them.
   AuthSecret:
     Type: AWS::SecretsManager::Secret
@@ -384,6 +399,7 @@ Resources:
                   - !Ref PayloadSecret
                   - !Ref TurnstileSecret
                   - !GetAtt Database.MasterUserSecret.SecretArn
+                  - !Ref DbRuntimeSecret
               - Sid: ConfigurationParameters
                 Effect: Allow
                 Action: ['ssm:GetParameter', 'ssm:GetParameters', 'ssm:GetParametersByPath']
@@ -417,6 +433,9 @@ Resources:
   ConfigDbSecretArn:
     Type: AWS::SSM::Parameter
     Properties: { Name: !Sub '/knest-${Environment}/config/db-secret-arn', Type: String, Value: !GetAtt Database.MasterUserSecret.SecretArn }
+  ConfigDbRuntimeSecretArn:
+    Type: AWS::SSM::Parameter
+    Properties: { Name: !Sub '/knest-${Environment}/config/db-runtime-secret-arn', Type: String, Value: !Ref DbRuntimeSecret }
   ConfigTurnstileSiteKey:
     Type: AWS::SSM::Parameter
     Properties: { Name: !Sub '/knest-${Environment}/config/turnstile-site-key', Type: String, Value: !Ref TurnstileSiteKey }
@@ -524,17 +543,30 @@ Resources:
                   aws ecr get-login-password --region "$REGION" | docker login --username AWS --password-stdin "$REGISTRY" >/dev/null
 
                   # Build the environment file in memory-backed storage, readable by root only.
-                  DB_SECRET=$(secret "$(param db-secret-arn)")
-                  DB_USER=$(echo "$DB_SECRET" | jq -r .username)
-                  DB_PASSWORD=$(echo "$DB_SECRET" | jq -rj .password | jq -sRr @uri)
+                  DB_ENDPOINT=$(param db-endpoint)
                   SITE_URL=$(param site-url)
                   umask 077
                   mkdir -p /run/knest
-                  # The environment file holds secrets: remove it however this script ends.
-                  trap 'rm -f /run/knest/app.env' EXIT
+                  # The environment files hold secrets: remove them however this script ends.
+                  trap 'rm -f /run/knest/common.env /run/knest/migrate.env /run/knest/app.env' EXIT
+
+                  # Two database identities. The migration job connects as the master user (it changes the
+                  # schema) and creates the runtime role; the web container connects as that role, which can
+                  # read and write rows and nothing else (src/db/runtime-role.ts).
+                  MASTER_SECRET=$(secret "$(param db-secret-arn)")
+                  MASTER_USER=$(echo "$MASTER_SECRET" | jq -r .username)
+                  MASTER_PASSWORD=$(echo "$MASTER_SECRET" | jq -rj .password | jq -sRr @uri)
+                  RUNTIME_ARN=$(param db-runtime-secret-arn 2>/dev/null || true)
+                  RUNTIME_USER=""
+                  RUNTIME_PASSWORD=""
+                  if [ -n "$RUNTIME_ARN" ] && [ "$RUNTIME_ARN" != "None" ]; then
+                    RUNTIME_SECRET=$(secret "$RUNTIME_ARN")
+                    RUNTIME_USER=$(echo "$RUNTIME_SECRET" | jq -r .username)
+                    RUNTIME_PASSWORD=$(echo "$RUNTIME_SECRET" | jq -rj .password)
+                  fi
+
                   {
                     echo "NODE_ENV=production"
-                    echo "DATABASE_URL=postgres://${DB_USER}:${DB_PASSWORD}@$(param db-endpoint):5432/knest"
                     echo "DATABASE_SSL=verify"
                     echo "DATABASE_SSL_CA_FILE=/etc/knest/rds-global-bundle.pem"
                     echo "AUTH_SECRET=$(secret "knest-$ENVIRONMENT/auth-secret")"
@@ -554,9 +586,23 @@ Resources:
                     echo "SITE_INDEXING=$(param site-indexing)"
                     NOTIFY=$(param enquiry-notify-email 2>/dev/null || true)
                     [ -n "$NOTIFY" ] && echo "ENQUIRY_NOTIFY_EMAIL=$NOTIFY"
+                  } > /run/knest/common.env
+                  {
+                    cat /run/knest/common.env
+                    echo "DATABASE_URL=postgres://${MASTER_USER}:${MASTER_PASSWORD}@${DB_ENDPOINT}:5432/knest"
+                    if [ -n "$RUNTIME_USER" ]; then
+                      echo "DB_RUNTIME_USER=${RUNTIME_USER}"
+                      echo "DB_RUNTIME_PASSWORD=${RUNTIME_PASSWORD}"
+                    fi
+                  } > /run/knest/migrate.env
+                  # The app starts as the runtime role only after the migration job reports it provisioned it.
+                  {
+                    cat /run/knest/common.env
+                    echo "DATABASE_URL=postgres://${MASTER_USER}:${MASTER_PASSWORD}@${DB_ENDPOINT}:5432/knest"
                   } > /run/knest/app.env
 
-                  RUN_OPTS="--env-file /run/knest/app.env -v /opt/knest/rds-global-bundle.pem:/etc/knest/rds-global-bundle.pem:ro"
+                  MOUNT="-v /opt/knest/rds-global-bundle.pem:/etc/knest/rds-global-bundle.pem:ro"
+                  RUN_OPTS="--env-file /run/knest/app.env $MOUNT"
                   PREVIOUS=$(docker inspect knest 2>/dev/null | jq -r '.[0].Config.Image // empty' || true)
 
                   # Migrations only move forward, so take a restore point first and stop if it cannot be made.
@@ -567,7 +613,18 @@ Resources:
 
                   echo "Migrating with $MIGRATE_IMAGE"
                   docker pull "$MIGRATE_IMAGE" >/dev/null
-                  docker run --rm $RUN_OPTS "$MIGRATE_IMAGE"
+                  MIGRATE_LOG=$(mktemp)
+                  if docker run --rm --env-file /run/knest/migrate.env $MOUNT "$MIGRATE_IMAGE" > "$MIGRATE_LOG" 2>&1; then cat "$MIGRATE_LOG"; else cat "$MIGRATE_LOG" >&2; echo "migration failed; the previous version keeps running" >&2; rm -f "$MIGRATE_LOG"; exit 1; fi
+                  if [ -n "$RUNTIME_USER" ] && grep -q "runtime role: ${RUNTIME_USER} .*privileges applied" "$MIGRATE_LOG"; then
+                    {
+                      cat /run/knest/common.env
+                      echo "DATABASE_URL=postgres://${RUNTIME_USER}:$(printf '%s' "$RUNTIME_PASSWORD" | jq -sRr @uri)@${DB_ENDPOINT}:5432/knest"
+                    } > /run/knest/app.env
+                    echo "App identity: runtime role ${RUNTIME_USER} (no schema changes)"
+                  else
+                    echo "WARNING: runtime role not provisioned by this release; the app runs as the database master user" >&2
+                  fi
+                  rm -f "$MIGRATE_LOG" /run/knest/migrate.env
 
                   echo "Starting $APP_IMAGE (previous: ${PREVIOUS:-none})"
                   docker pull "$APP_IMAGE" >/dev/null
@@ -579,7 +636,7 @@ Resources:
                   start "$APP_IMAGE"
                   for i in $(seq 1 45); do
                     STATUS=$(docker inspect knest | jq -r '.[0].State.Health.Status // "starting"')
-                    [ "$STATUS" = "healthy" ] && { echo "healthy"; rm -f /run/knest/app.env; echo "$APP_IMAGE" > /opt/knest/current; [ -n "$PREVIOUS" ] && echo "$PREVIOUS" > /opt/knest/previous; exit 0; }
+                    [ "$STATUS" = "healthy" ] && { echo "healthy"; rm -f /run/knest/common.env /run/knest/app.env; echo "$APP_IMAGE" > /opt/knest/current; [ -n "$PREVIOUS" ] && echo "$PREVIOUS" > /opt/knest/previous; exit 0; }
                     sleep 2
                   done
                   echo "NOT healthy after 90 s; rolling back" >&2
@@ -598,6 +655,32 @@ Resources:
     Type: AWS::SNS::Subscription
     Condition: HasAlertEmail
     Properties: { TopicArn: !Ref AlertTopic, Protocol: email, Endpoint: !Ref AlertEmail }
+
+  # A message the outbox gave up on (src/server/email/outbox.ts logs email_outbox_dead). One is enough:
+  # a person asked for a verification or reset link and did not get it.
+  EmailDeadMetricFilter:
+    Type: AWS::Logs::MetricFilter
+    Properties:
+      LogGroupName: !Ref LogGroup
+      FilterPattern: email_outbox_dead
+      MetricTransformations:
+        - MetricNamespace: !Sub 'knest-${Environment}'
+          MetricName: EmailOutboxDead
+          MetricValue: '1'
+          DefaultValue: 0
+  EmailDeadAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: At least one outgoing message was abandoned after all retries (check SES identity, sandbox and quota).
+      Namespace: !Sub 'knest-${Environment}'
+      MetricName: EmailOutboxDead
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref AlertTopic]
 
   HostStatusAlarm:
     Type: AWS::CloudWatch::Alarm
