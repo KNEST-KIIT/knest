@@ -78,6 +78,13 @@ export function guardRequest(
     if (origin !== null && !allowed.has(origin)) {
       return { allow: false, status: 403, reason: 'origin-mismatch' }
     }
+    // A browser that omits Origin on a write (some legacy and privacy modes) still states the
+    // request's provenance in Sec-Fetch-Site. A cross-site write with no Origin is refused.
+    // Safe methods are never checked, so cross-site top-level navigations (OAuth callbacks,
+    // links in e-mail) are unaffected, and non-browser clients send neither header.
+    if (origin === null && input.header('sec-fetch-site')?.toLowerCase() === 'cross-site') {
+      return { allow: false, status: 403, reason: 'origin-mismatch' }
+    }
   }
 
   return { allow: true }

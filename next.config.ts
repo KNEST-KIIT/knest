@@ -25,6 +25,9 @@ const cspDirectives = [
   `img-src 'self' blob: data: https://www.gravatar.com`,
   `font-src 'self' data:`,
   `connect-src 'self'`,
+  // Lab check-in PWA: service worker at /sw.js and the web app manifest, both same-origin.
+  `worker-src 'self'`,
+  `manifest-src 'self'`,
   `object-src 'none'`,
   `base-uri 'self'`,
   `form-action 'self'`,
@@ -67,6 +70,8 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       ...noStore,
+      // The service worker must revalidate on every load so a fix reaches installed copies.
+      { source: '/sw.js', headers: [{ key: 'Cache-Control', value: 'no-cache' }] },
       {
         source: '/(.*)',
         headers: [
@@ -74,6 +79,9 @@ const nextConfig: NextConfig = {
           { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { key: 'Content-Security-Policy', value: cspHeaderValue },
+          // camera is for the lab check-in QR scanner, on this origin only.
+          { key: 'Permissions-Policy', value: 'camera=(self), microphone=(), geolocation=(), payment=(), usb=()' },
+          { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
         ],
       },
     ]

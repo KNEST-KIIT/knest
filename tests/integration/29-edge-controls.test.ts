@@ -69,4 +69,33 @@ describe('cross-origin writes are refused before any route code runs', () => {
     expect(own.status).not.toBe(403)
     expect(none.status).not.toBe(403)
   })
+
+  it('a cross-site write that carries no Origin header is refused as well', async () => {
+    const res = await fetch(`${BASE()}/api/auth/password/login`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-forwarded-for': uniqueIp(), 'sec-fetch-site': 'cross-site' },
+      body: JSON.stringify({ email: 'nobody@edge.test', password: 'wrong-password-123', ...CAPTCHA }),
+    })
+    expect(res.status).toBe(403)
+  })
+})
+
+describe('browser hardening headers', () => {
+  it('sends the baseline set on a public page', async () => {
+    const res = await get('/about')
+    expect(res.headers.get('x-content-type-options')).toBe('nosniff')
+    expect(res.headers.get('x-frame-options')).toBe('DENY')
+    expect(res.headers.get('referrer-policy')).toBe('strict-origin-when-cross-origin')
+    expect(res.headers.get('cross-origin-opener-policy')).toBe('same-origin')
+    expect(res.headers.get('x-powered-by')).toBeNull()
+    const permissions = res.headers.get('permissions-policy') ?? ''
+    expect(permissions).toContain('camera=(self)')
+    expect(permissions).toContain('microphone=()')
+    expect(permissions).toContain('geolocation=()')
+    const csp = res.headers.get('content-security-policy') ?? ''
+    for (const directive of ["default-src 'self'", "object-src 'none'", "frame-ancestors 'none'", "base-uri 'self'", "form-action 'self'"]) {
+      expect(csp, directive).toContain(directive)
+    }
+    expect(csp).not.toContain('unsafe-eval')
+  })
 })

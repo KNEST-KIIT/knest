@@ -77,6 +77,12 @@ export async function sendEmailDirect(input: Message): Promise<void> {
   }
 
   if (!smtpTransporter) {
+    // A reset or verification link is a credential. Production configuration is refused at boot
+    // without a transport (src/server/env.ts); this keeps the body out of the logs even if that
+    // check is bypassed.
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('No mail transport is configured; refusing to log the message body.')
+    }
     console.log(
       `\n── EMAIL (no mail transport configured, logged instead) ──\nTo: ${input.to}\nSubject: ${input.subject}\n\n${input.text}\n──────────────────────────────────────────────\n`,
     )

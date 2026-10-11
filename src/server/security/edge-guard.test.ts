@@ -49,6 +49,15 @@ describe('same-origin writes', () => {
     expect(guardRequest({ method: 'POST', pathname: '/api/x', header: headers({ origin: 'https://evil.example' }) }, {}).allow).toBe(false)
   })
 
+  it('refuses a cross-site write that carries no Origin, but never blocks reads or same-site writes', () => {
+    const post = (h: Record<string, string>) => guardRequest({ method: 'POST', pathname: '/api/x', header: headers(h) }, sameSite).allow
+    expect(post({ 'sec-fetch-site': 'cross-site' })).toBe(false)
+    expect(post({ 'sec-fetch-site': 'same-origin' })).toBe(true)
+    expect(post({ 'sec-fetch-site': 'same-site' })).toBe(true)
+    expect(post({ 'sec-fetch-site': 'none' })).toBe(true)
+    expect(guardRequest({ method: 'GET', pathname: '/api/auth/callback/google', header: headers({ 'sec-fetch-site': 'cross-site' }) }, sameSite).allow).toBe(true)
+  })
+
   it('requires the origin secret for hosted production, even when configuration is missing', () => {
     for (const site of [undefined, 'https://kiitnest.com', 'https://127.0.0.1.evil.example']) {
       const production = { NODE_ENV: 'production', SITE_URL: site }
