@@ -92,6 +92,13 @@
       "when": 1791751575776,
       "tag": "0012_lab_departments",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1791751708805,
+      "tag": "0013_lab_attendance_qr",
+      "breakpoints": true
     }
   ]
 }
