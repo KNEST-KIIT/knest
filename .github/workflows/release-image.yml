@@ -139,8 +139,10 @@ jobs:
           for DIGEST in "$APP_DIGEST" "$MIGRATE_DIGEST"; do
             aws ecr wait image-scan-complete --repository-name "$ECR_REPOSITORY" --image-id "imageDigest=$DIGEST"
             aws ecr describe-image-scan-findings --repository-name "$ECR_REPOSITORY" --image-id "imageDigest=$DIGEST" \
-              --query imageScanFindings.findingSeverityCounts --output json > scan-counts.json
-            if ! jq -e 'type == "object" and (((.CRITICAL // 0) + (.HIGH // 0)) == 0)' scan-counts.json >/dev/null; then
+              --output json > scan-result.json
+            # ECR omits findingSeverityCounts when a scan finds nothing, so absent counts are zero,
+            # but only for a scan that actually completed.
+            if ! jq -e '.imageScanStatus.status == "COMPLETE" and ((.imageScanFindings.findingSeverityCounts // {}) | (((.CRITICAL // 0) + (.HIGH // 0)) == 0))' scan-result.json >/dev/null; then
               echo "::error::Image scan has high/critical findings or no usable result. The digest is not accepted."
               exit 1
             fi
