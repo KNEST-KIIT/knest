@@ -21,6 +21,9 @@ export function LogoutButton({ className }: { className?: string }) {
       setError('We couldn’t log you out. Check your connection and try again.')
       return
     }
+    // Drop anything personal a lab device cached (roster, service-worker caches). Best effort: a
+    // failure here must never block the log out.
+    await import('@/lib/lab-qr/client/wipe').then((m) => m.wipeLabDeviceCaches()).catch(() => undefined)
     window.location.assign('/')
   }
 
