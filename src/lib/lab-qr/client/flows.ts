@@ -37,6 +37,8 @@ export async function scanStudentPass(args: {
   device: StoredDeviceKey
   outbox: Outbox
   nowMs: number
+  /** True when the device has no connection (or has not reached the server lately). Signed into the event. */
+  offline: boolean
   newId?: () => string
 }): Promise<{ ok: true; eventId: string; booking: RosterBooking } | { ok: false; problem: StaffScanProblem }> {
   const text = args.scanned.trim()
@@ -51,7 +53,7 @@ export async function scanStudentPass(args: {
   if (parsed.payload.a !== args.expectedAction) return { ok: false, problem: 'wrong-action' }
   const eventId = (args.newId ?? (() => crypto.randomUUID()))()
   const token = await createScanEvent(
-    { id: eventId, side: 'staff', action: args.expectedAction, keyId: args.device.keyId, atMs: args.nowMs, bookingId: booking.bookingId, scanned: text },
+    { id: eventId, side: 'staff', action: args.expectedAction, keyId: args.device.keyId, atMs: args.nowMs, bookingId: booking.bookingId, scanned: text, offline: args.offline },
     args.device.privateKey,
   )
   await args.outbox.enqueue(eventId, token)
@@ -69,6 +71,7 @@ export async function scanLabCode(args: {
   device: StoredDeviceKey
   outbox: Outbox
   nowMs: number
+  offline: boolean
   newId?: () => string
 }): Promise<{ ok: true; eventId: string } | { ok: false; problem: StudentScanProblem }> {
   const text = args.scanned.trim()
@@ -81,7 +84,7 @@ export async function scanLabCode(args: {
   if (parsed.payload.m !== args.action) return { ok: false, problem: 'wrong-action' }
   const eventId = (args.newId ?? (() => crypto.randomUUID()))()
   const token = await createScanEvent(
-    { id: eventId, side: 'student', action: args.action, keyId: args.device.keyId, atMs: args.nowMs, bookingId: args.booking.id, scanned: text },
+    { id: eventId, side: 'student', action: args.action, keyId: args.device.keyId, atMs: args.nowMs, bookingId: args.booking.id, scanned: text, offline: args.offline },
     args.device.privateKey,
   )
   await args.outbox.enqueue(eventId, token)

@@ -24,8 +24,11 @@ export type ChallengePayload = { v: 1; t: 'chal'; m: Action; l: string; k: strin
 /**
  * A scan event, signed by the scanning device. `sd` says which side the scanner is: `staff` scanned a
  * student pass, `student` scanned the lab desk's challenge. `tok` is the scanned token, verbatim.
+ * `ol` is signed by the device: 1 when it had no connection at the time, 0 when it was online and
+ * about to send. The server holds an online event to its own clock and only corrects the time of an
+ * offline one, so an online device cannot pick the time its scan is judged against.
  */
-export type ScanPayload = { v: 1; t: 'scan'; id: string; sd: Side; a: Action; k: string; at: number; bk: string; tok: string }
+export type ScanPayload = { v: 1; t: 'scan'; id: string; sd: Side; a: Action; k: string; at: number; bk: string; ol: 0 | 1; tok: string }
 /** Proof of possession when a device registers its public key. Binds the key to a user and a moment. */
 export type RegisterPayload = { v: 1; t: 'reg'; u: string; k: string; at: number }
 
@@ -45,7 +48,7 @@ const VALIDATORS: { [T in TokenType]: (raw: Record<string, unknown>) => raw is P
   chal: (r): r is ChallengePayload =>
     sameKeys(r, ['v', 't', 'm', 'l', 'k', 's', 'n']) && r.v === 1 && r.t === 'chal' && isAction(r.m) && isUuid(r.l) && isKeyId(r.k) && isStep(r.s) && isNonce(r.n),
   scan: (r): r is ScanPayload =>
-    sameKeys(r, ['v', 't', 'id', 'sd', 'a', 'k', 'at', 'bk', 'tok']) &&
+    sameKeys(r, ['v', 't', 'id', 'sd', 'a', 'k', 'at', 'bk', 'ol', 'tok']) &&
     r.v === 1 &&
     r.t === 'scan' &&
     isUuid(r.id) &&
@@ -54,6 +57,7 @@ const VALIDATORS: { [T in TokenType]: (raw: Record<string, unknown>) => raw is P
     isKeyId(r.k) &&
     isTime(r.at) &&
     isUuid(r.bk) &&
+    (r.ol === 0 || r.ol === 1) &&
     typeof r.tok === 'string' &&
     r.tok.length > 0 &&
     r.tok.length <= MAX_TOKEN_LENGTH,
@@ -132,11 +136,11 @@ export function createChallenge(args: { mode: Action; labId: string; keyId: stri
 }
 
 export function createScanEvent(
-  args: { id: string; side: Side; action: Action; keyId: string; atMs: number; bookingId: string; scanned: string },
+  args: { id: string; side: Side; action: Action; keyId: string; atMs: number; bookingId: string; scanned: string; offline: boolean },
   privateKey: CryptoKey,
 ): Promise<string> {
   return createToken<'scan'>(
-    { v: 1, t: 'scan', id: args.id, sd: args.side, a: args.action, k: args.keyId, at: args.atMs, bk: args.bookingId, tok: args.scanned },
+    { v: 1, t: 'scan', id: args.id, sd: args.side, a: args.action, k: args.keyId, at: args.atMs, bk: args.bookingId, ol: args.offline ? 1 : 0, tok: args.scanned },
     privateKey,
   )
 }

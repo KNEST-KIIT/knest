@@ -1,9 +1,11 @@
 import {
+  CLIENT_FUTURE_SLOP_MS,
   EARLY_GRACE_MS,
   LATE_GRACE_MS,
   MAX_CLOCK_SKEW_MS,
   MAX_FUTURE_MS,
   MAX_SYNC_DELAY_MS,
+  ONLINE_TOLERANCE_MS,
   PAIR_WINDOW_MS,
   STEP_TOLERANCE,
   type Action,
@@ -142,8 +144,11 @@ export async function decideScan(token: string, ctx: Context, lookups: Lookups):
   }
 
   // 4. Time. The scanner's own clock is corrected by the skew measured at this submission.
-  const skewMs = ctx.clientNowMs - ctx.serverNowMs
-  const effectiveAtMs = event.at - skewMs
+  // The batch time is unsigned and chosen by the submitter, so it only ever corrects an event the
+  // device itself signed as created offline. An online event is judged against the server's clock.
+  const offline = event.ol === 1
+  const skewMs = offline ? ctx.clientNowMs - ctx.serverNowMs : event.at - ctx.serverNowMs
+  const effectiveAtMs = offline ? event.at - skewMs : event.at
 
   // A pass or challenge is only valid in its own time step (screenshot defence, T1).
   if (!stepWithinTolerance(inner.s, effectiveAtMs, STEP_TOLERANCE)) return reject('expired')
@@ -180,7 +185,8 @@ export async function decideScan(token: string, ctx: Context, lookups: Lookups):
 
   // 7. Everything that is believable but should be seen by a person.
   if (revokedBeforeSync) return { status: 'review', code: 'key-revoked-before-sync', detail }
-  if (Math.abs(skewMs) > MAX_CLOCK_SKEW_MS) return { status: 'review', code: 'clock-skew', detail }
+  if (offline ? Math.abs(skewMs) > MAX_CLOCK_SKEW_MS : Math.abs(skewMs) > ONLINE_TOLERANCE_MS) return { status: 'review', code: 'clock-skew', detail }
+  if (offline && event.at - ctx.clientNowMs > CLIENT_FUTURE_SLOP_MS) return { status: 'review', code: 'future-dated', detail }
   if (ctx.serverNowMs - effectiveAtMs > MAX_SYNC_DELAY_MS) return { status: 'review', code: 'late-sync', detail }
   if (effectiveAtMs - ctx.serverNowMs > MAX_FUTURE_MS) return { status: 'review', code: 'future-dated', detail }
 

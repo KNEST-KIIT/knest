@@ -26,6 +26,12 @@ export const MAX_CLOCK_SKEW_MS = 5 * 60 * 1000
 /** An event that reaches the server later than this after it was scanned goes to head review (T5). */
 export const MAX_SYNC_DELAY_MS = 24 * 60 * 60 * 1000
 
+/** An event created online must carry a scan time this close to the server's own clock. */
+export const ONLINE_TOLERANCE_MS = 2 * 60 * 1000
+
+/** A device cannot have scanned after the moment it sent the batch, give or take this. */
+export const CLIENT_FUTURE_SLOP_MS = 5 * 1000
+
 /** An event this far in the future, after skew correction, goes to head review. */
 export const MAX_FUTURE_MS = 60 * 1000
 

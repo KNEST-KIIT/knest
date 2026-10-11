@@ -44,14 +44,14 @@ const ctx = (userId: string, over: Partial<Context> = {}): Context => ({ submitt
 async function staffScan(scanner: TestDevice, student: TestDevice, at = NOW, over: { passAt?: number; action?: 'in' | 'out'; booking?: string } = {}) {
   const pass = await createPass({ action: over.action ?? 'in', bookingId: over.booking ?? BOOKING, keyId: student.keyId, nowMs: over.passAt ?? at }, student.privateKey)
   return createScanEvent(
-    { id: uuid(), side: 'staff', action: 'in', keyId: scanner.keyId, atMs: at, bookingId: BOOKING, scanned: pass },
+    { id: uuid(), side: 'staff', action: 'in', keyId: scanner.keyId, atMs: at, bookingId: BOOKING, scanned: pass, offline: true },
     scanner.privateKey,
   )
 }
 
 async function studentScan(student: TestDevice, assistant: TestDevice, at = NOW, over: { labId?: string; mode?: 'in' | 'out' } = {}) {
   const chal = await createChallenge({ mode: over.mode ?? 'in', labId: over.labId ?? LAB, keyId: assistant.keyId, nowMs: at }, assistant.privateKey)
-  return createScanEvent({ id: uuid(), side: 'student', action: 'in', keyId: student.keyId, atMs: at, bookingId: BOOKING, scanned: chal }, student.privateKey)
+  return createScanEvent({ id: uuid(), side: 'student', action: 'in', keyId: student.keyId, atMs: at, bookingId: BOOKING, scanned: chal, offline: true }, student.privateKey)
 }
 
 describe('encoding and keys', () => {
@@ -183,7 +183,7 @@ describe('decideScan: forgery', () => {
     const rogue = await newDevice('assistant')
     const pass = await createPass({ action: 'in', bookingId: BOOKING, keyId: w.student.keyId, nowMs: NOW }, w.student.privateKey)
     const token = await createScanEvent(
-      { id: uuid(), side: 'staff', action: 'in', keyId: w.assistant.keyId, atMs: NOW, bookingId: BOOKING, scanned: pass },
+      { id: uuid(), side: 'staff', action: 'in', keyId: w.assistant.keyId, atMs: NOW, bookingId: BOOKING, scanned: pass, offline: true },
       rogue.privateKey,
     )
     expect(await decideScan(token, ctx('assistant'), w.dir)).toEqual({ status: 'rejected', code: 'bad-signature' })
@@ -194,7 +194,7 @@ describe('decideScan: forgery', () => {
     // The assistant signs a "student pass" naming the student's key id with their own private key.
     const forgedPass = await createPass({ action: 'in', bookingId: BOOKING, keyId: w.student.keyId, nowMs: NOW }, w.assistant.privateKey)
     const token = await createScanEvent(
-      { id: uuid(), side: 'staff', action: 'in', keyId: w.assistant.keyId, atMs: NOW, bookingId: BOOKING, scanned: forgedPass },
+      { id: uuid(), side: 'staff', action: 'in', keyId: w.assistant.keyId, atMs: NOW, bookingId: BOOKING, scanned: forgedPass, offline: true },
       w.assistant.privateKey,
     )
     expect(await decideScan(token, ctx('assistant'), w.dir)).toEqual({ status: 'rejected', code: 'bad-signature' })
@@ -254,11 +254,11 @@ describe('decideScan: replay, screenshot and relay', () => {
     const pass = await createPass({ action: 'in', bookingId: BOOKING, keyId: w.student.keyId, nowMs: NOW }, w.student.privateKey)
     for (const delay of [90_000, 5 * 60_000]) {
       const at = NOW + delay
-      const event = await createScanEvent({ id: uuid(), side: 'staff', action: 'in', keyId: w.assistant.keyId, atMs: at, bookingId: BOOKING, scanned: pass }, w.assistant.privateKey)
+      const event = await createScanEvent({ id: uuid(), side: 'staff', action: 'in', keyId: w.assistant.keyId, atMs: at, bookingId: BOOKING, scanned: pass, offline: true }, w.assistant.privateKey)
       expect(await decideScan(event, ctx('assistant', { serverNowMs: at, clientNowMs: at }), w.dir)).toEqual({ status: 'rejected', code: 'expired' })
     }
     // 30 s later is still inside the one-step tolerance: the code is valid for that long, not longer.
-    const event = await createScanEvent({ id: uuid(), side: 'staff', action: 'in', keyId: w.assistant.keyId, atMs: NOW + 30_000, bookingId: BOOKING, scanned: pass }, w.assistant.privateKey)
+    const event = await createScanEvent({ id: uuid(), side: 'staff', action: 'in', keyId: w.assistant.keyId, atMs: NOW + 30_000, bookingId: BOOKING, scanned: pass, offline: true }, w.assistant.privateKey)
     expect((await decideScan(event, ctx('assistant', { serverNowMs: NOW + 30_000, clientNowMs: NOW + 30_000 }), w.dir)).status).toBe('accepted')
   })
 
@@ -299,7 +299,7 @@ describe('decideScan: clock skew', () => {
     // The scanner phone runs one hour fast. Its pass came from a correct student phone.
     const skew = 60 * 60_000
     const event = await createScanEvent(
-      { id: uuid(), side: 'staff', action: 'in', keyId: w.assistant.keyId, atMs: NOW + skew, bookingId: BOOKING, scanned: await createPass({ action: 'in', bookingId: BOOKING, keyId: w.student.keyId, nowMs: NOW }, w.student.privateKey) },
+      { id: uuid(), side: 'staff', action: 'in', keyId: w.assistant.keyId, atMs: NOW + skew, bookingId: BOOKING, scanned: await createPass({ action: 'in', bookingId: BOOKING, keyId: w.student.keyId, nowMs: NOW }, w.student.privateKey), offline: true },
       w.assistant.privateKey,
     )
     const d = await decideScan(event, ctx('assistant', { clientNowMs: NOW + skew }), w.dir)
@@ -311,7 +311,7 @@ describe('decideScan: clock skew', () => {
     const w = await world()
     for (const [skew, expected] of [[MAX_CLOCK_SKEW_MS, 'accepted'], [MAX_CLOCK_SKEW_MS + 1, 'review']] as const) {
       const pass = await createPass({ action: 'in', bookingId: BOOKING, keyId: w.student.keyId, nowMs: NOW }, w.student.privateKey)
-      const event = await createScanEvent({ id: uuid(), side: 'staff', action: 'in', keyId: w.assistant.keyId, atMs: NOW + skew, bookingId: BOOKING, scanned: pass }, w.assistant.privateKey)
+      const event = await createScanEvent({ id: uuid(), side: 'staff', action: 'in', keyId: w.assistant.keyId, atMs: NOW + skew, bookingId: BOOKING, scanned: pass, offline: true }, w.assistant.privateKey)
       expect((await decideScan(event, ctx('assistant', { clientNowMs: NOW + skew }), w.dir)).status).toBe(expected)
     }
   })
@@ -333,6 +333,38 @@ describe('decideScan: clock skew', () => {
     expect(d).toMatchObject({ status: 'review', code: 'future-dated' })
   })
 })
+
+describe('decideScan: online and offline events', () => {
+  const online = async (w: Awaited<ReturnType<typeof world>>, at: number, passAt = at) =>
+    createScanEvent(
+      { id: uuid(), side: 'staff', action: 'in', keyId: w.assistant.keyId, atMs: at, bookingId: BOOKING, scanned: await createPass({ action: 'in', bookingId: BOOKING, keyId: w.student.keyId, nowMs: passAt }, w.student.privateKey), offline: false },
+      w.assistant.privateKey,
+    )
+
+  it('judges an online event against the server clock, whatever batch time the device claims', async () => {
+    const w = await world()
+    expect((await decideScan(await online(w, NOW), ctx('assistant'), w.dir)).status).toBe('accepted')
+    // a device that signs "online" but whose scan time is 10 minutes off the server cannot be rescued
+    // by a claimed batch time that makes the difference vanish
+    const lying = await decideScan(await online(w, NOW - 10 * 60_000), ctx('assistant', { clientNowMs: NOW - 10 * 60_000 }), w.dir)
+    expect(lying).toMatchObject({ status: 'review', code: 'clock-skew' })
+    // and a photographed old challenge claimed as a fresh online scan is refused on the step
+    const old = await online(w, NOW, NOW - 10 * 60_000)
+    expect(await decideScan(old, ctx('assistant'), w.dir)).toEqual({ status: 'rejected', code: 'expired' })
+  })
+
+  it('refuses to correct an offline event whose scan time is after the batch time it claims', async () => {
+    const w = await world()
+    const event = await staffScanAt(w, NOW + 30_000)
+    const d = await decideScan(event, ctx('assistant', { clientNowMs: NOW }), w.dir)
+    expect(d).toMatchObject({ status: 'review', code: 'future-dated' })
+  })
+})
+
+async function staffScanAt(w: Awaited<ReturnType<typeof world>>, at: number) {
+  const pass = await createPass({ action: 'in', bookingId: BOOKING, keyId: w.student.keyId, nowMs: at }, w.student.privateKey)
+  return createScanEvent({ id: uuid(), side: 'staff', action: 'in', keyId: w.assistant.keyId, atMs: at, bookingId: BOOKING, scanned: pass, offline: true }, w.assistant.privateKey)
+}
 
 describe('decideScan: key revocation', () => {
   it('refuses scans from a key revoked at or before the scan', async () => {

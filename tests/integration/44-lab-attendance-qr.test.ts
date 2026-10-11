@@ -82,7 +82,7 @@ const staffEvent = async (b: Booker, scanner: TestDevice, over: { at?: number; a
   const action = over.action ?? 'in'
   const pass = await createPass({ action, bookingId: b.bookingId, keyId: (over.passKey ?? b.device).keyId, nowMs: over.passAt ?? at }, (over.passKey ?? b.device).privateKey)
   const id = over.id ?? crypto.randomUUID()
-  const token = await createScanEvent({ id, side: 'staff', action, keyId: scanner.keyId, atMs: at, bookingId: b.bookingId, scanned: pass }, scanner.privateKey)
+  const token = await createScanEvent({ id, side: 'staff', action, keyId: scanner.keyId, atMs: at, bookingId: b.bookingId, scanned: pass, offline: true }, scanner.privateKey)
   return { id, token, pass }
 }
 const studentEvent = async (b: Booker, deskDevice: TestDevice, over: { at?: number; action?: 'in' | 'out'; id?: string } = {}) => {
@@ -90,7 +90,7 @@ const studentEvent = async (b: Booker, deskDevice: TestDevice, over: { at?: numb
   const action = over.action ?? 'in'
   const chal = await createChallenge({ mode: action, labId: b.labId, keyId: deskDevice.keyId, nowMs: at }, deskDevice.privateKey)
   const id = over.id ?? crypto.randomUUID()
-  const token = await createScanEvent({ id, side: 'student', action, keyId: b.device.keyId, atMs: at, bookingId: b.bookingId, scanned: chal }, b.device.privateKey)
+  const token = await createScanEvent({ id, side: 'student', action, keyId: b.device.keyId, atMs: at, bookingId: b.bookingId, scanned: chal, offline: true }, b.device.privateKey)
   return { id, token, chal }
 }
 const send = async (who: Session, events: string[], clientNowMs = Date.now()) => json(await api('/api/lab-attendance/scans', who, { clientNowMs, events }))
@@ -244,7 +244,7 @@ describe('the two-sided exchange', () => {
     expect(result(await send(assistant, [staff.token])).status).toBe('accepted')
     // the same pass, new event id: the nonce is single use
     const reused = await createScanEvent(
-      { id: crypto.randomUUID(), side: 'staff', action: 'in', keyId: assistantDevice.keyId, atMs: Date.now(), bookingId: b.bookingId, scanned: staff.pass },
+      { id: crypto.randomUUID(), side: 'staff', action: 'in', keyId: assistantDevice.keyId, atMs: Date.now(), bookingId: b.bookingId, scanned: staff.pass, offline: true },
       assistantDevice.privateKey,
     )
     expect(result(await send(assistant, [reused]))).toMatchObject({ status: 'rejected', code: 'replay' })
@@ -261,7 +261,7 @@ describe('the two-sided exchange', () => {
     const b = await makeBooker('ex-forge')
     // a pass signed by the assistant but naming the student's key
     const forgedPass = await createPass({ action: 'in', bookingId: b.bookingId, keyId: b.device.keyId, nowMs: Date.now() }, assistantDevice.privateKey)
-    const forged = await createScanEvent({ id: crypto.randomUUID(), side: 'staff', action: 'in', keyId: assistantDevice.keyId, atMs: Date.now(), bookingId: b.bookingId, scanned: forgedPass }, assistantDevice.privateKey)
+    const forged = await createScanEvent({ id: crypto.randomUUID(), side: 'staff', action: 'in', keyId: assistantDevice.keyId, atMs: Date.now(), bookingId: b.bookingId, scanned: forgedPass, offline: true }, assistantDevice.privateKey)
     expect(result(await send(assistant, [forged]))).toMatchObject({ status: 'rejected', code: 'bad-signature' })
     // a stranger who is not staff of the lab scanning a real pass
     expect(result(await send(stranger, [(await staffEvent(b, strangerDevice)).token]))).toMatchObject({ status: 'rejected', code: 'not-staff' })

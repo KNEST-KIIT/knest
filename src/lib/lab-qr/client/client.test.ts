@@ -161,7 +161,7 @@ describe('device flows end to end against the server decision', () => {
   it('a valid pass scanned offline becomes an event the server accepts', async () => {
     const w = await world()
     const pass = await makePass(w.student, BOOKING, 'in', NOW)
-    const res = await scanStudentPass({ scanned: pass, roster: w.roster, expectedAction: 'in', device: w.staff, outbox: w.staffOutbox, nowMs: NOW })
+    const res = await scanStudentPass({ scanned: pass, roster: w.roster, expectedAction: 'in', device: w.staff, outbox: w.staffOutbox, nowMs: NOW, offline: true })
     expect(res.ok).toBe(true)
     let sent: string[] = []
     await w.staffOutbox.flush(async (b) => (sent = b.events, { kind: 'retry', reason: 'x' }))
@@ -172,7 +172,7 @@ describe('device flows end to end against the server decision', () => {
   it('refuses locally: expired pass, wrong action, foreign booking, forged pass, garbage', async () => {
     const w = await world()
     const old = await makePass(w.student, BOOKING, 'in', NOW - 3 * STEP_MS)
-    const base = { roster: w.roster, expectedAction: 'in' as const, device: w.staff, outbox: w.staffOutbox, nowMs: NOW }
+    const base = { roster: w.roster, expectedAction: 'in' as const, device: w.staff, outbox: w.staffOutbox, nowMs: NOW, offline: true }
     expect(await scanStudentPass({ ...base, scanned: old })).toEqual({ ok: false, problem: 'expired' })
     expect(await scanStudentPass({ ...base, scanned: await makePass(w.student, BOOKING, 'out', NOW) })).toEqual({ ok: false, problem: 'wrong-action' })
     expect(await scanStudentPass({ ...base, scanned: await makePass(w.student, '99999999-9999-4999-8999-999999999999', 'in', NOW) })).toEqual({ ok: false, problem: 'not-on-roster' })
@@ -189,7 +189,7 @@ describe('device flows end to end against the server decision', () => {
   it('a student validates the lab desk code before queueing a scan', async () => {
     const w = await world()
     const staffKeys = [{ keyId: w.staff.keyId, publicKey: w.staff.publicKeyB64 }]
-    const base = { booking: { id: BOOKING, labId: LAB }, staffKeys, action: 'in' as const, device: w.student, outbox: w.studentOutbox, nowMs: NOW }
+    const base = { booking: { id: BOOKING, labId: LAB }, staffKeys, action: 'in' as const, device: w.student, outbox: w.studentOutbox, nowMs: NOW, offline: true }
     const code = await makeLabCode(w.staff, LAB, 'in', NOW)
     expect((await scanLabCode({ ...base, scanned: code })).ok).toBe(true)
     expect(await scanLabCode({ ...base, scanned: await makeLabCode(w.staff, LAB, 'out', NOW) })).toEqual({ ok: false, problem: 'wrong-action' })
