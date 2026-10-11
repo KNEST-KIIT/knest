@@ -4,7 +4,7 @@ System of record for the R1-approved blueprint. Status vocabulary: `NOT_STARTED`
 
 **IMPLEMENTED is not VERIFIED.** A task is VERIFIED only when every closing check named for it has passed and the evidence is in `EVIDENCE/`. "Verified" here means **verified locally**: on an ephemeral PostgreSQL 16, against the production build, in a real browser. It does not mean verified on staging or in production; neither exists. Per-task evidence and what each check does not cover: `EVIDENCE/phase1-verification-matrix.md`.
 
-Branch: `delivery/p1-containment` (from `00181d4`), pushed to GitHub (feature branch only; Vercel shows it as a protected Preview). Production runs only the maintenance page (`src/proxy.ts`, default branch `aa725f4`); the fixed build is **not released**. CI is green on GitHub for `b222521` and `3ce052c` (see `EVIDENCE/ci-runs.md`; `753028e` pending).
+**Reconciled 2026-10-12.** Work branch is now `codex/production-v1`, the repository's default branch, at `b5ca498`; CI is green on it (run 38171899823; history in `EVIDENCE/ci-runs.md`). The phase-1 branch `delivery/p1-containment` is history. The public site is **not** served by this application: a password-gated preview runs on AWS (reported in `V1-DEPLOYMENT-REPORT.md`, not re-checked here), and `kiitnest.com` is untouched. Rows below keep their original wording and evidence; the rows added under "Phases 2 to 4" and the corrections marked `2026-10-12` are the reconciliation. Item-level truth for security findings is in `FINDINGS.md`; for the 53 modules, `LOCAL-COMPLETENESS.md`.
 
 ## Phase 0
 
@@ -32,7 +32,7 @@ Branch: `delivery/p1-containment` (from `00181d4`), pushed to GitHub (feature br
 
 | Item | Status | Commits | Notes |
 |---|---|---|---|
-| CI foundation | IMPLEMENTED | `858a8e7` | Workflow valid YAML; its commands pass locally in the same order; **has not run on GitHub** (needs a push). |
+| CI foundation | VERIFIED (2026-10-12) | `858a8e7`, `5863bf1` | Runs on GitHub on every push; first success recorded in `5863bf1`, latest green run 38171899823 on `b5ca498`. Earlier text "has not run on GitHub" was true on 2026-10-08 only. |
 | Integration harness | VERIFIED | `0ba85a7` | Ephemeral PG16, migrate-from-zero, production build, stub SMTP, real browser |
 | KN-04 migrations | IMPLEMENTED | `e604737`, `0a0e187` | Payload baseline + Drizzle `lab_admin`; migrate-from-zero and re-run verified locally; drift check in the suite. **Upgrade rehearsal on a populated DB not done.** |
 | NF-04 / NF-11 `lab_admin` | VERIFIED | `0a0e187` | |
@@ -43,6 +43,23 @@ Branch: `delivery/p1-containment` (from `00181d4`), pushed to GitHub (feature br
 | R-05 races: answers/uploads vs submit, review transitions, event capacity | VERIFIED (local) | `3ce052c` | Parallel requests against the production build; **mutation check: with the pre-fix source restored, 6 of the 7 tests fail** (the 7th, same-person idempotency, passed before too). Not covered: registration confirmation notification; document upload needs the S3 stub. |
 | KN-31 submit validation / KN-13 submit race | VERIFIED (these two parts) | `a18121a` | Draft-on-view and the other races remain open |
 | NF-08 not-found / global-error | IMPLEMENTED | `0b90153` | 404 verified; `global-error` is not exercised by any test |
+
+## Phases 2 to 4 (2026-10-09 to 2026-10-12), reconciled from `git log`
+
+| Item | State | Commits | Notes and what is not covered |
+|---|---|---|---|
+| Origin guard, Turnstile, database TLS, SES mail, S3 media, validated production environment | VERIFIED (local+CI), stubs for the services | `7798fe9`, `b3df448` | Real Turnstile, SES and S3 not exercised. Production runs Cloudflare's always-pass test Turnstile pair (reported, `DELIVERY-AUDIT-2026-10-12.md`). |
+| Tokens hashed and consumed atomically (R-08), absolute e-mail links, IST dates (R-12, R-13) | VERIFIED (local+CI) | `c51da1f`, `258da21` | |
+| Submit audit row and explicit application start (R-06) | VERIFIED (local+CI) | `2ee4a13` | |
+| Public pages, staff console, enquiries, event notifications | VERIFIED (local+CI) | `4cc8fbb` | Copy unapproved (HD-04, HD-06). |
+| Lab booking module (manual attendance), retiring the CMS collection | VERIFIED (local+CI), behind a flag | `1427180`, `1fc5fcc` | Flag off by default; HD-16 policy unanswered; no real lab head has reviewed it. |
+| Axe suite over every public, member and staff screen | VERIFIED (CI) | `4cc8fbb` | A scan finds about a third of real problems; manual review not done. |
+| AWS CloudFormation templates, release pipeline, image build in CI | IAC | `83143e2`, `fac5d49`, `1a79403`, `7c3429e` | Reported deployed as a preview (`V1-DEPLOYMENT-REPORT.md`). Not re-verified in this pass. |
+| Least-privilege database role, durable mail outbox, upload orphan reconciliation | VERIFIED (local+CI) | `adc903b`, `c477da7` | Runtime role proven locally; production still on the master credential until the release is applied (reported). |
+| Rate limits on staff and lab routes; per-account sign-in throttle | VERIFIED (local+CI) | `550b0eb`, `99ba3a4` | |
+| CMS publish and edit actions in the audit trail; analytics counts from tables | VERIFIED (local+CI) | `b2bf9fe`, `acf04c8`, `5da08a8` | CI failed once on `b2bf9fe` and was fixed by `acf04c8`. |
+| Delivery audit and full release plan | Documents | `400db19`, `b5ca498` | Judgement estimates, not measurements. |
+| Hardening pass (security review, dependency triage, headers, load test script, manual accessibility script) | See `FINDINGS.md` S-ids | branch `agent/hardening` | Not merged into `codex/production-v1` at the time of writing. |
 
 ## Standing gates
 

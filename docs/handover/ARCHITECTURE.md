@@ -10,7 +10,7 @@ This document describes the code in the repository and the target AWS design. It
 
 Read these four facts first:
 
-- **Nothing is deployed on AWS.** The CloudFormation templates in `infra/cfn/` are written and checked for structure by tests. Their own headers say "written, not deployed, not validated by CloudFormation". See `docs/delivery/AWS-NATIVE-ARCHITECTURE.md`.
+- **A private preview is reported live on AWS; nothing is public.** (Corrected 2026-10-12: this document was written on 2026-10-09, before the preview existed.) The CloudFormation templates in `infra/cfn/` are checked for structure by tests; `docs/delivery/V1-DEPLOYMENT-REPORT.md` reports the preview stack (CloudFront, WAF, load balancer, EC2, RDS) behind a password gate. That report has not been independently re-checked, and the latest release has not been confirmed running there. See `docs/delivery/AWS-NATIVE-ARCHITECTURE.md`.
 - **The public site is a maintenance page.** Per `docs/delivery/TRACKER.md` and `docs/delivery/DECISIONS-2026-10-09.md`, production runs only a maintenance page on Vercel until the release gates pass.
 - **"Done" means verified locally.** It means tested on an ephemeral PostgreSQL 16 against the production build. It does not mean verified on AWS. See `docs/delivery/LOCAL-COMPLETENESS.md`.
 - **Lab booking is off.** `FEATURE_LAB_BOOKING` must be exactly `true` to turn it on. It stays off until the lab operating policy (HD-16) is answered and signed by people. See `LAB-OPERATIONS-GUIDE.md`.

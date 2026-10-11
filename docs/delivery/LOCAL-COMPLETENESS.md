@@ -1,4 +1,6 @@
-# Local completeness: every contracted module, as of 2026-10-09
+# Local completeness: every contracted module, as of 2026-10-09 (rows corrected 2026-10-12)
+
+**2026-10-12 reconciliation.** Rows 35, 40, 41, 43, 50 and 53 were corrected against `git log` and CI (`b5ca498`, CI run 38171899823 green). All other rows are as of 2026-10-09 and were not re-examined. The test counts in row 51 are from 2026-10-09 and have not been re-measured. QR, PWA and offline (rows 30, 31, 36 to 38) are being built on a separate branch (`agent/attendance`) behind `FEATURE_LAB_ATTENDANCE_QR`; nothing of it is on `codex/production-v1` at the time of writing, and it is not threat-model-reviewed.
 
 **Purpose:** the owner asked to finish and prove everything locally before any deployment. This tracks the 53 contract modules (`CONTRACT-TRACEABILITY.md` wording) against the code **now**. It replaces the baseline statuses in that file, which pre-date Phase 1.
 
@@ -42,7 +44,7 @@
 | 24 | Notification centre | DONE | Applications, events and bookings (requested, decided, alternative proposed, cancelled). |
 | 33 | Application review console | DONE | Queue with search, filters, paging; detail; decisions; audit trail viewer; enquiries inbox; members screen; overview. |
 | 34 | Document handling | DONE (local) | Real multipart upload, type sniffing, size limit at the byte, access control; S3 stub-tested. Real S3 is proven in S-1. |
-| 35 | Analytics dashboard | PARTIAL | Funnel counts exist; reconcile against table-derived figures and add a test. |
+| 35 | Analytics dashboard | DONE (2026-10-12) | Table-derived counts shown beside recorded events (`5da08a8`). Funnel redesign and an owner decision on which numbers to publish remain. |
 
 ## Lab platform
 
@@ -57,20 +59,20 @@
 | # | Module | Status | Notes |
 |---|---|---|---|
 | 39 | Cloudflare Turnstile | DONE | Sign-up, sign-in, reset, application submit, contact; lab booking request included. |
-| 40 | Rate limiting | PARTIAL | Database-backed limits on sign-in, sign-up, reset, verification, enquiries, uploads, application and booking requests; client address from CloudFront in production. **Gaps found in review:** lab decide, cancel, respond, attendance and manage routes, lab availability, `/api/admin/*`, and no per-account sign-in throttle. |
-| 41 | Browser hardening | PARTIAL | CSP, frame, sniffing, referrer, no-store set by the app; HSTS is set at CloudFront (IAC). |
+| 40 | Rate limiting | PARTIAL | Database-backed limits on sign-in, sign-up, reset, verification, enquiries, uploads, application and booking requests; client address from CloudFront in production. **Gaps found in review, closed 2026-10-12:** lab, staff and `/api/admin/*` routes (`550b0eb`) and a per-account failed-sign-in throttle (`99ba3a4`). **Open:** no limiter on public CMS REST reads (`SECURITY-REVIEW.md` S-08). |
+| 41 | Browser hardening | PARTIAL | CSP, frame, sniffing, referrer, no-store set by the app and asserted by `29-edge-controls`; Permissions-Policy and COOP added on `agent/hardening`; HSTS is set at CloudFront (IAC, not verified at the real edge). **CSP still allows `'unsafe-inline'`** (`SECURITY-REVIEW.md` S-01). |
 | 42 | Upload safety | DONE | No script-capable types; verified by content. |
-| 43 | Secrets, encryption, audit | PARTIAL | Audit rows for review, submit, members, enquiries; CMS publish actions not yet audited. Encryption and secrets are IAC. |
+| 43 | Secrets, encryption, audit | PARTIAL | Audit rows for review, submit, members, enquiries, CMS create, publish, unpublish, update and delete (`b2bf9fe`), and staff opening an applicant document (`agent/hardening`). Encryption and secrets are IAC; secret rotation is not drilled (`DRILLS.md`). |
 | 44 to 49 | Hosting, database, storage, mail, edge, monitoring | IAC | AWS-native templates, tests, runbooks. Amplify is replaced by EC2 + CloudFront (Next 16 is not supported by Amplify): recorded as a variation to the owner (HD-22). |
 
 ## Quality and handover
 
 | # | Module | Status | Notes |
 |---|---|---|---|
-| 50 | Accessibility | PARTIAL | Automated: 0 serious or critical axe findings across all screens at two widths; no sideways scroll at 375px; fixes made (contrast on dark sections, keyboard access to report tables, reduced motion for animations, wrapping). **Still to do: manual screen-reader and keyboard walk-through by a person.** |
+| 50 | Accessibility | PARTIAL | Automated: 0 serious or critical axe findings across all screens at two widths; no sideways scroll at 375px; fixes made (contrast on dark sections, keyboard access to report tables, reduced motion for animations, wrapping). **Still to do: manual screen-reader and keyboard walk-through by a person** (script: `docs/handover/ACCESSIBILITY-MANUAL-TEST.md`; source review: `ACCESSIBILITY-REVIEW.md`, whose findings are not all fixed). |
 | 51 | Automated tests | PARTIAL | 349 unit and 274 integration tests (plus one documented expected failure) as reported by vitest on 2026-10-09 against the production build with real PostgreSQL. A static count of `it(` calls is lower because of parameterised tests. Gaps: no run with the lab flag off, the booking rate limit and per-user limit race are untested, and real-browser journeys are being added. |
 | 52 | Performance and search visibility | PARTIAL | Sitemap, robots, noindex-until-launch done; image pipeline, social cards and a Lighthouse budget to add. |
-| 53 | Documentation, training, handover | TODO | Architecture, content-editing guide, lab operations guide, staff walkthrough. |
+| 53 | Documentation, training, handover | PARTIAL (2026-10-12) | Written: architecture, runbook, content-editing guide, lab operations guide, staff walkthrough, accessibility and UI reviews, load test and accessibility test scripts (`docs/handover/`). Not done: any of it tested by a person who did not write it; no training session held. |
 
 ## Order of remaining local work
 
