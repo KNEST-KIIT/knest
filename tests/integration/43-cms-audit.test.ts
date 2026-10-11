@@ -26,7 +26,7 @@ afterAll(closeDb)
 describe('CMS audit trail', () => {
   it('records create, publish, unpublish and delete by the staff member who made them', async () => {
     const payload = await payloadClient()
-    const user = { id: actorId, collection: 'staff' } as never
+    const user = { id: actorId, collection: 'staff', staffRole: 'super_admin' } as never
     const base = { collection: 'events' as const, user, overrideAccess: false as const }
 
     const created = await payload.create({
