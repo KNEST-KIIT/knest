@@ -31,6 +31,18 @@ Parameters:
   RepositoryName:
     Type: String
     Default: knest-app
+  GitHubSubjectPrefix:
+    Type: String
+    Default: ''
+    Description: "Set when the repository uses GitHub's immutable OIDC subject, for example repo:ORG@<org-id>/name@<repo-id>. Empty uses repo:<GitHubRepository>."
+    AllowedPattern: '^(repo:[A-Za-z0-9._@/-]+)?$'
+    ConstraintDescription: "Must be empty or start with 'repo:' and contain only letters, digits and . _ @ / -"
+  GitHubEnvironmentName:
+    Type: String
+    Default: ''
+    Description: The GitHub environment's exact spelling when it differs in case from Environment (for example Production). Empty means the same as Environment.
+    AllowedPattern: '^[A-Za-z0-9_-]*$'
+    ConstraintDescription: Letters, digits, underscore and hyphen only.
 
 Rules:
   ProviderArnWhenNotCreating:
@@ -42,6 +54,8 @@ Rules:
 Conditions:
   IsProduction: !Equals [!Ref Environment, production]
   MakeProvider: !Equals [!Ref CreateOidcProvider, 'true']
+  HasSubjectPrefix: !Not [!Equals [!Ref GitHubSubjectPrefix, '']]
+  HasEnvironmentName: !Not [!Equals [!Ref GitHubEnvironmentName, '']]
 
 Resources:
   Repository:
@@ -78,7 +92,15 @@ Resources:
             Condition:
               StringEquals:
                 'token.actions.githubusercontent.com:aud': sts.amazonaws.com
-                'token.actions.githubusercontent.com:sub': !Sub 'repo:${GitHubRepository}:environment:${Environment}'
+                'token.actions.githubusercontent.com:sub':
+                  - !Join
+                    - ':environment:'
+                    - - !If [HasSubjectPrefix, !Ref GitHubSubjectPrefix, !Sub 'repo:${GitHubRepository}']
+                      - !Ref Environment
+                  - !Join
+                    - ':environment:'
+                    - - !If [HasSubjectPrefix, !Ref GitHubSubjectPrefix, !Sub 'repo:${GitHubRepository}']
+                      - !If [HasEnvironmentName, !Ref GitHubEnvironmentName, !Ref Environment]
       MaxSessionDuration: 3600
       Policies:
         - PolicyName: push-images
@@ -113,7 +135,15 @@ Resources:
             Condition:
               StringEquals:
                 'token.actions.githubusercontent.com:aud': sts.amazonaws.com
-                'token.actions.githubusercontent.com:sub': !Sub 'repo:${GitHubRepository}:environment:${Environment}'
+                'token.actions.githubusercontent.com:sub':
+                  - !Join
+                    - ':environment:'
+                    - - !If [HasSubjectPrefix, !Ref GitHubSubjectPrefix, !Sub 'repo:${GitHubRepository}']
+                      - !Ref Environment
+                  - !Join
+                    - ':environment:'
+                    - - !If [HasSubjectPrefix, !Ref GitHubSubjectPrefix, !Sub 'repo:${GitHubRepository}']
+                      - !If [HasEnvironmentName, !Ref GitHubEnvironmentName, !Ref Environment]
       MaxSessionDuration: 3600
       Policies:
         - PolicyName: run-the-deploy-document
