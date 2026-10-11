@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Heading } from '@/components/ui'
 import { requireAdminArea } from '@/server/auth/guards'
+import { reconcileFunnel } from '@/server/analytics/reconcile'
 import { FUNNEL_EVENTS, getActivatedBuildersCount, getEventCounts, getTableTruth, type FunnelStage } from '@/server/analytics/funnel'
 
 export const metadata: Metadata = { title: 'Analytics — Admin' }
@@ -32,6 +33,8 @@ export default async function AnalyticsPage() {
   await requireAdminArea('analytics')
   const [counts, activatedBuilders, truth] = await Promise.all([getEventCounts(), getActivatedBuildersCount(), getTableTruth()])
   const totalEvents = Object.values(counts).reduce((sum, n) => sum + n, 0)
+  const totalRecords = Object.values(truth).reduce((sum, n) => sum + n, 0)
+  const reconciliation = reconcileFunnel(counts, truth).filter((row) => row.state !== 'match')
 
   return (
     <div>
@@ -39,10 +42,15 @@ export default async function AnalyticsPage() {
         Analytics
       </Heading>
 
-      {totalEvents === 0 ? (
+      {totalEvents === 0 && totalRecords === 0 ? (
         <p className="mt-6 text-[var(--color-ink-soft)]">No activity tracked yet.</p>
       ) : (
         <>
+          <p className="mt-2 max-w-[65ch] text-[var(--color-ink-soft)]">
+            Each tile shows events recorded as people used the site. Where the same outcome is stored in the
+            database, the records under it are the count to trust.
+          </p>
+
           <div className="mt-8 rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-white p-6">
             <p className="text-[length:var(--text-small)] font-medium uppercase tracking-[0.1em] text-[var(--color-ink-muted)]">
               Activated Builders
@@ -74,9 +82,13 @@ export default async function AnalyticsPage() {
                       <p className="mt-1 font-[family-name:var(--font-display)] text-[length:var(--text-heading)]">
                         {counts[event] ?? 0}
                       </p>
-                      {event in truth && (
+                      {event in truth ? (
                         <p className="mt-1 text-[length:var(--text-small)] text-[var(--color-ink-muted)]">
                           Records in the database: {truth[event]}
+                        </p>
+                      ) : (
+                        <p className="mt-1 text-[length:var(--text-small)] text-[var(--color-ink-muted)]">
+                          Events only. No database table holds this.
                         </p>
                       )}
                     </div>
@@ -84,6 +96,26 @@ export default async function AnalyticsPage() {
                 </div>
               </div>
             ))}
+          </div>
+
+          <div className="mt-10">
+            <Heading as="h2" size="heading" uppercase={false}>
+              Events against records
+            </Heading>
+            {reconciliation.length === 0 ? (
+              <p className="mt-3 text-[length:var(--text-small)] text-[var(--color-ink-soft)]">
+                Every recorded event count agrees with its database records.
+              </p>
+            ) : (
+              <ul className="mt-3 flex flex-col gap-2 text-[length:var(--text-small)]">
+                {reconciliation.map((row) => (
+                  <li key={row.event} className="rounded-[var(--radius-md)] border border-[var(--color-line)] bg-white p-3">
+                    <strong>{EVENT_LABELS[row.event] ?? row.event}</strong>: {row.recorded} events, {row.records} records.{' '}
+                    {row.note}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </>
       )}
