@@ -26,7 +26,10 @@ async function s3Client() {
 }
 
 export function generateStorageKey(originalName: string): string {
-  const ext = path.extname(originalName).slice(0, 10)
+  // The extension comes from the client. Keep only a short alphanumeric one so nothing else
+  // from the uploaded name can reach the object key.
+  const rawExt = path.extname(originalName).toLowerCase()
+  const ext = /^\.[a-z0-9]{1,8}$/.test(rawExt) ? rawExt : ''
   return `${new Date().toISOString().slice(0, 10)}/${randomBytes(16).toString('hex')}${ext}`
 }
 

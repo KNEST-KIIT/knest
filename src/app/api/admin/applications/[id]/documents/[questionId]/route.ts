@@ -1,7 +1,7 @@
 import { and, eq, ne } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
 import { db } from '@/db/client'
-import { applicationDocuments, applications } from '@/db/schema'
+import { applicationDocuments, applications, auditLogs } from '@/db/schema'
 import { requireStaffOrThrow, UnauthorizedError } from '@/server/auth/guards'
 import { limitByUser } from '@/server/security/route-limits'
 import { getFile } from '@/server/storage'
@@ -14,8 +14,9 @@ export async function GET(
   if (limited) return limited
   const { id, questionId } = await params
 
+  let actorId: string
   try {
-    await requireStaffOrThrow('applications')
+    actorId = (await requireStaffOrThrow('applications')).id
   } catch (error) {
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: 'Not permitted.' }, { status: error.status })
@@ -35,6 +36,16 @@ export async function GET(
   if (!document) return NextResponse.json({ error: 'Not found.' }, { status: 404 })
 
   const buffer = await getFile(document.storageKey)
+
+  // An applicant's document is personal data: who opened it, and when, belongs in the trail.
+  await db.insert(auditLogs).values({
+    actorUserId: actorId,
+    action: 'application_document_viewed',
+    entityType: 'application',
+    entityId: id,
+    before: null,
+    after: { questionId, documentId: document.id },
+  })
 
   return new NextResponse(new Uint8Array(buffer), {
     headers: {

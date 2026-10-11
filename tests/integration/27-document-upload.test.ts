@@ -127,6 +127,9 @@ describe('uploading an application document', () => {
     const disposition = download.headers.get('content-disposition') ?? ''
     expect(disposition).toMatch(/^attachment; filename="[\w. -]+"/)
     expect(disposition).not.toMatch(/[\r\n]/)
+    // Opening an applicant's document is recorded: once, by the staff member, for this application.
+    const viewed = await db().query("select actor_user_id from app.audit_logs where action = 'application_document_viewed' and entity_id = $1", [applicationId])
+    expect(viewed.rows).toHaveLength(1)
   })
 
   it('refuses a file whose bytes are not what its type claims, and stores nothing', async () => {
