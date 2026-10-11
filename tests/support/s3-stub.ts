@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, rmSync, writeFileSync, existsSync } from 'node:fs'
+import { mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync, existsSync } from 'node:fs'
 import http from 'node:http'
 import path from 'node:path'
 
@@ -37,7 +37,8 @@ export function startS3Stub(dir: string): Promise<S3Stub> {
     const url = new URL(req.url ?? '/', 'http://stub')
     const objectPath = path.posix.normalize(decodeURIComponent(url.pathname)).replace(/^\/+/, '')
     // reject traversal and anything that is not bucket/key
-    if (objectPath.startsWith('..') || !objectPath.includes('/')) {
+    const isList = req.method === 'GET' && url.searchParams.get('list-type') === '2'
+    if (objectPath.startsWith('..') || (!objectPath.includes('/') && !isList)) {
       res.writeHead(400).end()
       return
     }
@@ -62,8 +63,34 @@ export function startS3Stub(dir: string): Promise<S3Stub> {
       return
     }
 
+    // ListObjectsV2: GET /<bucket>?list-type=2[&prefix=...], enough for storage reconciliation.
+    if (req.method === 'GET' && url.searchParams.get('list-type') === '2') {
+      const bucket = objectPath.split('/')[0] ?? ''
+      const prefix = url.searchParams.get('prefix') ?? ''
+      const root = path.join(dir, bucket)
+      const found: { key: string; size: number; mtime: Date }[] = []
+      const walk = (folder: string, rel: string) => {
+        if (!existsSync(folder)) return
+        for (const entry of readdirSync(folder, { withFileTypes: true })) {
+          const next = rel ? `${rel}/${entry.name}` : entry.name
+          if (entry.isDirectory()) walk(path.join(folder, entry.name), next)
+          else if (next.startsWith(prefix)) {
+            const st = statSync(path.join(folder, entry.name))
+            found.push({ key: next, size: st.size, mtime: st.mtime })
+          }
+        }
+      }
+      walk(root, '')
+      const xml =
+        '<?xml version="1.0" encoding="UTF-8"?><ListBucketResult><Name>' + bucket + '</Name><IsTruncated>false</IsTruncated>' +
+        found.map((f) => `<Contents><Key>${f.key}</Key><LastModified>${f.mtime.toISOString()}</LastModified><Size>${f.size}</Size></Contents>`).join('') +
+        '</ListBucketResult>'
+      res.writeHead(200, { 'content-type': 'application/xml' }).end(xml)
+      return
+    }
+
     if (req.method === 'GET' || req.method === 'HEAD') {
-      if (!existsSync(file)) {
+      if (!existsSync(file) || statSync(file).isDirectory()) {
         res.writeHead(404, { 'content-type': 'application/xml' })
         res.end('<?xml version="1.0"?><Error><Code>NoSuchKey</Code><Message>not found</Message></Error>')
         return

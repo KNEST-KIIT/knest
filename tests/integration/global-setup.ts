@@ -156,6 +156,8 @@ ${roleStep.stderr.slice(-800)}`)
   process.env.TEST_SMTP_CAPTURE = captureFile
   process.env.TEST_SMTP_PORT = String(smtp.port)
   process.env.TEST_S3_DIR = path.join(s3.dir, S3_TEST_BUCKET)
+  process.env.TEST_S3_ENDPOINT = s3.endpoint
+  process.env.TEST_S3_BUCKET = S3_TEST_BUCKET
   process.env.TEST_WORKDIR = work
   process.env.TEST_PORT = String(port)
   process.env.AUTH_SECRET = SECRET
