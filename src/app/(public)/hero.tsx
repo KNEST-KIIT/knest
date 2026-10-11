@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import Image from 'next/image'
 import { ButtonLink } from '@/components/ui'
 import { Reveal, RevealHeading } from '@/components/ui'
 import type { Homepage } from '@/payload/payload-types'
@@ -7,7 +7,7 @@ export function Hero({ homepage }: { homepage: Homepage }) {
   return (
     <div className="relative w-full flex flex-col lg:flex-row overflow-hidden bg-[var(--color-paper)] border-b border-[var(--color-line)]">
       {/* Editorial Split: Left Content */}
-      <div className="relative z-20 w-full lg:w-3/5 flex flex-col px-6 md:px-12 lg:px-20 pt-[20px] lg:pt-[22px] pb-8 lg:pb-10 justify-start">
+      <div className="relative z-20 w-full lg:w-3/5 flex flex-col px-6 md:px-12 lg:px-20 pt-2.5 lg:pt-2.75 pb-8 lg:pb-10 justify-start">
         <div className="max-w-2xl border-l-4 border-[var(--color-signal)] pl-6 md:pl-10 pt-0 pb-1">
           <RevealHeading 
             size="hero" 
@@ -44,13 +44,10 @@ export function Hero({ homepage }: { homepage: Homepage }) {
       </div>
 
       {/* Editorial Split: Right Image */}
-      <div className="relative w-full h-[320px] lg:h-auto lg:w-2/5 z-10 border-t lg:border-t-0 lg:border-l border-[var(--color-line)] self-stretch overflow-hidden group">
+      <div className="relative w-full h-40 lg:h-auto lg:w-2/5 z-10 border-t lg:border-t-0 lg:border-l border-[var(--color-line)] self-stretch overflow-hidden group">
         <div className="absolute inset-0 bg-gradient-to-tr from-[var(--color-signal-deep)]/20 to-[var(--color-archive)]/10 mix-blend-multiply z-10 transition-opacity duration-1000 group-hover:opacity-50"></div>
         <div className="absolute inset-0 bg-black/5 z-10"></div>
-        <img 
-          src="/images/hero_bg_modern.jpg" 
-          alt="Knest Infrastructure" 
-          className="w-full h-full object-cover object-center grayscale opacity-90 transition-all duration-[2000ms] ease-[cubic-bezier(0.19,1,0.22,1)] group-hover:grayscale-0 group-hover:scale-105 group-hover:opacity-100"
+        <Image src="/images/hero_bg_modern.jpg" alt="Knest Infrastructure" fill preload sizes="(min-width: 1024px) 40vw, 100vw" className="object-cover object-center grayscale opacity-90 transition-all duration-(--motion-settle) ease-[cubic-bezier(0.19,1,0.22,1)] group-hover:grayscale-0 group-hover:scale-105 group-hover:opacity-100"
         />
       </div>
     </div>

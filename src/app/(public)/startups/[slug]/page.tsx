@@ -38,7 +38,7 @@ export default async function StartupDetailPage({ params }: { params: Promise<{ 
   }))
 
   return (
-    <div className="mx-auto w-full max-w-[1280px] px-6 py-16 md:px-10">
+    <div className="mx-auto w-full max-w-160 px-6 py-16 md:px-10">
       <div className="max-w-[68ch]">
         <div className="flex flex-wrap items-center gap-3">
           {startup.stage && <Tag tone="signal">{startup.stage}</Tag>}

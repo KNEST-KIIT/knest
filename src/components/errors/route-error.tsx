@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button'
  */
 export function RouteError({ reset }: { reset: () => void }) {
   return (
-    <div className="mx-auto flex min-h-[50vh] w-full max-w-[480px] flex-col items-center justify-center px-6 text-center">
+    <div className="mx-auto flex min-h-[50vh] w-full max-w-60 flex-col items-center justify-center px-6 text-center">
       <Heading as="h1" size="title">
         Something went wrong on our end.
       </Heading>

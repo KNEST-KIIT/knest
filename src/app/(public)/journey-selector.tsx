@@ -122,7 +122,7 @@ export function JourneySelector({ signedIn }: { signedIn: boolean }) {
               animate={{ opacity: 1, scale: 1, x: 0 }}
               exit={{ opacity: 0, scale: 0.98, x: -20 }}
               transition={{ duration: 0.5, ease: [0.19, 1, 0.22, 1] }}
-              className="w-full rounded-none border-2 border-[var(--color-line)] bg-white/90 p-8 sm:p-10 relative overflow-hidden shadow-[0_8px_32px_rgba(13,19,33,0.06)] flex flex-col justify-between h-full min-h-[260px] backdrop-blur-md group"
+              className="w-full rounded-none border-2 border-[var(--color-line)] bg-white/90 p-8 sm:p-10 relative overflow-hidden shadow-[0_8px_32px_rgba(13,19,33,0.06)] flex flex-col justify-between h-full min-h-32.5 backdrop-blur-md group"
             >
               <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-[var(--color-signal)] to-[var(--color-signal-deep)] scale-y-0 animate-[fill-down_0.6s_ease-out_forwards]"></div>
               {/* The reveal replaces the "pick one" prompt with no page
@@ -150,7 +150,7 @@ export function JourneySelector({ signedIn }: { signedIn: boolean }) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="w-full h-full min-h-[260px] border-2 border-dashed border-[var(--color-line)] p-8 flex flex-col items-center justify-center text-center bg-white/40"
+              className="w-full h-full min-h-32.5 border-2 border-dashed border-[var(--color-line)] p-8 flex flex-col items-center justify-center text-center bg-white/40"
             >
               <span className="font-mono text-xs font-bold uppercase tracking-widest text-[var(--color-signal)] mb-2">
                 Self-Assessment

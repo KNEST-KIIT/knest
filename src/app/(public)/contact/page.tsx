@@ -17,7 +17,7 @@ export default function ContactPage() {
     <>
       <PageHeader kicker="Contact" title="Get in touch" description="Ask a question, offer to help, or tell us what you need. A person on the KNEST team reads every message." />
       <Section>
-        <div className="mx-auto w-full max-w-[640px]">
+        <div className="mx-auto w-full max-w-80">
           <ContactForm turnstileSiteKey={turnstileSiteKey()} />
         </div>
       </Section>

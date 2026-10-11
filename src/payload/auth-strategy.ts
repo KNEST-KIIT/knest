@@ -21,7 +21,7 @@ import { auth } from '@/server/auth'
  */
 export const authJsStrategy: AuthStrategy = {
   name: 'authjs',
-  authenticate: async ({ payload }) => {
+  authenticate: async () => {
     const session = await auth()
     if (!session?.user?.id) return { user: null }
 

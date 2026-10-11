@@ -3,7 +3,7 @@
 import { formRequest } from '@/lib/form-request'
 
 import { useState } from 'react'
-import { Field, Heading, Input } from '@/components/ui'
+import { Field, Input } from '@/components/ui'
 import { Button } from '@/components/ui/button'
 import { TurnstileWidget } from '@/components/security/turnstile-widget'
 

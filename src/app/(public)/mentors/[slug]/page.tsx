@@ -30,7 +30,7 @@ export default async function MentorDetailPage({ params }: { params: Promise<{ s
   if (!mentor) notFound()
 
   return (
-    <div className="mx-auto w-full max-w-[720px] px-6 py-16 md:px-10">
+    <div className="mx-auto w-full max-w-90 px-6 py-16 md:px-10">
       <div className="flex items-start gap-6">
         <Avatar name={mentor.name} src={typeof mentor.photo === 'object' ? mentor.photo?.url : null} size="lg" />
         <div>

@@ -90,7 +90,7 @@ export default async function MentorsPage({
         You already know what you&rsquo;re stuck on. Start there, not with a directory of photos.
       </p>
 
-      <div className="mt-6 max-w-[420px]">
+      <div className="mt-6 max-w-52.5">
         <Suspense>
           <NeedSelect />
         </Suspense>

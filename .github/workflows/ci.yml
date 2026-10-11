@@ -48,6 +48,11 @@ jobs:
       - name: Secret scan
         run: node scripts/scan-secrets.mjs
 
+      # Colours, lengths and durations in src must come from src/styles/tokens.css
+      # (docs/delivery/TOKEN-PIPELINE.md). Fails on any literal that is not an allowed exception.
+      - name: Design-token hardcode lint
+        run: python3 scripts/lint_hardcodes.py src
+
       - name: Typecheck
         run: pnpm typecheck
 

@@ -11,6 +11,9 @@ export const metadata: Metadata = {
   description:
     "KNEST is KIIT's innovation and entrepreneurship ecosystem: programs, mentors, workspace and community for students building things — at every stage, including the stage where you have nothing but a question.",
   metadataBase: new URL(siteUrl),
+  // The card image comes from src/app/opengraph-image.tsx; pages with their own override it.
+  openGraph: { siteName: 'KNEST', type: 'website', locale: 'en_IN' },
+  twitter: { card: 'summary_large_image' },
   icons: {
     icon: '/images/knest_icon.png',
     shortcut: '/images/knest_icon.png',

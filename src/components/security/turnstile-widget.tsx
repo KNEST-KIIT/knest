@@ -83,5 +83,5 @@ export function TurnstileWidget({
   }, [resetSignal])
 
   if (!siteKey) return null
-  return <div ref={container} role="group" aria-label="Human verification" className="min-h-[65px]" />
+  return <div ref={container} role="group" aria-label="Human verification" className="min-h-8.125" />
 }
