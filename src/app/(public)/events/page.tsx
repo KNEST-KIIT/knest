@@ -55,7 +55,7 @@ async function EventsList({ filters }: { filters: Filters }) {
       <p className="mb-6 font-mono text-xs uppercase tracking-wider text-[var(--color-ink-muted)]">
         Showing {summary}
       </p>
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 md:grid-cols-2 lg:grid-cols-3">
         {events.map((event) => (
           <LinkCard key={event.id} href={`/events/${event.slug}`} label={`View ${event.title}`}>
             <div className="flex items-center justify-between border-b border-[var(--color-line)] pb-3">
