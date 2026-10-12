@@ -51,7 +51,7 @@ describe('log in', () => {
 
     const dropped = await abortOnce(page, '/api/auth/password/login')
     await page.getByRole('button', { name: /log in/i }).click()
-    const alert = page.locator('div[role="alert"]')
+    const alert = page.locator('form div[role="alert"]')
     await alert.waitFor({ timeout: 15_000 })
     expect(await alert.textContent()).toMatch(NO_CONNECTION)
     expect(dropped.count()).toBe(1)
@@ -99,7 +99,7 @@ describe('sign up', () => {
 
     const dropped = await abortOnce(page, '/api/auth/password/signup')
     await page.getByRole('button', { name: /create account/i }).click()
-    const alert = page.locator('div[role="alert"]')
+    const alert = page.locator('form div[role="alert"]')
     await alert.waitFor({ timeout: 15_000 })
     expect(await alert.textContent()).toMatch(NO_CONNECTION)
     expect(await page.getByLabel('Full name').inputValue()).toBe('Net Person')
@@ -125,7 +125,7 @@ describe('password reset request', () => {
 
     const dropped = await abortOnce(page, '/api/auth/password/reset/request')
     await page.getByRole('button', { name: /send recovery link/i }).click()
-    const alert = page.locator('p[role="alert"]')
+    const alert = page.locator('p[role="alert"]:not([id])')
     await alert.waitFor({ timeout: 15_000 })
     expect(await alert.textContent()).toMatch(NO_CONNECTION)
     expect(await page.getByLabel('Institutional email').inputValue()).toBe(`nobody-${stamp}@account.test`)
@@ -144,7 +144,7 @@ describe('resend the verification link', () => {
 
     const dropped = await abortOnce(page, '/api/auth/password/verify/send')
     await page.getByRole('button', { name: 'Send it again' }).click()
-    const alert = page.locator('p[role="alert"]')
+    const alert = page.locator('p[role="alert"]:not([id])')
     await alert.waitFor({ timeout: 15_000 })
     expect(await alert.textContent()).toMatch(NO_CONNECTION)
     expect(await page.getByRole('button', { name: 'Send it again' }).isEnabled()).toBe(true)

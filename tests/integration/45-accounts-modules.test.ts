@@ -195,8 +195,8 @@ describe('module 24: the operator mail view', () => {
     const insert = async (body: string, subject: string) =>
       (
         await db().query(
-          `insert into app.email_outbox (to_address, subject, body, status, attempts, expires_at, last_error)
-           values ($1, $2, $3, 'dead', 8, now() + interval '1 day', 'SMTP: connection refused') returning id`,
+          `insert into app.email_outbox (id, to_address, subject, body, status, attempts, expires_at, last_error)
+           values (gen_random_uuid()::text, $1, $2, $3, 'dead', 8, now() + interval '1 day', 'SMTP: connection refused') returning id`,
           [to, subject, body],
         )
       ).rows[0].id as string

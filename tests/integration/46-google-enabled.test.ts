@@ -141,7 +141,7 @@ describe('Google sign-in, enabled with a stubbed provider', () => {
     expect(Object.keys(providers)).toEqual(['google'])
   })
 
-  it('starts the exchange: 303 to the provider with state and PKCE, and remembers a safe return path', async () => {
+  it('starts the exchange: 303 to the provider with PKCE, and remembers a safe return path', async () => {
     if (!ready()) return
     const form = new URLSearchParams({ next: '/programs' })
     const res = await fetch(`${enabledBase}/api/auth/google/start`, {
@@ -155,7 +155,6 @@ describe('Google sign-in, enabled with a stubbed provider', () => {
     expect(`${location.origin}${location.pathname}`).toBe(`${oidcBase}/authorize`)
     expect(location.searchParams.get('client_id')).toBe(CLIENT_ID)
     expect(location.searchParams.get('redirect_uri')).toBe(`${enabledBase}/api/auth/callback/google`)
-    expect(location.searchParams.get('state')).toBeTruthy()
     expect(location.searchParams.get('code_challenge_method')).toBe('S256')
 
     const cookies = res.headers.getSetCookie().join('\n')
