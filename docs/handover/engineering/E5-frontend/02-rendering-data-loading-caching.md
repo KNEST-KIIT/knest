@@ -28,10 +28,10 @@ Pages that call `requireUser`, `requireStaff` or `cookies()` are dynamic by cons
 
 | Route | Server reads | Notes |
 |---|---|---|
-| `/` | `getHomepage()` (global, depth 1), `getSessionUser()`, `listPrograms({})`, `getEcosystemCounts()`, `track('landing_view')` in one `Promise.all` (`page.tsx:31-45`) | Programs failure is converted to `unavailable: true`; homepage failure to approved static copy (`server/content/homepage.ts:51-60`); counts failure to unknown counts (`ecosystem-counts.ts:253-259`). The page survives a CMS outage. |
+| `/` | `getHomepage()` (global, depth 1), `getSessionUser()`, `listPrograms({})`, `getEcosystemCounts()`, `track('landing_view')` in one `Promise.all` (`page.tsx:31-45`) | Programs failure is converted to `unavailable: true`; homepage failure to approved static copy (`server/content/homepage.ts:51-60`); counts failure to unknown counts (`ecosystem-counts.ts:17-23`). The page survives a CMS outage. |
 | `/programs` | `listPrograms(filters)` (limit 100, sort `-nextCohortStart`) | `programs.ts:32-39`. No pagination; filtered by `equals`. |
 | `/programs/[slug]` | `getProgramBySlug` twice (metadata and page), `track('program_view')`, `listProgramCohortsWithStartups`, `ApplyCta` twice | See section 4. |
-| `/events` | `listUpcomingEvents(filters)` | Computes "now" per call; an event with no end stays until it starts, one with an end until it ends (`events.ts:166-197`). |
+| `/events` | `listUpcomingEvents(filters)` | Computes "now" per call; an event with no end stays until it starts, one with an end until it ends (`events.ts:40-71`). |
 | `/events/[slug]` | `getEventBySlug` (depth 2) twice, `getRegistrationCount`, `getSessionUser`, `getRegistrationStatus` | Swallows errors to `null`, see section 5. |
 | `/events/[slug]/calendar.ics` | `getEventBySlug` | Route handler, section 6 of E5.05. |
 | `/mentors`, `/mentors/[slug]`, `/startups`, `/startups/[slug]`, `/resources`, `/resources/[slug]`, `/blog`, `/blog/[slug]` | `listMentors`, `getMentorBySlug`, etc. | Detail pages for startups and resources call `track(...)` in render. |
@@ -55,9 +55,9 @@ The content fetchers are plain async functions with no `cache()` wrapper, so ide
 
 | Getter | On failure | Result for the visitor |
 |---|---|---|
-| `listPrograms`, `listEvents`, `listUpcomingEvents`, `getProgramBySlug` | throws (comment "failure throws (KN-01)", `programs.ts:20`, `events.ts:143`) | segment `error.tsx` with `RouteError` |
-| `getEventBySlug` | catches, `console.warn`, returns `null` (`events.ts:221-224`) | `notFound()`: a CMS outage on an event page shows "This page doesn't exist", is a 404 to crawlers, and the ICS route returns a 404 with `no-store` (`calendar.ics/route.ts:12`) |
-| `getEventById` | catches, returns `null` (`events.ts:199-206`) | caller-dependent |
+| `listPrograms`, `listEvents`, `listUpcomingEvents`, `getProgramBySlug` | throws (comment "failure throws (KN-01)", `programs.ts:20`, `events.ts:17`) | segment `error.tsx` with `RouteError` |
+| `getEventBySlug` | catches, `console.warn`, returns `null` (`events.ts:94-97`) | `notFound()`: a CMS outage on an event page shows "This page doesn't exist", is a 404 to crawlers, and the ICS route returns a 404 with `no-store` (`calendar.ics/route.ts:12`) |
+| `getEventById` | catches, returns `null` (`events.ts:73-80`) | caller-dependent |
 | `getHomepage`, `getEcosystemCounts` | catch and degrade | home still renders |
 | `sitemap.ts` `safely()` | catches per collection (`sitemap.ts:16-24`) | static paths still listed |
 
@@ -82,4 +82,4 @@ List pages define the data-bearing component as a child async function (`Program
 
 ## 9. Limits and unbounded queries
 
-Public lists use `limit: 100` with no pager (`programs.ts:36`, `events.ts:157`, `events.ts:191`). A hundred-and-first program or event never appears on the list page and is reachable only by URL, search (limit 20 per collection, `search.ts:35-70`) or the sitemap. The sitemap asks for 500 articles (`sitemap.ts:33`). The staff lists paginate through `lib/pagination.ts`.
+Public lists use `limit: 100` with no pager (`programs.ts:36`, `events.ts:31`, `events.ts:65`). A hundred-and-first program or event never appears on the list page and is reachable only by URL, search (limit 20 per collection, `search.ts:35-70`) or the sitemap. The sitemap asks for 500 articles (`sitemap.ts:33`). The staff lists paginate through `lib/pagination.ts`.
