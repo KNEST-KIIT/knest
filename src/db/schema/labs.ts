@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm'
-import { boolean, check, date, index, integer, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core'
+import { boolean, check, date, index, integer, text, timestamp, uniqueIndex, type AnyPgColumn } from 'drizzle-orm/pg-core'
 import { appSchema } from './enums'
 import { users } from './users'
 
@@ -24,6 +24,23 @@ export const labBookingStatus = appSchema.enum('lab_booking_status', [
 ])
 export const labAttendanceOutcome = appSchema.enum('lab_attendance_outcome', ['attended', 'no_show'])
 
+/**
+ * The department hierarchy is data, not code: a department may have a parent, and the utilisation
+ * report rolls a lab's figures up through every ancestor. Cycles are refused by the application
+ * (manage.ts); the database only guarantees the parent exists.
+ */
+export const labDepartments = appSchema.table(
+  'lab_departments',
+  {
+    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    slug: text('slug').notNull(),
+    name: text('name').notNull(),
+    parentId: text('parent_id').references((): AnyPgColumn => labDepartments.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { mode: 'date', withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex('lab_departments_slug_idx').on(t.slug), index('lab_departments_parent_idx').on(t.parentId)],
+)
+
 export const labs = appSchema.table(
   'labs',
   {
@@ -32,7 +49,9 @@ export const labs = appSchema.table(
       .$defaultFn(() => crypto.randomUUID()),
     slug: text('slug').notNull(),
     name: text('name').notNull(),
+    /** Free-text label kept for display and for labs not yet placed in the hierarchy. */
     department: text('department').notNull().default(''),
+    departmentId: text('department_id').references(() => labDepartments.id, { onDelete: 'set null' }),
     description: text('description'),
     /** The CMS `infrastructure` document that holds this lab's public photos and text, if any. A plain id: the schemas stay independent. */
     infrastructureId: integer('infrastructure_id'),
@@ -48,6 +67,8 @@ export const labs = appSchema.table(
     cancelCutoffMinutes: integer('cancel_cutoff_minutes').notNull().default(120),
     eligibility: labEligibility('eligibility').notNull().default('onboarded'),
     requiresAssistant: boolean('requires_assistant').notNull().default(false),
+    /** A request still waiting after this many hours is escalated to the lab administrators (recommended default, not approved). */
+    escalateAfterHours: integer('escalate_after_hours').notNull().default(48),
 
     isActive: boolean('is_active').notNull().default(true),
     createdAt: timestamp('created_at', { mode: 'date', withTimezone: true }).notNull().defaultNow(),
@@ -56,6 +77,8 @@ export const labs = appSchema.table(
   (t) => [
     uniqueIndex('labs_slug_idx').on(t.slug),
     uniqueIndex('labs_infrastructure_idx').on(t.infrastructureId),
+    index('labs_department_idx').on(t.departmentId),
+    check('labs_escalate_positive', sql`${t.escalateAfterHours} > 0`),
     check('labs_capacity_positive', sql`${t.capacity} > 0`),
     check('labs_slot_minutes_range', sql`${t.slotMinutes} between 15 and 480`),
     check('labs_policy_positive', sql`${t.maxConsecutiveSlots} > 0 and ${t.minLeadMinutes} >= 0 and ${t.maxHorizonDays} > 0 and ${t.maxOpenRequests} > 0 and ${t.maxHoursPerWeek} > 0 and ${t.cancelCutoffMinutes} >= 0`),

@@ -5,7 +5,10 @@ import { nowMs } from '@/lib/clock'
 import { rangeLabel, STATUS_LABELS } from '@/lib/lab-format'
 import { requireOnboardedUser } from '@/server/auth/guards'
 import { actorFor, canManage, canStaff } from '@/server/labs/access'
-import { getLabBySlug, listLabBookings, listLabStaff } from '@/server/labs/service'
+import { formatEventTime } from '@/lib/dates'
+import { listDepartments } from '@/server/labs/department-admin'
+import { orderTree } from '@/server/labs/departments'
+import { getLabBySlug, listDecisionHistory, listLabBookings, listLabStaff } from '@/server/labs/service'
 import { AttendanceControls, BlackoutManager, CancelControls, DecisionControls, HoursEditor, SettingsForm, StaffManager } from './controls'
 
 export const metadata = { title: 'Lab console' }
@@ -32,12 +35,25 @@ export default async function LabConsolePage({ params }: { params: Promise<{ slu
   if (!canStaff(actor)) notFound()
   const manager = canManage(actor)
 
-  const [open, upcoming, past, staff] = await Promise.all([
+  // An assistant sees only the bookings assigned to them, never the other people who booked the lab.
+  const onlyMine = manager ? undefined : actor.id
+  const [open, upcoming, past, staff, history, departments] = await Promise.all([
     manager ? listLabBookings(lab.id, 'open') : Promise.resolve([]),
-    listLabBookings(lab.id, 'upcoming'),
-    listLabBookings(lab.id, 'past'),
+    listLabBookings(lab.id, 'upcoming', onlyMine),
+    listLabBookings(lab.id, 'past', onlyMine),
     listLabStaff(lab.id),
+    manager ? listDecisionHistory(lab.id, 30) : Promise.resolve([]),
+    actor.isAdmin ? listDepartments() : Promise.resolve([]),
   ])
+  const departmentOptions = orderTree(departments).map((d) => ({ id: d.id, label: `${'— '.repeat(d.depth)}${d.name}` }))
+  const ACTION_LABELS: Record<string, string> = {
+    lab_booking_approved: 'Approved',
+    lab_booking_rejected: 'Declined',
+    lab_booking_alternative_proposed: 'Suggested another time',
+    lab_booking_cancelled: 'Cancelled',
+    lab_attendance_attended: 'Marked attended',
+    lab_attendance_no_show: 'Marked no-show',
+  }
   const staffOptions = staff.map((s) => ({ userId: s.userId, label: s.name ?? s.email }))
   const now = nowMs()
   const who = (name: string | null, email: string) => (name ? `${name} (${email})` : email)
@@ -55,6 +71,7 @@ export default async function LabConsolePage({ params }: { params: Promise<{ slu
           {actor.isAdmin ? 'Lab administrator' : actor.role === 'head' ? 'Lab head' : 'Lab assistant'}
           {!lab.isActive ? ' · closed for booking' : ''}
         </p>
+        {!manager && <p className="mt-1 text-[length:var(--text-small)] text-[var(--color-ink-muted)]">You see the bookings assigned to you. Other bookings in this lab are not shown to assistants.</p>}
       </div>
 
       {manager && (
@@ -132,13 +149,39 @@ export default async function LabConsolePage({ params }: { params: Promise<{ slu
       </Section>
 
       {manager && (
+        <Section id="decisions" title="Decision history">
+          {history.length === 0 ? (
+            <p className="text-[var(--color-ink-muted)]">No decisions recorded yet.</p>
+          ) : (
+            <ul className="divide-y divide-[var(--color-line)] text-[length:var(--text-small)]">
+              {history.map((h) => (
+                <li key={h.id} className="py-2">
+                  <p>
+                    <strong>{ACTION_LABELS[h.action] ?? h.action}</strong> by {who(h.actorName, h.actorEmail)}
+                    {h.override && <span className="ml-2 rounded bg-[var(--color-ink)] px-2 py-0.5 text-xs font-bold uppercase text-white">Administrator override</span>}
+                  </p>
+                  <p className="text-[var(--color-ink-muted)]">
+                    {formatEventTime(h.at)}
+                    {h.note ? ` · ${h.note}` : ''}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Section>
+      )}
+
+      {manager && (
         <>
           <Section id="settings" title="Rules and details">
             <SettingsForm
               slug={lab.slug}
               isAdmin={actor.isAdmin}
               isActive={lab.isActive}
+              departments={departmentOptions}
               values={{
+                escalateAfterHours: lab.escalateAfterHours,
+                departmentId: lab.departmentId,
                 name: lab.name,
                 department: lab.department,
                 description: lab.description ?? '',

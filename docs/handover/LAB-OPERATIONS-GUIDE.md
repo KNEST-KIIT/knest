@@ -257,7 +257,17 @@ HD-16 question 15 asks what booker data heads and assistants may see. It is unan
 | That booking has not started yet. | You tried to record attendance early | Wait until the start time |
 | Only a lab administrator can appoint a head. | You are a head, not an administrator | Ask an administrator |
 | No active account has that email address. | The person has not signed up | Ask them to sign up and verify their email |
+| You are deciding on behalf of the lab head. Add a short reason... | You are an administrator and the lab has a head | Type why you are stepping in (for example, the head is away). It is kept in the decision history as an administrator override |
+| That booking is not assigned to you. | You are an assistant and the booking is assigned to someone else, or to no one | Ask the head to assign it to you, or ask the head to record attendance |
+| The lab has been closed on that date since this was requested. | A closed date was added after the request | Suggest another time or decline with a reason |
 | A lab you expect does not appear | You are not on its staff list, or it is closed | Ask an administrator |
+
+## What assistants, administrators and the report show
+
+- An assistant sees only the bookings assigned to them, and may record attendance only for those. They never see other people's bookings, the decision history, the rules or the report.
+- The lab console has a **Decision history** for heads and administrators: who approved, declined, suggested, cancelled or recorded attendance, when, and any reason. A decision by an administrator in a lab that has a head is marked as an override.
+- **Needs an administrator** (Admin, Labs) lists requests in a lab with no head, and requests that have waited longer than that lab's **Escalate a waiting request after (hours)** setting. The starting value (48 hours) is a recommendation, not an approved policy.
+- **Departments** (Admin, Labs) is the department structure. Add, rename, move or remove departments there; place a lab in a department from the lab's settings. The utilisation report adds each lab's figures to its department and to every department above it, on screen and in the download.
 | Everything in the lab area says "not found" | Lab booking is switched off | Expected until HD-16 is signed. Ask: [PLACEHOLDER: engineering contact] |
 
 ## If something fails at the lab

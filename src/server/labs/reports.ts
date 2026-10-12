@@ -1,5 +1,7 @@
 import { sql } from 'drizzle-orm'
 import { db } from '@/db/client'
+import { labDepartments } from '@/db/schema'
+import { rollUp } from './departments'
 import { requireUserOrThrow, UnauthorizedError } from '@/server/auth/guards'
 import type { StaffRole } from '@/server/auth/roles'
 import { isLabAdmin, labsRunBy } from './access'
@@ -9,6 +11,8 @@ export type LabReportRow = {
   labId: string
   lab: string
   department: string
+  /** The lab's place in the department hierarchy, when it has been given one. */
+  departmentId: string | null
   requests: number
   approved: number
   rejected: number
@@ -20,12 +24,18 @@ export type LabReportRow = {
   manualEntries: number
 }
 
+/** One department of the hierarchy with the figures of every lab at or below it. */
+export type DepartmentRollupRow = { departmentId: string; name: string; parentId: string | null; depth: number; labs: number } & Record<(typeof NUMBERS)[number], number>
+
 export type LabReport = {
   from: string
   to: string
   labs: LabReportRow[]
-  departments: Omit<LabReportRow, 'labId' | 'lab'>[]
-  totals: Omit<LabReportRow, 'labId' | 'lab' | 'department'>
+  /** By the free-text department label (kept for labs not yet placed in the hierarchy). */
+  departments: Omit<LabReportRow, 'labId' | 'lab' | 'departmentId'>[]
+  /** By the department hierarchy, each department including its descendants. Data-driven: see `lab_departments`. */
+  rollup: DepartmentRollupRow[]
+  totals: Omit<LabReportRow, 'labId' | 'lab' | 'department' | 'departmentId'>
 }
 
 const NUMBERS = ['requests', 'approved', 'rejected', 'cancelled', 'attended', 'noShows', 'hoursBooked', 'hoursAttended', 'manualEntries'] as const
@@ -55,7 +65,7 @@ export async function labReport(input: { from: string; to: string; labId?: strin
   const labFilter = scope ? sql`and l.id in (${sql.join(scope.map((id) => sql`${id}`), sql`, `)})` : sql``
   const result = await db.execute<Record<string, string | number | null>>(sql`
     select
-      l.id as lab_id, l.name as lab, l.department as department,
+      l.id as lab_id, l.name as lab, l.department as department, l.department_id as department_id,
       count(b.id)::int as requests,
       count(b.id) filter (where b.status in ('approved','completed','no_show'))::int as approved,
       count(b.id) filter (where b.status = 'rejected')::int as rejected,
@@ -69,7 +79,7 @@ export async function labReport(input: { from: string; to: string; labId?: strin
     left join app.lab_bookings b on b.lab_id = l.id and b.starts_at >= ${start} and b.starts_at < ${end}
     left join app.lab_attendance a on a.booking_id = b.id
     where true ${labFilter}
-    group by l.id, l.name, l.department
+    group by l.id, l.name, l.department, l.department_id
     order by l.department, l.name
   `)
 
@@ -77,6 +87,7 @@ export async function labReport(input: { from: string; to: string; labId?: strin
     labId: String(r.lab_id),
     lab: String(r.lab),
     department: String(r.department ?? ''),
+    departmentId: r.department_id ? String(r.department_id) : null,
     requests: Number(r.requests),
     approved: Number(r.approved),
     rejected: Number(r.rejected),
@@ -103,10 +114,27 @@ export async function labReport(input: { from: string; to: string; labId?: strin
   totals.hoursBooked = round(totals.hoursBooked)
   totals.hoursAttended = round(totals.hoursAttended)
 
+  const tree = await db.select({ id: labDepartments.id, slug: labDepartments.slug, name: labDepartments.name, parentId: labDepartments.parentId }).from(labDepartments)
+  const rollup: DepartmentRollupRow[] = rollUp(
+    tree,
+    labs.map((l) => ({ departmentId: l.departmentId, values: Object.fromEntries(NUMBERS.map((k) => [k, l[k]])) as Record<(typeof NUMBERS)[number], number> })),
+    NUMBERS,
+  ).map(({ department, labs: count, values }) => ({
+    departmentId: department.id,
+    name: department.name,
+    parentId: department.parentId,
+    depth: department.depth,
+    labs: count,
+    ...values,
+    hoursBooked: round(values.hoursBooked),
+    hoursAttended: round(values.hoursAttended),
+  }))
+
   return {
     from: input.from,
     to: input.to,
     labs,
+    rollup,
     departments: [...byDepartment.entries()].map(([department, v]) => ({ department, ...v, hoursBooked: round(v.hoursBooked), hoursAttended: round(v.hoursAttended) })),
     totals,
   }
@@ -122,5 +150,8 @@ const csvCell = (value: string | number) => {
 export function reportToCsv(report: LabReport): string {
   const header = ['Department', 'Lab', 'Requests', 'Approved', 'Rejected', 'Cancelled', 'Attended', 'No-shows', 'Hours booked', 'Hours attended', 'Manual attendance entries']
   const lines = [header, ...report.labs.map((r) => [r.department, r.lab, r.requests, r.approved, r.rejected, r.cancelled, r.attended, r.noShows, r.hoursBooked, r.hoursAttended, r.manualEntries])]
-  return lines.map((row) => row.map(csvCell).join(',')).join('\r\n') + '\r\n'
+  const rollupHeader = ['Department (including those below it)', 'Level', 'Labs', ...header.slice(2)]
+  const rollupLines = report.rollup.map((d) => [d.name, d.depth, d.labs, d.requests, d.approved, d.rejected, d.cancelled, d.attended, d.noShows, d.hoursBooked, d.hoursAttended, d.manualEntries])
+  const rows: (string | number)[][] = [...lines, ...(rollupLines.length ? [[], rollupHeader, ...rollupLines] : [])]
+  return rows.map((row) => row.map(csvCell).join(',')).join('\r\n') + '\r\n'
 }

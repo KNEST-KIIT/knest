@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/db/client'
-import { auditLogs, labBlackouts, labHours, labs, labStaff, users } from '@/db/schema'
+import { auditLogs, labBlackouts, labDepartments, labHours, labs, labStaff, users } from '@/db/schema'
 import { requireUserOrThrow, UnauthorizedError } from '@/server/auth/guards'
 import type { StaffRole } from '@/server/auth/roles'
 import { actorFor, isLabAdmin, requireManager } from './access'
@@ -36,6 +36,8 @@ export const labSettingsSchema = z
     cancelCutoffMinutes: int(0, 60 * 24 * 14, 'Cancellation cut-off'),
     eligibility: z.enum(['verified', 'onboarded']),
     requiresAssistant: z.boolean(),
+    escalateAfterHours: int(1, 24 * 30, 'Escalation time'),
+    departmentId: z.string().min(1).nullable(),
   })
   .partial()
 
@@ -55,12 +57,27 @@ export async function createLab(input: unknown): Promise<Result<{ id: string; sl
   let slug = base
   for (let n = 2; await db.query.labs.findFirst({ where: eq(labs.slug, slug), columns: { id: true } }); n++) slug = `${base}-${n}`
 
+  const placed = await departmentPatch(settings)
+  if (!placed.ok) return fail(placed.error, 'not-found')
+
   const created = await db.transaction(async (tx) => {
-    const [row] = await tx.insert(labs).values({ ...settings, name: settings.name!, slug, infrastructureId: infrastructureId ?? null }).returning({ id: labs.id })
+    const [row] = await tx.insert(labs).values({ ...settings, ...placed.patch, name: settings.name!, slug, infrastructureId: infrastructureId ?? null }).returning({ id: labs.id })
     await tx.insert(auditLogs).values({ actorUserId: user.id, action: 'lab_created', entityType: 'lab', entityId: row!.id, before: null, after: { name: settings.name, slug } })
     return row!
   })
   return { ok: true, id: created.id, slug }
+}
+
+/**
+ * Placing a lab in the department hierarchy. When the lab is given a department and no free-text
+ * label in the same change, the label follows the department's name so the two never disagree.
+ */
+async function departmentPatch(settings: { departmentId?: string | null; department?: string }): Promise<{ ok: true; patch: { departmentId?: string | null; department?: string } } | { ok: false; error: string }> {
+  if (settings.departmentId === undefined) return { ok: true, patch: {} }
+  if (settings.departmentId === null) return { ok: true, patch: { departmentId: null } }
+  const row = await db.query.labDepartments.findFirst({ where: eq(labDepartments.id, settings.departmentId), columns: { name: true } })
+  if (!row) return { ok: false, error: 'That department doesn’t exist.' }
+  return { ok: true, patch: { departmentId: settings.departmentId, ...(settings.department === undefined ? { department: row.name } : {}) } }
 }
 
 async function labById(labId: string) {
@@ -80,7 +97,10 @@ export async function updateLab(labId: string, input: unknown): Promise<Result> 
   if (!parsed.success) return fail(parsed.error.issues[0]?.message ?? 'Check the settings.')
   if (isActive !== undefined && !actor.isAdmin) return fail('Only a lab administrator can open or close a lab.', 'forbidden')
 
-  const patch = { ...parsed.data, ...(typeof isActive === 'boolean' ? { isActive } : {}) }
+  if (parsed.data.departmentId !== undefined && !actor.isAdmin) return fail('Only a lab administrator can move a lab between departments.', 'forbidden')
+  const placed = await departmentPatch(parsed.data)
+  if (!placed.ok) return fail(placed.error, 'not-found')
+  const patch = { ...parsed.data, ...placed.patch, ...(typeof isActive === 'boolean' ? { isActive } : {}) }
   if (Object.keys(patch).length === 0) return fail('Nothing to change.')
   const before: Record<string, unknown> = {}
   for (const key of Object.keys(patch)) before[key] = (lab as Record<string, unknown>)[key]
