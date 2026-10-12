@@ -243,10 +243,9 @@ export async function getRoster(now = new Date()) {
     : and(
         base,
         or(
+          // an assistant is limited to the bookings assigned to them, as manual attendance is
           eq(labBookings.assistantUserId, user.id),
           headLabs.length > 0 ? inArray(labBookings.labId, headLabs) : undefined,
-          // an assistant of a lab whose booking has no assigned assistant may scan it
-          and(isNull(labBookings.assistantUserId), inArray(labBookings.labId, memberships.map((m) => m.labId))),
         ),
       )
   const rows = await db
@@ -337,7 +336,7 @@ export async function getBookingChecks(bookingId: string) {
   if (!booking) return fail('That booking does not exist.', 'not-found')
   if (booking.userId !== user.id) {
     const actor = await actorFor(booking.labId)
-    const mayView = actor.isAdmin || actor.role === 'head' || (actor.role === 'assistant' && (booking.assistantUserId === null || booking.assistantUserId === user.id))
+    const mayView = actor.isAdmin || actor.role === 'head' || (actor.role === 'assistant' && booking.assistantUserId === user.id)
     if (!mayView) return fail('That booking does not exist.', 'not-found')
   }
   return { ok: true as const, checks: (await summariseChecks([bookingId])).get(bookingId)! }

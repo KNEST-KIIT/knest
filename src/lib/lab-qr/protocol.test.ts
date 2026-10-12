@@ -154,11 +154,12 @@ describe('decideScan: acceptance', () => {
     expect(d).toMatchObject({ status: 'accepted', side: 'student', innerUserId: 'assistant' })
   })
 
-  it('lets a head and an unassigned booking use any lab assistant', async () => {
+  it('lets a head scan any booking of the lab, and holds an assistant to their own, as manual attendance does', async () => {
     const w = await world()
     expect((await decideScan(await staffScan(w.head, w.student), ctx('head'), w.dir)).status).toBe('accepted')
     w.dir.addBooking({ ...(await w.dir.booking(BOOKING))!, assistantUserId: null })
-    expect((await decideScan(await staffScan(w.otherAssistant, w.student), ctx('other-assistant'), w.dir)).status).toBe('accepted')
+    expect((await decideScan(await staffScan(w.head, w.student), ctx('head'), w.dir)).status).toBe('accepted')
+    expect(await decideScan(await staffScan(w.otherAssistant, w.student), ctx('other-assistant'), w.dir)).toEqual({ status: 'rejected', code: 'not-assigned' })
   })
 
   it('tolerates one step of drift either way and nothing more', async () => {

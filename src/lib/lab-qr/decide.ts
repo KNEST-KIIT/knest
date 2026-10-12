@@ -132,7 +132,7 @@ export async function decideScan(token: string, ctx: Context, lookups: Lookups):
     if (innerKey.userId !== booking.userId) return reject('not-the-booker')
     const role = await lookups.labRole(scannerKey.userId, booking.labId)
     if (!role) return reject('not-staff')
-    if (role === 'assistant' && booking.assistantUserId !== null && booking.assistantUserId !== scannerKey.userId) return reject('not-assigned')
+    if (role === 'assistant' && booking.assistantUserId !== scannerKey.userId) return reject('not-assigned')
   } else {
     const chal = inner as ChallengePayload
     if (chal.l !== booking.labId) return reject('wrong-lab')
@@ -140,7 +140,7 @@ export async function decideScan(token: string, ctx: Context, lookups: Lookups):
     if (scannerKey.userId !== booking.userId) return reject('not-the-booker')
     const role = await lookups.labRole(innerKey.userId, booking.labId)
     if (!role) return reject('not-staff')
-    if (role === 'assistant' && booking.assistantUserId !== null && booking.assistantUserId !== innerKey.userId) return reject('not-assigned')
+    if (role === 'assistant' && booking.assistantUserId !== innerKey.userId) return reject('not-assigned')
   }
 
   // 4. Time. The scanner's own clock is corrected by the skew measured at this submission.
