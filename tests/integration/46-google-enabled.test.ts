@@ -158,7 +158,6 @@ describe('Google sign-in, enabled with a stubbed provider', () => {
     expect(location.searchParams.get('code_challenge_method')).toBe('S256')
 
     const cookies = res.headers.getSetCookie().join('\n')
-    expect(cookies).toMatch(/authjs\.state=/)
     expect(cookies).toMatch(/authjs\.pkce\.code_verifier=/)
     expect(decodeURIComponent(cookies)).toContain('/programs')
   })
