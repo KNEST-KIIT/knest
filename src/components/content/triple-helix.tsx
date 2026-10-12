@@ -34,12 +34,12 @@ export function TripleHelix() {
   return (
     <div className="w-full">
       {/* High-Impact Visual Triangle Stage on Creamy Warm Parchment Background */}
-      <div className="w-full bg-[#fbf8f0] border-2 border-[var(--color-line)] p-6 sm:p-10 md:p-14 relative shadow-xl overflow-x-clip">
+      <div className="w-full bg-[var(--color-paper)] border-2 border-[var(--color-line)] p-6 sm:p-10 md:p-14 relative shadow-xl overflow-x-clip">
         {/* Soft Ambient Oxblood Brand Accent */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[720px] h-[720px] bg-[var(--color-signal)]/6 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-90 h-90 bg-[var(--color-signal)]/6 rounded-full blur-3xl pointer-events-none" />
 
         {/* Scalable Container for Triangle & Overlaid Nodes */}
-        <div className="relative w-full max-w-[960px] mx-auto min-h-[580px] sm:min-h-[620px] flex items-center justify-center">
+        <div className="relative w-full max-w-120 mx-auto min-h-72.5 sm:min-h-77.5 flex items-center justify-center">
           {/* Big High-Visibility Vector SVG Triangle */}
           <svg
             viewBox="0 0 900 580"
@@ -58,7 +58,7 @@ export function TripleHelix() {
                 markerHeight="7"
                 orient="auto-start-reverse"
               >
-                <path d="M 0 1 L 9 5 L 0 9 z" fill="#43415a" />
+                <path d="M 0 1 L 9 5 L 0 9 z" fill="var(--color-ink-muted)" />
               </marker>
 
               {/* Active Directional Arrowhead in Bold KNEST Red */}
@@ -71,22 +71,22 @@ export function TripleHelix() {
                 markerHeight="7"
                 orient="auto-start-reverse"
               >
-                <path d="M 0 1 L 9 5 L 0 9 z" fill="#7a1f2b" />
+                <path d="M 0 1 L 9 5 L 0 9 z" fill="var(--color-signal)" />
               </marker>
 
               {/* Bold Authoritative KNEST Red Triangle Gradient */}
               <linearGradient id="triangle-bold-red" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#7a1f2b" />
-                <stop offset="35%" stopColor="#991b1b" />
-                <stop offset="70%" stopColor="#b91c1c" />
-                <stop offset="100%" stopColor="#7a1f2b" />
+                <stop offset="0%" stopColor="var(--color-signal)" />
+                <stop offset="35%" stopColor="var(--color-signal)" />
+                <stop offset="70%" stopColor="var(--color-critical)" />
+                <stop offset="100%" stopColor="var(--color-signal)" />
               </linearGradient>
 
               {/* Crisp Inner Canvas Shading */}
               <radialGradient id="center-parchment-glow" cx="50%" cy="55%" r="48%">
-                <stop offset="0%" stopColor="#ffffff" />
-                <stop offset="70%" stopColor="#fffdf9" />
-                <stop offset="100%" stopColor="#f8f4e9" />
+                <stop offset="0%" stopColor="var(--color-paper-raised)" />
+                <stop offset="70%" stopColor="var(--color-paper-raised)" />
+                <stop offset="100%" stopColor="var(--color-paper)" />
               </radialGradient>
             </defs>
 
@@ -101,7 +101,7 @@ export function TripleHelix() {
             <polygon
               points="450,138 784,462 116,462"
               fill="none"
-              stroke="#ddd0a8"
+              stroke="var(--color-line)"
               strokeWidth="2"
               strokeDasharray="6 4"
               opacity="0.75"
@@ -124,7 +124,7 @@ export function TripleHelix() {
                 x="450"
                 y="282"
                 textAnchor="middle"
-                fill="#0d1321"
+                fill="var(--color-ink)"
                 fontFamily="var(--font-display), Georgia, serif"
                 fontSize="56"
                 fontWeight="900"
@@ -136,7 +136,7 @@ export function TripleHelix() {
                 x="450"
                 y="336"
                 textAnchor="middle"
-                fill="#0d1321"
+                fill="var(--color-ink)"
                 fontFamily="var(--font-display), Georgia, serif"
                 fontSize="38"
                 fontWeight="800"
@@ -148,7 +148,7 @@ export function TripleHelix() {
                 x="450"
                 y="388"
                 textAnchor="middle"
-                fill="#0d1321"
+                fill="var(--color-ink)"
                 fontFamily="var(--font-display), Georgia, serif"
                 fontSize="38"
                 fontWeight="800"
@@ -160,7 +160,7 @@ export function TripleHelix() {
                 x="450"
                 y="436"
                 textAnchor="middle"
-                fill="#7a1f2b"
+                fill="var(--color-signal)"
                 fontFamily="var(--font-display), Georgia, serif"
                 fontSize="34"
                 fontWeight="800"
@@ -177,7 +177,7 @@ export function TripleHelix() {
               y1="120"
               x2="835"
               y2="430"
-              stroke={hoveredNode === 'university' || hoveredNode === 'schools' ? '#7a1f2b' : '#43415a'}
+              stroke={hoveredNode === 'university' || hoveredNode === 'schools' ? 'var(--color-signal)' : 'var(--color-ink-muted)'}
               strokeWidth="3.5"
               markerEnd={hoveredNode === 'university' || hoveredNode === 'schools' ? 'url(#active-red-arrow)' : 'url(#inactive-arrow)'}
               strokeDasharray={hoveredNode === 'university' || hoveredNode === 'schools' ? 'none' : '8 6'}
@@ -191,7 +191,7 @@ export function TripleHelix() {
               y1="565"
               x2="200"
               y2="565"
-              stroke={hoveredNode === 'schools' || hoveredNode === 'partners' ? '#7a1f2b' : '#43415a'}
+              stroke={hoveredNode === 'schools' || hoveredNode === 'partners' ? 'var(--color-signal)' : 'var(--color-ink-muted)'}
               strokeWidth="3.5"
               markerEnd={hoveredNode === 'schools' || hoveredNode === 'partners' ? 'url(#active-red-arrow)' : 'url(#inactive-arrow)'}
               strokeDasharray={hoveredNode === 'schools' || hoveredNode === 'partners' ? 'none' : '8 6'}
@@ -205,7 +205,7 @@ export function TripleHelix() {
               y1="430"
               x2="350"
               y2="120"
-              stroke={hoveredNode === 'partners' || hoveredNode === 'university' ? '#7a1f2b' : '#43415a'}
+              stroke={hoveredNode === 'partners' || hoveredNode === 'university' ? 'var(--color-signal)' : 'var(--color-ink-muted)'}
               strokeWidth="3.5"
               markerEnd={hoveredNode === 'partners' || hoveredNode === 'university' ? 'url(#active-red-arrow)' : 'url(#inactive-arrow)'}
               strokeDasharray={hoveredNode === 'partners' || hoveredNode === 'university' ? 'none' : '8 6'}
@@ -225,7 +225,7 @@ export function TripleHelix() {
             {/* Interactive Node Button on Creamy Ground */}
             <div
               className={cn(
-                'w-[280px] sm:w-[350px] p-3 sm:p-4 rounded-none text-center cursor-pointer transition-all duration-200 shadow-md',
+                'w-35 sm:w-43.75 p-3 sm:p-4 rounded-none text-center cursor-pointer transition-all duration-200 shadow-md',
                 hoveredNode === 'university'
                   ? 'bg-[#f4e4e2] border-2 border-[var(--color-signal)] shadow-lg shadow-[rgba(122,31,43,0.15)]'
                   : 'bg-white border-2 border-[var(--color-line)] hover:border-[var(--color-signal)] hover:bg-[#f4e4e2]/40',
@@ -247,7 +247,7 @@ export function TripleHelix() {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -6, scale: 0.96 }}
                   transition={{ duration: 0.16 }}
-                  className="absolute top-full mt-3 left-1/2 -translate-x-1/2 w-[320px] sm:w-[380px] p-5 border-2 border-[var(--color-signal)] bg-white/98 backdrop-blur-2xl shadow-[0_20px_50px_rgba(13,19,33,0.2)] text-left pointer-events-none z-50 rounded-none"
+                  className="absolute top-full mt-3 left-1/2 -translate-x-1/2 w-40 sm:w-47.5 p-5 border-2 border-[var(--color-signal)] bg-white/98 backdrop-blur-2xl shadow-[0_20px_50px_rgba(13,19,33,0.2)] text-left pointer-events-none z-50 rounded-none"
                 >
                   {/* Arrow pointing UP to Node 01 */}
                   <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-0 h-0 border-x-[8px] border-x-transparent border-b-[8px] border-b-[var(--color-signal)]" />
@@ -286,7 +286,7 @@ export function TripleHelix() {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 6, scale: 0.96 }}
                   transition={{ duration: 0.16 }}
-                  className="absolute bottom-full mb-3 right-0 w-[320px] sm:w-[380px] p-5 border-2 border-[var(--color-signal)] bg-white/98 backdrop-blur-2xl shadow-[0_20px_50px_rgba(13,19,33,0.2)] text-left pointer-events-none z-50 rounded-none"
+                  className="absolute bottom-full mb-3 right-0 w-40 sm:w-47.5 p-5 border-2 border-[var(--color-signal)] bg-white/98 backdrop-blur-2xl shadow-[0_20px_50px_rgba(13,19,33,0.2)] text-left pointer-events-none z-50 rounded-none"
                 >
                   {/* Arrow pointing DOWN to Node 02 */}
                   <div className="absolute -bottom-2 right-12 w-0 h-0 border-x-[8px] border-x-transparent border-t-[8px] border-t-[var(--color-signal)]" />
@@ -311,7 +311,7 @@ export function TripleHelix() {
             {/* Interactive Node Button on Creamy Ground */}
             <div
               className={cn(
-                'w-[240px] sm:w-[300px] p-3 sm:p-4 rounded-none text-center cursor-pointer transition-all duration-200 shadow-md',
+                'w-30 sm:w-37.5 p-3 sm:p-4 rounded-none text-center cursor-pointer transition-all duration-200 shadow-md',
                 hoveredNode === 'schools'
                   ? 'bg-[#f4e4e2] border-2 border-[var(--color-signal)] shadow-lg shadow-[rgba(122,31,43,0.15)]'
                   : 'bg-white border-2 border-[var(--color-line)] hover:border-[var(--color-signal)] hover:bg-[#f4e4e2]/40',
@@ -342,7 +342,7 @@ export function TripleHelix() {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 6, scale: 0.96 }}
                   transition={{ duration: 0.16 }}
-                  className="absolute bottom-full mb-3 left-0 w-[320px] sm:w-[380px] p-5 border-2 border-[var(--color-signal)] bg-white/98 backdrop-blur-2xl shadow-[0_20px_50px_rgba(13,19,33,0.2)] text-left pointer-events-none z-50 rounded-none"
+                  className="absolute bottom-full mb-3 left-0 w-40 sm:w-47.5 p-5 border-2 border-[var(--color-signal)] bg-white/98 backdrop-blur-2xl shadow-[0_20px_50px_rgba(13,19,33,0.2)] text-left pointer-events-none z-50 rounded-none"
                 >
                   {/* Arrow pointing DOWN to Node 03 */}
                   <div className="absolute -bottom-2 left-12 w-0 h-0 border-x-[8px] border-x-transparent border-t-[8px] border-t-[var(--color-signal)]" />
@@ -367,7 +367,7 @@ export function TripleHelix() {
             {/* Interactive Node Button on Creamy Ground */}
             <div
               className={cn(
-                'w-[240px] sm:w-[300px] p-3 sm:p-4 rounded-none text-center cursor-pointer transition-all duration-200 shadow-md',
+                'w-30 sm:w-37.5 p-3 sm:p-4 rounded-none text-center cursor-pointer transition-all duration-200 shadow-md',
                 hoveredNode === 'partners'
                   ? 'bg-[#f4e4e2] border-2 border-[var(--color-signal)] shadow-lg shadow-[rgba(122,31,43,0.15)]'
                   : 'bg-white border-2 border-[var(--color-line)] hover:border-[var(--color-signal)] hover:bg-[#f4e4e2]/40',

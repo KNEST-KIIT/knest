@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { Heading } from '@/components/ui'
 import { cn } from '@/lib/cn'
 
@@ -29,7 +30,7 @@ export function PageHeader({
         className,
       )}
     >
-      <div className="mx-auto flex flex-col lg:flex-row w-full max-w-[1280px]">
+      <div className="mx-auto flex flex-col lg:flex-row w-full max-w-160">
         {/* Left Editorial Text */}
         <div className="flex-1 px-6 md:px-10 py-8 md:py-10 flex flex-col justify-center">
           <div className="border-l-4 border-[var(--color-signal)] pl-6 md:pl-8">
@@ -60,12 +61,14 @@ export function PageHeader({
 
         {/* Right Architectural Visual Block (if present) */}
         {imageSrc && (
-          <div className="w-full lg:w-[420px] xl:w-[480px] h-[220px] lg:h-auto border-t lg:border-t-0 lg:border-l border-[var(--color-line)] relative overflow-hidden self-stretch">
+          <div className="w-full lg:w-52.5 xl:w-60 h-27.5 lg:h-auto border-t lg:border-t-0 lg:border-l border-[var(--color-line)] relative overflow-hidden self-stretch">
             <div className="absolute inset-0 bg-[var(--color-signal)]/10 mix-blend-multiply z-10" />
-            <img
+            <Image
               src={imageSrc}
-              alt={imageAlt}
-              className="w-full h-full object-cover object-center grayscale hover:grayscale-0 transition-all duration-700 ease-out"
+              alt={imageAlt ?? ''}
+              fill
+              sizes="(min-width: 1280px) 240px, (min-width: 1024px) 210px, 100vw"
+              className="object-cover object-center grayscale hover:grayscale-0 transition-all duration-700 ease-out"
             />
           </div>
         )}

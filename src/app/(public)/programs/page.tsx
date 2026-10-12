@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
-import { EmptyState, Heading, LinkCard, LiveRegion, Section, Tag } from '@/components/ui'
+import { EmptyState, Heading, LinkCard, LiveRegion, Section } from '@/components/ui'
 import { PageHeader } from '@/components/layout/page-header'
 import { formatDate } from '@/lib/dates'
 import { resultSummary } from '@/lib/result-summary'

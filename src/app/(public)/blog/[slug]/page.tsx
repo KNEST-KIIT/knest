@@ -19,7 +19,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
   if (!article) notFound()
 
   return (
-    <article className="mx-auto w-full max-w-[720px] px-6 py-16 md:px-10">
+    <article className="mx-auto w-full max-w-90 px-6 py-16 md:px-10">
       <Link href="/blog" className="text-sm font-semibold text-[var(--color-signal)] underline underline-offset-4">
         ← All articles
       </Link>

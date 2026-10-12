@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Heading } from '@/components/ui'
@@ -65,7 +66,7 @@ export function TheJourney({
 
   return (
     <section className="relative py-12 md:py-16 bg-[var(--color-ink)] text-[var(--color-paper)] overflow-hidden border-t border-[var(--color-line)]">
-      <div className="mx-auto max-w-[1280px] px-6 md:px-10">
+      <div className="mx-auto max-w-160 px-6 md:px-10">
         {/* Header Block */}
         <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-white/10 pb-5 gap-6">
           <div>
@@ -223,12 +224,9 @@ export function TheJourney({
             </div>
 
             {/* Right Architectural Image Column */}
-            <div className="lg:col-span-5 h-[260px] sm:h-[320px] lg:h-auto min-h-[300px] border border-white/10 relative overflow-hidden">
+            <div className="lg:col-span-5 h-32.5 sm:h-40 lg:h-auto min-h-37.5 border border-white/10 relative overflow-hidden">
               <div className="absolute inset-0 bg-[var(--color-signal)]/15 mix-blend-multiply z-10" />
-              <img
-                src={current.content.image}
-                alt={current.stage.label}
-                className="w-full h-full object-cover grayscale contrast-110 hover:grayscale-0 transition-all duration-700 ease-out"
+              <Image src={current.content.image} alt={current.stage.label} fill sizes="(min-width: 1024px) 40vw, 100vw" className="object-cover grayscale contrast-110 hover:grayscale-0 transition-all duration-700 ease-out"
               />
               <div className="absolute bottom-4 left-4 z-20 bg-black/80 px-3 py-1 text-[11px] font-mono uppercase tracking-widest text-[var(--color-paper)]/80 border border-white/10 backdrop-blur-sm">
                 Stage 0{activeIdx + 1} {'//'} {current.stage.label}

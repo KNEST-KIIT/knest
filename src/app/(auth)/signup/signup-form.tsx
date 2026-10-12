@@ -5,7 +5,7 @@ import { formRequest } from '@/lib/form-request'
 import { safeNext } from '@/lib/safe-next'
 import { useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ButtonLink, Field, Heading, Input, PasswordInput } from '@/components/ui'
+import { ButtonLink, Field, Input, PasswordInput } from '@/components/ui'
 import { Button } from '@/components/ui/button'
 import { TurnstileWidget } from '@/components/security/turnstile-widget'
 

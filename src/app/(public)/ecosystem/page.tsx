@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Card, EmptyState, Heading, Section, Tag } from '@/components/ui'
+import { Card, Heading, Section, Tag } from '@/components/ui'
 import { PageHeader } from '@/components/layout/page-header'
 import { listInfrastructure } from '@/server/content/infrastructure'
 import { listPartners } from '@/server/content/partners'

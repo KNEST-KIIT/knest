@@ -23,82 +23,82 @@ html[data-theme='light'] {
 
 /* Specific styling for the sidebar to make it light and architectural */
 .nav {
-  background-color: #f6f4ee !important;
-  border-right: 1px solid #e0dfd9 !important;
+  background-color: var(--color-paper) !important;
+  border-right: 1px solid var(--color-line) !important;
 }
 
 .nav * {
-  color: #1a1a1a !important;
+  color: var(--color-ink) !important;
 }
 
 .nav .nav-group__toggle {
-  color: #76232f !important;
-  font-family: 'Fraunces', serif !important;
+  color: var(--color-signal) !important;
+  font-family: var(--font-display) !important;
   font-weight: 700 !important;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   font-size: 0.9rem;
-  border-bottom: 1px solid #e0dfd9;
-  padding-bottom: 8px;
-  margin-bottom: 8px;
+  border-bottom: 1px solid var(--color-line);
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.5rem;
 }
 
 .nav .nav__link--active {
-  background-color: #ffffff !important;
+  background-color: var(--color-paper-raised) !important;
   border-radius: 0;
-  border-left: 3px solid #76232f;
+  border-left: 0.1875rem solid var(--color-signal);
 }
 
 /* Fix sidebar avatar clipping */
 .nav__account {
-  padding-bottom: 24px !important;
-  border-top: 1px solid #e0dfd9;
+  padding-bottom: 1.5rem !important;
+  border-top: 1px solid var(--color-line);
 }
 
 /* Buttons */
 .btn {
-  background-color: #76232f !important;
-  font-family: 'Inter', sans-serif !important;
+  background-color: var(--color-signal) !important;
+  font-family: var(--font-text) !important;
   font-weight: 600 !important;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   border: none !important;
   border-radius: 0 !important; /* KNEST aesthetic */
-  transition: all 0.2s ease-in-out;
+  transition: all var(--motion-fast) ease-in-out;
 }
 
 /* Deeper target for button text to ensure contrast */
 .btn, .btn *, .btn__label, .btn__content, .btn__icon {
-  color: #ffffff !important;
+  color: var(--color-paper-raised) !important;
 }
 
 .btn:hover {
-  background-color: #5c1b24 !important;
+  background-color: var(--color-signal-deep) !important;
 }
 
 .btn--style-secondary, .btn--style-secondary * {
   background-color: transparent !important;
-  border: 1px solid #76232f !important;
-  color: #76232f !important;
+  border: 1px solid var(--color-signal) !important;
+  color: var(--color-signal) !important;
 }
 
 /* Card overrides */
 .card {
   border-radius: 0 !important;
-  border: 1px solid #e0dfd9 !important;
+  border: 1px solid var(--color-line) !important;
   box-shadow: none !important;
-  background-color: #ffffff !important;
+  background-color: var(--color-paper-raised) !important;
 }
 
 /* Fix collection card title text contrast */
 .card *, .card__title {
-  color: #1a1a1a !important;
-  font-family: 'Fraunces', serif !important;
+  color: var(--color-ink) !important;
+  font-family: var(--font-display) !important;
 }
 
 /* Table header contrast fix */
 table th, table th * {
-  color: #1a1a1a !important;
+  color: var(--color-ink) !important;
   font-weight: 600 !important;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -107,10 +107,10 @@ table th, table th * {
 
 /* Custom dashboard styles */
 .knest-dashboard {
-  font-family: 'Inter', sans-serif;
-  color: #1a1a1a;
+  font-family: var(--font-text);
+  color: var(--color-ink);
 }
 .knest-dashboard h1, .knest-dashboard h2, .knest-dashboard h3 {
-  font-family: 'Fraunces', serif !important;
-  color: #1a1a1a !important;
+  font-family: var(--font-display) !important;
+  color: var(--color-ink) !important;
 }

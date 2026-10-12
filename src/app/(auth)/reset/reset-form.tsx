@@ -3,7 +3,7 @@
 import { formRequest } from '@/lib/form-request'
 
 import { useState } from 'react'
-import { Field, Heading, Input } from '@/components/ui'
+import { Field, Input } from '@/components/ui'
 import { Button } from '@/components/ui/button'
 import { TurnstileWidget } from '@/components/security/turnstile-widget'
 
@@ -44,7 +44,7 @@ export function ResetForm({ turnstileSiteKey }: { turnstileSiteKey: string }) {
   if (sent) {
     return (
       <div className="text-center py-2">
-        <div className="mx-auto size-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4 border border-emerald-200">
+        <div className="mx-auto size-12 rounded-full bg-[var(--color-positive-wash)] text-[var(--color-positive)] flex items-center justify-center mb-4 border border-[var(--color-positive)]/30">
           <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
           </svg>

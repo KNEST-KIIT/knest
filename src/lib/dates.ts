@@ -28,6 +28,11 @@ export function monthAndDay(date: Date | string): { month: string; day: string }
   return { month: MONTH_SHORT.format(d), day: DAY_OF_MONTH.format(d) }
 }
 
+/** True once the given moment is in the past. Kept here so render code does not call Date.now() itself. */
+export function hasPassed(date: Date | string): boolean {
+  return new Date(date).getTime() < Date.now()
+}
+
 export function formatDate(date: Date | string): string {
   return ABSOLUTE.format(new Date(date))
 }

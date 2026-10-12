@@ -35,6 +35,25 @@ export default [
   ...coreWebVitals,
   ...typescript,
   {
+    // Full navigations after a mutation are deliberate: the destination must be
+    // re-read from the server, which a client-side push would not guarantee.
+    files: ['src/**/*.{ts,tsx}'],
+    rules: { '@next/next/no-location-assign-relative-destination': 'off' },
+  },
+  {
+    // The staff console branding is two small static assets inside Payload's own
+    // admin shell, which has no next/image loader.
+    files: ['src/payload/components/**'],
+    rules: { '@next/next/no-img-element': 'off' },
+  },
+  {
+    // Underscore-prefixed names are the established way to drop a key with a rest pattern.
+    files: ['**/*.ts', '**/*.tsx'],
+    rules: {
+      '@typescript-eslint/no-unused-vars': ['warn', { varsIgnorePattern: '^_', argsIgnorePattern: '^_', ignoreRestSiblings: true }],
+    },
+  },
+  {
     // Seed scripts feed loosely-typed fixtures into Payload's generated types.
     files: ['src/db/seed*.ts'],
     rules: { '@typescript-eslint/no-explicit-any': 'off' },

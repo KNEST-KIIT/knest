@@ -44,21 +44,21 @@ export const textRevealContainer: Variants = {
 }
 
 export const textRevealWord: Variants = {
-  initial: { opacity: 0, y: 20, filter: 'blur(4px)' },
+  initial: { opacity: 0, y: 20, filter: 'blur(0.25rem)' },
   animate: { 
     opacity: 1, 
     y: 0, 
-    filter: 'blur(0px)',
+    filter: 'blur(0)',
     transition: { duration: 0.8, ease: cinematicEase }
   }
 }
 
 // Cinematic Image Mask Reveal
 export const imageReveal: Variants = {
-  initial: { clipPath: 'inset(100% 0 0 0)', filter: 'blur(10px)' },
+  initial: { clipPath: 'inset(100% 0 0 0)', filter: 'blur(0.625rem)' },
   animate: { 
     clipPath: 'inset(0% 0 0 0)',
-    filter: 'blur(0px)',
+    filter: 'blur(0)',
     transition: { duration: 1.2, ease: [0.22, 1, 0.36, 1] as const }
   }
 }

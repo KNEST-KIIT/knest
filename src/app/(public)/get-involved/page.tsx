@@ -23,7 +23,7 @@ export default function GetInvolvedPage() {
     <>
       <PageHeader kicker="Get involved" title="Find your way in" description="Whether you are a student with an idea, a mentor, or a partner, here is where to start." />
       <Section>
-        <ul className="mx-auto grid w-full max-w-[1080px] gap-6 md:grid-cols-2">
+        <ul className="mx-auto grid w-full max-w-135 gap-6 md:grid-cols-2">
           {WAYS.map((way) => (
             <li key={way.href + way.title} className="rounded-[var(--radius-md)] border border-[var(--color-line)] bg-white p-6">
               <Heading as="h2" size="heading">

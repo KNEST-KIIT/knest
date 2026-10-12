@@ -19,7 +19,7 @@ export default async function OnboardingLayout({ children }: { children: React.R
             KNEST
           </Link>
         </header>
-        <main id="main" className="mx-auto w-full max-w-[640px] px-6 pb-32 pt-10 md:pb-16">
+        <main id="main" className="mx-auto w-full max-w-80 px-6 pb-32 pt-10 md:pb-16">
           {children}
         </main>
       </div>

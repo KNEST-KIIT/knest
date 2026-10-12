@@ -219,7 +219,7 @@ export default function AboutPage() {
         </div>
 
         <div className="mt-8 overflow-x-auto border border-[var(--color-line)] bg-white">
-          <table className="w-full min-w-[640px] border-collapse text-left text-sm">
+          <table className="w-full min-w-80 border-collapse text-left text-sm">
             <thead>
               <tr className="border-b border-[var(--color-line)] bg-[var(--color-paper-soft)]">
                 <th className="py-3 px-5 font-bold uppercase tracking-wider text-xs text-[var(--color-ink)]">

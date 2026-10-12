@@ -48,6 +48,11 @@ jobs:
       - name: Secret scan
         run: node scripts/scan-secrets.mjs
 
+      # Colours, lengths and durations in src must come from src/styles/tokens.css
+      # (docs/delivery/TOKEN-PIPELINE.md). Fails on any literal that is not an allowed exception.
+      - name: Design-token hardcode lint
+        run: python3 scripts/lint_hardcodes.py src
+
       - name: Typecheck
         run: pnpm typecheck
 
@@ -97,6 +102,11 @@ jobs:
 
       - name: Production build
         run: pnpm build
+
+      # Gzip size of the client bundle against scripts/bundle-budget.json. Pure function of the
+      # build output, so it cannot flake. Not a Lighthouse score.
+      - name: Bundle size budget
+        run: node scripts/check_bundle_budget.mjs
 
       # Starts from an EMPTY database: Drizzle migrations for `app`, Payload migrations
       # for `cms`, then the production build, then the tests. Also fails if a collection

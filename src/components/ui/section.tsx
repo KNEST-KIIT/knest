@@ -22,7 +22,7 @@ export function Section({
         className,
       )}
     >
-      <div className="mx-auto w-full max-w-[1280px]">{children}</div>
+      <div className="mx-auto w-full max-w-160">{children}</div>
     </section>
   )
 }

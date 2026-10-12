@@ -84,7 +84,7 @@ export function ContactForm({ turnstileSiteKey }: { turnstileSiteKey: string }) 
       </Field>
 
       {/* Honeypot: invisible to people and to screen readers, tempting to bots. */}
-      <div aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
+      <div aria-hidden="true" className="sr-only">
         <label>
           Leave this empty
           <input name="website" tabIndex={-1} autoComplete="off" />

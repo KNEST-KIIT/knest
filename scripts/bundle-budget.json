@@ -1,0 +1,6 @@
+{
+  "_note": "Gzip level 9 bytes of .next/static after `pnpm build`. Measured 2026-10-12 on agent/content: js 1162749, css 103478, largest chunk 365155. Limits are about 15% above that. Raise only with a reason in the commit message.",
+  "jsGzipBytes": 1350000,
+  "cssGzipBytes": 120000,
+  "largestJsChunkGzipBytes": 420000
+}

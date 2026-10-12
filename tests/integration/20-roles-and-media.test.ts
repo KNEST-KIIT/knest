@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { closeDb, createUser, get, login, uniqueIp, BASE, type Session } from '../support/helpers'
-import { PNG_1X1, payloadClient } from '../support/payload'
+import { PNG_1X1 } from '../support/payload'
 
 /**
  * Closing evidence for KN-02 / NF-03 / KN-22j: role-based authorisation at the
