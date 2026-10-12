@@ -26,6 +26,8 @@ export const ADMIN_AREAS = {
   settings: [],
   // Cross-program, ecosystem-wide — super_admin only, same as users/settings.
   analytics: [],
+  // The email outbox: undelivered mail and its resend. Super admin only; messages carry personal links.
+  mail: [],
 } as const satisfies Record<string, readonly StaffRole[]>
 
 export type AdminArea = keyof typeof ADMIN_AREAS

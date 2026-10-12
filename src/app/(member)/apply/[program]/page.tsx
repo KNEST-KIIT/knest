@@ -3,6 +3,8 @@ import { notFound, redirect } from 'next/navigation'
 import { requireUser } from '@/server/auth/guards'
 import { getApplicationProgramBySlug } from '@/server/applications/program-questions'
 import { findApplicationForProgram, getOwnedApplicationDetail } from '@/server/applications/actions'
+import { ButtonLink, Heading } from '@/components/ui'
+import { closedReason } from '@/server/applications/availability'
 import { ApplicationForm } from './application-form'
 import { StartApplication } from './start-application'
 import { turnstileSiteKey } from '@/server/security/turnstile'
@@ -30,10 +32,7 @@ export default async function ApplyPage({ params }: { params: Promise<{ program:
   if (!existing) {
     // Not open, or the deadline passed — send them back to the program page,
     // which explains why and offers "notify me" instead of a dead end here.
-    const closed =
-      program.applicationStatus !== 'open' ||
-      (program.applicationDeadline !== null && new Date(program.applicationDeadline) < new Date())
-    if (closed) redirect(`/programs/${slug}`)
+    if (closedReason(program)) redirect(`/programs/${slug}`)
     return <StartApplication programSlug={slug} programTitle={program.title} />
   }
 
@@ -42,6 +41,28 @@ export default async function ApplyPage({ params }: { params: Promise<{ program:
 
   if (detail.application.status !== 'draft') {
     redirect('/dashboard/applications')
+  }
+
+  // An existing draft on a program that has since closed: say so up front
+  // instead of letting the person fill in every answer and fail at submit.
+  const closed = closedReason(program)
+  if (closed) {
+    return (
+      <section>
+        <Heading as="h1" size="title">
+          {program.title} is closed
+        </Heading>
+        <p role="status" className="mt-4 max-w-[60ch] text-[var(--color-ink-soft)]">
+          {closed} Your draft is kept, but it can’t be submitted.
+        </p>
+        <div className="mt-8 flex gap-4">
+          <ButtonLink href="/programs">See open programs</ButtonLink>
+          <ButtonLink href="/dashboard/applications" variant="secondary">
+            Your applications
+          </ButtonLink>
+        </div>
+      </section>
+    )
   }
 
   return (

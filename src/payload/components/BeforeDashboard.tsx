@@ -6,10 +6,15 @@ import Link from 'next/link'
 export const BeforeDashboard = async () => {
   const payload = await getPayload({ config: configPromise })
 
-  // Fetch quick metrics
+  // Each count is filtered to what its label says (KN-32): an unfiltered count
+  // of "events" included drafts and past events under an "Upcoming" heading.
+  const now = new Date().toISOString()
   const [startups, events, users] = await Promise.all([
-    payload.count({ collection: 'startups' }),
-    payload.count({ collection: 'events' }),
+    payload.count({ collection: 'startups', where: { _status: { equals: 'published' } } }),
+    payload.count({
+      collection: 'events',
+      where: { and: [{ _status: { equals: 'published' } }, { startsAt: { greater_than: now } }] },
+    }),
     payload.count({ collection: 'staff' }),
   ])
 
@@ -92,7 +97,7 @@ export const BeforeDashboard = async () => {
       }}>
         
         <div style={cardStyle}>
-          <h3 style={titleStyle}>Active Startups</h3>
+          <h3 style={titleStyle}>Published Startups</h3>
           <div style={metricStyle}>{startups.totalDocs}</div>
           <div style={linkWrapperStyle}>
             <Link href="/admin/collections/startups/create" style={linkStyle}>
@@ -102,7 +107,7 @@ export const BeforeDashboard = async () => {
         </div>
 
         <div style={cardStyle}>
-          <h3 style={titleStyle}>Upcoming Events</h3>
+          <h3 style={titleStyle}>Upcoming Published Events</h3>
           <div style={metricStyle}>{events.totalDocs}</div>
           <div style={linkWrapperStyle}>
             <Link href="/admin/collections/events/create" style={linkStyle}>
@@ -112,7 +117,7 @@ export const BeforeDashboard = async () => {
         </div>
 
         <div style={cardStyle}>
-          <h3 style={titleStyle}>Staff Members</h3>
+          <h3 style={titleStyle}>Staff Accounts</h3>
           <div style={metricStyle}>{users.totalDocs}</div>
           <div style={linkWrapperStyle}>
             <Link href="/admin/collections/staff" style={linkStyle}>

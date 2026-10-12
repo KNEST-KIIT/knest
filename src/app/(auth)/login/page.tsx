@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
+import { googleConfigured } from '@/server/auth/providers'
 import { turnstileSiteKey } from '@/server/security/turnstile'
 import { LoginForm } from './login-form'
 
@@ -9,7 +10,7 @@ export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Log in' }
 
 export default function LoginPage() {
-  const googleEnabled = Boolean(process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET)
+  const googleEnabled = googleConfigured()
   return (
     <Suspense>
       <LoginForm googleEnabled={googleEnabled} turnstileSiteKey={turnstileSiteKey()} />

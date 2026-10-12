@@ -22,6 +22,7 @@ const NAV: { href: string; label: string; area: AdminArea | null }[] = [
   { href: '/admin/labs', label: 'Labs', area: 'infrastructure' },
   { href: '/admin/audit', label: 'Audit trail', area: 'audit' },
   { href: '/admin/analytics', label: 'Analytics', area: 'analytics' },
+  { href: '/admin/mail', label: 'Mail', area: 'mail' },
 ]
 
 export default async function StaffLayout({ children }: { children: React.ReactNode }) {

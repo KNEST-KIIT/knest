@@ -68,9 +68,9 @@ export async function registerForEvent(eventId: number): Promise<ActionResult> {
       href: `/events/${event.slug}`,
       email: { subject, text },
     }).catch((error) => console.error('Failed to send event confirmation:', error))
+    // Counted once, for a registration that was actually created.
+    await track('event_register', { eventId })
   }
-
-  await track('event_register', { eventId })
 
   return { ok: true }
 }

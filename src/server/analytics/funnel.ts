@@ -64,8 +64,9 @@ export async function getActivatedBuildersCount(): Promise<number> {
  * shows both and a gap is visible instead of silently trusted.
  */
 export async function getTableTruth(): Promise<Record<string, number>> {
-  const [signups, started, submitted, accepted, registered] = await Promise.all([
+  const [signups, onboarded, started, submitted, accepted, registered] = await Promise.all([
     db.select({ value: count() }).from(users),
+    db.select({ value: count() }).from(users).where(isNotNull(users.onboardingCompletedAt)),
     db.select({ value: count() }).from(applications),
     db.select({ value: count() }).from(applications).where(ne(applications.status, 'draft')),
     db.select({ value: count() }).from(applications).where(eq(applications.status, 'accepted')),
@@ -73,6 +74,7 @@ export async function getTableTruth(): Promise<Record<string, number>> {
   ])
   return {
     signup: signups[0]?.value ?? 0,
+    onboarding_completed: onboarded[0]?.value ?? 0,
     application_start: started[0]?.value ?? 0,
     application_submit: submitted[0]?.value ?? 0,
     application_accepted: accepted[0]?.value ?? 0,

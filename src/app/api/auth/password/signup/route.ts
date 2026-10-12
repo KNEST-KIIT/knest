@@ -15,5 +15,6 @@ export async function POST(request: Request) {
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: 400 })
   }
-  return NextResponse.json({ ok: true }, { status: 201 })
+  // 202, identical for new and existing addresses (KN-22b).
+  return NextResponse.json({ ok: true }, { status: 202 })
 }

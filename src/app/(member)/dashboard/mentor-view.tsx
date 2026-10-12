@@ -73,12 +73,12 @@ export async function MentorDashboard({ user }: { user: SessionUser }) {
 
       <section className="mt-12">
         <Heading as="h2" size="title">
-          Upcoming
+          Upcoming events
         </Heading>
         {events.length === 0 ? (
           <EmptyState headingLevel="h3"
             className="mt-6"
-            heading="Nothing on your calendar yet."
+            heading="No upcoming events yet."
             body="Here's what's coming up at KNEST once new sessions are scheduled."
           />
         ) : (

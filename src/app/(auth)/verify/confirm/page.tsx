@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { safeNext } from '@/lib/safe-next'
 import { VerifyConfirm } from './verify-confirm'
 import { Heading } from '@/components/ui'
 
@@ -7,9 +8,9 @@ export const metadata: Metadata = { title: 'Confirm your email' }
 export default async function VerifyConfirmPage({
   searchParams,
 }: {
-  searchParams: Promise<{ email?: string; token?: string }>
+  searchParams: Promise<{ email?: string; token?: string; next?: string }>
 }) {
-  const { email, token } = await searchParams
+  const { email, token, next } = await searchParams
 
   if (!email || !token) {
     return (
@@ -26,5 +27,5 @@ export default async function VerifyConfirmPage({
     )
   }
 
-  return <VerifyConfirm email={email} token={token} />
+  return <VerifyConfirm email={email} token={token} next={safeNext(next)} />
 }

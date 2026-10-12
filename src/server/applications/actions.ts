@@ -7,11 +7,11 @@ import { requireSelf, requireUserOrThrow, UnauthorizedError } from '@/server/aut
 import { sendNotificationEmail, writeNotification } from '@/server/notifications/send'
 import { applicationReceivedTemplate } from '@/server/notifications/templates'
 import { track } from '@/server/analytics/track'
-import { formatDate } from '@/lib/dates'
 import { deleteFile, generateStorageKey, putFile } from '@/server/storage'
 import { enforceRateLimit, RATE_LIMITS } from '@/server/security/rate-limit'
 import { verifyFileContents } from '@/server/security/file-verify'
 import { getApplicationProgram, getApplicationProgramBySlug, getProgramTitlesByIds } from './program-questions'
+import { closedReason } from './availability'
 import { ALLOWED_UPLOAD_MIME_TYPES, findSubmissionProblem, MAX_UPLOAD_BYTES, schemaForQuestion } from './validation'
 
 export type ActionResult = { ok: true } | { ok: false; error: string; code?: string }
@@ -38,8 +38,8 @@ export async function findApplicationForProgram(userId: string, programId: numbe
 
 /**
  * Idempotent: returns the existing application (draft or otherwise) if the
- * user already started one, rather than erroring — "start" from the program
- * page and "continue" from the dashboard both land here safely.
+ * user already started one, rather than erroring. Only the explicit Start
+ * button calls this; viewing /apply/[program] never does (R-06).
  *
  * Atomic by construction (PHASE-5-6-RETROSPECTIVE.md §4 / PHASE-7-9-
  * RETROSPECTIVE.md §1): the insert leans on the unique index
@@ -54,19 +54,11 @@ export async function startApplication(
   const program = await getApplicationProgramBySlug(programSlug)
 
   if (!program) return { ok: false, error: 'That program doesn’t exist.' }
-  if (program.applicationStatus !== 'open') {
-    return { ok: false, error: 'Applications for this program aren’t open right now.' }
-  }
-  if (program.applicationDeadline && new Date(program.applicationDeadline) < new Date()) {
-    return { ok: false, error: `Applications for this program closed on ${formatDate(program.applicationDeadline)}.` }
-  }
+  const closed = closedReason(program)
+  if (closed) return { ok: false, error: closed }
 
-  // /apply/[program] calls this on every page view, not just the first —
-  // it's the idempotent lookup for an already-started draft as much as it
-  // is "start" (see the docstring above). Rate-limiting that would penalize
-  // someone simply reloading or resuming their own application, so the
-  // limit only applies when this genuinely is a new application: no draft
-  // already on file for this user+program.
+  // A repeat press of Start for an application that already exists must not
+  // be penalised, so the limit only applies when this really is a new one.
   const alreadyStarted = await db.query.applications.findFirst({
     where: and(eq(applications.userId, user.id), eq(applications.programId, program.id)),
     columns: { id: true },
@@ -128,6 +120,9 @@ export async function saveAnswer(
   }
 
   const program = await getApplicationProgram(application.programId)
+  // Told now, not after the last answer: a draft past its deadline cannot be submitted.
+  const closedAnswer = program ? closedReason(program) : null
+  if (closedAnswer) return { ok: false, error: `${closedAnswer} Your draft is kept but can’t be submitted.` }
   const question = program?.questions.find((q) => q.id === questionId)
   if (!question) return { ok: false, error: 'That question no longer exists on this program.' }
 
@@ -175,6 +170,8 @@ export async function uploadDocument(
     return { ok: false, error: 'We can take PDF, DOC or PPT files.' }
   }
   const program = await getApplicationProgram(application.programId)
+  const closedUpload = program ? closedReason(program) : null
+  if (closedUpload) return { ok: false, error: `${closedUpload} Your draft is kept but can’t be submitted.` }
   const question = program?.questions.find((candidate) => candidate.id === questionId)
   if (!question || question.fieldType !== 'file') {
     return { ok: false, error: 'That question does not accept a document.' }
@@ -242,15 +239,8 @@ export async function submitApplication(applicationId: string): Promise<ActionRe
   // a staff member closing applicationStatus mid-cohort (with no deadline
   // set) previously blocked new applicants but not an existing draft from
   // submitting (PHASE-7-9-RETROSPECTIVE.md §1).
-  if (program.applicationStatus !== 'open') {
-    return { ok: false, error: 'Applications for this program aren’t open right now.' }
-  }
-  if (program.applicationDeadline && new Date(program.applicationDeadline) < new Date()) {
-    return {
-      ok: false,
-      error: `Applications for this program closed on ${formatDate(program.applicationDeadline)}.`,
-    }
-  }
+  const closedNow = closedReason(program)
+  if (closedNow) return { ok: false, error: closedNow }
 
   // Identity matters here (spec §31, USER_JOURNEYS Journey 2) — verification
   // does not block signup or onboarding, only the moment a real decision
