@@ -20,7 +20,6 @@ let head: Session
 let assistant: Session
 let head2: Session
 let outsider: Session
-const members: Record<string, Session> = {}
 let labA: { id: string; slug: string }
 let labB: { id: string; slug: string }
 
