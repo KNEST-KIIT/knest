@@ -20,6 +20,41 @@ const SYNC_TAG = 'knest-lab-outbox'
 const DB_NAME = 'knest-lab-attendance'
 const BATCH = 50
 
+// Every static file the shell page references (scripts, styles, and the fonts its styles name), so a
+// reload with no network finds the whole page, not only the files a previous visit happened to load.
+const STATIC_REF = /\/_next\/static\/[A-Za-z0-9_\-./~%]+/g
+async function precacheReferenced(cache, text) {
+  const found = new Set(text.match(STATIC_REF) || [])
+  const added = []
+  for (const path of found) {
+    try {
+      const url = new URL(path, self.location.origin).href
+      if (await cache.match(url, { ignoreSearch: true })) continue
+      const res = await fetch(url, { credentials: 'omit' })
+      if (res.ok) {
+        await cache.put(url, res.clone())
+        if (path.endsWith('.css')) added.push(await res.text())
+      }
+    } catch (_) {
+      /* a missing optional chunk must not break the install */
+    }
+  }
+  // fonts and images named inside the stylesheets
+  for (const css of added) {
+    const refs = new Set((css.match(STATIC_REF) || []))
+    for (const path of refs) {
+      try {
+        const url = new URL(path, self.location.origin).href
+        if (await cache.match(url, { ignoreSearch: true })) continue
+        const res = await fetch(url, { credentials: 'omit' })
+        if (res.ok) await cache.put(url, res)
+      } catch (_) {
+        /* ignore */
+      }
+    }
+  }
+}
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
     (async () => {
@@ -28,7 +63,11 @@ self.addEventListener('install', (event) => {
       // The shell page itself is public. Failure (flag off, offline) is fine: it is cached on first visit.
       try {
         const res = await fetch(SHELL_PATH, { credentials: 'omit', cache: 'no-store' })
-        if (res.ok) await cache.put(SHELL_PATH, res)
+        if (res.ok) {
+          const html = await res.clone().text()
+          await cache.put(SHELL_PATH, res)
+          await precacheReferenced(cache, html)
+        }
       } catch (_) {
         /* not available yet */
       }
@@ -81,11 +120,16 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       (async () => {
         const cache = await caches.open(SHELL_CACHE)
-        const hit = await cache.match(request)
+        // Build ids and deployment queries change the URL but not the content of a hashed file.
+        const hit = (await cache.match(request)) || (await cache.match(request.url, { ignoreSearch: true }))
         if (hit) return hit
-        const res = await fetch(request)
-        if (res.ok && res.type === 'basic') await cache.put(request, res.clone())
-        return res
+        try {
+          const res = await fetch(request)
+          if (res.ok && res.type === 'basic') await cache.put(request, res.clone())
+          return res
+        } catch (_) {
+          return new Response('', { status: 504, statusText: 'Offline and not cached' })
+        }
       })(),
     )
   }
