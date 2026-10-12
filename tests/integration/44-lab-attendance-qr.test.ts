@@ -1,3 +1,5 @@
+import AxeBuilder from '@axe-core/playwright'
+import { chromium, type Browser } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { STEP_MS } from '../../src/lib/lab-qr/constants'
 import { toBase64Url } from '../../src/lib/lab-qr/encoding'
@@ -126,7 +128,11 @@ beforeAll(async () => {
     expect((await register(who, id, dev)).status).toBe(201)
   }
 })
-afterAll(closeDb)
+let browser: Browser | null = null
+afterAll(async () => {
+  await browser?.close()
+  await closeDb()
+})
 
 describe('device keys', () => {
   it('need a sign-in', async () => {
@@ -429,4 +435,85 @@ describe('roster and pass context', () => {
 
 describe('time steps', () => {
   it('uses a 30 second step', () => expect(STEP_MS).toBe(30_000))
+})
+
+describe('the device screen in a real browser engine', () => {
+  const cookiesFor = (session: Session) =>
+    session.cookie.split('; ').map((pair) => {
+      const i = pair.indexOf('=')
+      return { name: pair.slice(0, i), value: pair.slice(i + 1), url: BASE() }
+    })
+
+  it('shows a pass, has no serious accessibility violations, and keeps a scan made offline until it is back online', async () => {
+    browser = await chromium.launch({ channel: process.env.PW_CHANNEL ?? 'chrome', headless: true })
+    const b = await makeBooker('browser-a')
+    const context = await browser.newContext({ viewport: { width: 390, height: 844 }, extraHTTPHeaders: { 'x-forwarded-for': uniqueIp() }, reducedMotion: 'reduce' })
+    await context.addCookies(cookiesFor(b.session))
+    const page = await context.newPage()
+
+    // online: the page sets itself up, registers its own key and draws the pass
+    await page.goto(`${BASE()}/lab-device`, { waitUntil: 'networkidle' })
+    const qr = page.getByRole('img', { name: /check in pass for/i })
+    await qr.waitFor({ timeout: 30_000 })
+    const axe = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze()
+    const serious = axe.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical')
+    expect(serious.map((v) => `${v.id}: ${v.nodes[0]?.target.join(' ')}`)).toEqual([])
+    // the text alternative to the code exists and the camera control is a real button
+    await page.getByText('Pass as text').click()
+    expect((await page.getByLabel('Pass code text').inputValue()).startsWith('K1.')).toBe(true)
+    await page.getByRole('button', { name: 'Start camera' }).first().waitFor()
+
+    // the service worker takes the shell
+    await page.evaluate(() => navigator.serviceWorker.ready.then(() => true))
+    await expect
+      .poll(() => page.evaluate(async () => !!(await (await caches.open('knest-lab-shell-v1')).match('/lab-device'))), { timeout: 30_000 })
+      .toBe(true)
+    await page.reload({ waitUntil: 'networkidle' })
+    await qr.waitFor({ timeout: 30_000 })
+
+    // offline: the shell and the pass still open from this device's own storage
+    await context.setOffline(true)
+    await page.reload({ waitUntil: 'domcontentloaded' })
+    await page.getByRole('img', { name: /check in pass for/i }).waitFor({ timeout: 30_000 })
+    await page.getByText(/Offline: scans are saved on this device/).waitFor({ timeout: 15_000 })
+
+    // an offline scan of the lab desk code is saved, not claimed verified
+    const desk = await createChallenge({ mode: 'in', labId: b.labId, keyId: assistantDevice.keyId, nowMs: Date.now() }, assistantDevice.privateKey)
+    await page.getByLabel('Or paste the lab code text').fill(desk)
+    await page.getByRole('button', { name: 'Use this code' }).click()
+    await page.getByText(/saved on this device/i).first().waitFor({ timeout: 15_000 })
+    expect(await page.getByText(/Verified: the lab and your device/).count()).toBe(0)
+    const before = await db().query("select count(*)::int c from app.lab_scan_events where booking_id = $1 and side = 'student'", [b.bookingId])
+    expect(before.rows[0].c).toBe(0)
+
+    // back online: it is sent once, on its own, and the server decides
+    await context.setOffline(false)
+    await page.evaluate(() => window.dispatchEvent(new Event('online')))
+    await expect
+      .poll(async () => (await db().query("select status from app.lab_scan_events where booking_id = $1 and side = 'student'", [b.bookingId])).rows[0]?.status, { timeout: 45_000 })
+      .toBe('accepted')
+    await context.close()
+  }, 180_000)
+
+  it('shows the scan screen to staff and refuses the staff tab to an ordinary member', async () => {
+    const b = await makeBooker('browser-b')
+    const context = await browser!.newContext({ viewport: { width: 390, height: 844 }, extraHTTPHeaders: { 'x-forwarded-for': uniqueIp() }, reducedMotion: 'reduce' })
+    await context.addCookies(cookiesFor(assistant))
+    const page = await context.newPage()
+    await page.goto(`${BASE()}/lab-device`, { waitUntil: 'networkidle' })
+    await page.getByRole('tab', { name: 'Scan for a lab' }).click()
+    await page.getByRole('heading', { name: 'Scan a student pass' }).waitFor({ timeout: 30_000 })
+    await page.getByRole('img', { name: /Lab desk code/ }).waitFor({ timeout: 15_000 })
+    const axe = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze()
+    expect(axe.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => `${v.id}: ${v.nodes[0]?.target.join(' ')}`)).toEqual([])
+    await context.close()
+
+    const memberContext = await browser!.newContext({ extraHTTPHeaders: { 'x-forwarded-for': uniqueIp() } })
+    await memberContext.addCookies(cookiesFor(b.session))
+    const memberPage = await memberContext.newPage()
+    await memberPage.goto(`${BASE()}/lab-device`, { waitUntil: 'networkidle' })
+    await memberPage.getByRole('img', { name: /pass for/i }).waitFor({ timeout: 30_000 })
+    expect(await memberPage.getByRole('tab', { name: 'Scan for a lab' }).count()).toBe(0)
+    await memberContext.close()
+  }, 120_000)
 })
