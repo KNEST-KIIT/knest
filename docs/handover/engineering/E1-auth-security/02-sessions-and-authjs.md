@@ -12,7 +12,7 @@ Files: `src/server/auth/index.ts`, `config.ts`, `session.ts`, `active-only-adapt
 | `sessionCookieName` | `session.ts:38-42` | `() => string` | `__Secure-authjs.session-token` or `authjs.session-token` |
 | `createDatabaseSession` | `session.ts:44-60` | `(userId: string) => Promise<void>` | Insert session row and set cookie |
 | `destroyDatabaseSession` | `session.ts:63-70` | `() => Promise<void>` | Delete row for the presented cookie, delete cookie |
-| `revokeAllSessions` | `session.ts:73-75` | `(userId: string) => Promise<void>` | Delete every session row of a user. Exported but not called anywhere in `src` (file 13, L-05) |
+| `revokeAllSessions` | `session.ts:73-75` | `(userId: string) => Promise<void>` | Delete every session row of a user. Exported but not called anywhere in `src` (file 13, D-08) |
 | `googleConfigured`, `authProviders` | `providers.ts:11-24` | `(env?) => boolean`, `(env?) => Provider[]` | Single decision point for whether Google is on |
 
 ## Configuration (`config.ts`)

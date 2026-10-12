@@ -14,7 +14,7 @@ proxy(request)
                  if SITE_INDEXING !== 'on': x-robots-tag: noindex, nofollow   (:14-15)
 ```
 
-The response to a refusal carries no reason. The reason (`origin-verify` or `origin-mismatch`) is computed but not logged or returned, so an operator diagnosing a wrong secret or a missing `ALLOWED_ORIGINS` entry has nothing in the application logs (file 13, L-08).
+The response to a refusal carries no reason. The reason (`origin-verify` or `origin-mismatch`) is computed but not logged or returned, so an operator diagnosing a wrong secret or a missing `ALLOWED_ORIGINS` entry has nothing in the application logs (file 13, D-09).
 
 ## `guardRequest` (`edge-guard.ts:58-91`)
 
