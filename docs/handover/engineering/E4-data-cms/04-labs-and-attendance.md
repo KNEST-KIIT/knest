@@ -79,7 +79,7 @@ Operating windows in India Standard Time: `weekday` 0 (Sunday) to 6, `opens_minu
 `closes_minute` as minutes after midnight. Several windows per day are allowed. FK `lab_id` CASCADE.
 Index `lab_hours_lab_idx (lab_id, weekday)`. CHECKs: `lab_hours_weekday` (0..6),
 `lab_hours_window` (`opens_minute >= 0 and closes_minute <= 1440 and opens_minute < closes_minute`).
-Overlapping windows on one day are not prevented by the database. The IST assumption is a code-level
+Overlapping windows on one day are not prevented by the database; the manage API refuses them with HTTP 400 (`tests/integration/34-lab-booking.test.ts:120-121`). The IST assumption is a code-level
 convention; the column carries no zone. Writers: `src/server/labs/manage.ts` (inserts and deletes of hour
 windows, audited as `lab_hours_set`).
 
