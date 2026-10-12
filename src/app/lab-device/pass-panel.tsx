@@ -51,7 +51,13 @@ export function PassPanel() {
     let cancelled = false
     const make = async () => {
       const now = nowMs()
-      const next = await makePass(device, selected, action, now)
+      let next: string
+      try {
+        next = await makePass(device, selected, action, now)
+      } catch (error) {
+        if (!cancelled) setMessage({ tone: 'bad', text: `This device could not make a pass (${error instanceof Error ? error.message : 'unknown error'}). Ask the lab to record you by hand.` })
+        return
+      }
       if (cancelled) return
       setToken(next)
       setSecondsLeft(Math.max(1, Math.ceil((STEP_MS - (now % STEP_MS)) / 1000)))

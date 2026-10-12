@@ -450,11 +450,22 @@ describe('the device screen in a real browser engine', () => {
     const context = await browser.newContext({ viewport: { width: 390, height: 844 }, extraHTTPHeaders: { 'x-forwarded-for': uniqueIp() }, reducedMotion: 'reduce' })
     await context.addCookies(cookiesFor(b.session))
     const page = await context.newPage()
+    const logs: string[] = []
+    page.on('console', (m) => logs.push(`console.${m.type()}: ${m.text()}`))
+    page.on('pageerror', (e) => logs.push(`pageerror: ${e.message}`))
+    page.on('requestfailed', (r) => logs.push(`requestfailed: ${r.url()} ${r.failure()?.errorText}`))
+    page.on('response', (r) => r.status() >= 400 && logs.push(`http ${r.status()} ${r.url()}`))
 
     // online: the page sets itself up, registers its own key and draws the pass
-    await page.goto(`${BASE()}/lab-device`, { waitUntil: 'domcontentloaded' })
+    const response = await page.goto(`${BASE()}/lab-device`, { waitUntil: 'domcontentloaded' })
+    expect(response?.status()).toBe(200)
     const qr = page.getByRole('img', { name: /check in pass for/i })
-    await qr.waitFor({ timeout: 30_000 })
+    try {
+      await qr.waitFor({ timeout: 30_000 })
+    } catch (error) {
+      const text = await page.locator('body').innerText().catch(() => '(no body)')
+      throw new Error(['the pass image never appeared: ' + (error as Error).message, ...logs, '--- page text ---', text].join(String.fromCharCode(10)))
+    }
     const axe = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze()
     const serious = axe.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical')
     expect(serious.map((v) => `${v.id}: ${v.nodes[0]?.target.join(' ')}`)).toEqual([])

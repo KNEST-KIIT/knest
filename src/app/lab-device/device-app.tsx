@@ -26,6 +26,7 @@ type Phase =
   | { kind: 'signed-out' }
   | { kind: 'no-identity' }
   | { kind: 'no-key'; identity: Identity }
+  | { kind: 'failed'; reason: string }
   | { kind: 'ready'; identity: Identity; device: StoredDeviceKey }
 
 type Tab = 'pass' | 'scan'
@@ -62,12 +63,17 @@ export function DeviceApp() {
   }, [])
 
   const boot = useCallback(async () => {
-    const result = await resolveIdentity(store, fetch)
-    if (result.signedOut) return setPhase({ kind: 'signed-out' })
-    if (!result.identity) return setPhase({ kind: 'no-identity' })
-    const device = await ensureKey(store, result.identity.userId, fetch, navigator.userAgent.slice(0, 60))
-    if (!device.registered && !result.offline) return setPhase({ kind: 'no-key', identity: result.identity })
-    setPhase({ kind: 'ready', identity: result.identity, device })
+    try {
+      const result = await resolveIdentity(store, fetch)
+      if (result.signedOut) return setPhase({ kind: 'signed-out' })
+      if (!result.identity) return setPhase({ kind: 'no-identity' })
+      const device = await ensureKey(store, result.identity.userId, fetch, navigator.userAgent.slice(0, 60))
+      if (!device.registered && !result.offline) return setPhase({ kind: 'no-key', identity: result.identity })
+      setPhase({ kind: 'ready', identity: result.identity, device })
+    } catch (error) {
+      // never sit on "opening" forever: say what failed and offer a retry
+      setPhase({ kind: 'failed', reason: error instanceof Error ? `${error.name}: ${error.message}` : 'unknown error' })
+    }
   }, [store])
 
   useEffect(() => {
@@ -145,6 +151,21 @@ export function DeviceApp() {
         <p className="mt-2 text-[var(--color-ink-soft)]">This device has not been set up yet. Connect to the internet and open this screen once. After that it works without a connection.</p>
         <p className="mt-4">
           <button type="button" className={buttonClass} onClick={() => window.location.reload()}>
+            Try again
+          </button>
+        </p>
+      </div>
+    )
+  }
+
+  if (phase.kind === 'failed') {
+    return (
+      <div className={cardClass}>
+        <h2 className="text-[length:var(--text-heading)] font-medium">This device could not start the lab pass</h2>
+        <p className="mt-2 text-[var(--color-ink-soft)]">Your browser would not let the page create or store its device key, so it cannot show or scan passes here. You can still be recorded by hand at the lab desk.</p>
+        <p className="mt-2 text-[length:var(--text-small)] text-[var(--color-ink-muted)]">Details: {phase.reason}</p>
+        <p className="mt-4">
+          <button type="button" className={primaryButtonClass} onClick={() => void boot()}>
             Try again
           </button>
         </p>
