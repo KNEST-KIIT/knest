@@ -30,7 +30,7 @@ an owner.
 | S-12 | Info | V14 headers | HSTS exists only at CloudFront; origin does not send it | OPEN (documented) |
 | S-13 | Low | V2 | No second factor for staff and administrators | OPEN (decision) |
 | S-14 | Low | V2 | Edge access gate compares hash with non-constant-time `!==` | OPEN (accept) |
-| S-15 | Low | V13 | QR attendance: unsigned client clock decides the effective scan time | OPEN (ATTENDANCE, unmerged branch) |
+| S-15 | Low | V13 | QR attendance: unsigned client clock decides the effective scan time | FIXED on agent/attendance, pending merge |
 
 Other branches were read for security-relevant changes where they touch shared code: `agent/content`
 (calendar file route: text escaped, folded, slug-derived filename, published events only; search
@@ -196,7 +196,7 @@ institutional domain for staff, or TOTP; this is a product decision with cost, n
 timing signal reveals a prefix of a hash of an unknown preimage, which is not exploitable. The gate
 is a temporary pre-launch control. Accept.
 
-### S-15 QR attendance: scan time chosen by the scanner (Low, OPEN, branch `agent/attendance`, not merged)
+### S-15 QR attendance: scan time chosen by the scanner (Low, FIXED on `agent/attendance`, pending merge)
 
 Read from `origin/agent/attendance` (`src/lib/lab-qr/decide.ts`, `src/server/labs/attendance-qr.ts`),
 read-only, no tests run by this review. The protocol is carefully built: domain-separated
@@ -211,7 +211,13 @@ is checked. Impact is limited because a verified check needs both sides inside `
 and the staff side is a live pass from a key-bound device; the student side could replay a
 photographed old desk code. Fix (owner ATTENDANCE, told directly): sign `clientNowMs` inside the
 scan payload and reject `at > clientNowMs + 5 s`; apply skew correction only to events flagged
-offline in the signed payload. Mark closed when that lands with a test.
+offline in the signed payload.
+
+Update: `agent/attendance` now signs an `ol` (offline) flag in the scan payload. An online event is
+judged only against the server clock and the unsigned batch time is ignored for it
+(`decide.ts` lines 148-151 and 188-189, read by this review; its tests were not run here).
+Residual, stated by ATTENDANCE in the threat model: an offline claim cannot be verified by
+software; a verified check still needs both halves inside the pair window. Pending merge.
 
 ## Areas reviewed with no finding
 
