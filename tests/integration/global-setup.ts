@@ -67,6 +67,8 @@ export default async function setup() {
     DATABASE_SSL: 'off',
     // Lab booking is built and tested locally, but stays off by default everywhere else (HD-16 is open).
     FEATURE_LAB_BOOKING: 'true',
+    // QR attendance is exercised here against real keys; it stays off everywhere else until the threat model is signed off.
+    FEATURE_LAB_ATTENDANCE_QR: 'true',
     SMTP_HOST: '127.0.0.1',
     EMAIL_TRANSPORT: 'smtp',
     SMTP_PORT: String(smtp.port),

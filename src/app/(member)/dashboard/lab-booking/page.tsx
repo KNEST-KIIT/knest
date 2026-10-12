@@ -4,7 +4,7 @@ import { EmptyState, Heading } from '@/components/ui'
 import { nowMs } from '@/lib/clock'
 import { rangeLabel, STATUS_LABELS } from '@/lib/lab-format'
 import { requireOnboardedUser } from '@/server/auth/guards'
-import { isLabBookingEnabled } from '@/server/features'
+import { isLabAttendanceQrEnabled, isLabBookingEnabled } from '@/server/features'
 import { listActiveLabs, listMyBookings } from '@/server/labs/service'
 import { BookingActions } from './booking-actions'
 
@@ -50,6 +50,20 @@ export default async function LabBookingPage() {
           </ul>
         )}
       </section>
+
+      {isLabAttendanceQrEnabled() && (
+        <section aria-labelledby="pass">
+          <Heading as="h2" size="heading">
+            <span id="pass">Lab pass</span>
+          </Heading>
+          <p className="mt-2 text-[var(--color-ink-soft)]">On the day, show your pass at the lab desk. It works without a connection once you have opened it online.</p>
+          <p className="mt-3">
+            <Link href="/lab-device" className="font-semibold text-[var(--color-signal)] underline underline-offset-4">
+              Open lab pass
+            </Link>
+          </p>
+        </section>
+      )}
 
       <section aria-labelledby="mine">
         <Heading as="h2" size="heading">

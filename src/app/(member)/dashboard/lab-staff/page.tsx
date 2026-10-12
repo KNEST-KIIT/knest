@@ -7,7 +7,7 @@ import { EmptyState, Heading } from '@/components/ui'
 import { rangeLabel } from '@/lib/lab-format'
 import { requireOnboardedUser } from '@/server/auth/guards'
 import type { StaffRole } from '@/server/auth/roles'
-import { isLabBookingEnabled } from '@/server/features'
+import { isLabAttendanceQrEnabled, isLabBookingEnabled } from '@/server/features'
 import { isLabAdmin, labsRunBy } from '@/server/labs/access'
 import { listActiveLabs, listRoster } from '@/server/labs/service'
 
@@ -48,6 +48,14 @@ export default async function LabStaffHome() {
             </li>
           ))}
         </ul>
+      )}
+
+      {isLabAttendanceQrEnabled() && (
+        <p>
+          <Link href="/lab-device" className="font-semibold text-[var(--color-signal)] underline underline-offset-4">
+            Open scan screen
+          </Link>
+        </p>
       )}
 
       <section aria-labelledby="duties">

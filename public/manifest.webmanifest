@@ -1,0 +1,18 @@
+{
+  "name": "KNEST Lab Attendance",
+  "short_name": "KNEST Lab",
+  "description": "Show your lab pass and record lab attendance, including without a network connection.",
+  "id": "/lab-device",
+  "start_url": "/lab-device",
+  "scope": "/lab-device",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f8f4e9",
+  "theme_color": "#0d1321",
+  "lang": "en-IN",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

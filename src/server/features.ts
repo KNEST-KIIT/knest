@@ -14,3 +14,13 @@ type Env = Record<string, string | undefined>
 export function isLabBookingEnabled(env: Env = process.env): boolean {
   return env.FEATURE_LAB_BOOKING === 'true'
 }
+
+/**
+ * QR attendance (signed passes, two-sided scan, offline outbox, PWA) is off unless
+ * `FEATURE_LAB_ATTENDANCE_QR` is exactly "true" AND lab booking is on. Enabling it in any real
+ * environment needs the threat model (docs/delivery/LAB-ATTENDANCE-THREAT-MODEL.md) signed off by
+ * KIIT and a lab head, and the real-device protocol run. The code records attendance; it opens no door.
+ */
+export function isLabAttendanceQrEnabled(env: Env = process.env): boolean {
+  return isLabBookingEnabled(env) && env.FEATURE_LAB_ATTENDANCE_QR === 'true'
+}

@@ -1,6 +1,6 @@
 # Lab booking: design for local build (contract modules 25 to 29 and 32)
 
-**Status: design, 2026-10-09.** Built locally behind `FEATURE_LAB_BOOKING` (off). **Nothing here is an approved lab policy.** Every operating rule is a stored setting with a recommended default from `HD-16-LAB-POLICY-QUESTIONNAIRE.md`; the lab heads and KNEST set the real values. Enabling the feature anywhere real needs HD-16 answered and signed by people. QR, signed passes, offline sync and PWA (modules 30, 31, 36 to 38) are **not built**: they wait for the threat-model review, real-device tests and lab-head review (`LAB-ATTENDANCE-THREAT-MODEL.md`). Attendance is recorded **manually**, labelled as such, which the threat model already treats as the baseline.
+**Status: design, 2026-10-09.** Built locally behind `FEATURE_LAB_BOOKING` (off). **Nothing here is an approved lab policy.** Every operating rule is a stored setting with a recommended default from `HD-16-LAB-POLICY-QUESTIONNAIRE.md`; the lab heads and KNEST set the real values. Enabling the feature anywhere real needs HD-16 answered and signed by people. QR, signed passes, offline sync and PWA (modules 30, 31, 36 to 38) are **built behind a second flag, `FEATURE_LAB_ATTENDANCE_QR` (off, and it requires this one)**, and are not enabled until the threat-model review, real-device tests and lab-head review are done (`LAB-ATTENDANCE-THREAT-MODEL.md`). Without that flag attendance is recorded **manually**, labelled as such. With it, a verified two-sided scan writes the same `lab_attendance` row labelled `qr`; a manual row is never overwritten.
 
 ## Why the old code goes
 
@@ -47,7 +47,7 @@ Slot generation (hours, blackouts, lead, horizon, grid, past); **parallel reques
 
 ## Explicitly not built (gated, see tracker)
 
-Signed QR passes, two-sided scan, offline outbox, PWA install: blocked on the threat-model review, real-device test protocol results and lab-head review. Door control: not planned (HD-16 question 10).
+Door control: not planned (HD-16 question 10). Signed QR passes, two-sided scan, offline outbox and PWA install exist but stay off until the threat-model review, real-device protocol results and lab-head review are done.
 
 ## Known gaps (found in review, 2026-10-09)
 

@@ -40,6 +40,8 @@ export const RATE_LIMITS = {
   labAction: { capacity: 120, refillIntervalSeconds: 60 * 60 },
   // Availability reads while a person browses dates; far above human use.
   labAvailability: { capacity: 240, refillIntervalSeconds: 60 * 60 },
+  // QR attendance: scan batches, key registration, roster and state reads from one signed-in person.
+  labScan: { capacity: 600, refillIntervalSeconds: 60 * 60 },
 } as const satisfies Record<string, RateLimitConfig>
 
 /**
