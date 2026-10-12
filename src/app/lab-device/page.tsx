@@ -18,7 +18,8 @@ export const metadata: Metadata = {
   icons: { apple: '/icons/icon-192.png' },
 }
 
-export const viewport: Viewport = { themeColor: '#0d1321', width: 'device-width', initialScale: 1 }
+// The browser chrome colour must be a literal; it is the brand ink (tokens.css --color-ink), same as the manifest.
+export const viewport: Viewport = { themeColor: '#0d1321', width: 'device-width', initialScale: 1 } // ds-allow-hardcode
 
 export default function LabDevicePage() {
   if (!isLabAttendanceQrEnabled()) notFound()

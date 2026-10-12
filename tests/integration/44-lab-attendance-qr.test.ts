@@ -483,9 +483,19 @@ describe('the device screen in a real browser engine', () => {
     await qr.waitFor({ timeout: 30_000 })
 
     // offline: the shell and the pass still open from this device's own storage
+    const state = await page.evaluate(async () => ({
+      controlled: !!navigator.serviceWorker.controller,
+      caches: await caches.keys(),
+      cached: await (await caches.open('knest-lab-shell-v1')).keys().then((ks) => ks.map((k) => new URL(k.url).pathname)),
+    }))
     await context.setOffline(true)
-    await page.reload({ waitUntil: 'domcontentloaded' })
-    await page.getByRole('img', { name: /check in pass for/i }).waitFor({ timeout: 30_000 })
+    try {
+      await page.reload({ waitUntil: 'domcontentloaded' })
+      await page.getByRole('img', { name: /check in pass for/i }).waitFor({ timeout: 30_000 })
+    } catch (error) {
+      const text = await page.locator('body').innerText().catch(() => '(no body)')
+      throw new Error(['offline reload failed: ' + (error as Error).message, 'sw state before: ' + JSON.stringify(state), ...logs.slice(-40), '--- page text ---', text].join(String.fromCharCode(10)))
+    }
     await page.getByText(/Offline: scans are saved on this device/).waitFor({ timeout: 15_000 })
 
     // an offline scan of the lab desk code is saved, not claimed verified
