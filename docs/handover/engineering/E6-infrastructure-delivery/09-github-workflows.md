@@ -63,7 +63,7 @@ Semantics and edge cases:
 | Commit reached the branch only through a merge made on GitHub (new SHA) | needs its own push-triggered run, which exists because `push` is on every branch |
 | Commit exists only in a pull request, never pushed to a branch of this repo | no `push` run: gate fails. Pull-request runs are `event=pull_request` and are ignored by design. |
 | Dispatch on a ref whose SHA has more than 20 runs | not handled; `per_page=20` after sort |
-| Release workflow's own tests | `infra/cfn/release-gates.test.ts:6-12` asserts the `needs` edge and that the command text contains `head_sha=${GITHUB_SHA}`, `.head_sha == $sha`, `.conclusion == "success"`. It checks text, not behaviour. |
+| Release workflow's own tests | `infra/cfn/release-gates.test.ts:8-16` asserts the `needs` edge and that the command text contains `head_sha=${GITHUB_SHA}`, `.head_sha == $sha`, `.conclusion == "success"`. It checks text, not behaviour. |
 
 The gate does not re-run tests, and it trusts that CI built the same source: the image the release builds is not the image CI tested (different platform, different build run).
 
@@ -102,7 +102,7 @@ Limits of the gate:
 
 - It evaluates once, at release time. A vulnerability published after the push is not seen by a later deploy of the same digest, and a rollback to an older digest is not re-scanned.
 - It relies on ECR's basic scanning at push (`ScanOnPush`). Which engine the repository uses (basic or enhanced) is not set in `ci.yaml`; not determined from the code.
-- The jq expression is never executed against fixtures anywhere in the repository. `release-gates.test.ts:15-26` only checks that the step text mentions `aws ecr wait image-scan-complete`, `describe-image-scan-findings`, `(.CRITICAL // 0)` before the `echo "app_image=` line, and `(.HIGH // 0)` (D-11).
+- The jq expression is never executed against fixtures anywhere in the repository. `release-gates.test.ts:18-26` only checks that the step text mentions `aws ecr wait image-scan-complete`, `describe-image-scan-findings`, `(.CRITICAL // 0)` before the `echo "app_image=` line, and `(.HIGH // 0)` (D-11).
 - The digest accepted is the one the build action reported (`steps.app.outputs.digest`), so what is scanned and deployed is the same artifact.
 
 ### Job 3 `deploy` (`:171-219`)

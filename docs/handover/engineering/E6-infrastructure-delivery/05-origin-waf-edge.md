@@ -55,7 +55,7 @@ No CAPTCHA, Bot Control or fraud-control groups (owner decision ARCH-2); `templa
 Failure modes and caveats:
 
 - **Shared IP.** Rate limits key on the connecting IP seen by CloudFront. A campus NAT makes many students one IP: 100 auth requests per 5 minutes and 2000 requests per 5 minutes for everyone behind it. Not measured; `load-test.mjs` explicitly says it cannot test per-address limits (`LOAD-TEST.md:56-60`).
-- **Auth path scope.** `/api/auth/` covers the application's password login and signup, which live under `/api/auth/password/*` (`verify-core.mjs:321`). Other sensitive paths (application submission, enquiries) fall under the global limit only; app-level limits cover them (`RUNBOOK.md:349`, gap 13: not all routes have limits).
+- **Auth path scope.** `/api/auth/` covers the application's password login and signup, which live under `/api/auth/password/*` (`verify-core.mjs:116`). Other sensitive paths (application submission, enquiries) fall under the global limit only; app-level limits cover them (`RUNBOOK.md:349`, gap 13: not all routes have limits).
 - **Managed rule false positives.** Common rule set can block legitimate rich-text posted through the CMS admin. No exclusions are configured except body size. Not observed.
 - **Count mode metrics.** All five rules have CloudWatch metrics and sampled requests on, but no alarm consumes them.
 - **No logging configuration** (no `AWS::WAFv2::LoggingConfiguration`). Blocked requests are visible only as sampled requests in the console.
@@ -106,7 +106,7 @@ Observations:
   - Origin `app`: custom header `X-Origin-Verify` from `{{resolve:secretsmanager:<id>:SecretString}}` (`:223-225`), TLS 1.2 only to origin, `OriginReadTimeout: 60`.
   - Default behaviour: redirect to HTTPS, all methods, **CachingDisabled** managed policy `4135ea2d-...`, origin request policy `AllViewerAndCloudFrontHeaders-2022-06` (`33f36d7e-...`) forwarding cookies, headers (Host, `CloudFront-Viewer-Address`, used for the client IP) and query strings, response-headers policy, viewer-request function.
   - One extra behaviour: `/_next/static/*`, GET/HEAD, the static cache policy.
-- Outputs: `DistributionId`, `DistributionDomainName` (used by `dns.yaml` and `cutover-apply.sh:132`).
+- Outputs: `DistributionId`, `DistributionDomainName` (used by `dns.yaml` and `cutover-apply.sh:47`).
 
 ### Why caching is off for everything dynamic
 

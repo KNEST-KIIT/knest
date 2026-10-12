@@ -73,9 +73,9 @@ Why the shape: the owner decided on one production environment and no permanent 
 | `dns.yaml` | `knest-production-dns` | any (Route 53 is global); the cutover script uses us-east-1 | Two hosted zones and the mail/verification records, web aliases when the CloudFront name is supplied | `edge.yaml` output |
 | `ses.yaml` | `knest-production-ses` | ap-south-1 | SES domain identity with Easy DKIM | DKIM CNAMEs installed by hand |
 
-Note on the edge region: the header of `infra/cfn/edge.yaml:5` says "DEPLOY IN ap-south-1", while `V1-DEPLOYMENT-REPORT.md:39` says the edge stack is in Virginia, and `scripts/ops/cutover-apply.sh:127,132,140,147` all use `us-east-1` for the edge and dns stacks. The latter two are what actually runs. The template header is wrong (D-02).
+Note on the edge region: the header of `infra/cfn/edge.yaml:5` says "DEPLOY IN ap-south-1", while `V1-DEPLOYMENT-REPORT.md:39` says the edge stack is in Virginia, and `scripts/ops/cutover-apply.sh:42,47,55,62` all use `us-east-1` for the edge and dns stacks. The latter two are what actually runs. The template header is wrong (D-02).
 
-Stack names are not in the templates. They are fixed by convention in `scripts/ops/cutover-apply.sh:127-148`, `docs/delivery/OPERATOR-COMMANDS.md:33-56` and `V1-DEPLOYMENT-REPORT.md:39`.
+Stack names are not in the templates. They are fixed by convention in `scripts/ops/cutover-apply.sh:42-63`, `docs/delivery/OPERATOR-COMMANDS.md:33-56` and `V1-DEPLOYMENT-REPORT.md:39`.
 
 ## 4. Deploy order and why
 

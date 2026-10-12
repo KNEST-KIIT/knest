@@ -32,7 +32,7 @@ The release builds `linux/arm64` under QEMU on an amd64 runner (`release-image.y
 2. The runner is uid 1001 and contains no source, tests, `.env` or TypeScript (`:152-155`).
 3. `pnpm migrate`, run from the migrate image against an empty throwaway PostgreSQL 16 with `DATABASE_SSL=off`, succeeds (`:157-163`). Note `DB_RUNTIME_USER` is not set, so the runtime-role step prints "skipped": the role provisioning in the image is **not** exercised by the image job (it is exercised in the integration job's `global-setup.ts:111-126`, through `tsx`, not through the image).
 4. The runner starts with a production-shaped environment (`CLIENT_IP_SOURCE=x-forwarded-for`, S3 and SMTP variables, Turnstile keys) and `/api/health` returns `{"status":"ok"}` within 120 s (`:165-178`). `ORIGIN_VERIFY_SECRET` is not set, and `SITE_URL` is loopback, so the guard's "production without secret" refusal is bypassed by its `local` clause (`edge-guard.ts:64-65`): the origin check is not exercised.
-5. `scripts/verify-production.mjs --url http://127.0.0.1:3000` runs against the container (`:181-182`); with an http URL the HTTPS, HSTS and CDN-cache checks are skipped (`verify-core.mjs:275-281,297`).
+5. `scripts/verify-production.mjs --url http://127.0.0.1:3000` runs against the container (`:181-182`); with an http URL the HTTPS, HSTS and CDN-cache checks are skipped (`verify-core.mjs:70-76,92`).
 6. A container started with short secrets and no S3 or Turnstile variables does not answer 200 on `/login` and logs `Invalid production environment` (`:184-192`), which is `src/instrumentation.ts:6-11` throwing.
 7. Container logs are printed on failure and the verification evidence is uploaded as an artifact (`:194-205`).
 
