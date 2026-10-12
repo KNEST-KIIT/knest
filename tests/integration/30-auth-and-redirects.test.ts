@@ -81,6 +81,20 @@ describe('KN-22e: post-login redirect stays on our origin', () => {
       page.waitForURL((u) => !u.pathname.startsWith('/signup'), { timeout: 60_000 }),
       page.getByRole('button', { name: /create account/i }).click(),
     ])
+    // Sign-up ends on "Check your email" and issues no session (KN-22b).
+    expect(new URL(page.url()).pathname).toBe('/verify')
+
+    // The e-mailed link signs the account in; the hostile return path was dropped on the way,
+    // so "Continue" goes to plain onboarding on our own origin.
+    await expect.poll(() => readMail().find((m) => m.to.includes(email)), { timeout: 20_000 }).toBeTruthy()
+    const mailText = decodeMailText(readMail().find((m) => m.to.includes(email))!.body)
+    expect(mailText).not.toContain('evil.example')
+    const path = /\/verify\/confirm\?[^\s"<>]+/.exec(mailText)![0]
+    await page.goto(`${BASE()}${path}`)
+    await page.getByText('You’re signed in.').waitFor({ timeout: 30_000 })
+    const continueHref = await page.getByRole('link', { name: 'Continue.' }).getAttribute('href')
+    expect(continueHref).toBe('/onboarding')
+    await Promise.all([page.waitForURL((u) => u.pathname === '/onboarding', { timeout: 60_000 }), page.getByRole('link', { name: 'Continue.' }).click()])
     const finalUrl = new URL(page.url())
     await context.close()
     expect(finalUrl.origin).toBe(new URL(BASE()).origin)
@@ -153,7 +167,9 @@ describe('sign-up -> e-mailed link -> verified account (nodemailer 10, absolute 
       headers: { 'content-type': 'application/json', 'x-forwarded-for': uniqueIp() },
       body: JSON.stringify({ name: 'Verify Person', email, password: PASSWORD, ...CAPTCHA }),
     })
-    expect(signup.status).toBe(201)
+    expect(signup.status).toBe(202)
+    // No session cookie: the link in the mailbox is what signs a new account in (KN-22b).
+    expect(signup.headers.getSetCookie().some((c) => c.includes('session-token'))).toBe(false)
     expect((await db().query('select email_verified from app.users where email = $1', [email])).rows[0].email_verified).toBeNull()
 
     await expect.poll(() => readMail().find((m) => m.to.includes(email)), { timeout: 20_000 }).toBeTruthy()
@@ -171,7 +187,9 @@ describe('sign-up -> e-mailed link -> verified account (nodemailer 10, absolute 
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ email, token }),
       })
-    expect((await confirm()).status).toBe(200)
+    const first = await confirm()
+    expect(first.status).toBe(200)
+    expect(first.headers.getSetCookie().some((c) => c.includes('session-token'))).toBe(true)
     expect((await db().query('select email_verified from app.users where email = $1', [email])).rows[0].email_verified).not.toBeNull()
     expect((await confirm()).status).toBe(400) // single use
   })

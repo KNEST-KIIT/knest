@@ -20,3 +20,15 @@ export function resetPasswordTemplate(link: string) {
     text: `Someone asked to reset the password for this address. If it wasn't you, ignore this — nothing has changed.\n\n${link}\n\nThis link expires in 1 hour.`,
   }
 }
+
+export function accountExistsTemplate(loginLink: string, resetLink: string) {
+  return {
+    subject: 'You already have a KNEST account',
+    text: `Someone used this address to sign up for KNEST, but an account already exists for it.
+
+Log in: ${loginLink}
+Forgot your password: ${resetLink}
+
+If it wasn't you, ignore this email. Nothing has changed.`,
+  }
+}

@@ -162,3 +162,17 @@ export const canTransition = (from: BookingStatus, to: BookingStatus) => BOOKING
 
 /** The statuses that hold a slot (the same list as the database exclusion constraint). */
 export const LIVE_STATUSES: readonly BookingStatus[] = ['requested', 'approved', 'alternative_proposed']
+
+// ----------------------------------------------------------------------------- escalation
+
+/**
+ * Whether a request has waited longer than the lab's own escalation threshold, or has nobody to
+ * decide it. Either way the lab administrators are shown it. The threshold is a setting on the lab
+ * (a recommended default, not an approved policy).
+ */
+export function isEscalated(input: { status: BookingStatus; requestedAt: Date; now: Date; escalateAfterHours: number; hasHead: boolean }): { escalated: boolean; reason: 'no_head' | 'waiting' | null } {
+  if (input.status !== 'requested') return { escalated: false, reason: null }
+  if (!input.hasHead) return { escalated: true, reason: 'no_head' }
+  const waitedMs = input.now.getTime() - input.requestedAt.getTime()
+  return waitedMs >= input.escalateAfterHours * 60 * MS.minute ? { escalated: true, reason: 'waiting' } : { escalated: false, reason: null }
+}

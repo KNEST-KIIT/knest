@@ -6,7 +6,6 @@ import { users } from './schema'
 import {
   assertDemoSeedAllowed,
   mayModifyExistingUsers,
-  looksLikeProduction,
   resolveSeedPassword,
 } from './seed-policy'
 import { getPayload } from 'payload'

@@ -24,6 +24,7 @@
   --color-ink-muted: #43415a;
   --color-paper: #f8f4e9;
   --color-paper-soft: #ede4c9;
+  --color-paper-raised: #ffffff;
   --color-line: #ddd0a8;
   --color-paper-invert: #0d1321;
   --color-line-invert: rgba(255, 255, 255, 0.15);
@@ -47,6 +48,7 @@
   --color-positive: #15803d;
   --color-caution: #92400e;
   --color-critical: #b91c1c;
+  --color-positive-wash: #f0fdf4;
 
   /* --- Type ---
      Display: Fraunces, a variable serif with real optical-size and weight
@@ -71,6 +73,19 @@
 
   /* --- Space: 8pt --- */
   --spacing: 0.5rem;
+
+  /* --- Focus ring (spec section 44) --- */
+  --focus-width: 2px;
+  --focus-offset: 2px;
+
+  /* --- Motion. Decorative durations that no utility scale covers.
+     --motion-instant is the reduced-motion floor: effectively no animation
+     while still firing animationend/transitionend. --- */
+  --motion-instant: 0.01ms;
+  --motion-fast: 0.2s;
+  --motion-rise: 0.7s;
+  --motion-sheen: 1.5s;
+  --motion-settle: 2s;
 
   /* --- Radius: three, no more — smaller than the "soft SaaS card" pass,
      matching a more editorial, less rounded-app-UI language. --- */

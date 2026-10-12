@@ -58,7 +58,7 @@ export function ResetConfirmForm({ email, token }: { email: string; token: strin
           </p>
         )}
 
-        <Button type="submit" size="lg" fullWidth disabled={pending}>
+        <Button type="submit" size="lg" fullWidth disabled={pending} aria-busy={pending} className={pending ? 'disabled:opacity-100 disabled:cursor-progress' : undefined}>
           {pending ? 'Saving…' : 'Save new password'}
         </Button>
       </form>

@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react'
 import { Heading } from '@/components/ui'
 
-export function VerifyConfirm({ email, token }: { email: string; token: string }) {
-  const [state, setState] = useState<'checking' | 'ok' | 'error'>('checking')
+export function VerifyConfirm({ email, token, next }: { email: string; token: string; next: string | null }) {
+  const [state, setState] = useState<'checking' | 'ok' | 'error' | 'network'>('checking')
+  const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
     let cancelled = false
@@ -14,18 +15,51 @@ export function VerifyConfirm({ email, token }: { email: string; token: string }
       body: JSON.stringify({ email, token }),
     })
       .then((res) => {
-        if (!cancelled) setState(res.ok ? 'ok' : 'error')
+        if (cancelled) return
+        // A 5xx means the server could not decide; the link may still be good.
+        setState(res.ok ? 'ok' : res.status >= 500 ? 'network' : 'error')
       })
       .catch(() => {
-        if (!cancelled) setState('error')
+        if (!cancelled) setState('network')
       })
     return () => {
       cancelled = true
     }
-  }, [email, token])
+  }, [email, token, attempt])
+
+  // A return path that already targets onboarding goes there directly; any
+  // other path rides along as onboarding's own `next`.
+  const continueHref = next?.startsWith('/onboarding')
+    ? next
+    : next
+      ? `/onboarding?next=${encodeURIComponent(next)}`
+      : '/onboarding'
 
   if (state === 'checking') {
     return <p className="text-[length:var(--text-small)] text-[var(--color-ink-muted)]">Confirming…</p>
+  }
+
+  if (state === 'network') {
+    return (
+      <div>
+        <Heading as="h1" size="title">
+          We couldn&rsquo;t confirm your email.
+        </Heading>
+        <p className="mt-3 text-[length:var(--text-small)] text-[var(--color-ink-soft)]">
+          The connection dropped before we got an answer. Try again, and if it keeps failing, request a new link from the log in page.{' '}
+          <button
+            type="button"
+            className="font-medium text-[var(--color-signal)] underline"
+            onClick={() => {
+              setState('checking')
+              setAttempt((n) => n + 1)
+            }}
+          >
+            Try again.
+          </button>
+        </p>
+      </div>
+    )
   }
 
   if (state === 'error') {
@@ -49,9 +83,9 @@ export function VerifyConfirm({ email, token }: { email: string; token: string }
         Email confirmed.
       </Heading>
       <p className="mt-3 text-[length:var(--text-small)] text-[var(--color-ink-soft)]">
-        You&rsquo;re all set.{' '}
-        <a href="/dashboard" className="font-medium text-[var(--color-signal)]">
-          Go to your dashboard.
+        You&rsquo;re signed in.{' '}
+        <a href={continueHref} className="font-medium text-[var(--color-signal)]">
+          Continue.
         </a>
       </p>
     </div>

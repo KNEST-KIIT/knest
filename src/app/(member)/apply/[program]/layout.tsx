@@ -19,7 +19,7 @@ export default async function ApplyLayout({ children }: { children: React.ReactN
             KNEST
           </Link>
         </header>
-        <main id="main" className="mx-auto w-full max-w-[720px] px-6 pb-32 pt-10 md:pb-16">
+        <main id="main" className="mx-auto w-full max-w-90 px-6 pb-32 pt-10 md:pb-16">
           {children}
         </main>
       </div>

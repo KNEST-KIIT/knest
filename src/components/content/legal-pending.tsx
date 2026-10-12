@@ -40,7 +40,7 @@ const TERMS_OUTLINE = [
 export function LegalPending({ kind, preview }: { kind: Kind; preview: boolean }) {
   const outline = kind === 'privacy' ? PRIVACY_OUTLINE : TERMS_OUTLINE
   return (
-    <div className="mx-auto w-full max-w-[720px] px-6 py-16 md:px-10">
+    <div className="mx-auto w-full max-w-90 px-6 py-16 md:px-10">
       <Heading as="h1" size="display">
         {TITLES[kind]}
       </Heading>

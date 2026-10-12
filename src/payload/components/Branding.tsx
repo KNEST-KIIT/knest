@@ -6,7 +6,7 @@ export const Logo = () => (
       src="/images/knest_logo.png"
       alt="KNEST"
       style={{
-        height: '22px',
+        height: '1.375rem',
         width: 'auto',
         objectFit: 'contain',
       }}
@@ -19,7 +19,7 @@ export const Icon = () => (
     src="/images/knest_icon.png"
     alt="KNEST Icon"
     style={{
-      height: '32px',
+      height: '2rem',
       width: 'auto',
       objectFit: 'contain',
     }}

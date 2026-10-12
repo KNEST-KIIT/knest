@@ -22,6 +22,7 @@ const NAV: { href: string; label: string; area: AdminArea | null }[] = [
   { href: '/admin/labs', label: 'Labs', area: 'infrastructure' },
   { href: '/admin/audit', label: 'Audit trail', area: 'audit' },
   { href: '/admin/analytics', label: 'Analytics', area: 'analytics' },
+  { href: '/admin/mail', label: 'Mail', area: 'mail' },
 ]
 
 export default async function StaffLayout({ children }: { children: React.ReactNode }) {
@@ -53,7 +54,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
             <LogoutButton className="h-9 rounded-[var(--radius-sm)] border border-[var(--color-line-strong)] bg-white px-3 text-[length:var(--text-small)] font-medium" />
           </div>
         </header>
-        <main id="main" className="mx-auto w-full max-w-[1100px] px-6 py-10">
+        <main id="main" className="mx-auto w-full max-w-137.5 px-6 py-10">
           {children}
         </main>
       </div>

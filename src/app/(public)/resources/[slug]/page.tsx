@@ -32,7 +32,7 @@ export default async function ResourceDetailPage({ params }: { params: Promise<{
   await track('resource_view', { resourceId: resource.id })
 
   return (
-    <div className="mx-auto w-full max-w-[720px] px-6 py-16 md:px-10">
+    <div className="mx-auto w-full max-w-90 px-6 py-16 md:px-10">
       <Tag tone="archive">{FORMAT_LABELS[resource.format]}</Tag>
       <Heading as="h1" size="display" className="mt-4">
         {resource.title}

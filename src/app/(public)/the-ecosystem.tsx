@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import { Reveal, RevealHeading } from '@/components/ui'
 import { TripleHelix } from '@/components/content/triple-helix'
-import { motion } from 'framer-motion'
 
 export async function TheEcosystem() {
   return (

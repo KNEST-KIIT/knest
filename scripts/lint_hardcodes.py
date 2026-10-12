@@ -50,8 +50,17 @@ def iter_files(paths, exts):
             yield pp
 
 
+# SVG path data ("M5.84 14.09c-.22-.66 ... 2.09s ...") is geometry, not a duration or length.
+SVG_PATH = re.compile(r'(?<![\w-])d="[^"]*"')
+# A media condition in a JS string or an <img sizes> attribute cannot use var(); same reasoning as @media above.
+MATCH_MEDIA = re.compile(r"matchMedia\(|\((?:min|max)-width\s*:")
+
+
 def lint_line(line, tailwind=True):
     if ALLOW in line or TOKEN_CTX.search(line):
+        return []
+    line = SVG_PATH.sub('d=""', line)
+    if MATCH_MEDIA.search(line):
         return []
     stripped = line.strip()
     if stripped.startswith(("//", "*", "/*", "#", "<!--")):
@@ -108,11 +117,20 @@ def main(argv):
     violations = 0
     for f in files:
         try:
-            text = f.read_text()
+            text = f.read_text(encoding="utf-8")
         except (UnicodeDecodeError, OSError):
             continue
         in_allow = False
+        in_block_comment = False
         for n, line in enumerate(text.splitlines(), 1):
+            # Prose inside a /* ... */ block (for example the rationale next to a token) is not code.
+            if in_block_comment:
+                if "*/" in line:
+                    in_block_comment = False
+                continue
+            if "/*" in line and "*/" not in line.split("/*", 1)[1]:
+                in_block_comment = True
+                continue
             if "ds-allow-hardcode:start" in line:
                 in_allow = True
                 continue

@@ -6,47 +6,52 @@ import Link from 'next/link'
 export const BeforeDashboard = async () => {
   const payload = await getPayload({ config: configPromise })
 
-  // Fetch quick metrics
+  // Each count is filtered to what its label says (KN-32): an unfiltered count
+  // of "events" included drafts and past events under an "Upcoming" heading.
+  const now = new Date().toISOString()
   const [startups, events, users] = await Promise.all([
-    payload.count({ collection: 'startups' }),
-    payload.count({ collection: 'events' }),
+    payload.count({ collection: 'startups', where: { _status: { equals: 'published' } } }),
+    payload.count({
+      collection: 'events',
+      where: { and: [{ _status: { equals: 'published' } }, { startsAt: { greater_than: now } }] },
+    }),
     payload.count({ collection: 'staff' }),
   ])
 
   const cardStyle = {
-    backgroundColor: '#ffffff',
-    border: '1px solid #e0dfd9',
-    padding: '24px',
+    backgroundColor: 'var(--color-paper-raised)',
+    border: '1px solid var(--color-line)',
+    padding: '1.5rem',
     display: 'flex',
     flexDirection: 'column' as const,
-    minHeight: '160px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+    minHeight: '10rem',
+    boxShadow: '0 1px 0.1875rem rgba(0,0,0,0.05)',
   }
 
   const titleStyle = {
-    color: '#4a4a4a',
-    fontSize: '12px',
+    color: 'var(--color-ink-muted)',
+    fontSize: '0.75rem',
     textTransform: 'uppercase' as const,
     letterSpacing: '0.05em',
     fontWeight: 600,
-    margin: '0 0 8px 0',
+    margin: '0 0 0.5rem 0',
   }
 
   const metricStyle = {
-    fontSize: '36px',
+    fontSize: '2.25rem',
     fontWeight: 'bold',
-    color: '#1a1a1a',
-    margin: '0 0 16px 0',
+    color: 'var(--color-ink)',
+    margin: '0 0 1rem 0',
   }
 
   const linkWrapperStyle = {
     marginTop: 'auto',
-    paddingTop: '16px',
-    borderTop: '1px solid #e0dfd9',
+    paddingTop: '1rem',
+    borderTop: '1px solid var(--color-line)',
   }
 
   const linkStyle = {
-    color: '#76232f',
+    color: 'var(--color-signal)',
     fontWeight: 600,
     textDecoration: 'none',
     display: 'inline-flex',
@@ -54,17 +59,17 @@ export const BeforeDashboard = async () => {
   }
 
   return (
-    <div className="knest-dashboard" style={{ marginBottom: '32px' }}>
+    <div className="knest-dashboard" style={{ marginBottom: '2rem' }}>
       <div style={{
-        backgroundColor: '#76232f',
-        color: '#f6f4ee',
-        padding: '32px 32px 64px 32px',
+        backgroundColor: 'var(--color-signal)',
+        color: 'var(--color-paper)',
+        padding: '2rem 2rem 4rem 2rem',
         position: 'relative',
         overflow: 'hidden'
       }}>
         <div style={{ position: 'relative', zIndex: 10 }}>
-          <h1 style={{ fontSize: '32px', fontWeight: 'bold', margin: '0 0 8px 0', color: '#f6f4ee' }}>Welcome to the KNEST Operating System</h1>
-          <p style={{ fontSize: '18px', opacity: 0.9, maxWidth: '600px', margin: 0 }}>
+          <h1 style={{ fontSize: '2rem', fontWeight: 'bold', margin: '0 0 0.5rem 0', color: 'var(--color-paper)' }}>Welcome to the KNEST Operating System</h1>
+          <p style={{ fontSize: '1.125rem', opacity: 0.9, maxWidth: '37.5rem', margin: 0 }}>
             You are managing the core infrastructure for ambition. Here you can oversee startups, events, content, and the entire incubator ecosystem.
           </p>
         </div>
@@ -77,22 +82,22 @@ export const BeforeDashboard = async () => {
           opacity: 0.12,
           pointerEvents: 'none'
         }}>
-          <img src="/images/knest_logo_white.png" alt="" style={{ width: '380px', height: 'auto', objectFit: 'contain' }} />
+          <img src="/images/knest_logo_white.png" alt="" style={{ width: '23.75rem', height: 'auto', objectFit: 'contain' }} />
         </div>
       </div>
 
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-        gap: '24px',
-        padding: '0 24px',
-        marginTop: '-32px',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(15.625rem, 1fr))',
+        gap: '1.5rem',
+        padding: '0 1.5rem',
+        marginTop: '-2rem',
         position: 'relative',
         zIndex: 20
       }}>
         
         <div style={cardStyle}>
-          <h3 style={titleStyle}>Active Startups</h3>
+          <h3 style={titleStyle}>Published Startups</h3>
           <div style={metricStyle}>{startups.totalDocs}</div>
           <div style={linkWrapperStyle}>
             <Link href="/admin/collections/startups/create" style={linkStyle}>
@@ -102,7 +107,7 @@ export const BeforeDashboard = async () => {
         </div>
 
         <div style={cardStyle}>
-          <h3 style={titleStyle}>Upcoming Events</h3>
+          <h3 style={titleStyle}>Upcoming Published Events</h3>
           <div style={metricStyle}>{events.totalDocs}</div>
           <div style={linkWrapperStyle}>
             <Link href="/admin/collections/events/create" style={linkStyle}>
@@ -112,7 +117,7 @@ export const BeforeDashboard = async () => {
         </div>
 
         <div style={cardStyle}>
-          <h3 style={titleStyle}>Staff Members</h3>
+          <h3 style={titleStyle}>Staff Accounts</h3>
           <div style={metricStyle}>{users.totalDocs}</div>
           <div style={linkWrapperStyle}>
             <Link href="/admin/collections/staff" style={linkStyle}>

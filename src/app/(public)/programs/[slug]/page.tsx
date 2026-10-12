@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { EmptyState, Heading, LinkCard, Tag } from '@/components/ui'
+import { Heading, LinkCard, Tag } from '@/components/ui'
 import { RichText } from '@/components/content/rich-text'
 import { formatDate } from '@/lib/dates'
 import { getProgramBySlug, listProgramCohortsWithStartups } from '@/server/content/programs'
@@ -35,7 +35,7 @@ export default async function ProgramDetailPage({ params }: { params: Promise<{ 
   const faqs = program.faqs ?? []
 
   return (
-    <div className="mx-auto w-full max-w-[1280px] px-6 py-16 md:px-10">
+    <div className="mx-auto w-full max-w-160 px-6 py-16 md:px-10">
       <div className="max-w-[68ch]">
         <div className="flex items-center gap-3">
           <ProgramStatusBadge status={program.applicationStatus} />
@@ -176,7 +176,7 @@ export default async function ProgramDetailPage({ params }: { params: Promise<{ 
             <Heading as="h2" size="title">
               Ready?
             </Heading>
-            <div className="mt-4 max-w-[360px] lg:hidden">
+            <div className="mt-4 max-w-45 lg:hidden">
               <ApplyCta program={program} />
             </div>
           </section>

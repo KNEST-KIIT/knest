@@ -32,8 +32,8 @@
    * once here rather than per component so nothing can quietly ship without it.
    */
   :focus-visible {
-    outline: 2px solid var(--color-signal);
-    outline-offset: 2px;
+    outline: var(--focus-width) solid var(--color-signal);
+    outline-offset: var(--focus-offset);
     border-radius: var(--radius-sm);
   }
 
@@ -42,9 +42,9 @@
     *,
     *::before,
     *::after {
-      animation-duration: 0.01ms !important;
+      animation-duration: var(--motion-instant) !important;
       animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
+      transition-duration: var(--motion-instant) !important;
       scroll-behavior: auto !important;
     }
   }
@@ -70,7 +70,7 @@
     }
   }
   .animate-rise-fade {
-    animation: rise-fade 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: rise-fade var(--motion-rise) cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
   /*
@@ -107,6 +107,6 @@
   .prose-knest a {
     color: var(--color-signal);
     text-decoration: underline;
-    text-underline-offset: 2px;
+    text-underline-offset: var(--focus-offset);
   }
 }

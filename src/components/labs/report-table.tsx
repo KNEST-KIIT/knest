@@ -51,7 +51,37 @@ export function ReportTable({ report }: { report: LabReport }) {
         </table>
       </div>
 
-      {report.departments.length > 1 && (
+      {report.rollup.length > 0 && (
+        <div role="region" tabIndex={0} aria-label="Utilisation by department including sub-departments, scrolls sideways" className="overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-line)] bg-white">
+          <table className="w-full min-w-[52rem]">
+            <caption className="sr-only">Utilisation by department; each row includes every department below it</caption>
+            <thead>
+              <tr>
+                <th scope="col" className={th}>Department</th>
+                <th scope="col" className={th}>Labs</th>
+                {head.map((h) => (
+                  <th key={h} scope="col" className={th}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {report.rollup.map((d) => (
+                <tr key={d.departmentId} className="border-t border-[var(--color-line)]">
+                  <th scope="row" className={`${td} font-semibold`} style={{ paddingInlineStart: `${0.75 + d.depth * 1.25}rem` }}>
+                    {d.name}
+                  </th>
+                  <td className={td}>{d.labs}</td>
+                  {cells(d).map((c, i) => (
+                    <td key={i} className={td}>{c}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {report.rollup.length === 0 && report.departments.length > 1 && (
         <div role="region" tabIndex={0} aria-label="Utilisation by department, scrolls sideways" className="overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-line)] bg-white">
           <table className="w-full min-w-[48rem]">
             <caption className="sr-only">Utilisation by department</caption>

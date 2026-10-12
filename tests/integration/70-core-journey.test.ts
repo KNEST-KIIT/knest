@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { CAPTCHA, BASE, PASSWORD, closeDb, createUser, db, get, login, uniqueIp, type Session } from '../support/helpers'
 import { stubTurnstileScript } from '../support/turnstile-stub'
 import { payloadClient, richText } from '../support/payload'
+import { signUpThroughForm } from '../support/journey'
 
 /**
  * Closing evidence for KN-14 (return path through sign-up and onboarding),
@@ -71,14 +72,7 @@ async function answerOnboarding(page: Page) {
 const CTA = /find a program|see programs|see what.s on|get in touch|complete profile/i
 
 async function signUp(page: Page, email: string, next?: string) {
-  await page.goto(`${BASE()}/signup${next ? `?next=${encodeURIComponent(next)}` : ''}`)
-  await page.getByLabel('Full name').fill('Journey Person')
-  await page.getByLabel('Email address').fill(email)
-  await page.getByLabel('Create password').fill(PASSWORD)
-  await Promise.all([
-    page.waitForURL((u) => u.pathname.startsWith('/onboarding'), { timeout: 60_000 }),
-    page.getByRole('button', { name: /create account/i }).click(),
-  ])
+  await signUpThroughForm(page, { name: 'Journey Person', email, next })
 }
 
 describe('KN-14: the application you were heading to survives sign-up and onboarding', () => {

@@ -20,7 +20,6 @@ let head: Session
 let assistant: Session
 let head2: Session
 let outsider: Session
-const members: Record<string, Session> = {}
 let labA: { id: string; slug: string }
 let labB: { id: string; slug: string }
 
@@ -393,10 +392,12 @@ describe('cancelling', () => {
 })
 
 describe('manual attendance', () => {
-  async function approvedBooking(userId: string, startOffset: string, endOffset: string) {
+  /** An approved booking; by default it is assigned to the lab's assistant, who may act only on their own duties. */
+  async function approvedBooking(userId: string, startOffset: string, endOffset: string, assigned = true) {
+    const assistantId = assigned ? (await db().query('select id from app.users where email = $1', [mail('assistant')])).rows[0].id : null
     const r = await db().query(
-      `insert into app.lab_bookings (id, lab_id, user_id, starts_at, ends_at, purpose, headcount, status) values (gen_random_uuid()::text, $1, $2, now() + interval '${startOffset}', now() + interval '${endOffset}', 'Attendance test', 1, 'approved') returning id`,
-      [labA.id, userId],
+      `insert into app.lab_bookings (id, lab_id, user_id, starts_at, ends_at, purpose, headcount, status, assistant_user_id) values (gen_random_uuid()::text, $1, $2, now() + interval '${startOffset}', now() + interval '${endOffset}', 'Attendance test', 1, 'approved', $3) returning id`,
+      [labA.id, userId, assistantId],
     )
     return r.rows[0].id as string
   }
@@ -411,6 +412,15 @@ describe('manual attendance', () => {
     expect(rec.marked_by).toBeTruthy()
     expect(await auditCount('lab_attendance_attended', b)).toBe(1)
     expect((await json(await api(`/api/labs/bookings/${b}/attendance`, assistant, { outcome: 'attended' }))).status).toBe(409)
+  })
+
+  it('an assistant cannot mark a booking that is not assigned to them; a head can', async () => {
+    const m = await makeMember('att-unassigned')
+    const b = await approvedBooking(m.id, '-90 minutes', '-30 minutes', false)
+    const refused = await json(await api(`/api/labs/bookings/${b}/attendance`, assistant, { outcome: 'attended' }))
+    expect([refused.status, refused.body.code]).toEqual([403, 'forbidden'])
+    expect((await rowOf(b)).status).toBe('approved')
+    expect((await json(await api(`/api/labs/bookings/${b}/attendance`, head, { outcome: 'attended' }))).status).toBe(200)
   })
 
   it('a no-show needs a reason; a booking that has not started cannot be marked; non-staff cannot mark', async () => {

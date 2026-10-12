@@ -1,12 +1,10 @@
 import { DrizzleAdapter } from '@auth/drizzle-adapter'
 import { eq } from 'drizzle-orm'
 import type { NextAuthConfig } from 'next-auth'
-import Google from 'next-auth/providers/google'
 import { db } from '@/db/client'
 import { activeOnly } from './active-only-adapter'
+import { authProviders } from './providers'
 import { accounts, sessions, users, verificationTokens } from '@/db/schema'
-
-const googleEnabled = Boolean(process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET)
 
 export const authConfig = {
   // A deactivated account (or one whose row is gone) cannot hold a session: see
@@ -30,7 +28,7 @@ export const authConfig = {
   // No Credentials provider: Auth.js forces JWT sessions when one is present,
   // and JWTs cannot be revoked server-side (spec §31). Password sign-in mints
   // the same database session directly — see src/server/auth/session.ts.
-  providers: [...(googleEnabled ? [Google] : [])],
+  providers: authProviders(),
   callbacks: {
     /** Google sign-in must not bypass deactivation (password login already refuses it). */
     async signIn({ user }) {
