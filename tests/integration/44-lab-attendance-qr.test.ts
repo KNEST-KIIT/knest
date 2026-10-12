@@ -452,7 +452,7 @@ describe('the device screen in a real browser engine', () => {
     const page = await context.newPage()
 
     // online: the page sets itself up, registers its own key and draws the pass
-    await page.goto(`${BASE()}/lab-device`, { waitUntil: 'networkidle' })
+    await page.goto(`${BASE()}/lab-device`, { waitUntil: 'domcontentloaded' })
     const qr = page.getByRole('img', { name: /check in pass for/i })
     await qr.waitFor({ timeout: 30_000 })
     const axe = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze()
@@ -468,7 +468,7 @@ describe('the device screen in a real browser engine', () => {
     await expect
       .poll(() => page.evaluate(async () => !!(await (await caches.open('knest-lab-shell-v1')).match('/lab-device'))), { timeout: 30_000 })
       .toBe(true)
-    await page.reload({ waitUntil: 'networkidle' })
+    await page.reload({ waitUntil: 'domcontentloaded' })
     await qr.waitFor({ timeout: 30_000 })
 
     // offline: the shell and the pass still open from this device's own storage
@@ -500,7 +500,7 @@ describe('the device screen in a real browser engine', () => {
     const context = await browser!.newContext({ viewport: { width: 390, height: 844 }, extraHTTPHeaders: { 'x-forwarded-for': uniqueIp() }, reducedMotion: 'reduce' })
     await context.addCookies(cookiesFor(assistant))
     const page = await context.newPage()
-    await page.goto(`${BASE()}/lab-device`, { waitUntil: 'networkidle' })
+    await page.goto(`${BASE()}/lab-device`, { waitUntil: 'domcontentloaded' })
     await page.getByRole('tab', { name: 'Scan for a lab' }).click()
     await page.getByRole('heading', { name: 'Scan a student pass' }).waitFor({ timeout: 30_000 })
     await page.getByRole('img', { name: /Lab desk code/ }).waitFor({ timeout: 15_000 })
@@ -511,7 +511,7 @@ describe('the device screen in a real browser engine', () => {
     const memberContext = await browser!.newContext({ extraHTTPHeaders: { 'x-forwarded-for': uniqueIp() } })
     await memberContext.addCookies(cookiesFor(b.session))
     const memberPage = await memberContext.newPage()
-    await memberPage.goto(`${BASE()}/lab-device`, { waitUntil: 'networkidle' })
+    await memberPage.goto(`${BASE()}/lab-device`, { waitUntil: 'domcontentloaded' })
     await memberPage.getByRole('img', { name: /pass for/i }).waitFor({ timeout: 30_000 })
     expect(await memberPage.getByRole('tab', { name: 'Scan for a lab' }).count()).toBe(0)
     await memberContext.close()
