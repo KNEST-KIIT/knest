@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { istInstant, istParts } from '../../src/server/labs/rules'
 import { BASE, closeDb, createUser, db, get, login, uniqueIp, type Session } from '../support/helpers'
 
@@ -27,7 +27,9 @@ const api = (path: string, who: Session | null, body?: unknown, method = 'POST')
     body: body === undefined ? undefined : JSON.stringify(body),
   })
 const json = async (res: Response) => ({ status: res.status, body: (await res.json().catch(() => ({}))) as Record<string, unknown> })
-const day = (daysAhead: number) => istParts(new Date(Date.now() + daysAhead * 86_400_000)).date
+// Anchor all fixture dates once: crossing IST midnight must not move a later
+// test's +2-day report fixture onto an earlier test's +3-day approved booking.
+const day = (daysAhead: number) => istParts(new Date(stamp + daysAhead * 86_400_000)).date
 const when = (daysAhead: number, hour: number) => ({ startsAt: istInstant(day(daysAhead), hour * 60), endsAt: istInstant(day(daysAhead), (hour + 1) * 60) })
 
 async function member(tag: string) {
@@ -67,6 +69,20 @@ beforeAll(async () => {
   for (const target of [lab, headless]) expect((await json(await api(`/api/labs/${target.slug}/manage`, admin, { action: 'hours', windows: ALL_WEEK }))).status).toBe(200)
 })
 afterAll(closeDb)
+
+it('fixture booking dates stay stable across IST midnight', () => {
+  const midnight = istInstant(istParts(new Date(stamp)).date).getTime() + 86_400_000
+  const clock = vi.spyOn(Date, 'now')
+  try {
+    clock.mockReturnValue(midnight - 1)
+    const before = when(3, 10)
+    clock.mockReturnValue(midnight + 1)
+    expect(when(3, 10)).toEqual(before)
+    expect(when(2, 10).endsAt.getTime()).toBeLessThan(when(3, 10).startsAt.getTime())
+  } finally {
+    clock.mockRestore()
+  }
+})
 
 describe('what an assistant sees', () => {
   it('only the bookings assigned to them: the other bookers are not on their page', async () => {
