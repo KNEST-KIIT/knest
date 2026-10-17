@@ -1,0 +1,60 @@
+name: Inspect deployment command
+
+# Read-only recovery of an interrupted deployment's result. Uses the existing
+# deployment role; it never sends an SSM command or prints command output.
+on:
+  workflow_dispatch:
+    inputs:
+      command_id:
+        description: SSM command ID to inspect
+        type: string
+        required: true
+        default: 8cd6b03e-a29e-4050-a69b-5bd0dd2339a7
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    name: Read production command status
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Validate the request and role configuration
+        env:
+          COMMAND_ID: ${{ inputs.command_id }}
+          DEPLOY_ROLE: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          REGION: ${{ vars.AWS_REGION }}
+        run: |
+          [[ "$COMMAND_ID" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]]
+          test -n "$DEPLOY_ROLE"
+          test -n "$REGION"
+
+      - uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-session-name: knest-inspect-${{ github.run_id }}
+
+      - name: Read invocation metadata only
+        env:
+          COMMAND_ID: ${{ inputs.command_id }}
+        run: |
+          aws ssm list-command-invocations --command-id "$COMMAND_ID" \
+            --query 'CommandInvocations[].{instance:InstanceId,status:Status,details:StatusDetails,requestedAt:RequestedDateTime,document:DocumentName,version:DocumentVersion}' \
+            --output json > invocations.json
+          cat invocations.json
+          if [ "$(jq length invocations.json)" -eq 0 ]; then
+            echo "::error::No invocation record found. No deployment health or success is established."
+            exit 1
+          fi
+          while IFS= read -r INSTANCE_ID; do
+            aws ssm get-command-invocation --command-id "$COMMAND_ID" --instance-id "$INSTANCE_ID" \
+              --query '{instance:InstanceId,status:Status,details:StatusDetails,responseCode:ResponseCode,startedAt:ExecutionStartDateTime,finishedAt:ExecutionEndDateTime,duration:ExecutionElapsedTime}' \
+              --output json
+          done < <(jq -r '.[].instance' invocations.json)
+          echo 'Read-only status inspection completed. This does not certify current host health, image identity, or database privileges.' >> "$GITHUB_STEP_SUMMARY"
