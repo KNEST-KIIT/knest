@@ -140,6 +140,8 @@ describe('app.yaml: the properties the design depends on', () => {
     expect(s1.Resources.Bucket!.DeletionPolicy).toBe('Delete')
     expect(prod.Resources.Database!.DeletionPolicy).toBe('Snapshot')
     expect(prod.Resources.Bucket!.DeletionPolicy).toBe('Retain')
+    expect(prod.Resources.LogGroup!.DeletionPolicy).toBe('Retain')
+    expect(s1.Resources.LogGroup!.DeletionPolicy).toBe('Delete')
     // and nothing else differs between the two
     const strip = (s: string) => s.replace(/(DeletionPolicy|UpdateReplacePolicy): \w+/g, '$1: X')
     expect(strip(render(read('./app.yaml'), 's1'))).toBe(strip(read('./app.yaml')))
