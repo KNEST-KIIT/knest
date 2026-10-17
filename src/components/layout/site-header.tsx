@@ -86,9 +86,9 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
           : 'border-b border-transparent bg-gradient-to-b from-[var(--color-paper)] via-[var(--color-paper)]/80 to-transparent backdrop-blur-md',
       )}
     >
-      <div className="flex h-[4.5rem] w-full items-center justify-between px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 2xl:px-16">
+      <div className="flex h-[4.5rem] w-full items-center justify-between px-4 sm:px-6 md:px-8 lg:px-6 xl:px-12 2xl:px-16">
         {/* Left: Brand Logo & Navigation balanced together */}
-        <div className="flex items-center gap-6 lg:gap-8 xl:gap-10 shrink-0">
+        <div className="flex items-center gap-3 xl:gap-5 shrink-0">
           <Link
             href="/"
             className="flex items-center group focus-visible:outline-[var(--color-signal)] shrink-0"
@@ -97,7 +97,7 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
             <Logo size="md" />
           </Link>
 
-          <nav aria-label="Main" className="hidden items-center gap-3.5 lg:gap-4.5 xl:gap-6 2xl:gap-7 lg:flex">
+          <nav aria-label="Main" className="hidden items-center gap-1.5 xl:gap-3 2xl:gap-5 lg:flex">
             {NAV.map((item) => {
               const active = pathname.startsWith(item.href)
               return (
@@ -106,7 +106,7 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
                   href={item.href}
                   aria-current={active ? 'page' : undefined}
                   className={cn(
-                    'relative inline-flex items-center h-9 px-1.5 text-sm font-medium transition-colors whitespace-nowrap',
+                    'relative inline-flex items-center h-9 px-1 text-sm font-medium transition-colors whitespace-nowrap',
                     active
                       ? 'text-[var(--color-ink)] font-semibold after:absolute after:bottom-0 after:inset-x-0 after:h-0.5 after:bg-[var(--color-signal)]'
                       : 'text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]',
@@ -120,7 +120,7 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
         </div>
 
         {/* Right: Log In and Start Building CTA */}
-        <div className="hidden items-center gap-3 sm:gap-4 lg:flex shrink-0">
+        <div className="hidden items-center gap-2 lg:flex shrink-0">
           {signedIn ? (
             <>
               <div className="relative shrink-0">
