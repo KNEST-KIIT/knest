@@ -49,14 +49,18 @@ beforeAll(async () => {
 afterAll(closeDb)
 
 describe('pages the footer links to', () => {
-  it.each(['/privacy', '/terms'])('%s exists, says it is not yet published, and is not indexed', async (path) => {
+  it.each([
+    ['/privacy', '10-year retention period'],
+    ['/terms', 'Mentorship and facility terms'],
+    ['/disclaimer', 'Disclaimer and third-party content policy'],
+  ])('%s publishes the supplied policy while the site-wide indexing gate remains active', async (path, content) => {
     const res = await get(path)
     expect(res.status).toBe(200)
     const html = await res.text()
-    expect(html).toMatch(/being finalised/i)
-    expect(html).not.toMatch(/Draft, not approved/) // the reviewable outline only appears in a preview
+    expect(html).toContain(content)
+    expect(html).toContain('mailto:contact@kiitnest.com')
+    expect(html).not.toMatch(/being finalised|Draft, not approved|Draft for institutional review/i)
     expect(res.headers.get('x-robots-tag') ?? '').toContain('noindex')
-    expect(html).toMatch(/noindex/i)
   })
 
   it('/contact and /get-involved render', async () => {
@@ -156,7 +160,7 @@ describe('sitemap and robots', () => {
     expect((await get('/')).headers.get('x-robots-tag') ?? '').toContain('noindex')
   })
 
-  it('sitemap.xml lists the public pages and published content, not the legal placeholders or drafts', async () => {
+  it('sitemap.xml lists public policies and published content, never draft content', async () => {
     const res = await get('/sitemap.xml')
     expect(res.status).toBe(200)
     const xml = await res.text()
@@ -164,13 +168,14 @@ describe('sitemap and robots', () => {
     expect(xml).toContain(`/blog/${articleSlug}`)
     expect(xml).toContain(`/mentors/mentor-${stamp}`)
     expect(xml).not.toContain(`draft-${articleSlug}`)
-    expect(xml).not.toContain('/privacy')
-    expect(xml).not.toContain('/terms')
+    expect(xml).toContain('/privacy')
+    expect(xml).toContain('/terms')
+    expect(xml).toContain('/disclaimer')
   })
 })
 
 describe('no dead links', () => {
-  const SEEDS = ['/', '/about', '/programs', '/events', '/mentors', '/startups', '/resources', '/blog', '/ecosystem', '/invest', '/get-involved', '/contact', '/privacy', '/terms', '/login', '/signup', '/search']
+  const SEEDS = ['/', '/about', '/programs', '/events', '/mentors', '/startups', '/resources', '/blog', '/ecosystem', '/invest', '/get-involved', '/contact', '/privacy', '/terms', '/disclaimer', '/login', '/signup', '/search']
 
   it('every internal link on every public page leads somewhere that is not an error', async () => {
     const seen = new Set<string>()

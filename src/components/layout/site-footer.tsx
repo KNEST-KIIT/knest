@@ -88,12 +88,15 @@ export function SiteFooter() {
         {/* Bottom Bar */}
         <div className="border-t border-white/10 pt-6 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-white/45 font-light">
           <p>&copy; {new Date().getFullYear()} KNEST, KIIT University. All rights reserved.</p>
-          <div className="flex items-center gap-6">
-            <Link href="/privacy" className="hover:text-white transition-colors">
+          <div className="flex flex-wrap justify-center gap-x-6 gap-y-2">
+            <Link href="/privacy" className="inline-flex min-h-11 items-center hover:text-white transition-colors">
               Privacy Policy
             </Link>
-            <Link href="/terms" className="hover:text-white transition-colors">
-              Terms of Service
+            <Link href="/terms" className="inline-flex min-h-11 items-center hover:text-white transition-colors">
+              Service terms
+            </Link>
+            <Link href="/disclaimer" className="inline-flex min-h-11 items-center hover:text-white transition-colors">
+              Disclaimer
             </Link>
           </div>
         </div>

@@ -1,14 +1,13 @@
 import type { Metadata } from 'next'
-import { LegalPending } from '@/components/content/legal-pending'
+import { PolicyDocument } from '@/components/content/policy-document'
 
 export const metadata: Metadata = {
-  title: 'Privacy notice',
-  // Not indexed until KIIT approves the text.
-  robots: { index: false, follow: true },
+  title: 'Privacy policy',
+  description: 'How KIITNEST collects, uses, retains and protects personal information, and how to contact the team about your data.',
 }
 
 export const dynamic = 'force-dynamic'
 
 export default function PrivacyPage() {
-  return <LegalPending kind="privacy" preview={process.env.LEGAL_DRAFT_PREVIEW === 'true'} />
+  return <PolicyDocument kind="privacy" />
 }

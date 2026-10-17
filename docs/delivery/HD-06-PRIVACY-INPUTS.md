@@ -1,6 +1,6 @@
 # HD-06: privacy notice and terms: inputs, gaps and draft status
 
-**Status: BLOCKED on a named KIIT owner. Nothing in this file is approved policy and none of it is legal advice.** The `/privacy` and `/terms` routes will ship as pages that say the policy is being finalised. Draft text, if shown at all, appears only in a non-production preview and is labelled "DRAFT, NOT APPROVED". The platform must not collect real student data until a notice approved by KIIT is live (blueprint gate: Pilot-A).
+**Current status, 2026-10-17: supplied policy documents confirmed final by the owner.** See [policy acceptance](POLICY-ACCEPTANCE-2026-10-17.md) for source hashes, publication adjustments and the ten-year retention requirement. `/privacy`, `/terms` (the supplied mentorship/facility service terms) and `/disclaimer` now render those documents in the candidate. This acceptance supersedes the draft footer and the historical unwritten-policy status below. Hosted retention/archiving, operating acceptance, content approval and public cutover remain separate work. The rest of this file records the historical October 8 inputs and gaps, not current implementation status.
 
 ## 1. Facts the notice has to be built from (from the code, verified 2026-10-08)
 

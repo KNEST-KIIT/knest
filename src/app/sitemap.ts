@@ -10,8 +10,8 @@ import { listStartups } from '@/server/content/startups'
 /** Generated when requested, so a newly published page appears without a rebuild. */
 export const dynamic = 'force-dynamic'
 
-/** Public pages only. The privacy notice and terms are left out until KIIT approves their text. */
-const STATIC_PATHS = ['/', '/about', '/programs', '/events', '/mentors', '/startups', '/resources', '/blog', '/ecosystem', '/invest', '/get-involved', '/contact']
+/** Public pages, including the owner-confirmed policy documents. Indexing remains controlled site-wide. */
+const STATIC_PATHS = ['/', '/about', '/programs', '/events', '/mentors', '/startups', '/resources', '/blog', '/ecosystem', '/invest', '/get-involved', '/contact', '/privacy', '/terms', '/disclaimer']
 
 async function safely<T>(label: string, load: () => Promise<T[]>): Promise<T[]> {
   try {

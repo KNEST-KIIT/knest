@@ -1,6 +1,7 @@
 'use client'
 
 import { formRequest } from '@/lib/form-request'
+import Link from 'next/link'
 
 import { safeNext } from '@/lib/safe-next'
 import { useRef, useState } from 'react'
@@ -136,6 +137,13 @@ export function SignupForm({ googleEnabled, turnstileSiteKey }: { googleEnabled:
         )}
 
         <TurnstileWidget siteKey={turnstileSiteKey} action="signup" onToken={setCaptchaToken} resetSignal={captchaReset} />
+
+        <p className="text-sm leading-relaxed text-[var(--color-ink-soft)]">
+          Before creating an account, read our{' '}
+          <Link href="/privacy" className="font-medium text-[var(--color-signal)] underline underline-offset-4">privacy policy</Link>{' '}
+          and{' '}
+          <Link href="/terms" className="font-medium text-[var(--color-signal)] underline underline-offset-4">service terms</Link>.
+        </p>
 
         <Button 
           type="submit" 
