@@ -17,6 +17,9 @@ set -uo pipefail
 export MSYS_NO_PATHCONV=1
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
+(cd "$HERE" && node ./require-scoped-aws.mjs) || exit 2
+readonly KNEST_SCOPED_AWS_PROFILE="$AWS_PROFILE"
+aws() { command aws --profile "$KNEST_SCOPED_AWS_PROFILE" "$@"; }
 REGION="${AWS_DEFAULT_REGION:-ap-south-1}"
 fail=0
 check() { # name, ok(0/1), detail
@@ -66,18 +69,13 @@ else
   check "G6 alert recipient confirmed" 1 "topic not found"
 fi
 
-# G7: DNS equivalence, only when the Route 53 zone exists.
-ZONE=$(aws route53 list-hosted-zones-by-name --dns-name kiitnest.com --query 'HostedZones[0].Id' --output text 2>/dev/null || echo None)
-if [ "$ZONE" != "None" ] && [ -n "$ZONE" ]; then
-  NS=$(aws route53 get-hosted-zone --id "$ZONE" --query 'DelegationSet.NameServers[0] || HostedZone.Id' --output text 2>/dev/null)
-  RNS=$(aws route53 list-resource-record-sets --hosted-zone-id "$ZONE" --query "ResourceRecordSets[?Type=='NS'].ResourceRecords[0].Value | [0]" --output text)
-  if node "$ROOT/scripts/dns-compare.mjs" kiitnest.com ns43.domaincontrol.com "$RNS" --ignore 'kiitnest.com|A,www.kiitnest.com|A,www.kiitnest.com|CNAME,NS' >/dev/null 2>&1; then
-    check "G7 Route 53 mirrors GoDaddy mail and verification records" 0 "$RNS"
-  else
-    check "G7 Route 53 mirrors GoDaddy mail and verification records" 1 "dns-compare reported a difference"
-  fi
+# G7: both exact public zones, all four nameservers, origin/renewal/mail records.
+# Fresh ACM, origin-stack and SES metadata provide required records and targets;
+# matching empty DNS answers cannot establish preservation.
+if (cd "$HERE" && node ./dns-cutover-check.mjs); then
+  check "G7 Route 53 preserves both zones, origin, mail and renewal records" 0 "all eight authoritative-server comparisons passed"
 else
-  check "G7 Route 53 mirrors GoDaddy mail and verification records" 1 "hosted zone not created yet (deploy dns.yaml first)"
+  check "G7 Route 53 preserves both zones, origin, mail and renewal records" 1 "metadata missing, required records absent, or DNS comparison failed"
 fi
 
 echo

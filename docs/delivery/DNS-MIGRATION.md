@@ -1,16 +1,16 @@
 # DNS migration runbook: GoDaddy to Route 53 (kiitnest.com, kiitnest.in)
 
-**Status: prepared, nothing executed.** No staging subdomain is used (owner decision, 2026-10-09). The live Google Workspace mail on `kiitnest.com` must not be interrupted. Inventory and rollback reference: `EVIDENCE/dns-snapshot-kiitnest.com-2026-10-09.md`. Templates: `infra/cfn/dns.yaml` (zones and records), `infra/cfn/cert.yaml`, `infra/cfn/edge.yaml`. Tool: `scripts/dns-compare.mjs`.
+**Status: prepared, no delegation executed.** No staging subdomain is used (owner decision, 2026-10-09). The owner reconfirmed Route 53 DNS, canonical `.com` and redirect-only `.in` on October 18. The live Google Workspace mail on `kiitnest.com` must not be interrupted. Current inventory and rollback reference: [October 18 inventory](EVIDENCE/dns-snapshot-2026-10-18.md), including the original mail snapshot. Templates: `infra/cfn/dns.yaml` (zones and records), `infra/cfn/cert.yaml`, `infra/cfn/edge.yaml`. Tools: `scripts/dns-compare.mjs` and `scripts/ops/dns-cutover-check.mjs`.
 
 Every step marked **[approval]** needs the owner's explicit yes to that exact change. Nothing before step 6 changes anything a visitor or a mail server can see.
 
 ## Phase A: prepare (no live effect)
 
 1. **Re-read GoDaddy** immediately before starting (records change). Update the snapshot file if anything differs. For `kiitnest.in` read its records the same way (not yet viewed; public lookups showed none).
-2. **Create the zones**: deploy `dns.yaml` with `CloudFrontDomainName` empty. This creates two hosted zones and the mail, SPF, DKIM, DMARC and verification records only. Read the eight nameservers from the stack outputs. A zone that nobody delegates to is inert.
+2. **Create the zones**: deploy `dns.yaml` with `CloudFrontDomainName` empty. Supply the current `knest-production-origin` output `LoadBalancerDnsName` as `OriginDnsName`, plus the full regional origin ACM CNAME as `OriginValidationName` and `OriginValidationValue`. This creates two hosted zones and preserves mail, SPF, DKIM, DMARC, verification and origin TLS records. Read the eight nameservers from the stack outputs. A zone that nobody delegates to is inert. Resolve the `.in` registrar hold/WHOIS verification before attempting its delegation; an undelegated zone does not resolve that hold.
 3. **Prove the copy is exact.** For each Route 53 nameserver:
    `node scripts/dns-compare.mjs kiitnest.com ns43.domaincontrol.com <route53-ns> --ignore kiitnest.com|A,www.kiitnest.com|A,www.kiitnest.com|CNAME,NS`
-   Required: `SAME`. The ignored lines are the parked web records that the cutover is meant to replace; MX, every TXT (verification, SPF, DKIM, DMARC) and `_domainconnect` must match. Save the output under `EVIDENCE/`. Repeat for each of the four Route 53 nameservers, since one answering differently would be a partial failure.
+   This is a manual comparison example, not full acceptance. Before cutover run `AWS_PROFILE=<verified-scoped-role> node scripts/ops/dns-cutover-check.mjs`; it requires current issued ACM/SES/origin metadata, proves both registrar source pairs agree, then checks all eight Route 53 nameservers for both exact public zones, including positive origin/renewal/mail answers and AWS-derived CNAME targets. The ignored lines are only the web A/AAAA/www records that cutover replaces; registrar-source comparisons ignore none. Save reviewed output under `EVIDENCE/`. A comparison of matching absent answers alone cannot establish preservation. Both preflight/apply entry points reject the documented root profile before any AWS command.
 
 ## Phase B: certificate and mail identity, before the cutover (additive records at GoDaddy) **[approval]**
 
@@ -42,4 +42,4 @@ The GoDaddy zone is kept unchanged, and the domains remain registered at GoDaddy
 
 ## What is not claimed
 
-The templates have not been deployed, so none of the above has been run on AWS. The comparison tool has been run only against GoDaddy's two nameservers (identical, 2026-10-09). `kiitnest.in` has not been inventoried at GoDaddy.
+No Route 53 delegation or live scoped-AWS DNS acceptance has been performed in this continuation. Both registrar zones were inventoried on October 18 (IST); `.in` is blocked by WHOIS verification/Registrar Hold. Local fixtures and template tests do not prove live AWS readiness.
