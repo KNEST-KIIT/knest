@@ -96,6 +96,7 @@ Parameters:
   LogRetentionDays:
     Type: Number
     Default: 7
+    Description: Hot-log expiry only; seven days is not the accepted ten-year record policy. Review archive coverage and cost before changing production.
     AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1096, 1827, 2192, 2557, 2922, 3288, 3653]
   AlertEmail:
     Type: String
@@ -350,6 +351,8 @@ Resources:
 
   LogGroup:
     Type: AWS::Logs::LogGroup
+    DeletionPolicy: Retain # DELETION
+    UpdateReplacePolicy: Retain # DELETION
     Properties:
       LogGroupName: !Sub '/knest-${Environment}'
       RetentionInDays: !Ref LogRetentionDays
