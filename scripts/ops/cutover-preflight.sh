@@ -18,6 +18,8 @@ export MSYS_NO_PATHCONV=1
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 (cd "$HERE" && node ./require-scoped-aws.mjs) || exit 2
+readonly KNEST_SCOPED_AWS_PROFILE="$AWS_PROFILE"
+aws() { command aws --profile "$KNEST_SCOPED_AWS_PROFILE" "$@"; }
 REGION="${AWS_DEFAULT_REGION:-ap-south-1}"
 fail=0
 check() { # name, ok(0/1), detail
