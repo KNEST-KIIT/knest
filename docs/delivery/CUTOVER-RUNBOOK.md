@@ -12,7 +12,7 @@ Date: 2026-10-11. Status: ready to run once the hard gates below are met. Nothin
 | G4 SES identity verified | DKIM records | preflight |
 | G5 Runtime DB role in use | release with `runtime-role.ts` deployed | preflight + deploy log |
 | G6 Alert recipient confirmed | owner clicks SNS confirmation mail | preflight |
-| G7 Route 53 mirrors GoDaddy mail records | `dns.yaml` deployed, `dns-compare.mjs` | preflight |
+| G7 Both Route 53 zones preserve origin, mail and current ACM/SES records on all eight nameservers | `dns.yaml` deployed, `dns-cutover-check.mjs` | preflight |
 
 ## Why Route 53 and not GoDaddy records
 
@@ -27,7 +27,7 @@ ACM certificate validation, `kiitnest.com` zone (type CNAME, TTL 1 hour). At GoD
 | `_9d00150114ab3f176eeab79ac14b4e2b` | `_921e73907963d85f8fe047b2b04658f4.wzccmgtwzk.acm-validations.aws.` |
 | `_d721c4f0fc713e7f3b5278f02db39781.www` | `_7eb402675b1b2d4c2514bd1952458ea9.wzccmgtwzk.acm-validations.aws.` |
 
-For `kiitnest.in` (only if its DNS is also at GoDaddy; its records were never inventoried):
+For `kiitnest.in` (inventoried at GoDaddy on October 18; resolve its registrar hold/WHOIS verification first):
 
 | Host | Points to |
 |---|---|
@@ -47,7 +47,7 @@ Do not edit or delete any existing record (MX, SPF and DMARC TXT, Google DKIM, `
 ## Order
 
 1. Add the records above at GoDaddy. Wait for `aws acm describe-certificate` status `ISSUED` and SES `VerifiedForSendingStatus` true.
-2. Deploy `infra/cfn/dns.yaml` as `knest-production-dns` (us-east-1 or any region; Route 53 is global) with `CloudFrontDomainName` empty and the ACM and SES values from this file. Run `dns-compare.mjs` against all four Route 53 nameservers (`DNS-MIGRATION.md` step 3).
+2. Deploy `infra/cfn/dns.yaml` as `knest-production-dns` (us-east-1 or any region; Route 53 is global) with `CloudFrontDomainName` empty. Read fresh AWS metadata for public ACM/SES values and mandatory `OriginDnsName`, `OriginValidationName`, `OriginValidationValue`; the historical records above require rechecking. Run `AWS_PROFILE=<verified-scoped-role> node scripts/ops/dns-cutover-check.mjs` for both zones/all eight nameservers (`DNS-MIGRATION.md` step 3). Preserve the full [October 18 inventory](EVIDENCE/dns-snapshot-2026-10-18.md).
 3. `bash scripts/ops/cutover-apply.sh aliases`. Attaches certificate and aliases; the site is still gated and DNS unchanged.
 4. Institution evidence (G1) and real Turnstile keys (G2) arrive. `bash scripts/ops/cutover-preflight.sh` must print `PREFLIGHT PASSED`.
 5. Lower the apex and `www` TTL to 300 s at GoDaddy a day earlier.

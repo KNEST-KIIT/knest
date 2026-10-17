@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Compares what two nameservers answer for the same domain, record by record.
 //
-//   node scripts/dns-compare.mjs <domain> <nameserverA> <nameserverB> [--ignore key,key] [--names n1,n2]
+//   node scripts/dns-compare.mjs <domain> <nameserverA> <nameserverB> [--ignore key,key] [--names n1,n2] [--require key,key] [--expected JSON]
 //
 // Nameservers are host names or IP addresses. Both are queried directly (not through a
 // recursive resolver), so a Route 53 zone that is not yet delegated can be checked
@@ -20,9 +20,14 @@ const flag = (name) => {
 }
 const ignore = flag('--ignore').split(',').filter(Boolean)
 const extra = flag('--names').split(',').filter(Boolean)
+const required = flag('--require').split(',').filter(Boolean)
+const expected = JSON.parse(flag('--expected') || '{}')
+if (!expected || Array.isArray(expected) || typeof expected !== 'object' || Object.entries(expected).some(([key, values]) => !/^[a-z0-9_.-]+\|(A|AAAA|CNAME|MX|TXT|NS)$/.test(key) || !Array.isArray(values) || !values.length || values.some((v) => typeof v !== 'string'))) {
+  throw new Error('--expected must be a JSON object of DNS record keys and nonempty string arrays')
+}
 const [domain, nsA, nsB] = args
 if (!domain || !nsA || !nsB) {
-  console.error('usage: node scripts/dns-compare.mjs <domain> <nameserverA> <nameserverB> [--ignore key,key] [--names n1,n2]')
+  console.error('usage: node scripts/dns-compare.mjs <domain> <nameserverA> <nameserverB> [--ignore key,key] [--names n1,n2] [--require key,key] [--expected JSON]')
   process.exit(2)
 }
 
@@ -50,12 +55,12 @@ async function collect(resolver, names) {
   return out
 }
 
-const names = defaultNames(domain, extra)
+const names = defaultNames(domain, [...extra, ...required.map((key) => key.split('|')[0]), ...Object.keys(expected).map((key) => key.split('|')[0])])
 const [a, b] = await Promise.all([resolverFor(nsA), resolverFor(nsB)])
 console.log('Comparing ' + domain + ': A = ' + nsA + ' (' + a.ip + '), B = ' + nsB + ' (' + b.ip + '); ' + names.length + ' names x ' + RECORD_TYPES.length + ' types')
 const ra = await collect(a.resolver, names)
 const rb = await collect(b.resolver, names)
-const { same, differences } = compareResults(ra, rb, ignore)
-for (const d of differences) console.log('DIFFERENT ' + d.key + '\n  A: ' + JSON.stringify(d.a) + '\n  B: ' + JSON.stringify(d.b))
+const { same, differences } = compareResults(ra, rb, ignore, required, expected)
+for (const d of differences) console.log((d.missingRequired ? 'MISSING REQUIRED ' : 'DIFFERENT ') + d.key + '\n  A: ' + JSON.stringify(d.a) + '\n  B: ' + JSON.stringify(d.b) + (d.expected ? '\n  EXPECTED: ' + JSON.stringify(d.expected) : ''))
 console.log(same ? 'SAME: every compared record matches.' : differences.length + ' difference(s).')
 process.exit(same ? 0 : 1)

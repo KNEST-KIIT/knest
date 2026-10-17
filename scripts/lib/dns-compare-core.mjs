@@ -24,9 +24,11 @@ export function normalise(type, answers) {
 /**
  * Compares two result maps keyed "name|TYPE". `ignore` lists keys (or "TYPE" alone,
  * or "name|*") whose differences are expected, for example the apex A record that the
- * cutover is supposed to change. Returns { same, differences[] }.
+ * cutover is supposed to change. `required` keys need nonempty matching answers;
+ * `expected` supplies normalized provider-derived answers. Neither can be waived
+ * by `ignore`. Returns { same, differences[] }.
  */
-export function compareResults(a, b, ignore = []) {
+export function compareResults(a, b, ignore = [], required = [], expected = {}) {
   const ignored = new Set(ignore.map((s) => s.toLowerCase()))
   const keys = [...new Set([...Object.keys(a), ...Object.keys(b)])].sort()
   const differences = []
@@ -37,14 +39,31 @@ export function compareResults(a, b, ignore = []) {
     const right = b[key] ?? []
     if (JSON.stringify(left) !== JSON.stringify(right)) differences.push({ key, a: left, b: right })
   }
+  // Two absent answers are equal, but cannot prove a required origin, mail or
+  // certificate record survived the migration. Required records cannot be ignored.
+  for (const key of new Set(required)) {
+    const left = a[key] ?? []
+    const right = b[key] ?? []
+    if (left.length && right.length && JSON.stringify(left) === JSON.stringify(right)) continue
+    if (!differences.some((d) => d.key === key)) differences.push({ key, a: left, b: right, missingRequired: !left.length || !right.length })
+  }
+  for (const [key, value] of Object.entries(expected)) {
+    const left = a[key] ?? []
+    const right = b[key] ?? []
+    if (JSON.stringify(left) === JSON.stringify(value) && JSON.stringify(right) === JSON.stringify(value)) continue
+    const existing = differences.find((d) => d.key === key)
+    if (existing) existing.expected = value
+    else differences.push({ key, a: left, b: right, expected: value })
+  }
   return { same: differences.length === 0, differences }
 }
 
-/** The names that must resolve identically for a mail-and-web domain, plus any extras. */
+/** The names that must resolve identically for mail, web and origin, plus any extras. */
 export function defaultNames(domain, extra = []) {
   const base = [
     domain,
     'www.' + domain,
+    'origin.' + domain,
     '_dmarc.' + domain,
     'google._domainkey.' + domain,
     'dc-bdaca08905._spfm.' + domain,
