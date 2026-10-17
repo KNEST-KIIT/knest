@@ -257,6 +257,21 @@ describe('dns.yaml: reproduces the inventoried records exactly', () => {
     for (const part of records('GoogleDkim').ResourceRecords[0]!.split('" "')) expect(part.replace(/"/g, '').length).toBeLessThanOrEqual(255)
   })
 
+  it('preserves the HTTPS origin and regional certificate renewal before web cutover', () => {
+    const origin = t.Resources.Origin!
+    const validation = t.Resources.OriginCertificateValidation!
+    expect(origin.Condition).toBeUndefined()
+    expect(validation.Condition).toBeUndefined()
+    expect(origin.Properties).toMatchObject({ Name: 'origin.kiitnest.com.', Type: 'CNAME', ResourceRecords: [{ Ref: 'OriginDnsName' }] })
+    expect(validation.Properties).toMatchObject({ Name: { Ref: 'OriginValidationName' }, Type: 'CNAME', ResourceRecords: [{ Ref: 'OriginValidationValue' }] })
+    for (const parameter of ['OriginDnsName', 'OriginValidationName', 'OriginValidationValue']) expect(t.Parameters![parameter]!.Default).toBeUndefined()
+  })
+
+  it('keeps the existing redirect-domain verification and DMARC records', () => {
+    expect(records('InDomainConnect')).toMatchObject({ Name: '_domainconnect.kiitnest.in.', ResourceRecords: ['_domainconnect.gd.domaincontrol.com.'] })
+    expect(records('InDmarc')).toMatchObject({ Name: '_dmarc.kiitnest.in.', ResourceRecords: records('Dmarc').ResourceRecords })
+  })
+
   it('does not point either domain at CloudFront until the cutover parameter is supplied', () => {
     const web = ['ComApexA', 'ComApexAaaa', 'ComWwwA', 'ComWwwAaaa', 'InApexA', 'InApexAaaa', 'InWwwA', 'InWwwAaaa']
     for (const id of web) expect(t.Resources[id]!.Condition, id).toBe('HasCloudFront')

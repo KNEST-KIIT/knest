@@ -3,13 +3,26 @@ Description: >-
   KNEST DNS in Route 53: hosted zones for kiitnest.com (canonical) and kiitnest.in
   (redirect only), reproducing every existing record that must survive the move
   (Google Workspace mail, SPF, DKIM, DMARC, verification) exactly as inventoried in
-  docs/delivery/EVIDENCE/dns-snapshot-kiitnest.com-2026-10-09.md. Creating this
+  docs/delivery/EVIDENCE/dns-snapshot-2026-10-18.md (including origin TLS and the
+  redirect domain's existing records). Creating this
   stack does NOT change anything live: the zones are inert until GoDaddy's
   nameservers are pointed at them, which is a separate approval. The web records
   (apex and www to CloudFront) are only created once CloudFrontDomainName is
   supplied. STATUS: written, not deployed, not validated by CloudFormation.
 
 Parameters:
+  OriginDnsName:
+    Type: String
+    AllowedPattern: '^[a-z0-9-]+\.ap-south-1\.elb\.amazonaws\.com\.?$'
+    Description: Current LoadBalancerDnsName output of knest-production-origin; preserve origin.kiitnest.com when delegating DNS.
+  OriginValidationName:
+    Type: String
+    AllowedPattern: '^_[a-f0-9]{32}\.origin\.kiitnest\.com\.?$'
+    Description: Current regional origin certificate validation CNAME name from ACM (full name).
+  OriginValidationValue:
+    Type: String
+    AllowedPattern: '^_[a-z0-9-]+(\.[a-z0-9-]+)*\.acm-validations\.aws\.?$'
+    Description: Current regional origin certificate validation CNAME target from ACM.
   CloudFrontDomainName:
     Type: String
     Default: ''
@@ -119,6 +132,44 @@ Resources:
       Type: CNAME
       TTL: '3600'
       ResourceRecords: ['_domainconnect.gd.domaincontrol.com.']
+
+  # The HTTPS origin and its certificate renewal must survive the same delegation.
+  Origin:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref ZoneCom
+      Name: origin.kiitnest.com.
+      Type: CNAME
+      TTL: '3600'
+      ResourceRecords: [!Ref OriginDnsName]
+
+  OriginCertificateValidation:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref ZoneCom
+      Name: !Ref OriginValidationName
+      Type: CNAME
+      TTL: '3600'
+      ResourceRecords: [!Ref OriginValidationValue]
+
+  # Existing .in records, inventoried at the registrar on October 18 (IST).
+  InDomainConnect:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref ZoneIn
+      Name: _domainconnect.kiitnest.in.
+      Type: CNAME
+      TTL: '3600'
+      ResourceRecords: ['_domainconnect.gd.domaincontrol.com.']
+
+  InDmarc:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref ZoneIn
+      Name: _dmarc.kiitnest.in.
+      Type: TXT
+      TTL: '3600'
+      ResourceRecords: ['"v=DMARC1; p=quarantine; adkim=r; aspf=r; rua=mailto:dmarc_rua@onsecureserver.net;"']
 
   # --- Web: only once the cutover manifest is approved ---------------------------
 
