@@ -1,5 +1,19 @@
 # Dependency triage
 
+## Follow-up 2026-10-17
+
+After pushing code commit `63d8093`, GitHub reported 44 open alerts (4 critical, 17 high, 19 medium and 4 low). All 44 were retrieved through `gh api repos/KNEST-KIIT/knest/dependabot/alerts?state=open&per_page=100` and their vulnerable ranges were compared programmatically with **every resolved version** of each affected package in `pnpm-lock.yaml`, using the installed semver implementation. Comma-separated GitHub ranges were normalized to npm comparator sets. No locked version satisfied any of the 44 vulnerable ranges.
+
+| Package | Resolved version | Open alert numbers | Comparison |
+|---|---|---|---|
+| next | 16.4.0 | 19, 40–44 | Outside every vulnerable range; latest listed fix is 16.3.8 |
+| payload | 3.90.2 | 1, 24–39 | Outside every vulnerable range; newer alerts list 3.90.0 as patched |
+| nodemailer | 10.0.16 | 2–5, 8–9, 20–23 | Outside every vulnerable range |
+| undici | 7.30.0 | 7, 10–18 | Outside every vulnerable range |
+| fast-uri | 3.1.8 | 6 | Outside the vulnerable 3.1.6 range |
+
+`pnpm audit --prod` again reported only the two existing ignored advisories documented below. No dependency or ignore list was changed and no alert was dismissed. The reason GitHub still lists these alerts was not established; this comparison certifies the checked lockfile, not the older deployed image. Re-check that image separately before public cutover. The original 2026-10-12 triage follows.
+
 Date: 2026-10-12. Base: `codex/production-v1` at `b5ca498`. Author: HARDENING agent.
 
 Method: `gh api repos/KNEST-KIIT/knest/dependabot/alerts` (23 alerts, all state `open`, default

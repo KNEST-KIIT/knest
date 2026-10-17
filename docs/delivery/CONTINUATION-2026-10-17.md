@@ -24,6 +24,7 @@ Regression coverage includes closing/reopening through the real management endpo
 - `pnpm test`: 54 files, 528 tests passed.
 - `pnpm build`: passed with an intentionally unreachable loopback database; CMS fallback diagnostics were expected. This did not contact the production database.
 - `pnpm audit --prod`: the two previously documented ignored advisories remain (one high and one moderate); no new finding was reported.
+- All 44 currently open GitHub dependency alerts were compared against the resolved lockfile; none affects a locked version. No alert was dismissed. See `DEPENDENCY-TRIAGE.md` for the deployed-image limitation.
 - Populated upgrade: 13→14 Drizzle migrations, 200 users and 50 enquiries preserved; second migration run a no-op. See `DRILLS.md` for the limitations.
 - Targeted production-build integration: 3 suites, 69 tests passed (`34-lab-booking`, `38-journey-lab-booking`, `44-lab-attendance-qr`), against a disposable PostgreSQL 16 and stub providers. The browser booking journey passed as part of this run. Clean-run CI for the pushed commit remains the release gate.
 
