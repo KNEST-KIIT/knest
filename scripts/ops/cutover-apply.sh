@@ -16,6 +16,8 @@ export MSYS_NO_PATHCONV=1 PYTHONUTF8=1
 HERE="$(cd "$(dirname "$0")" && pwd)"
 STAGE="${1:-}"
 (cd "$HERE" && node ./require-scoped-aws.mjs) || exit 2
+readonly KNEST_SCOPED_AWS_PROFILE="$AWS_PROFILE"
+aws() { command aws --profile "$KNEST_SCOPED_AWS_PROFILE" "$@"; }
 
 bash "$HERE/cutover-preflight.sh" || { echo "Refusing to continue: preflight failed." >&2; exit 1; }
 CERT_ARN="$(aws acm list-certificates --region us-east-1 --query "CertificateSummaryList[?DomainName=='kiitnest.com'].CertificateArn | [0]" --output text)"
