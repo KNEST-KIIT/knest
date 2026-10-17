@@ -17,6 +17,7 @@ set -uo pipefail
 export MSYS_NO_PATHCONV=1
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
+(cd "$HERE" && node ./require-scoped-aws.mjs) || exit 2
 REGION="${AWS_DEFAULT_REGION:-ap-south-1}"
 fail=0
 check() { # name, ok(0/1), detail
@@ -69,7 +70,7 @@ fi
 # G7: both exact public zones, all four nameservers, origin/renewal/mail records.
 # Fresh ACM, origin-stack and SES metadata provide required records and targets;
 # matching empty DNS answers cannot establish preservation.
-if node "$HERE/dns-cutover-check.mjs"; then
+if (cd "$HERE" && node ./dns-cutover-check.mjs); then
   check "G7 Route 53 preserves both zones, origin, mail and renewal records" 0 "all eight authoritative-server comparisons passed"
 else
   check "G7 Route 53 preserves both zones, origin, mail and renewal records" 1 "metadata missing, required records absent, or DNS comparison failed"

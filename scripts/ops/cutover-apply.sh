@@ -15,9 +15,10 @@ set -euo pipefail
 export MSYS_NO_PATHCONV=1 PYTHONUTF8=1
 HERE="$(cd "$(dirname "$0")" && pwd)"
 STAGE="${1:-}"
-CERT_ARN="$(aws acm list-certificates --region us-east-1 --query "CertificateSummaryList[?DomainName=='kiitnest.com'].CertificateArn | [0]" --output text)"
+(cd "$HERE" && node ./require-scoped-aws.mjs) || exit 2
 
 bash "$HERE/cutover-preflight.sh" || { echo "Refusing to continue: preflight failed." >&2; exit 1; }
+CERT_ARN="$(aws acm list-certificates --region us-east-1 --query "CertificateSummaryList[?DomainName=='kiitnest.com'].CertificateArn | [0]" --output text)"
 
 prev_params() { # stack region, then the keys to override are skipped by the caller
   aws cloudformation describe-stacks --stack-name "$1" --region "$2" --query 'Stacks[0].Parameters[].ParameterKey' --output text | tr '\t' '\n'
