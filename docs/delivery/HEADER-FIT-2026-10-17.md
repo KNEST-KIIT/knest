@@ -21,7 +21,7 @@ Only five spacing classes in `src/components/layout/site-header.tsx` change: nar
 
 ## Verification
 
-- Production build using `next build --webpack`: passed, including TypeScript. Expected CMS fallback diagnostics came from an intentionally unreachable loopback database. No hosted database or provider was contacted. This explicitly uses the webpack build option; the normal Turbopack build remains an exact-SHA CI check.
+- Production build using `next build --webpack`: passed, including TypeScript. Expected CMS fallback diagnostics came from an intentionally unreachable loopback database. No production database or student data was used; Google fonts are downloaded at build time. This explicitly uses the webpack build option; the normal Turbopack build remains an exact-SHA CI check.
 - `36-header-fit.test.ts`: **22 passes** against the rebuilt production server, using disposable PostgreSQL 16, real synthetic login and local provider stubs.
 - Widths: 768, 1023, 1024, 1100, 1279, 1280, 1366, 1440, 1535, 1536 and 1920, for both account states.
 - At every width: document scroll width equals viewport width; visible controls are inside the viewport and do not overlap; all six main destinations and the appropriate account link remain available. Tablet drawer links can each be scrolled fully into their own viewport, and Escape closes the drawer.
