@@ -116,6 +116,30 @@ describe('creating labs and appointing people', () => {
     expect((await db().query('select capacity from app.labs where id = $1', [labA.id])).rows[0].capacity).toBe(4)
   })
 
+  it('lets administrators reopen a closed lab while members cannot discover or book it', async () => {
+    const manage = `/api/labs/${labA.slug}/manage`
+    expect((await api(manage, admin, { action: 'update', settings: { isActive: false } })).status).toBe(200)
+    try {
+      expect((await get(`/api/labs/${labA.slug}/availability?date=${istParts(new Date()).date}`, outsider)).status).toBe(404)
+      const memberPage = await (await get(`/dashboard/lab-booking/${labA.slug}`, outsider)).text()
+      expect(memberPage).not.toContain('Request a slot')
+      for (const who of [head, assistant, admin]) {
+        const console = await get(`/dashboard/lab-staff/${labA.slug}`, who)
+        expect(console.status).toBe(200)
+        expect(await console.text()).toContain(labA.slug)
+      }
+      for (const who of [head, head2, outsider, reviewer, assistant]) {
+        const denied = await api(manage, who, { action: 'update', settings: { isActive: true } })
+        expect([403, 404]).toContain(denied.status)
+      }
+      expect((await api(manage, head, { action: 'update', settings: { capacity: 4 } })).status).toBe(200)
+      expect((await api(manage, admin, { action: 'update', settings: { isActive: true } })).status).toBe(200)
+      expect((await db().query('select is_active from app.labs where id = $1', [labA.id])).rows[0].is_active).toBe(true)
+    } finally {
+      await db().query('update app.labs set is_active = true where id = $1', [labA.id])
+    }
+  })
+
   it('rejects impossible opening hours and closed periods, and records changes in the audit trail', async () => {
     const overlapping = [{ weekday: 1, opensMinute: 540, closesMinute: 720 }, { weekday: 1, opensMinute: 660, closesMinute: 900 }]
     expect((await json(await api(`/api/labs/${labA.slug}/manage`, head, { action: 'hours', windows: overlapping }))).status).toBe(400)
@@ -529,7 +553,7 @@ describe('the screens', () => {
   it('a lab console opens for its head and its assistant, and is a real 404 for everyone else', async () => {
     expect((await get(`/dashboard/lab-staff/${labA.slug}`, head)).status).toBe(200)
     const assistantHtml = await (await get(`/dashboard/lab-staff/${labA.slug}`, assistant)).text()
-    expect(assistantHtml).toContain('Approved and coming up')
+    expect(assistantHtml).toContain('Approved and in progress')
     expect(assistantHtml).not.toContain('Rules and details')
     expect(assistantHtml).not.toContain('Requests waiting')
     const headHtml = await (await get(`/dashboard/lab-staff/${labA.slug}`, head)).text()
@@ -539,7 +563,7 @@ describe('the screens', () => {
     for (const who of [outsider, head2]) {
       const res = await get(`/dashboard/lab-staff/${labA.slug}`, who)
       const text = await res.text()
-      for (const secret of ['Requests waiting', 'Rules and details', 'Approved and coming up', mail('head'), mail('assistant')]) expect(text, secret).not.toContain(secret)
+      for (const secret of ['Requests waiting', 'Rules and details', 'Approved and in progress', mail('head'), mail('assistant')]) expect(text, secret).not.toContain(secret)
     }
     expect((await get(`/dashboard/lab-staff/${labA.slug}`)).status).toBeGreaterThanOrEqual(300)
   })

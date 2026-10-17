@@ -17,6 +17,10 @@ Command: `pnpm exec tsx scripts/drills/populated-upgrade.mts 1` at branch `codex
 
 Limits: local database, synthetic rows, engine version 16 as on RDS. It proves the migration is additive and idempotent for the rows seeded; it is not a copy of production data (there is none yet).
 
+### Re-run 2026-10-17
+
+`pnpm exec tsx scripts/drills/populated-upgrade.mts 1` was run from base commit `958e20f`, with the lab workflow recovery changes in the working tree (no migration files changed). The previous schema applied 13 of 14 migrations. After applying all 14, the same 200 synthetic users and 50 enquiries remained, the sampled password hash was unchanged, and a second migration run was a no-op. All steps exited successfully. This re-run still covers only the Drizzle history and these synthetic row types; it is not a Payload upgrade or an RDS restore drill.
+
 ## D2. Least-privilege runtime role: RUN (local) and exercised by the whole integration suite
 
 2026-10-11. Provisioned with `src/db/runtime-role.ts` twice (create, then idempotent update). Connected as `knest_app`:

@@ -2,6 +2,8 @@
 
 Found by reading the code on `codex/production-v1` at `383abf9`. None was reproduced on a running system unless stated; each is "from reading the code". No code was changed. Severity is the author's judgement for a deployment where the relevant flag is on: High (blocks the feature or loses data), Medium (wrong or surprising result, workaround exists), Low (cosmetic or narrow).
 
+**Follow-up, 2026-10-17:** D-01 and D-13 are repaired in the continuation candidate and covered by production-build integration tests. D-14's ongoing completed bookings are retained in the console, with repeat attendance/cancellation controls removed. Both roster queries also check current lab membership, closing stale-assignment visibility after removal; D-07's stored assignment itself is not cleared by this patch. The three affected suites passed 69 tests. See `../../../delivery/CONTINUATION-2026-10-17.md` for scope and limits. The rows below remain the original findings at `383abf9`; QR is still gated and D-05/D-12 remain open.
+
 ## 1. Defects and gaps
 
 | ID | Sev | Finding | Where |

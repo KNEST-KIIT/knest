@@ -74,11 +74,11 @@ Anyone who is not on a lab's staff list gets "not found" for that lab's console.
 
 Only an administrator can appoint or remove a head. Heads add and remove assistants.
 
-### Warning: do not untick "Open for booking" unless an engineer can re-open the lab
+### Close and reopen a lab for booking
 
-In the lab's rules form, an administrator sees an "Open for booking" box. In the code, the lab console looks labs up by "active" labs only. A lab that is not open for booking therefore answers "not found" in its own console. The list screens still show it with a link, and that link also ends in "not found". I found no screen that re-opens a closed lab.
+An administrator can clear **Open for booking** in **Rules and details** and press **Save settings**. Members can no longer discover or request the lab. Its own head and assistants, and lab administrators, can still open its console.
 
-Treat that box as one-way until an engineer confirms otherwise. To stop new requests, use **Closed dates** or remove the lab's opening hours instead. Report this to engineering: [PLACEHOLDER: engineering contact]. This is a finding from reading the code. It has not been tried on a running system.
+To reopen it, an administrator opens the console from `/admin/labs`, selects **Open for booking**, and saves. Heads can continue changing other settings while it is closed, but cannot open or close it. This recovery path was added on 2026-10-17; production acceptance is still pending.
 
 ## The rules of a lab
 
@@ -162,7 +162,7 @@ Notes:
 
 ### Cancel an approved booking
 
-1. Under **Approved and coming up**, find the booking. Press **Cancel this booking...**.
+1. Under **Approved and in progress**, find the booking. Press **Cancel this booking...**.
 2. Type a reason (at least 3 characters). Press **Cancel and tell them**.
 3. The member gets a notice and an email with your reason. The slot is freed.
 
@@ -173,15 +173,16 @@ Only heads and administrators can cancel for a member. A member cancelling their
 - Add an assistant under **Head and assistants** with their email address and the role "Assistant". They need a verified account.
 - Assign an assistant when you approve. The assistant then sees that booking under "Your duties coming up" on `/dashboard/lab-staff`.
 - The assigned assistant is shown on the approved booking.
-- Any assistant of the lab can mark attendance for any approved booking in that lab, not only their own duties.
+- An assistant sees and marks only their assigned bookings. Removing their lab membership also removes those duties from their roster.
 
 ## Record attendance (assistant or head)
 
 Attendance is recorded **by hand** and labelled "manual". No automatic check-in exists.
 
-1. Open the lab console. Under **Approved and coming up**, find the booking.
+1. Open the lab console. Under **Approved and in progress**, find the booking.
 2. Before the start time you see "Attendance can be recorded once it has started." After the start time you see two buttons.
 3. Press **Mark attended** if the member came. The booking becomes "Attended".
+   It stays in the in-progress list until the booked end time, with "Attendance has been recorded" instead of attendance or cancellation controls.
 4. Press **Mark no-show...** if they did not. Type a reason (at least 3 characters). Press **Record no-show**. The booking becomes "No-show".
 
 Rules:

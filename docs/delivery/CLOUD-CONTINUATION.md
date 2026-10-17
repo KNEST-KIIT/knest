@@ -1,5 +1,7 @@
 # Production continuation handoff
 
+**Current checkpoint (2026-10-17):** read `CONTINUATION-2026-10-17.md` first. The branch has already been pushed and substantially extended since this original 2026-10-09 handoff; runtime permissions, durable mail and reconciliation are implemented in source. An AWS private preview was reported subsequently. The supported Cloud picker still has no environment, and public deployment/domain acceptance remains incomplete. The remainder of this document is the historical initial handoff, not a current inventory of unfinished code.
+
 The owner authorized implementation, AWS production deployment, domain connection and cloud continuation on 2026-10-09. Work is on `codex/production-v1`. Preserve received local changes and the audit evidence. Do not interpret a successful build as production acceptance.
 
 ## Read first

@@ -227,6 +227,13 @@ describe('the two-sided exchange', () => {
     const b = await makeBooker('ex-out')
     await send(assistant, [(await staffEvent(b, assistantDevice)).token])
     await send(b.session, [(await studentEvent(b, assistantDevice)).token])
+    // Refresh the device's real roster after check-in, just as the polling UI
+    // does. A completed booking must remain available for its checkout scan.
+    const roster = await json(await api('/api/lab-attendance/roster', assistant, undefined, 'GET'))
+    expect(roster.status).toBe(200)
+    expect(roster.body.entries.some((entry: { bookingId: string }) => entry.bookingId === b.bookingId)).toBe(true)
+    const otherRoster = await json(await api('/api/lab-attendance/roster', assistant2, undefined, 'GET'))
+    expect(otherRoster.body.entries.some((entry: { bookingId: string }) => entry.bookingId === b.bookingId)).toBe(false)
     const out = await staffEvent(b, assistantDevice, { action: 'out' })
     expect(result(await send(assistant, [out.token]))).toMatchObject({ status: 'accepted', check: { state: 'partial' } })
     const outStudent = await studentEvent(b, assistantDevice, { action: 'out' })
@@ -234,6 +241,19 @@ describe('the two-sided exchange', () => {
     expect(await attendanceRows(b.bookingId)).toHaveLength(1)
     const state = await json(await api(`/api/lab-attendance/bookings/${b.bookingId}/checks`, b.session, undefined, 'GET'))
     expect(state.body.checks).toMatchObject({ in: 'verified', out: 'verified' })
+  })
+
+  it('removes stale assigned duties from both rosters when lab membership is revoked', async () => {
+    const b = await makeBooker('removed-membership')
+    const member = (await db().query('select id from app.lab_staff where lab_id = $1 and user_id = $2', [b.labId, assistantId])).rows[0]
+    const lab = (await db().query('select slug from app.labs where id = $1', [b.labId])).rows[0]
+    const removed = await api(`/api/labs/${lab.slug}/manage`, head, { action: 'staff-remove', staffId: member.id })
+    expect(removed.status).toBe(200)
+    const roster = await json(await api('/api/lab-attendance/roster', assistant, undefined, 'GET'))
+    expect(roster.status).toBe(200)
+    expect(roster.body.entries.some((entry: { bookingId: string }) => entry.bookingId === b.bookingId)).toBe(false)
+    const duties = await (await fetch(`${BASE()}/dashboard/lab-staff`, { headers: { cookie: assistant.cookie } })).text()
+    expect(duties).not.toContain(`/dashboard/lab-staff/${lab.slug}`)
   })
 
   it('a manual row that exists already is never overwritten by a verified scan', async () => {

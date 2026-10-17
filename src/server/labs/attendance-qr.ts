@@ -224,7 +224,7 @@ export type RosterEntry = {
 }
 
 /**
- * The roster a scanning device may cache: approved bookings in the next 24 hours (and those running
+ * The roster a scanning device may cache: approved or checked-in bookings in the next 24 hours (and those running
  * now) that this person may scan. An assistant sees only bookings assigned to them; heads and admins
  * see their lab's. Expires with the cache TTL on the device.
  */
@@ -236,15 +236,16 @@ export async function getRoster(now = new Date()) {
   if (!admin && memberships.length === 0) return fail('You do not run a lab.', 'forbidden')
 
   const horizon = new Date(now.getTime() + ROSTER_CACHE_TTL_MS)
-  const base = and(eq(labBookings.status, 'approved'), lte(labBookings.startsAt, horizon), gte(labBookings.endsAt, new Date(now.getTime() - 60 * 60 * 1000)))
+  const base = and(inArray(labBookings.status, ['approved', 'completed']), lte(labBookings.startsAt, horizon), gte(labBookings.endsAt, new Date(now.getTime() - 60 * 60 * 1000)))
   const headLabs = memberships.filter((m) => m.role === 'head').map((m) => m.labId)
+  const assistantLabs = memberships.filter((m) => m.role === 'assistant').map((m) => m.labId)
   const scope = admin
     ? base
     : and(
         base,
         or(
           // an assistant is limited to the bookings assigned to them, as manual attendance is
-          eq(labBookings.assistantUserId, user.id),
+          assistantLabs.length > 0 ? and(eq(labBookings.assistantUserId, user.id), inArray(labBookings.labId, assistantLabs)) : undefined,
           headLabs.length > 0 ? inArray(labBookings.labId, headLabs) : undefined,
         ),
       )

@@ -161,8 +161,8 @@ describe('a member books a lab and the lab head decides', () => {
     await Promise.all([page.waitForResponse((r) => r.url().includes(`/api/labs/bookings/${bookingId}/decide`) && r.ok()), page.getByRole('button', { name: 'Approve' }).click()])
     await page.getByText('Requests waiting (0)').waitFor({ timeout: 30_000 })
     await page.getByText('Nothing is waiting for a decision.').waitFor()
-    await page.getByText('Approved and coming up (1)').waitFor()
-    await page.getByRole('region', { name: /Approved and coming up/ }).getByText(PURPOSE).waitFor()
+    await page.getByText('Approved and in progress (1)').waitFor()
+    await page.getByRole('region', { name: /Approved and in progress/ }).getByText(PURPOSE).waitFor()
 
     const row = await one<{ status: string; decided_by: string | null; decided_at: Date | null }>('select status, decided_by, decided_at from app.lab_bookings where id = $1', [bookingId])
     expect(row.status).toBe('approved')
@@ -206,7 +206,7 @@ describe('a member books a lab and the lab head decides', () => {
 
     // the head's console no longer lists it as coming up, and keeps it in the history
     await people.head.page.goto(`${BASE()}/dashboard/lab-staff/${LAB_SLUG}`)
-    await people.head.page.getByText('Approved and coming up (0)').waitFor()
+    await people.head.page.getByText('Approved and in progress (0)').waitFor()
     const history = people.head.page.getByRole('region', { name: 'Recent history' })
     await history.getByText('Cancelled', { exact: true }).waitFor()
   })

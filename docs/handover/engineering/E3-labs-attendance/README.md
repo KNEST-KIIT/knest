@@ -45,4 +45,4 @@ Part of the KNEST handover pack, engineering reference. Describes the code on `c
 2. All time logic is IST and pure; the server re-checks everything the screen checks (E3.03).
 3. Every status change is a conditional update with its audit row and notice in one transaction (E3.04).
 4. In QR attendance the device only reports; the server decides, and "verified" needs both a staff-side and a student-side accepted event within 2 minutes (E3.08).
-5. Several gaps block turning QR on in practice even after sign-off: no screen for held scans or keys, predicted check-out failure through the roster, and key-lifecycle dead ends (E3.11 D-05, D-12, D-13).
+5. Several gaps still block turning QR on in practice even after sign-off: no screen for held scans or keys, and key-lifecycle dead ends (E3.11 D-05, D-12). The checkout roster and closed-lab recovery defects were repaired in the 2026-10-17 continuation candidate; see the follow-up in E3.11.

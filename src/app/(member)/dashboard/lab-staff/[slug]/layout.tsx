@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import { isLabBookingEnabled } from '@/server/features'
 import { canStaff, actorFor } from '@/server/labs/access'
-import { getLabBySlug } from '@/server/labs/service'
+import { getLabForStaffBySlug } from '@/server/labs/service'
 
 /**
  * Only a lab's own head and assistants, and lab administrators, may open its console. Checked here
@@ -11,7 +11,7 @@ import { getLabBySlug } from '@/server/labs/service'
 export default async function LabStaffLayout({ children, params }: { children: React.ReactNode; params: Promise<{ slug: string }> }) {
   if (!isLabBookingEnabled()) notFound()
   const { slug } = await params
-  const found = await getLabBySlug(slug)
+  const found = await getLabForStaffBySlug(slug)
   if (!found) notFound()
   const actor = await actorFor(found.lab.id).catch(() => null)
   if (!actor || !canStaff(actor)) notFound()

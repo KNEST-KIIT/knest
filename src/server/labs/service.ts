@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { db } from '@/db/client'
 import { auditLogs, labAttendance, labBlackouts, labBookings, labHours, labs, labStaff, users } from '@/db/schema'
 import { formatEventTime } from '@/lib/dates'
-import { requireUserOrThrow } from '@/server/auth/guards'
+import { getSessionUser, requireUserOrThrow } from '@/server/auth/guards'
 import type { StaffRole } from '@/server/auth/roles'
 import { isLabBookingEnabled } from '@/server/features'
 import { sendNotificationEmail, writeNotification, type NotifyInput } from '@/server/notifications/send'
@@ -13,7 +13,7 @@ import {
   bookingDecidedTemplate,
   bookingRequestedTemplate,
 } from '@/server/notifications/templates'
-import { actorFor, canManage, isLabAdmin, requireManager, requireStaffOfLab } from './access'
+import { actorFor, canManage, isLabAdmin, labRoleFor, requireManager, requireStaffOfLab } from './access'
 import {
   canTransition,
   generateSlots,
@@ -64,6 +64,22 @@ export async function listActiveLabs() {
 export async function getLabBySlug(slug: string) {
   const lab = await db.query.labs.findFirst({ where: and(eq(labs.slug, slug), eq(labs.isActive, true)) })
   if (!lab) return null
+  return labDetails(lab)
+}
+
+/** Closed labs stay manageable by their own staff and lab administrators.
+ * Member discovery and booking continue to use the active-only lookup above.
+ */
+export async function getLabForStaffBySlug(slug: string) {
+  const user = await getSessionUser()
+  if (!user) return null
+  const lab = await db.query.labs.findFirst({ where: eq(labs.slug, slug) })
+  if (!lab) return null
+  if (!isLabAdmin(user.staffRole as StaffRole | null) && !(await labRoleFor(user.id, lab.id))) return null
+  return labDetails(lab)
+}
+
+async function labDetails(lab: Lab) {
   const [hours, blackouts] = await Promise.all([
     db.select().from(labHours).where(eq(labHours.labId, lab.id)).orderBy(asc(labHours.weekday), asc(labHours.opensMinute)),
     db.select().from(labBlackouts).where(eq(labBlackouts.labId, lab.id)).orderBy(asc(labBlackouts.startsOn)),
@@ -412,7 +428,7 @@ export async function listLabBookings(labId: string, scope: 'open' | 'upcoming' 
     scope === 'open'
       ? and(eq(labBookings.labId, labId), inArray(labBookings.status, ['requested', 'alternative_proposed']))
       : scope === 'upcoming'
-        ? and(eq(labBookings.labId, labId), eq(labBookings.status, 'approved'), gte(labBookings.endsAt, now))
+        ? and(eq(labBookings.labId, labId), inArray(labBookings.status, ['approved', 'completed']), gte(labBookings.endsAt, now))
         : // History: what has finished, and every decision that ended a request early. A declined or cancelled booking
           // is history the moment it is declined or cancelled, not when its (future) time slot passes.
           and(
@@ -435,7 +451,8 @@ export async function listRoster(userId: string) {
     .from(labBookings)
     .innerJoin(labs, eq(labs.id, labBookings.labId))
     .innerJoin(users, eq(users.id, labBookings.userId))
-    .where(and(eq(labBookings.assistantUserId, userId), eq(labBookings.status, 'approved'), gte(labBookings.endsAt, new Date())))
+    .innerJoin(labStaff, and(eq(labStaff.labId, labBookings.labId), eq(labStaff.userId, userId)))
+    .where(and(eq(labBookings.assistantUserId, userId), inArray(labBookings.status, ['approved', 'completed']), gte(labBookings.endsAt, new Date())))
     .orderBy(asc(labBookings.startsAt))
 }
 

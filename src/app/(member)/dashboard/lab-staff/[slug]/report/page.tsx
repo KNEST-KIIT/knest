@@ -8,7 +8,7 @@ import { requireOnboardedUser } from '@/server/auth/guards'
 import { actorFor, canManage } from '@/server/labs/access'
 import { isValidDateString } from '@/server/labs/rules'
 import { labReport } from '@/server/labs/reports'
-import { getLabBySlug } from '@/server/labs/service'
+import { getLabForStaffBySlug } from '@/server/labs/service'
 
 export const metadata = { title: 'Lab utilisation' }
 export const dynamic = 'force-dynamic'
@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic'
 export default async function LabReportPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ from?: string; to?: string }> }) {
   const { slug } = await params
   await requireOnboardedUser(`/dashboard/lab-staff/${slug}/report`)
-  const found = await getLabBySlug(slug)
+  const found = await getLabForStaffBySlug(slug)
   if (!found) notFound()
   const actor = await actorFor(found.lab.id)
   if (!canManage(actor)) notFound()

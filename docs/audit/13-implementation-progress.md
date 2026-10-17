@@ -1,5 +1,7 @@
 # Implementation progress after audit
 
+For the resumed 2026-10-17 state and validation, see `../delivery/CONTINUATION-2026-10-17.md`. This note records the initial implementation work on 2026-10-09.
+
 2026-10-09. Candidate branch: `codex/production-v1`. This is a progress record, **not production certification**. The historical audit documents remain unchanged.
 
 Implemented in this candidate:

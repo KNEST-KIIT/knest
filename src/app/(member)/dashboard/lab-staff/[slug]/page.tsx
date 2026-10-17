@@ -8,7 +8,7 @@ import { actorFor, canManage, canStaff } from '@/server/labs/access'
 import { formatEventTime } from '@/lib/dates'
 import { listDepartments } from '@/server/labs/department-admin'
 import { orderTree } from '@/server/labs/departments'
-import { getLabBySlug, listDecisionHistory, listLabBookings, listLabStaff } from '@/server/labs/service'
+import { getLabForStaffBySlug, listDecisionHistory, listLabBookings, listLabStaff } from '@/server/labs/service'
 import { AttendanceControls, BlackoutManager, CancelControls, DecisionControls, HoursEditor, SettingsForm, StaffManager } from './controls'
 
 export const metadata = { title: 'Lab console' }
@@ -28,7 +28,7 @@ function Section({ id, title, children }: { id: string; title: string; children:
 export default async function LabConsolePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   await requireOnboardedUser(`/dashboard/lab-staff/${slug}`)
-  const found = await getLabBySlug(slug)
+  const found = await getLabForStaffBySlug(slug)
   if (!found) notFound()
   const { lab, hours, blackouts } = found
   const actor = await actorFor(lab.id)
@@ -104,7 +104,7 @@ export default async function LabConsolePage({ params }: { params: Promise<{ slu
         </Section>
       )}
 
-      <Section id="upcoming" title={`Approved and coming up (${upcoming.length})`}>
+      <Section id="upcoming" title={`Approved and in progress (${upcoming.length})`}>
         {upcoming.length === 0 ? (
           <p className="text-[var(--color-ink-muted)]">No approved bookings ahead.</p>
         ) : (
@@ -121,8 +121,10 @@ export default async function LabConsolePage({ params }: { params: Promise<{ slu
                   </p>
                   <p className="mt-1 text-[var(--color-ink-soft)]">{booking.purpose}</p>
                   <div className="mt-3 flex flex-col gap-3">
-                    {started ? <AttendanceControls id={booking.id} /> : <p className="text-xs text-[var(--color-ink-muted)]">Attendance can be recorded once it has started.</p>}
-                    {manager && <CancelControls id={booking.id} />}
+                    {booking.status === 'completed'
+                      ? <p className="text-xs text-[var(--color-ink-muted)]">Attendance has been recorded.</p>
+                      : started ? <AttendanceControls id={booking.id} /> : <p className="text-xs text-[var(--color-ink-muted)]">Attendance can be recorded once it has started.</p>}
+                    {manager && booking.status === 'approved' && <CancelControls id={booking.id} />}
                   </div>
                 </li>
               )
