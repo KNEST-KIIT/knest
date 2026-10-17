@@ -21,6 +21,8 @@ Limits: local database, synthetic rows, engine version 16 as on RDS. It proves t
 
 `pnpm exec tsx scripts/drills/populated-upgrade.mts 1` was run from base commit `958e20f`, with the lab workflow recovery changes in the working tree (no migration files changed). The previous schema applied 13 of 14 migrations. After applying all 14, the same 200 synthetic users and 50 enquiries remained, the sampled password hash was unchanged, and a second migration run was a no-op. All steps exited successfully. This re-run still covers only the Drizzle history and these synthetic row types; it is not a Payload upgrade or an RDS restore drill.
 
+After the patch was committed, the same drill with `2` passed from 12→14 migrations at `7dffe0a`. The drill with `3` also passed from 11→14 at `7dffe0a` plus the read-only inspection workflow (no application or migration changes). Each retained 200 users and 50 enquiries, preserved the sampled row/hash and completed an idempotent second run. These cover the older schema counts recorded for the AWS releases; they do not establish which schema is currently running on RDS.
+
 ## D2. Least-privilege runtime role: RUN (local) and exercised by the whole integration suite
 
 2026-10-11. Provisioned with `src/db/runtime-role.ts` twice (create, then idempotent update). Connected as `knest_app`:
