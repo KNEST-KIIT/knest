@@ -14,17 +14,17 @@ The initial catalogue contains 306 **case families**, all NOT RUN. Families are 
 - Empty/error-state requirements need populated and empty datasets plus controlled failure; a 200 response or screenshot alone is insufficient.
 - Physical devices, long-term key retention, camera behavior, institutional sign-offs and hosted operations cannot be inferred from laptop unit tests.
 
-**Review gate is not complete. No functional test execution has begun in this audit.**
+**Initial checkpoint:** review was incomplete and execution had not begun. The baseline and explicitly reviewed browser cases have since executed; see the execution report. Broader review gates remain incomplete.
 
 ## Pre-execution second pass — local baseline batch
 
 The build, pure-unit and API-only baseline cases have now been reviewed against their implementation boundaries, test setup and the current specifications. Review is by the current auditor in a separate pass over the existing suite; no independent human reviewer is claimed. Broader UI/state families remain pending and are not accepted by these checks.
 
 - All three old preview addresses were probed outside the sandbox and refused connections. A sandbox EACCES was recorded as a tool restriction, not an application failure.
-- Fresh compilation uses explicit synthetic credentials and unreachable loopback service endpoints, with dotenv/shell provider settings blanked. No production data can be reached. Two build workers are selected using the installed Next.js CIRCLE_NODE_TOTAL setting.
+- Fresh compilation uses explicit synthetic credentials and unreachable loopback service endpoints, with dotenv/shell provider settings blanked. No production data can be reached. Worker use is limited with the installed Next.js CIRCLE_NODE_TOTAL setting.
 - API fixtures use the existing guarded disposable PostgreSQL, SMTP/storage/verifier stand-ins and least-privilege runtime identity. Their allowed writes are synthetic local fixture state.
 - Nine browser-suite files are excluded from command-line browser execution. The API-only portions of the QR file can be executed with the real-browser describe block excluded, and their exact skipped cases remain NOT RUN.
 - The migration drift assertion in the dependency suite can write generated migrations under src; that one assertion will be executed equivalently in an isolated copy instead of the worktree.
 - The analytics expected-failure is retained visibly, and will be interpreted separately from framework pass counts. A trusted-header harness does not prove a deployed spoofing defect.
 
-Baseline execution gate: **READY**. All other case-family review gates remain **PENDING**.
+Baseline execution gate: **EXECUTED**. Explicit browser cases have a separate reviewed ledger; cases not covered by that review remain **PENDING**. No independent human or second-agent review is claimed.
