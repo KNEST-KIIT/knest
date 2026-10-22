@@ -1,15 +1,16 @@
 import type { Metadata } from 'next'
 import { ResetConfirmForm } from './reset-confirm-form'
 import { Heading } from '@/components/ui'
+import { safeNext } from '@/lib/safe-next'
 
 export const metadata: Metadata = { title: 'Set a new password' }
 
 export default async function ResetConfirmPage({
   searchParams,
 }: {
-  searchParams: Promise<{ email?: string; token?: string }>
+  searchParams: Promise<{ email?: string; token?: string; next?: string }>
 }) {
-  const { email, token } = await searchParams
+  const { email, token, next } = await searchParams
 
   if (!email || !token) {
     return (
@@ -27,5 +28,5 @@ export default async function ResetConfirmPage({
     )
   }
 
-  return <ResetConfirmForm email={email} token={token} />
+  return <ResetConfirmForm email={email} token={token} next={safeNext(next)} />
 }

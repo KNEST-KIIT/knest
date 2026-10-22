@@ -49,7 +49,7 @@ export async function requireUser(returnTo?: string): Promise<SessionUser> {
  */
 export async function requireOnboardedUser(returnTo?: string): Promise<SessionUser> {
   const user = await requireUser(returnTo)
-  if (!user.onboardingComplete) redirect('/onboarding')
+  if (!user.onboardingComplete) redirect(returnTo ? `/onboarding?next=${encodeURIComponent(returnTo)}` : '/onboarding')
   return user
 }
 

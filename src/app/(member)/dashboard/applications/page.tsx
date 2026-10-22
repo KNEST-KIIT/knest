@@ -43,9 +43,9 @@ export default async function ApplicationsPage() {
                   <ButtonLink href={`/apply/${programSlug}`} size="sm">
                     Continue
                   </ButtonLink>
-                ) : programSlug ? (
-                  <ButtonLink href={`/programs/${programSlug}`} variant="secondary" size="sm">
-                    View program
+                ) : application.status !== 'draft' ? (
+                  <ButtonLink href={`/dashboard/applications/${application.id}`} variant="secondary" size="sm">
+                    View application
                   </ButtonLink>
                 ) : null}
               </div>

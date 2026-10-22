@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { requestPasswordReset } from '@/server/auth/actions'
 import { checkRateLimit, clientIp, RATE_LIMITS } from '@/server/security/rate-limit'
 import { captchaFailure } from '@/server/security/captcha'
+import { safeNext } from '@/lib/safe-next'
 
 export async function POST(request: Request) {
   const allowed = await checkRateLimit(`password-reset:${clientIp(request)}`, RATE_LIMITS.passwordResetRequest)
@@ -10,7 +11,7 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null)
   const captcha = await captchaFailure(request, body)
   if (captcha) return captcha
-  const result = await requestPasswordReset(body?.email)
+  const result = await requestPasswordReset(body?.email, safeNext(body?.next))
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 })
   return NextResponse.json({ ok: true })
 }

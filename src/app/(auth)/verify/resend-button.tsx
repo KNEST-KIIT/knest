@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { formRequest } from '@/lib/form-request'
 
-export function ResendButton({ email }: { email: string }) {
+export function ResendButton({ email, next }: { email: string; next?: string | null }) {
   const [state, setState] = useState<'idle' | 'sending' | 'sent'>('idle')
   const [error, setError] = useState<string | null>(null)
 
@@ -14,7 +14,7 @@ export function ResendButton({ email }: { email: string }) {
     const response = await formRequest('/api/auth/password/verify/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ email, next }),
     })
     if (!response.ok) {
       const data = await response.json().catch(() => ({}))

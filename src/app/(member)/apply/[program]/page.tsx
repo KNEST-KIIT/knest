@@ -33,14 +33,14 @@ export default async function ApplyPage({ params }: { params: Promise<{ program:
     // Not open, or the deadline passed — send them back to the program page,
     // which explains why and offers "notify me" instead of a dead end here.
     if (closedReason(program)) redirect(`/programs/${slug}`)
-    return <StartApplication programSlug={slug} programTitle={program.title} />
+    return <StartApplication programSlug={slug} programTitle={program.title} questions={program.questions} />
   }
 
   const detail = await getOwnedApplicationDetail(existing.id, user.id)
   if (!detail) redirect(`/programs/${slug}`)
 
   if (detail.application.status !== 'draft') {
-    redirect('/dashboard/applications')
+    redirect(`/dashboard/applications/${detail.application.id}`)
   }
 
   // An existing draft on a program that has since closed: say so up front

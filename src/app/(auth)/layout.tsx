@@ -2,13 +2,15 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { SkipLink } from '@/components/layout/skip-link'
 import { Logo } from '@/components/ui'
+import SiteDocument from '@/components/layout/site-document'
+export { metadata } from '@/components/layout/site-document'
 
 /**
  * Premium Split-Screen Auth Portal
  */
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <>
+    <SiteDocument>
       <SkipLink />
       <main id="main" className="flex min-h-dvh bg-white">
         {/* Left Side: Auth Forms */}
@@ -86,6 +88,6 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           </div>
         </div>
       </main>
-    </>
+    </SiteDocument>
   )
 }

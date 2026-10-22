@@ -21,6 +21,13 @@ export function resetPasswordTemplate(link: string) {
   }
 }
 
+export function setupPasswordTemplate(link: string) {
+  return {
+    subject: 'Add a password to your KNEST account',
+    text: `Use this link to add email and password sign-in to your existing KNEST account. Google sign-in will keep working.\n\n${link}\n\nThis link expires in 1 hour. If you didn't ask for it, ignore this email. Nothing has changed.`,
+  }
+}
+
 export function accountExistsTemplate(loginLink: string, resetLink: string) {
   return {
     subject: 'You already have a KNEST account',

@@ -57,6 +57,9 @@ State of delivery, in the order to read it:
 
 ## Running it
 
+For a complete isolated local test environment (database, captured mail, file storage,
+demo accounts and labs), use `pnpm dev:local`. See [Local testing](docs/LOCAL-TESTING.md).
+
 Requires Node 22+, pnpm 10+, and Postgres 16 (via Docker or local).
 
 ```bash

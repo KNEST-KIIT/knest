@@ -10,6 +10,7 @@ import { NotificationsList } from './notifications-list'
 import { StudentDashboard } from './student-view'
 import { FounderDashboard } from './founder-view'
 import { MentorDashboard } from './mentor-view'
+import { ContributionDashboard } from './contribution-view'
 // This page alone enforces onboarding completion — see the layout for why.
 
 export const metadata: Metadata = { title: 'Dashboard' }
@@ -17,10 +18,8 @@ export const metadata: Metadata = { title: 'Dashboard' }
 /**
  * Role-aware, per CONTENT_SPEC.md §5: a student sees one next step, a
  * founder sees where their applications stand, a mentor sees their profile
- * and who they support. investor/alumni/partner/other fall back to the
- * student layout — CONTENT_SPEC.md only specifies three variants, and
- * recommend() already routes those roles sensibly within it (investor and
- * partner land on CONNECT, for instance).
+ * and who they support. Investors, alumni and partners get contribution
+ * paths supported by the public ecosystem pages and staff enquiry queue.
  */
 export default async function DashboardPage() {
   const user = await requireOnboardedUser('/dashboard')
@@ -62,6 +61,8 @@ export default async function DashboardPage() {
           <FounderDashboard user={user} />
         ) : user.platformRole === 'mentor' ? (
           <MentorDashboard user={user} />
+        ) : user.platformRole === 'investor' || user.platformRole === 'alumni' || user.platformRole === 'partner' ? (
+          <ContributionDashboard role={user.platformRole} />
         ) : (
           <StudentDashboard user={user} />
         )}

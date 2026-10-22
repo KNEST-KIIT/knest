@@ -69,6 +69,7 @@ type Props = {
   stagePrefill: JourneyStage | null
   /** Validated same-origin path the person was heading to; null if none. */
   next: string | null
+  initialStep?: string
 }
 
 async function postStep(step: string, data?: unknown): Promise<{ ok: boolean; error?: string }> {
@@ -98,9 +99,8 @@ async function postStep(step: string, data?: unknown): Promise<{ ok: boolean; er
  * The step list is recomputed from the current role on every render, so
  * changing the answer to step 1 immediately reshapes what follows.
  */
-export function OnboardingFlow({ initial, stagePrefill, next }: Props) {
+export function OnboardingFlow({ initial, stagePrefill, next, initialStep }: Props) {
   const router = useRouter()
-  const [index, setIndex] = useState(0)
   const [answers, setAnswers] = useState<Answers>(initial)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -117,6 +117,17 @@ export function OnboardingFlow({ initial, stagePrefill, next }: Props) {
     list.push('recommendation')
     return list
   }, [isPeopleRole, isMentor])
+
+  const [index, setIndex] = useState(() => Math.max(0, steps.indexOf(initialStep ?? 'role')))
+
+  function goTo(nextIndex: number) {
+    const step = steps[nextIndex]
+    if (!step) return
+    setIndex(nextIndex)
+    const url = new URL(window.location.href)
+    url.searchParams.set('step', step)
+    window.history.replaceState(null, '', url.pathname + url.search)
+  }
 
   const total = steps.length
   const current = steps[index]
@@ -135,12 +146,12 @@ export function OnboardingFlow({ initial, stagePrefill, next }: Props) {
       return
     }
     if (index === steps.length - 1) return
-    setIndex((i) => i + 1)
+    goTo(index + 1)
   }
 
   function back() {
     setError(null)
-    setIndex((i) => Math.max(0, i - 1))
+    goTo(Math.max(0, index - 1))
   }
 
   if (current === 'role') {
@@ -305,7 +316,6 @@ export function OnboardingFlow({ initial, stagePrefill, next }: Props) {
             school: answers.school,
             linkedinUrl: answers.linkedinUrl,
             bio: answers.bio,
-            skills: [],
           })
         }
         canContinue={Boolean(answers.name.trim())}
@@ -393,7 +403,7 @@ export function OnboardingFlow({ initial, stagePrefill, next }: Props) {
               }}
               className="group relative inline-flex w-full sm:w-auto items-center justify-center overflow-hidden rounded-full bg-[var(--color-ink)] px-8 py-4 font-medium text-white transition-all hover:scale-105 hover:bg-[var(--color-signal)] disabled:opacity-50"
             >
-              <span className="relative z-10">{pending ? 'Creating your workspace…' : result.cta}</span>
+              <span className="relative z-10">{pending ? 'Finishing setup…' : next?.startsWith('/apply/') ? 'Continue to your application' : next === '/dashboard' ? 'Open your dashboard' : result.cta}</span>
               <div className="absolute inset-0 -z-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
             </button>
             {error && (
@@ -406,7 +416,8 @@ export function OnboardingFlow({ initial, stagePrefill, next }: Props) {
 
         <button
           type="button"
-          onClick={() => setIndex(0)}
+          disabled={pending}
+          onClick={() => goTo(0)}
           className="mt-8 text-[length:var(--text-small)] font-medium text-[var(--color-ink-muted)] underline-offset-4 hover:text-[var(--color-ink)] hover:underline"
         >
           Not quite right? Re-configure your profile

@@ -3,14 +3,20 @@
 import { formRequest } from '@/lib/form-request'
 
 import { safeNext } from '@/lib/safe-next'
-import { useRef, useState } from 'react'
+import { useRef, useState, useSyncExternalStore } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Field, Input, PasswordInput } from '@/components/ui'
 import { GoogleButton } from '@/components/auth/google-button'
 import { Button } from '@/components/ui/button'
 import { TurnstileWidget } from '@/components/security/turnstile-widget'
 
-export function LoginForm({ googleEnabled, turnstileSiteKey }: { googleEnabled: boolean; turnstileSiteKey: string }) {
+const subscribe = () => () => {}
+const clientReady = () => true
+const serverReady = () => false
+
+export function LoginForm({ googleEnabled, turnstileSiteKey, recoveryNext = null }: { googleEnabled: boolean; turnstileSiteKey: string; recoveryNext?: string | null }) {
+  // Do not let a slow-loading page submit credentials before React owns the form.
+  const ready = useSyncExternalStore(subscribe, clientReady, serverReady)
   const router = useRouter()
   const searchParams = useSearchParams()
   const [pending, setPending] = useState(false)
@@ -22,6 +28,10 @@ export function LoginForm({ googleEnabled, turnstileSiteKey }: { googleEnabled: 
   const [error, setError] = useState<string | null>(
     providerError === 'AccessDenied'
       ? 'This account can’t sign in. Contact the KNEST team if you think that is a mistake.'
+      : providerError === 'OAuthAccountNotLinked'
+        ? 'You already have a KNEST account with this email. Log in with your password, then open Account to connect Google.'
+      : providerError === 'GoogleSessionExpired'
+        ? 'Your Google sign-in expired or this browser lost its sign-in check. Select Continue with Google to start again in this tab.'
       : providerError === 'GoogleUnavailable'
         ? 'Google sign-in isn’t available right now. Log in with your email and password.'
         : providerError === 'TooManyAttempts'
@@ -31,7 +41,7 @@ export function LoginForm({ googleEnabled, turnstileSiteKey }: { googleEnabled: 
         : null,
   )
   const emailRef = useRef<HTMLInputElement>(null)
-  const next = safeNext(searchParams.get('next'))
+  const next = safeNext(searchParams.get('next')) ?? recoveryNext
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -55,12 +65,13 @@ export function LoginForm({ googleEnabled, turnstileSiteKey }: { googleEnabled: 
       return
     }
 
-    router.push(next ?? '/dashboard')
+    router.push(next ?? '/auth/complete')
     router.refresh()
   }
 
   return (
     <div>
+      {searchParams.get('reset') === 'success' && <p role="status" className="mb-6 text-sm text-[var(--color-positive)]">Your password is updated. Log in to continue.</p>}
       <div className="mb-8">
         <span className="inline-block text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-signal)] mb-2">
           Your KNEST account
@@ -86,7 +97,7 @@ export function LoginForm({ googleEnabled, turnstileSiteKey }: { googleEnabled: 
         </>
       )}
 
-      <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-5" noValidate>
+      <form method="post" action="/api/auth/password/login" onSubmit={onSubmit} className="mt-6 flex flex-col gap-5" noValidate>
         <Field label="Email address">
           {(fieldProps) => (
             <Input 
@@ -97,6 +108,7 @@ export function LoginForm({ googleEnabled, turnstileSiteKey }: { googleEnabled: 
               autoComplete="email" 
               placeholder="you@kiit.ac.in" 
               required 
+              disabled={!ready}
             />
           )}
         </Field>
@@ -110,6 +122,7 @@ export function LoginForm({ googleEnabled, turnstileSiteKey }: { googleEnabled: 
                 autoComplete="current-password" 
                 placeholder="••••••••••••" 
                 required 
+                disabled={!ready}
               />
             )}
           </Field>
@@ -140,7 +153,7 @@ export function LoginForm({ googleEnabled, turnstileSiteKey }: { googleEnabled: 
           type="submit" 
           size="lg" 
           fullWidth 
-          disabled={pending || captchaPending}
+          disabled={!ready || pending || captchaPending}
           aria-busy={pending}
           className={`${pending ? 'disabled:opacity-100 disabled:cursor-progress ' : ''}mt-2 h-14 text-sm font-bold tracking-widest uppercase bg-gradient-to-r from-[var(--color-signal)] to-[#5a141e] hover:from-[#8f2433] hover:to-[var(--color-signal)] shadow-sm hover:shadow-lg transition-all duration-300 rounded-lg`}
         >
@@ -153,7 +166,7 @@ export function LoginForm({ googleEnabled, turnstileSiteKey }: { googleEnabled: 
               Authenticating…
             </span>
           ) : (
-            'Log In →'
+            ready ? 'Log In →' : 'Loading sign-in…'
           )}
         </Button>
       </form>

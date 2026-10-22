@@ -1,5 +1,6 @@
 import Google from 'next-auth/providers/google'
 import type { Provider } from 'next-auth/providers'
+import { verifiedGoogleEmail } from './google-profile'
 
 type Env = Record<string, string | undefined>
 
@@ -20,5 +21,16 @@ export function googleConfigured(env: Env = process.env): boolean {
 export function authProviders(env: Env = process.env): Provider[] {
   if (!googleConfigured(env)) return []
   const issuer = env.AUTH_GOOGLE_ISSUER?.trim()
-  return [issuer ? Google({ issuer, clientId: env.AUTH_GOOGLE_ID, clientSecret: env.AUTH_GOOGLE_SECRET }) : Google]
+  return [Google({
+    ...(issuer ? { issuer } : {}),
+    clientId: env.AUTH_GOOGLE_ID,
+    clientSecret: env.AUTH_GOOGLE_SECRET,
+    authorization: { params: { scope: 'openid email profile', prompt: 'select_account' } },
+    checks: ['pkce', 'state'],
+    profile(profile) {
+      return { id: profile.sub, email: verifiedGoogleEmail(profile), name: profile.name, image: profile.picture }
+    },
+    // KNEST uses Google only to identify someone, never to call Google APIs later.
+    account: () => ({}),
+  })]
 }

@@ -1,8 +1,11 @@
 'use client'
 
 import { formRequest } from '@/lib/form-request'
+import { useClientReady } from '@/lib/use-client-ready'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { TurnstileWidget } from '@/components/security/turnstile-widget'
 import { Button } from '@/components/ui/button'
 import { daysAgo } from '@/lib/clock'
@@ -28,6 +31,9 @@ export function BookingPicker({
   turnstileSiteKey: string
 }) {
   const today = todayIst()
+  const ready = useClientReady()
+  const router = useRouter()
+  const latestLoad = useRef(0)
   const latest = todayIst(daysAgo(-horizonDays))
   const [date, setDate] = useState('')
   const [slots, setSlots] = useState<Slot[] | null>(null)
@@ -40,19 +46,21 @@ export function BookingPicker({
   const captchaPending = Boolean(turnstileSiteKey) && !captchaToken
 
   const load = useCallback(
-    async (forDate: string) => {
-      if (!forDate) return
+    async (forDate: string, keepMessage = false) => {
+      const loadId = ++latestLoad.current
+      if (!forDate) { setSlots(null); setSelected([]); setLoading(false); return }
       setLoading(true)
       setSelected([])
       const res = await formRequest(`/api/labs/${slug}/availability?date=${forDate}`).catch(() => null)
       const data = await res?.json().catch(() => null)
+      if (loadId !== latestLoad.current) return
       setLoading(false)
       if (!res?.ok) {
         setSlots(null)
         setMessage({ kind: 'error', text: data?.error ?? 'We couldn’t load the times. Try again.' })
         return
       }
-      setMessage(null)
+      if (!keepMessage) setMessage(null)
       setSlots(data.slots)
     },
     [slug],
@@ -108,22 +116,24 @@ export function BookingPicker({
     setCaptchaReset((n) => n + 1)
     if (!res?.ok) {
       setMessage({ kind: 'error', text: data?.error ?? 'That did not go through. Try again.' })
-      if (data?.code === 'conflict') void load(date)
+      if (data?.code === 'conflict') void load(date, true)
       return
     }
-    setMessage({ kind: 'ok', text: 'Request sent. The lab head will reply, and you will see the answer on this page and by email.' })
+    setMessage({ kind: 'ok', text: 'Request sent. Track the lab head’s reply in Your bookings and by email.' })
     setSelected([])
-    void load(date)
+    void load(date, true)
+    router.refresh()
   }
 
   const field = 'w-full rounded-[var(--radius-sm)] border border-[var(--color-line-strong)] bg-white px-3 py-2 text-base'
   return (
-    <form onSubmit={submit} className="flex flex-col gap-6" noValidate>
+    <form method="post" onSubmit={submit} noValidate aria-busy={pending}>
+      <fieldset disabled={!ready || pending} className="flex min-w-0 flex-col gap-6">
       <div>
         <label htmlFor="date" className="block text-xs font-semibold uppercase tracking-wider text-[var(--color-ink-soft)]">
           Date
         </label>
-        <input id="date" type="date" min={today} max={latest} value={date} onChange={(e) => setDate(e.target.value)} className={`${field} mt-1 max-w-[14rem]`} />
+        <input id="date" type="date" disabled={pending} min={today} max={latest} value={date} onChange={(e) => setDate(e.target.value)} className={`${field} mt-1 max-w-[14rem]`} />
       </div>
 
       <div aria-live="polite">
@@ -141,7 +151,7 @@ export function BookingPicker({
                     <button
                       type="button"
                       aria-pressed={on}
-                      disabled={!slot.free}
+                      disabled={pending || !slot.free}
                       onClick={() => toggle(i)}
                       className={`min-h-11 rounded-[var(--radius-sm)] border px-3 py-2 text-[length:var(--text-small)] font-medium ${on ? 'border-[var(--color-ink)] bg-[var(--color-ink)] text-white' : 'border-[var(--color-line-strong)] bg-white'} ${!slot.free ? 'cursor-not-allowed opacity-60 line-through' : ''}`}
                     >
@@ -185,21 +195,29 @@ export function BookingPicker({
       </div>
 
       {message && (
-        <p role={message.kind === 'error' ? 'alert' : 'status'} className={`text-sm ${message.kind === 'error' ? 'text-[var(--color-critical)]' : 'font-semibold text-[var(--color-ink)]'}`}>
-          {message.text}
-        </p>
+        <div className="space-y-2">
+          <p role={message.kind === 'error' ? 'alert' : 'status'} className={`text-sm ${message.kind === 'error' ? 'text-[var(--color-critical)]' : 'font-semibold text-[var(--color-ink)]'}`}>
+            {message.text}
+          </p>
+          {message.kind === 'ok' && (
+            <Link href="/dashboard/lab-booking#mine" className="inline-flex min-h-11 items-center text-sm font-semibold underline underline-offset-4">
+              View your bookings
+            </Link>
+          )}
+        </div>
       )}
 
       <TurnstileWidget siteKey={turnstileSiteKey} action="lab-booking" onToken={setCaptchaToken} resetSignal={captchaReset} />
 
       <div>
-        <Button type="submit" size="lg" disabled={pending || captchaPending || selected.length === 0} aria-busy={pending} aria-describedby="send-hint">
+        <Button type="submit" size="lg" disabled={!ready || pending || captchaPending || selected.length === 0} aria-busy={pending} aria-describedby="send-hint">
           {pending ? 'Sending…' : 'Send request'}
         </Button>
         <p id="send-hint" className="mt-2 text-xs text-[var(--color-ink-muted)]">
-          {selected.length === 0 ? 'Pick a time above to send your request.' : captchaPending ? 'Waiting for the security check to finish.' : 'The lab head will reply by email and on this page.'}
+          {selected.length === 0 ? 'Pick a time above to send your request.' : captchaPending ? 'Waiting for the security check to finish.' : 'Track the lab head’s reply in Your bookings and by email.'}
         </p>
       </div>
+      </fieldset>
     </form>
   )
 }

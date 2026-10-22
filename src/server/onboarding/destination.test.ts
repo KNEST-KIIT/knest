@@ -55,6 +55,10 @@ describe('completionDestination', () => {
 })
 
 describe('onboardingUrl', () => {
+  it('preserves a known resume step through login and ignores unknown steps', () => {
+    expect(onboardingUrl({ next: '/apply/ignite', step: 'profile' })).toBe('/onboarding?next=%2Fapply%2Fignite&step=profile')
+    expect(onboardingUrl({ step: 'not-a-step' })).toBe('/onboarding')
+  })
   it('carries both the stage and the return path', () => {
     expect(onboardingUrl({ next: '/apply/ignite', stage: 'idea' })).toBe('/onboarding?stage=idea&next=%2Fapply%2Fignite')
   })

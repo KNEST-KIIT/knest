@@ -1,4 +1,4 @@
-import { Avatar, EmptyState, Heading, LinkCard, Tag } from '@/components/ui'
+import { Avatar, ButtonLink, EmptyState, Heading, LinkCard, Tag } from '@/components/ui'
 import { formatEventTime } from '@/lib/dates'
 import { EXPERTISE_OPTIONS } from '@/payload/fields/taxonomy'
 import { getMentorByUserId } from '@/server/content/mentors'
@@ -26,8 +26,9 @@ export async function MentorDashboard({ user }: { user: SessionUser }) {
         {!mentor ? (
           <EmptyState headingLevel="h3"
             className="mt-6"
-            heading="Your mentor profile is with our team."
-            body="Mentor profiles are reviewed before they go live. We'll let you know once yours is published."
+            heading="Your public mentor profile is not published yet."
+            body="The team reviews mentor profiles before publishing. Contact them to share your details or check the next step."
+            action={<ButtonLink href="/contact?topic=mentor" variant="secondary">Contact the mentor team</ButtonLink>}
           />
         ) : (
           <div className="mt-6 flex items-center gap-4 rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-white p-6">
@@ -44,6 +45,7 @@ export async function MentorDashboard({ user }: { user: SessionUser }) {
                   </Tag>
                 ))}
               </div>
+              <ButtonLink href={`/mentors/${mentor.slug}`} variant="secondary" size="sm" className="mt-4">View your public profile</ButtonLink>
             </div>
           </div>
         )}

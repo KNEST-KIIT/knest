@@ -1,6 +1,7 @@
 'use client'
 
 import { formRequest } from '@/lib/form-request'
+import { useClientReady } from '@/lib/use-client-ready'
 
 import { useState } from 'react'
 import { Field, Input, Textarea } from '@/components/ui'
@@ -8,7 +9,8 @@ import { Button } from '@/components/ui/button'
 import { TurnstileWidget } from '@/components/security/turnstile-widget'
 import { ENQUIRY_TOPICS, MAX_ENQUIRY_MESSAGE } from '@/server/enquiries/validation'
 
-export function ContactForm({ turnstileSiteKey }: { turnstileSiteKey: string }) {
+export function ContactForm({ turnstileSiteKey, initialTopic = 'general' }: { turnstileSiteKey: string; initialTopic?: string }) {
+  const ready = useClientReady()
   const [pending, setPending] = useState(false)
   const [sent, setSent] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -50,14 +52,15 @@ export function ContactForm({ turnstileSiteKey }: { turnstileSiteKey: string }) 
       <div role="status" className="rounded-[var(--radius-md)] border border-[var(--color-line)] bg-white p-8">
         <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold text-[var(--color-ink)]">Thanks, we’ve got your message.</h2>
         <p className="mt-3 text-[var(--color-ink-soft)]">
-          The KNEST team will read it and reply by email. If it is about your account or an application, mention the email address you signed up with.
+          The KNEST team will read it and reply to the email address you provided. You can close this page.
         </p>
       </div>
     )
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-5" noValidate>
+    <form method="post" onSubmit={onSubmit} noValidate aria-busy={pending}>
+      <fieldset disabled={!ready || pending} className="flex min-w-0 flex-col gap-5">
       <Field label="Your name">{(props) => <Input {...props} name="name" autoComplete="name" required minLength={2} maxLength={100} />}</Field>
       <Field label="Email address">
         {(props) => <Input {...props} name="email" type="email" autoComplete="email" required maxLength={254} />}
@@ -68,7 +71,7 @@ export function ContactForm({ turnstileSiteKey }: { turnstileSiteKey: string }) 
             {...props}
             name="topic"
             required
-            defaultValue="general"
+            defaultValue={initialTopic}
             className="h-11 w-full rounded-[var(--radius-sm)] border border-[var(--color-line-strong)] bg-white px-3 text-base"
           >
             {ENQUIRY_TOPICS.map((t) => (
@@ -99,9 +102,10 @@ export function ContactForm({ turnstileSiteKey }: { turnstileSiteKey: string }) 
 
       <TurnstileWidget siteKey={turnstileSiteKey} action="contact" onToken={setCaptchaToken} resetSignal={captchaReset} />
 
-      <Button type="submit" size="lg" disabled={pending || captchaPending} aria-busy={pending}>
+      <Button type="submit" size="lg" disabled={!ready || pending || captchaPending} aria-busy={pending}>
         {pending ? 'Sending…' : 'Send message'}
       </Button>
+      </fieldset>
     </form>
   )
 }

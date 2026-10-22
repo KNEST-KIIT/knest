@@ -3,15 +3,16 @@ import { getSessionUser } from '@/server/auth/guards'
 import { Heading } from '@/components/ui'
 import { emailSchema } from '@/server/auth/validation'
 import { ResendButton } from './resend-button'
+import { safeNext } from '@/lib/safe-next'
 
 export const metadata: Metadata = { title: 'Check your email' }
 
 export default async function VerifyPage({
   searchParams,
 }: {
-  searchParams: Promise<{ sent?: string; email?: string }>
+  searchParams: Promise<{ sent?: string; email?: string; next?: string }>
 }) {
-  const { sent, email: emailParam } = await searchParams
+  const { sent, email: emailParam, next } = await searchParams
   const user = await getSessionUser()
 
   // Right after sign-up there is no session yet. The address shown is whatever
@@ -48,7 +49,7 @@ export default async function VerifyPage({
         <span className="text-[length:var(--text-small)] text-[var(--color-ink-muted)]">
           Didn&rsquo;t arrive? Check spam, or
         </span>
-        <ResendButton email={email} />
+        <ResendButton email={email} next={safeNext(next)} />
       </div>
     </div>
   )

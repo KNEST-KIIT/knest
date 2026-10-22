@@ -1,19 +1,14 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { formatDate } from '@/lib/dates'
+import { formatDate, formatEventTime } from '@/lib/dates'
 import { getApplicationForReview } from '@/server/applications/review'
 import { nextStatuses } from '@/server/applications/transitions'
 import { StatusForm } from './status-form'
 import { Heading } from '@/components/ui'
+import Link from 'next/link'
+import { formatApplicationAnswer } from '@/lib/application-progress'
 
 export const metadata: Metadata = { title: 'Review application — Admin' }
-
-/** Select/multiselect answers store the option's stable `value`, not its label — this resolves back to what the applicant actually saw and picked. */
-function formatAnswer(raw: unknown, options?: { label: string; value: string }[] | null): string {
-  const labelFor = (v: string) => options?.find((o) => o.value === v)?.label ?? v
-  if (Array.isArray(raw)) return raw.length > 0 ? raw.map((v) => labelFor(String(v))).join(', ') : '—'
-  return typeof raw === 'string' && raw ? labelFor(raw) : '—'
-}
 
 export default async function AdminApplicationDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -25,8 +20,9 @@ export default async function AdminApplicationDetailPage({ params }: { params: P
   const documentMap = new Map(documents.map((d) => [d.questionId, d]))
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
-      <div>
+    <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="min-w-0">
+        <Link href="/admin/applications" className="mb-6 inline-block text-sm font-semibold text-[var(--color-signal)]">← Back to applications</Link>
         <p className="text-[length:var(--text-small)] text-[var(--color-ink-muted)]">{program?.title}</p>
         <Heading as="h1" size="title">
           {applicant.name ?? applicant.email}
@@ -44,7 +40,7 @@ export default async function AdminApplicationDetailPage({ params }: { params: P
                 documentMap.has(q.id) ? (
                   <a
                     href={`/api/admin/applications/${application.id}/documents/${q.id}`}
-                    className="mt-1 inline-block font-medium text-[var(--color-signal)]"
+                    className="mt-1 inline-block break-words font-medium text-[var(--color-signal)]"
                   >
                     {documentMap.get(q.id)!.fileName}
                   </a>
@@ -52,13 +48,20 @@ export default async function AdminApplicationDetailPage({ params }: { params: P
                   <p className="mt-1">—</p>
                 )
               ) : (
-                <p className="mt-1 whitespace-pre-wrap">
-                  {formatAnswer(answerMap.get(q.id), q.options)}
+                <p className="mt-1 whitespace-pre-wrap break-words">
+                  {formatApplicationAnswer(answerMap.get(q.id), q.options)}
                 </p>
               )}
             </div>
           ))}
         </div>
+        <section className="mt-10" aria-labelledby="review-history">
+          <Heading id="review-history" as="h2" size="heading">Review history</Heading>
+          <p className="mt-2 text-sm text-[var(--color-ink-muted)]">Latest 30 updates. Internal notes are visible only to staff.</p>
+          <ol className="mt-4 divide-y divide-[var(--color-line)]">
+            {detail.history.map((entry) => <li key={entry.id} className="py-4"><p className="font-medium capitalize">{entry.status ? entry.status.replaceAll('_', ' ') : entry.action === 'application_document_viewed' ? 'Document downloaded' : entry.action.replaceAll('_', ' ')}</p><p className="mt-1 text-sm text-[var(--color-ink-muted)]">{formatEventTime(entry.createdAt)} · {entry.actorName ?? 'Account no longer available'}</p>{entry.note && <p className="mt-2 whitespace-pre-wrap break-words text-sm">Internal note: {entry.note}</p>}</li>)}
+          </ol>
+        </section>
       </div>
 
       <aside>
@@ -67,7 +70,7 @@ export default async function AdminApplicationDetailPage({ params }: { params: P
             Status
           </Heading>
           <p className="mt-2 text-[length:var(--text-small)] text-[var(--color-ink-muted)]">
-            Currently: <strong>{application.status}</strong>
+            Currently: <strong>{application.status.replaceAll('_', ' ')}</strong>
           </p>
           <div className="mt-4">
             <StatusForm applicationId={application.id} options={[...nextStatuses(application.status)]} />

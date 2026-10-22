@@ -2,7 +2,7 @@ import { ButtonLink } from '@/components/ui'
 import { formatDeadline, formatDate } from '@/lib/dates'
 import type { Program } from '@/payload/payload-types'
 import { getSessionUser } from '@/server/auth/guards'
-import { getApplicationStatusForUser } from '@/server/applications/actions'
+import { findApplicationForProgram } from '@/server/applications/actions'
 
 /**
  * Every state a visitor can be in when they reach the apply decision
@@ -12,6 +12,11 @@ import { getApplicationStatusForUser } from '@/server/applications/actions'
  */
 export async function ApplyCta({ program }: { program: Program }) {
   const user = await getSessionUser()
+
+  if (user) {
+    const existing = await findApplicationForProgram(user.id, program.id)
+    if (existing) return <ButtonLink href={existing.status === 'draft' ? `/apply/${program.slug}` : `/dashboard/applications/${existing.id}`} size="lg" fullWidth>{existing.status === 'draft' ? 'Continue application' : 'View your application'}</ButtonLink>
+  }
 
   if (program.applicationStatus === 'opening_soon') {
     return (
@@ -44,16 +49,6 @@ export async function ApplyCta({ program }: { program: Program }) {
   }
 
   // applicationStatus === 'open'
-  if (user) {
-    const existing = await getApplicationStatusForUser(user.id, program.id)
-    if (existing) {
-      return (
-        <ButtonLink href="/dashboard/applications" size="lg" fullWidth>
-          {existing === 'draft' ? 'Continue application' : 'View your application'}
-        </ButtonLink>
-      )
-    }
-  }
 
   return (
     <div>
@@ -70,7 +65,7 @@ export async function ApplyCta({ program }: { program: Program }) {
         Apply to {program.title}
       </ButtonLink>
       <p className="mt-3 text-[length:var(--text-small)] text-[var(--color-ink-muted)]">
-        About 20 minutes · you can save and come back
+        {program.applicationQuestions?.length ?? 0} questions · save your progress and return later
       </p>
     </div>
   )

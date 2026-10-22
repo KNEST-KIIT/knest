@@ -45,7 +45,7 @@ export const ALLOWED_UPLOAD_MIME_TYPES = [
   'application/vnd.openxmlformats-officedocument.presentationml.presentation',
 ]
 
-export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+export { MAX_UPLOAD_BYTES } from '@/lib/upload-limits'
 
 export type SubmissionProblem = { questionId: string; label: string; message: string }
 

@@ -120,6 +120,20 @@ describe('the applications queue', () => {
     expect(onlyA).toContain(`Unique Findable Name ${stamp}`)
   })
 
+  it('opens the same in-progress group counted on the overview and ignores invalid status names', async () => {
+    const tag = `progress${stamp}`
+    for (const status of ['under_review', 'shortlisted', 'interview', 'waitlisted', 'submitted', 'accepted']) {
+      await seedApplication(`${tag}-${status}`, programA, status, `Workflow ${tag} ${status}`)
+    }
+    const page = await (await get(`/admin/applications?q=${tag}&status=in_progress`, sessions.reviewer!)).text()
+    for (const status of ['under_review', 'shortlisted', 'interview', 'waitlisted']) expect(page).toContain(`Workflow ${tag} ${status}`)
+    for (const status of ['submitted', 'accepted']) expect(page).not.toContain(`Workflow ${tag} ${status}`)
+    expect(page.replace(/<!-- -->/g, '')).toContain('4 applications match these filters')
+    const overview = await (await get('/admin/overview', sessions.super_admin!)).text()
+    expect(overview).toContain('href="/admin/applications?status=in_progress"')
+    for (const status of ['__proto__', 'constructor']) expect((await get(`/admin/applications?status=${status}`, sessions.reviewer!)).status).toBe(200)
+  })
+
   it('pages the list, 25 at a time, without losing or repeating anyone', async () => {
     const tag = `pg${stamp}`
     for (let i = 0; i < 30; i++) await seedApplication(`${tag}-${i}`, programA, 'submitted', `Paged Person ${tag} ${String(i).padStart(2, '0')}`)

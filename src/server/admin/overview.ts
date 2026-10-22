@@ -2,6 +2,7 @@ import { count, desc, eq, inArray } from 'drizzle-orm'
 import { db } from '@/db/client'
 import { applications, auditLogs, enquiries, users } from '@/db/schema'
 import { canAccessArea, type StaffRole } from '@/server/auth/roles'
+import { IN_PROGRESS_STATUSES } from '@/server/applications/review-constants'
 
 export type Overview = {
   /** Present only for the areas this role may see; the rest are left out, not zeroed. */
@@ -22,7 +23,7 @@ export async function getOverview(role: StaffRole): Promise<Overview> {
     const [inProgress] = await db
       .select({ value: count() })
       .from(applications)
-      .where(inArray(applications.status, ['under_review', 'shortlisted', 'interview', 'waitlisted']))
+      .where(inArray(applications.status, [...IN_PROGRESS_STATUSES]))
     out.applicationsAwaitingReview = awaiting?.value ?? 0
     out.applicationsInProgress = inProgress?.value ?? 0
   }

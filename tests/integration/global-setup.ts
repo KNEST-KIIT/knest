@@ -132,10 +132,9 @@ ${roleStep.stderr.slice(-800)}`)
   //    directory so Payload's relative media directory lands there, not in the repo.
   let server: ChildProcess | null = null
   if (existsSync(path.join(ROOT, '.next', 'BUILD_ID'))) {
-    server = spawn('npx', ['next', 'start', ROOT, '-p', String(port), '-H', '127.0.0.1'], {
+    server = spawn(process.execPath, [path.join(ROOT, 'node_modules/next/dist/bin/next'), 'start', ROOT, '-p', String(port), '-H', '127.0.0.1'], {
       cwd: work,
       env: { ...env, DATABASE_URL: runtimeUrl.toString(), NODE_ENV: 'production', PATH: process.env.PATH },
-      shell: true,
       stdio: ['ignore', 'pipe', 'pipe'],
     })
     const log: string[] = []

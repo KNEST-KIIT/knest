@@ -10,10 +10,10 @@ import { absoluteUrl } from '@/lib/site-url'
  */
 const STATUS_SUBJECT = (program: string) => `Your application to ${program} — an update`
 
-export function applicationReceivedTemplate(program: string) {
+export function applicationReceivedTemplate(program: string, applicationId?: string) {
   return {
     subject: `We've got your application to ${program}`,
-    text: `Thanks for applying to ${program}. Your application is in and our team will read it. We'll be in touch by the date shown on your dashboard.\n\nYou can track its status any time at ${absoluteUrl('/dashboard/applications')}.`,
+    text: `Thanks for applying to ${program}. Your application is in and our team will read it. We'll notify you when its status changes or if we need anything else.\n\nYou can track its status any time at ${absoluteUrl(applicationId ? `/dashboard/applications/${encodeURIComponent(applicationId)}` : '/dashboard/applications')}.`,
   }
 }
 
@@ -22,7 +22,7 @@ const STATUS_BODY: Record<(typeof applicationStatus.enumValues)[number], (progra
   submitted: (program) => `We've got your application to ${program}. We'll be in touch.`,
   under_review: (program) => `Someone is reading your application to ${program} now.`,
   shortlisted: (program) => `Good news: you've been shortlisted for ${program}.`,
-  interview: (program) => `We'd like to talk. Check your dashboard for interview details for ${program}.`,
+  interview: (program) => `We'd like to talk about your application to ${program}. Our team will contact you to arrange the next step.`,
   accepted: (program) => `You're in. Welcome to ${program}.`,
   waitlisted: (program) =>
     `You're on the waitlist for ${program}. Not a no — we'll be in touch if a place opens.`,
@@ -33,10 +33,11 @@ const STATUS_BODY: Record<(typeof applicationStatus.enumValues)[number], (progra
 export function applicationStatusChangedTemplate(
   program: string,
   status: (typeof applicationStatus.enumValues)[number],
+  applicationId?: string,
 ) {
   return {
     subject: STATUS_SUBJECT(program),
-    text: `${STATUS_BODY[status](program)}\n\nSee the full update at ${absoluteUrl('/dashboard/applications')}.`,
+    text: `${STATUS_BODY[status](program)}\n\nSee the full update at ${absoluteUrl(applicationId ? `/dashboard/applications/${encodeURIComponent(applicationId)}` : '/dashboard/applications')}.`,
   }
 }
 

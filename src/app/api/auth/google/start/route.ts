@@ -3,6 +3,7 @@ import { signIn } from '@/server/auth'
 import { googleConfigured } from '@/server/auth/providers'
 import { safeNext } from '@/lib/safe-next'
 import { limitByIp } from '@/server/security/route-limits'
+import { currentLinkSession } from '@/server/auth/google-link'
 
 /**
  * Begins Google sign-in. Auth.js starts the OAuth exchange only on a POST, so the Google
@@ -20,12 +21,13 @@ export async function POST(request: Request) {
   }
   const failure = () => NextResponse.redirect(new URL('/login?error=GoogleUnavailable', origin), 303)
   if (!googleConfigured()) return failure()
+  if (await currentLinkSession()) return NextResponse.redirect(new URL('/dashboard/account', origin), 303)
 
   const form = await request.formData().catch(() => null)
   const next = safeNext(typeof form?.get('next') === 'string' ? (form.get('next') as string) : null)
 
   try {
-    const url = await signIn('google', { redirectTo: next ?? '/dashboard', redirect: false })
+    const url = await signIn('google', { redirectTo: next ?? '/auth/complete', redirect: false })
     if (typeof url !== 'string') return failure()
     // 303 so the browser follows with a GET; a 307 would re-send the POST to Google.
     return NextResponse.redirect(url, 303)

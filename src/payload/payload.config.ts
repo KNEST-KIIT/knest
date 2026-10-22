@@ -30,8 +30,7 @@ const dirname = path.dirname(fileURLToPath(import.meta.url))
 export default buildConfig({
   // `admin.user` must point at an auth-enabled collection. Ours is a read-only
   // mirror: real accounts live in app.users (spec §32).
-  // No `meta.titleSuffix`: the root layout's title template already appends
-  // "— KNEST", and setting both produces "Dashboard — KNEST — KNEST".
+  // Payload owns a separate root document, so its own title suffix is applied once.
   admin: {
     user: Staff.slug,
     components: {

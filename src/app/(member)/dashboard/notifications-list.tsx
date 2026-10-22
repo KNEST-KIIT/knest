@@ -72,7 +72,7 @@ export function NotificationsList({ notifications }: { notifications: Notificati
       <ul className="mt-4 flex flex-col divide-y divide-[var(--color-line)]">
         {items.map((n) => (
           <li key={n.id} className="flex items-start justify-between gap-4 py-3">
-            <div>
+            <div className="min-w-0 flex-1 [overflow-wrap:anywhere]">
               {n.href ? (
                 <Link href={n.href} className="font-medium hover:underline">
                   {n.title}

@@ -54,7 +54,7 @@ export function NextStepCard({
         <div className="mt-8 flex flex-col sm:flex-row gap-4">
           <Link
             href={actionHref}
-            className="group/btn relative inline-flex h-14 items-center justify-center overflow-hidden rounded-full bg-white px-8 font-medium text-[var(--color-ink)] shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)] transition-transform hover:scale-105"
+            className="group/btn relative inline-flex min-h-14 items-center justify-center overflow-hidden rounded-full bg-white px-8 py-3 text-center font-medium text-[var(--color-ink)] shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)] transition-transform hover:scale-105"
           >
             <span className="relative z-10">{actionLabel}</span>
             <div className="absolute inset-0 -z-0 bg-gradient-to-r from-transparent via-black/5 to-transparent translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-700" />

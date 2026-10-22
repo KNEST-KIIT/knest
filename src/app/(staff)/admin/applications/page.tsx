@@ -6,7 +6,7 @@ import { Pagination } from '@/components/ui/pagination'
 import { formatDate } from '@/lib/dates'
 import { pageInfo, parsePage } from '@/lib/pagination'
 import { listApplicationsForReview } from '@/server/applications/review'
-import { REVIEW_PAGE_SIZE } from '@/server/applications/review-constants'
+import { REVIEW_PAGE_SIZE, type ReviewFilterStatus } from '@/server/applications/review-constants'
 import { getContentClient } from '@/server/content/payload-client'
 
 export const metadata: Metadata = { title: 'Applications — Admin' }
@@ -64,7 +64,8 @@ export default async function AdminApplicationsPage({
   const payload = await getContentClient()
   const programs = await payload.find({ collection: 'programs', limit: 100, depth: 0, overrideAccess: false })
 
-  const status = params.status && params.status in STATUS_LABELS ? (params.status as never) : undefined
+  const status: ReviewFilterStatus | undefined = params.status === 'in_progress' ? 'in_progress'
+    : params.status && Object.hasOwn(STATUS_LABELS, params.status) ? params.status as ReviewFilterStatus : undefined
   const result = await listApplicationsForReview({
     programId: params.program ? Number(params.program) || undefined : undefined,
     status,
@@ -88,6 +89,7 @@ export default async function AdminApplicationsPage({
       <Heading as="h1" size="title">
         Applications
       </Heading>
+      <p className="mt-2 text-sm text-[var(--color-ink-soft)]">{result.total} {result.total === 1 ? 'application' : 'applications'}{params.q || params.program || params.status ? ' match these filters' : ' in the review queue'}. Student drafts stay private until submission.</p>
 
       <form className="mt-6 flex flex-wrap gap-4" method="get" role="search" aria-label="Filter applications">
         <label className="sr-only" htmlFor="q">
@@ -117,6 +119,7 @@ export default async function AdminApplicationsPage({
         </label>
         <select id="status" name="status" defaultValue={params.status ?? ''} className="h-11 rounded-[var(--radius-sm)] border border-[var(--color-line-strong)] bg-white px-3">
           <option value="">All statuses</option>
+          <option value="in_progress">All in-progress applications</option>
           {Object.entries(STATUS_LABELS).map(([value, label]) => (
             <option key={value} value={value}>
               {label}
@@ -130,7 +133,8 @@ export default async function AdminApplicationsPage({
 
       {result.rows.length === 0 ? (
         <div className="mt-8">
-          <EmptyState heading="Nothing here yet" body="Submitted applications matching this filter will appear here." size="compact" />
+          <EmptyState heading={params.q || params.program || params.status ? 'No applications match these filters' : 'No submitted applications yet'} body="Submitted applications appear here for the review team. Drafts are not shown." size="compact" />
+          {(params.q || params.program || params.status) && <Link href="/admin/applications" className="mt-4 inline-block font-semibold text-[var(--color-signal)] underline">Clear filters</Link>}
         </div>
       ) : (
         <>

@@ -4,7 +4,7 @@ import { compare, hash } from 'bcryptjs'
 import { eq } from 'drizzle-orm'
 import { db } from '@/db/client'
 import { sessions, users } from '@/db/schema'
-import { accountExistsTemplate, resetPasswordTemplate, verifyEmailTemplate } from '@/server/email/templates'
+import { accountExistsTemplate, resetPasswordTemplate, setupPasswordTemplate, verifyEmailTemplate } from '@/server/email/templates'
 import { sendEmail } from '@/server/email/send'
 import { consumeToken, issueToken } from './tokens'
 import { DUMMY_HASH } from './dummy-hash'
@@ -108,7 +108,8 @@ export async function sendVerificationEmail(emailInput: string, next?: string | 
   if (!user || user.emailVerified) return { ok: true }
 
   const token = await issueToken('verify-email', parsed.data, VERIFY_TTL_MS)
-  const nextParam = next ? `&next=${encodeURIComponent(next)}` : ''
+  const returnTo = safeNext(next)
+  const nextParam = returnTo ? `&next=${encodeURIComponent(returnTo)}` : ''
   const link = `${siteUrl()}/verify/confirm?email=${encodeURIComponent(parsed.data)}&token=${token}${nextParam}`
   const { subject, text } = verifyEmailTemplate(link)
   await sendEmail({ to: parsed.data, subject, text })
@@ -136,17 +137,18 @@ export async function confirmEmailVerification(emailInput: string, token: string
   return { ok: true }
 }
 
-export async function requestPasswordReset(emailInput: string): Promise<AuthResult> {
+export async function requestPasswordReset(emailInput: string, next?: string | null): Promise<AuthResult> {
   const parsed = emailSchema.safeParse(emailInput)
   if (!parsed.success) return { ok: false, error: 'That doesn’t look like an email address.' }
 
   const user = await db.query.users.findFirst({ where: eq(users.email, parsed.data) })
   // Identical response either way (CONTENT_SPEC.md §3) — confirming an account
   // exists here is an enumeration channel.
-  if (user?.passwordHash) {
+  if (user?.isActive && (user.passwordHash || user.emailVerified)) {
     const token = await issueToken('reset-password', parsed.data, RESET_TTL_MS)
-    const link = `${siteUrl()}/reset/confirm?email=${encodeURIComponent(parsed.data)}&token=${token}`
-    const { subject, text } = resetPasswordTemplate(link)
+    const returnTo = safeNext(next)
+    const link = `${siteUrl()}/reset/confirm?email=${encodeURIComponent(parsed.data)}&token=${token}${returnTo ? `&next=${encodeURIComponent(returnTo)}` : ''}`
+    const { subject, text } = user.passwordHash ? resetPasswordTemplate(link) : setupPasswordTemplate(link)
     await sendEmail({ to: parsed.data, subject, text }).catch((error) => {
       console.error('Failed to send reset email:', error)
     })

@@ -2,13 +2,15 @@
 
 import { formRequest } from '@/lib/form-request'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 
 /** Buttons on one of the member's own bookings: cancel, or answer a suggested alternative time. */
 export function BookingActions({ id, status }: { id: string; status: string }) {
   const router = useRouter()
-  const [pending, setPending] = useState(false)
+  const [saving, setPending] = useState(false)
+  const [refreshing, startRefresh] = useTransition()
+  const pending = saving || refreshing
   const [error, setError] = useState<string | null>(null)
 
   async function call(path: string, body: unknown) {
@@ -21,7 +23,7 @@ export function BookingActions({ id, status }: { id: string; status: string }) {
       setError(data?.error ?? 'That did not go through. Try again.')
       return
     }
-    router.refresh()
+    startRefresh(() => router.refresh())
   }
 
   const button = 'h-9 rounded-[var(--radius-sm)] border border-[var(--color-line-strong)] bg-white px-3 text-[length:var(--text-small)] font-medium'

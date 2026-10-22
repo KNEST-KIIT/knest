@@ -4,7 +4,7 @@ import { and, count, desc, eq, ilike, inArray, ne, or } from 'drizzle-orm'
 import { db } from '@/db/client'
 import { applicationAnswers, applicationDocuments, applications, auditLogs, users } from '@/db/schema'
 import { likePattern } from '@/lib/pagination'
-import { REVIEW_PAGE_SIZE } from './review-constants'
+import { IN_PROGRESS_STATUSES, REVIEW_PAGE_SIZE, type ReviewFilterStatus } from './review-constants'
 import type { applicationStatus } from '@/db/schema'
 import { requireAdminArea, requireStaffOrThrow } from '@/server/auth/guards'
 import { sendNotificationEmail, writeNotification } from '@/server/notifications/send'
@@ -24,12 +24,13 @@ const MAX_DECISION_NOTE = 2000
  * and is not for staff to read), newest submission first, filterable by program and status and
  * searchable by applicant name or e-mail, one page at a time.
  */
-export async function listApplicationsForReview(filters: { programId?: number; status?: Status; q?: string; page?: number }) {
+export async function listApplicationsForReview(filters: { programId?: number; status?: ReviewFilterStatus; q?: string; page?: number }) {
   await requireAdminArea('applications')
 
   const conditions = [ne(applications.status, 'draft')]
   if (filters.programId) conditions.push(eq(applications.programId, filters.programId))
-  if (filters.status && filters.status !== 'draft') conditions.push(eq(applications.status, filters.status))
+  if (filters.status === 'in_progress') conditions.push(inArray(applications.status, [...IN_PROGRESS_STATUSES]))
+  else if (filters.status) conditions.push(eq(applications.status, filters.status))
   const q = filters.q?.trim()
   if (q) {
     const pattern = likePattern(q)
@@ -74,9 +75,13 @@ export async function getApplicationForReview(applicationId: string) {
   if (!application) return null
 
   const program = await getApplicationProgram(application.programId, { includeUnpublished: true })
-  const [answers, documents] = await Promise.all([
+  const [answers, documents, history] = await Promise.all([
     db.query.applicationAnswers.findMany({ where: eq(applicationAnswers.applicationId, applicationId) }),
     db.query.applicationDocuments.findMany({ where: eq(applicationDocuments.applicationId, applicationId) }),
+    db.select({ id: auditLogs.id, action: auditLogs.action, createdAt: auditLogs.createdAt, after: auditLogs.after, actorName: users.name })
+      .from(auditLogs).leftJoin(users, eq(auditLogs.actorUserId, users.id))
+      .where(and(eq(auditLogs.entityType, 'application'), eq(auditLogs.entityId, applicationId)))
+      .orderBy(desc(auditLogs.createdAt), desc(auditLogs.id)).limit(30),
   ])
 
   // Review shows what the applicant was actually asked: the questions frozen at
@@ -98,6 +103,12 @@ export async function getApplicationForReview(applicationId: string) {
     program: asSubmitted,
     answers,
     documents,
+    history: history.map((entry) => {
+      const after = entry.after && typeof entry.after === 'object' ? entry.after as Record<string, unknown> : {}
+      return { id: entry.id, action: entry.action, createdAt: entry.createdAt, actorName: entry.actorName,
+        status: typeof after.status === 'string' ? after.status : '',
+        note: typeof after.note === 'string' ? after.note : null }
+    }),
   }
 }
 
@@ -131,13 +142,13 @@ export async function changeApplicationStatus(
   }
 
   const program = await getApplicationProgram(application.programId, { includeUnpublished: true })
-  const { subject, text } = applicationStatusChangedTemplate(program?.title ?? 'your program', newStatus)
+  const { subject, text } = applicationStatusChangedTemplate(program?.title ?? 'your program', newStatus, applicationId)
   const notifyInput = {
     userId: application.userId,
     type: 'application_status_changed' as const,
     title: subject,
     body: text,
-    href: '/dashboard/applications',
+    href: `/dashboard/applications/${applicationId}`,
     applicationId,
     email: { subject, text },
   }

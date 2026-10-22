@@ -72,7 +72,7 @@ export async function answerOnboarding(page: Page) {
 }
 
 /** The closing button of onboarding, whatever the recommender chose to call it. */
-export const ONBOARDING_CTA = /find a program|see programs|see what.s on|get in touch|complete profile/i
+export const ONBOARDING_CTA = /find a program|see programs|see what.s on|get in touch|complete profile|continue to your application|open your dashboard/i
 
 /** The verification path (with its query) inside a mail body. The host in the mail is the build machine's, so only the path is used. */
 export function verifyPathIn(text: string): string {

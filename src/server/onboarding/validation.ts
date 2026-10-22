@@ -63,7 +63,7 @@ export const stepProfileSchema = z.object({
   graduationYear: z.coerce.number().int().min(1990).max(2100).optional(),
   linkedinUrl: z.string().trim().url('That doesn’t look like a URL.').optional().or(z.literal('')),
   bio: z.string().trim().max(500).optional(),
-  skills: z.array(z.string()).default([]),
+  skills: z.array(z.string()).optional(),
 })
 
 export const stepMentorProfileSchema = z.object({

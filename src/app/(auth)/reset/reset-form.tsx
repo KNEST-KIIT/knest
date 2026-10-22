@@ -1,13 +1,16 @@
 'use client'
 
 import { formRequest } from '@/lib/form-request'
+import { useClientReady } from '@/lib/use-client-ready'
 
 import { useState } from 'react'
 import { Field, Input } from '@/components/ui'
 import { Button } from '@/components/ui/button'
 import { TurnstileWidget } from '@/components/security/turnstile-widget'
 
-export function ResetForm({ turnstileSiteKey }: { turnstileSiteKey: string }) {
+export function ResetForm({ turnstileSiteKey, next }: { turnstileSiteKey: string; next?: string | null }) {
+  const ready = useClientReady()
+  const loginHref = next ? `/login?next=${encodeURIComponent(next)}` : '/login'
   const [pending, setPending] = useState(false)
   const [sent, setSent] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -23,7 +26,7 @@ export function ResetForm({ turnstileSiteKey }: { turnstileSiteKey: string }) {
     const res = await formRequest('/api/auth/password/reset/request', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: form.get('email'), turnstileToken: captchaToken }),
+      body: JSON.stringify({ email: form.get('email'), turnstileToken: captchaToken, next }),
     })
     // The endpoint answers the same whether or not the account exists, but a failed human
     // check is a different thing and must be shown, or the person waits for mail that was never sent.
@@ -56,7 +59,7 @@ export function ResetForm({ turnstileSiteKey }: { turnstileSiteKey: string }) {
           If there&rsquo;s an account for that address, the recovery link is on its way. Please check your inbox and spam folder.
         </p>
         <div className="mt-8 pt-6 border-t border-[var(--color-line)]/60 text-center">
-          <a href="/login" className="text-sm font-semibold text-[var(--color-signal)] hover:underline">
+          <a href={loginHref} className="text-sm font-semibold text-[var(--color-signal)] hover:underline">
             ← Return to log in
           </a>
         </div>
@@ -78,7 +81,8 @@ export function ResetForm({ turnstileSiteKey }: { turnstileSiteKey: string }) {
         </p>
       </div>
 
-      <form onSubmit={onSubmit} className="mt-5 flex flex-col gap-5" noValidate>
+      <form method="post" onSubmit={onSubmit} className="mt-5" noValidate aria-busy={pending}>
+        <fieldset disabled={!ready || pending} className="flex min-w-0 flex-col gap-5">
         <Field label="Institutional email">
           {(fieldProps) => (
             <Input 
@@ -104,7 +108,7 @@ export function ResetForm({ turnstileSiteKey }: { turnstileSiteKey: string }) {
           type="submit" 
           size="lg" 
           fullWidth 
-          disabled={pending || captchaPending}
+          disabled={!ready || pending || captchaPending}
           aria-busy={pending}
           className={`${pending ? 'disabled:opacity-100 disabled:cursor-progress ' : ''}mt-2 text-sm font-semibold tracking-wide uppercase bg-gradient-to-r from-[var(--color-signal)] to-[#5a141e] hover:from-[#8f2433] hover:to-[var(--color-signal)] shadow-md hover:shadow-lg transition-all duration-300`}
         >
@@ -120,10 +124,11 @@ export function ResetForm({ turnstileSiteKey }: { turnstileSiteKey: string }) {
             'Send Recovery Link →'
           )}
         </Button>
+        </fieldset>
       </form>
 
       <div className="mt-8 pt-6 border-t border-[var(--color-line)]/60 text-center">
-        <a href="/login" className="text-sm font-semibold text-[var(--color-signal)] hover:underline transition-all">
+        <a href={loginHref} className="text-sm font-semibold text-[var(--color-signal)] hover:underline transition-all">
           ← Back to log in
         </a>
       </div>

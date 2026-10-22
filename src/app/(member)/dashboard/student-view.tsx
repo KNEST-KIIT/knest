@@ -1,4 +1,4 @@
-import { EmptyState, Heading, LinkCard } from '@/components/ui'
+import { ButtonLink, EmptyState, Heading, LinkCard } from '@/components/ui'
 import { formatEventTime, monthAndDay } from '@/lib/dates'
 import { RESOURCES_EMPTY } from '@/lib/empty-state-copy'
 import { pathHref } from '@/server/onboarding/destination'
@@ -42,7 +42,7 @@ export async function StudentDashboard({ user }: { user: SessionUser }) {
             Events for you
           </Heading>
           {events.length === 0 ? (
-            <EmptyState headingLevel="h3" className="mt-2 flex-1 border-none shadow-none" heading="No events match your stage yet." body="New sessions are added regularly. Browse all events to see what is on." />
+            <EmptyState headingLevel="h3" className="mt-2 flex-1 border-none shadow-none" heading="No events match your stage yet." body="Browse all events to see what is on." action={<ButtonLink href="/events" variant="secondary">Browse all events</ButtonLink>} />
           ) : (
             <div className="flex flex-col gap-4">
               {events.slice(0, 3).map((event) => {

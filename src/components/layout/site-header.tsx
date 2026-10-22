@@ -140,6 +140,7 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
                   </span>
                 )}
               </div>
+              <Link href="/dashboard/account" className="px-2 text-sm font-medium text-[var(--color-ink-soft)] hover:underline">Account</Link>
               <LogoutButton className="inline-flex h-9 items-center whitespace-nowrap rounded-lg px-3 text-sm font-medium text-[var(--color-ink-soft)] transition-colors hover:bg-black/[0.04] hover:text-[var(--color-ink)]" />
             </>
           ) : (
@@ -215,6 +216,7 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
                 >
                   Dashboard{unreadCount > 0 && ` (${unreadCount > 9 ? '9+' : unreadCount})`}
                 </ButtonLink>
+                <Link href="/dashboard/account" className="py-2 text-center font-medium">Account</Link>
                 <LogoutButton className="inline-flex h-12 w-full items-center justify-center rounded-lg border border-[var(--color-line-strong)] text-base font-medium text-[var(--color-ink)]" />
               </>
             ) : (

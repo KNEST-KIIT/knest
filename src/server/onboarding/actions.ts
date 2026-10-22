@@ -85,10 +85,10 @@ export async function saveProfileStep(input: unknown): Promise<StepResult> {
     .set({
       name: parsed.data.name,
       school: parsed.data.school || null,
-      graduationYear: parsed.data.graduationYear ?? null,
+      ...(parsed.data.graduationYear !== undefined ? { graduationYear: parsed.data.graduationYear } : {}),
       linkedinUrl: parsed.data.linkedinUrl || null,
       bio: parsed.data.bio || null,
-      skills: parsed.data.skills,
+      ...(parsed.data.skills !== undefined ? { skills: parsed.data.skills } : {}),
       updatedAt: new Date(),
     })
     .where(eq(users.id, user.id))
@@ -108,7 +108,7 @@ export async function saveMentorProfileStep(input: unknown): Promise<StepResult>
       name: parsed.data.name,
       organization: parsed.data.organization || null,
       expertiseAreas: parsed.data.expertiseAreas,
-      yearsOfExperience: parsed.data.yearsOfExperience ?? null,
+      ...(parsed.data.yearsOfExperience !== undefined ? { yearsOfExperience: parsed.data.yearsOfExperience } : {}),
       mentorAvailability: parsed.data.mentorAvailability,
       linkedinUrl: parsed.data.linkedinUrl || null,
       updatedAt: new Date(),

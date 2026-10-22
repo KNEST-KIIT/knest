@@ -34,7 +34,7 @@ export default async function AdminOverviewPage() {
           <Figure label="Applications awaiting a first look" value={overview.applicationsAwaitingReview} href="/admin/applications?status=submitted" />
         )}
         {overview.applicationsInProgress !== undefined && (
-          <Figure label="Applications in progress" value={overview.applicationsInProgress} href="/admin/applications" />
+          <Figure label="Applications in progress" value={overview.applicationsInProgress} href="/admin/applications?status=in_progress" />
         )}
         {overview.newEnquiries !== undefined && <Figure label="New enquiries" value={overview.newEnquiries} href="/admin/enquiries?status=new" />}
         {overview.activeMembers !== undefined && <Figure label="Active accounts" value={overview.activeMembers} href="/admin/members" />}

@@ -21,10 +21,12 @@ export function RegisterButton({
   const [registered, setRegistered] = useState(initiallyRegistered)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [confirmation, setConfirmation] = useState<string | null>(null)
 
   async function toggle() {
     setPending(true)
     setError(null)
+    setConfirmation(null)
     const endpoint = registered ? 'unregister' : 'register'
     const res = await formRequest(`/api/events/${eventId}/${endpoint}`, { method: 'POST' })
     const data = await res.json().catch(() => ({}))
@@ -39,6 +41,7 @@ export function RegisterButton({
       return
     }
     setRegistered((r) => !r)
+    setConfirmation(registered ? 'Your registration is cancelled.' : 'You’re registered. Your event details are saved in Your events.')
     router.refresh()
   }
 
@@ -61,6 +64,8 @@ export function RegisterButton({
         {pending ? 'Saving…' : registered ? 'Cancel registration' : 'Register'}
       </Button>
       {error && <p role="alert" className="mt-2 text-[length:var(--text-small)] text-[var(--color-critical)]">{error}</p>}
+      {confirmation && <p role="status" className="mt-3 text-sm">{confirmation}</p>}
+      {registered && <a href="/dashboard/events" className="mt-3 inline-block text-sm text-[var(--color-signal)] underline">Your events</a>}
     </div>
   )
 }

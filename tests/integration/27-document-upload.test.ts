@@ -87,6 +87,38 @@ beforeAll(async () => {
 afterAll(closeDb)
 
 describe('uploading an application document', () => {
+  it('lets only the owner download their own attachment and open their saved application', async () => {
+    const owner = await startDraft('owner-receipt')
+    const other = await startDraft('other-receipt')
+    await upload(owner.applicationId, owner.me, { name: 'concept.pdf', type: 'application/pdf', bytes: PDF })
+    const path = `/api/applications/${owner.applicationId}/documents/${fileQuestionId}`
+    const draft = await get(path, owner.me)
+    expect(draft.status).toBe(200)
+    expect(draft.headers.get('cache-control')).toContain('no-store')
+    expect(Buffer.from(await draft.arrayBuffer()).equals(PDF)).toBe(true)
+    expect((await get(path, other.me)).status).toBe(404)
+    expect((await get(path, null)).status).toBe(401)
+    // Next may have started streaming the member layout before notFound(), yielding a soft 404.
+    // The security boundary is that no receipt or attachment data is serialized to that user.
+    const denied = await get(`/dashboard/applications/${owner.applicationId}`, other.me)
+    const deniedHtml = await denied.text()
+    expect([200, 404]).toContain(denied.status)
+    expect(deniedHtml).not.toContain('concept.pdf')
+    expect(deniedHtml).not.toContain('What you submitted')
+    await post(`/api/applications/${owner.applicationId}/submit`, owner.me, CAPTCHA)
+    await post(`/api/admin/applications/${owner.applicationId}/status`, staff, { status: 'under_review', note: 'STAFF-PRIVATE-RECEIPT-NOTE' })
+    const notices = (await db().query('select href from app.notifications where application_id=$1', [owner.applicationId])).rows
+    expect(notices.length).toBe(2)
+    expect(notices.every((notice) => notice.href === `/dashboard/applications/${owner.applicationId}`)).toBe(true)
+    const receipt = await get(`/dashboard/applications/${owner.applicationId}`, owner.me)
+    const html = await receipt.text()
+    expect(receipt.status).toBe(200)
+    expect(html).toContain('What you submitted')
+    expect(html).toContain('concept.pdf')
+    expect(html).not.toContain('password_hash')
+    expect(html).not.toContain('STAFF-PRIVATE-RECEIPT-NOTE')
+    expect((await get(path, owner.me)).status).toBe(200)
+  })
   it('rejects an unknown question before storing any object', async () => {
     const { me, applicationId } = await startDraft('unknown-question')
     const before = storedObjects().length

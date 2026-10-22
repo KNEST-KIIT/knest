@@ -1,4 +1,4 @@
-import { EmptyState, Heading, LinkCard } from '@/components/ui'
+import { ButtonLink, EmptyState, Heading, LinkCard } from '@/components/ui'
 import { formatDate } from '@/lib/dates'
 import { RESOURCES_EMPTY } from '@/lib/empty-state-copy'
 import { listApplicationsForUser } from '@/server/applications/actions'
@@ -27,7 +27,7 @@ export async function FounderDashboard({ user }: { user: SessionUser }) {
             heading={nextMilestone?.label ?? program?.title ?? 'Start Your Application'}
             body={nextMilestone?.description || (program ? `You're in ${program.title}. Keep building!` : 'Find a program to accelerate your startup.')}
             actionLabel={program ? 'View Program Details' : 'Browse Programs'}
-            actionHref={program ? '/dashboard/applications' : '/programs'}
+            actionHref={program ? `/programs/${program.slug}` : '/programs'}
           />
         </div>
         {isLabBookingEnabled() && (
@@ -56,7 +56,7 @@ export async function FounderDashboard({ user }: { user: SessionUser }) {
             <EmptyState headingLevel="h3" className="mt-2 flex-1 border-none shadow-none" heading="Nothing here yet." body="You haven't applied to anything yet." />
           ) : (
             <div className="flex flex-col gap-3">
-              {applications.slice(0, 4).map(({ application, programTitle }) => (
+              {applications.slice(0, 4).map(({ application, programTitle, programSlug }) => (
                 <div
                   key={application.id}
                   className="flex flex-col gap-2 rounded-lg border border-[var(--color-line)] bg-[var(--color-paper-soft)] p-4 hover:border-[var(--color-signal)]/50 transition-colors"
@@ -68,6 +68,9 @@ export async function FounderDashboard({ user }: { user: SessionUser }) {
                   <p className="text-[length:var(--text-small)] text-[var(--color-ink-muted)]">
                     {application.submittedAt ? `Submitted ${formatDate(application.submittedAt)}` : 'Not submitted'}
                   </p>
+                  <ButtonLink href={application.status === 'draft' && programSlug ? `/apply/${programSlug}` : `/dashboard/applications/${application.id}`} variant="secondary" size="sm">
+                    {application.status === 'draft' ? 'Continue application' : 'View application'}
+                  </ButtonLink>
                 </div>
               ))}
             </div>

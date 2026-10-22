@@ -18,7 +18,7 @@ import { verificationTokens } from '@/db/schema'
  * 256-bit token needs no salt or slow hash; the digest is enough.
  */
 
-type Purpose = 'verify-email' | 'reset-password'
+type Purpose = 'verify-email' | 'reset-password' | 'link-google'
 
 function scopedIdentifier(purpose: Purpose, email: string): string {
   return `${purpose}:${email}`

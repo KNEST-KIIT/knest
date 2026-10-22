@@ -260,13 +260,13 @@ export async function submitApplication(applicationId: string): Promise<ActionRe
   // the dashboard to show. The email send stays outside the transaction:
   // it already tolerates failure on its own (sendNotificationEmail never
   // throws) and must not hold a DB transaction open on a network call.
-  const { subject, text } = applicationReceivedTemplate(program.title)
+  const { subject, text } = applicationReceivedTemplate(program.title, applicationId)
   const notifyInput = {
     userId: sessionUser.id,
     type: 'application_received' as const,
     title: `We've got your application to ${program.title}`,
     body: `We'll be in touch. You can track its status any time.`,
-    href: '/dashboard/applications',
+    href: `/dashboard/applications/${applicationId}`,
     applicationId,
     email: { subject, text },
   }
@@ -350,7 +350,7 @@ export async function getOwnedApplicationDetail(applicationId: string, userId: s
 
   // After submission the applicant sees the questions they actually answered.
   const asSubmitted =
-    application.questionSnapshot && program ? { ...program, questions: application.questionSnapshot } : program
+    application.questionSnapshot ? { ...program, title: program?.title ?? 'Program no longer available', questions: application.questionSnapshot } : program
 
   return {
     application: {
@@ -358,6 +358,7 @@ export async function getOwnedApplicationDetail(applicationId: string, userId: s
       programId: application.programId,
       status: application.status,
       submittedAt: application.submittedAt,
+      updatedAt: application.updatedAt,
     },
     program: asSubmitted,
     answers,

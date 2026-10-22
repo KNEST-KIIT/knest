@@ -1,6 +1,16 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { applicationReceivedTemplate, applicationStatusChangedTemplate } from './templates'
 
+it('does not promise a response date or interview details that the platform does not hold', () => {
+  expect(applicationReceivedTemplate('Incubate').text).not.toContain('by the date')
+  expect(applicationStatusChangedTemplate('Incubate', 'interview').text).toContain('contact you to arrange')
+})
+
+it('links application updates directly to the matching receipt', () => {
+  expect(applicationReceivedTemplate('Incubate', 'application-123').text).toContain('/dashboard/applications/application-123')
+  expect(applicationStatusChangedTemplate('Incubate', 'under_review', 'application-123').text).toContain('/dashboard/applications/application-123')
+})
+
 const original = process.env.NEXT_PUBLIC_SITE_URL
 afterEach(() => {
   if (original === undefined) delete process.env.NEXT_PUBLIC_SITE_URL

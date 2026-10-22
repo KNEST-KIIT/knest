@@ -13,7 +13,7 @@ export function pathHref(path: RecommendedPath | string, stage: JourneyStage | s
     case 'EXPLORE':
       return '/events'
     case 'CONNECT':
-      return '/about#contact'
+      return '/contact?topic=partnership'
     case 'MENTOR':
       // A mentor's profile is reviewed by staff (USER_JOURNEYS journey 4); their
       // dashboard says so. There is no /profile page (HD-13).
@@ -49,11 +49,12 @@ export function completionDestination(
 }
 
 /** The /onboarding URL that preserves where the person was going. */
-export function onboardingUrl(opts: { next?: string | null; stage?: string | null }): string {
+export function onboardingUrl(opts: { next?: string | null; stage?: string | null; step?: string | null }): string {
   const params = new URLSearchParams()
   const next = onboardingReturnPath(opts.next)
   if (opts.stage) params.set('stage', opts.stage)
   if (next) params.set('next', next)
+  if (opts.step && ['role', 'goals', 'stage', 'interests', 'profile', 'mentor-profile', 'recommendation'].includes(opts.step)) params.set('step', opts.step)
   const qs = params.toString()
   return qs ? `/onboarding?${qs}` : '/onboarding'
 }

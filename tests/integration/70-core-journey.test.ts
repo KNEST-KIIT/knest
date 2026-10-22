@@ -69,7 +69,7 @@ async function answerOnboarding(page: Page) {
   await step(page, () => page.getByRole('button', { name: 'Continue' }).click())
 }
 
-const CTA = /find a program|see programs|see what.s on|get in touch|complete profile/i
+const CTA = /find a program|see programs|see what.s on|get in touch|complete profile|continue to your application|open your dashboard/i
 
 async function signUp(page: Page, email: string, next?: string) {
   await signUpThroughForm(page, { name: 'Journey Person', email, next })

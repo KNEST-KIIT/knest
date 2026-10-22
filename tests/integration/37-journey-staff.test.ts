@@ -56,7 +56,7 @@ async function moveTo(page: Page, applicationId: string, label: string, status: 
     page.waitForResponse((r) => r.url().includes(`/api/admin/applications/${applicationId}/status`) && r.ok()),
     page.getByRole('button', { name: 'Update status' }).click(),
   ])
-  await page.locator('strong', { hasText: new RegExp(`^${status}$`) }).waitFor({ timeout: 30_000 })
+  await page.locator('strong', { hasText: new RegExp(`^${status.replaceAll('_', ' ')}$`) }).waitFor({ timeout: 30_000 })
 }
 
 beforeAll(async () => {

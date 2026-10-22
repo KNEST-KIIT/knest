@@ -4,8 +4,9 @@ import http from 'node:http'
 import net from 'node:net'
 import os from 'node:os'
 import path from 'node:path'
+import { createHash, generateKeyPairSync, randomUUID, sign } from 'node:crypto'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { BASE } from '../support/helpers'
+import { BASE, CAPTCHA, PASSWORD, closeDb, createUser, db, decodeMailText, readMail, uniqueIp } from '../support/helpers'
 
 /**
  * Module 6: Google sign-in in its ENABLED state, with no real credentials. A second copy of the
@@ -22,6 +23,48 @@ let oidc: http.Server
 let oidcBase = ''
 let server: ChildProcess | null = null
 let enabledBase = ''
+const providerLog: string[] = []
+type Identity = { sub: string; email: string; email_verified: boolean; name: string }
+let identity: Identity
+const codes = new Map<string, { identity: Identity; challenge: string; redirect: string; nonce: string | null }>()
+const { privateKey, publicKey } = generateKeyPairSync('rsa', { modulusLength: 2048 })
+const jwk = { ...publicKey.export({ format: 'jwk' }), use: 'sig', alg: 'RS256', kid: 'local-google-test' }
+
+function idToken(person: Identity, nonce: string | null) {
+  const encode = (value: unknown) => Buffer.from(JSON.stringify(value)).toString('base64url')
+  const now = Math.floor(Date.now() / 1000)
+  const content = `${encode({ alg: 'RS256', kid: jwk.kid })}.${encode({ ...person, iss: oidcBase, aud: CLIENT_ID, iat: now, exp: now + 300, ...(nonce ? { nonce } : {}) })}`
+  return `${content}.${sign('RSA-SHA256', Buffer.from(content), privateKey).toString('base64url')}`
+}
+
+class CookieJar {
+  values = new Map<string, string>()
+  constructor(cookie = '') { for (const part of cookie.split('; ').filter(Boolean)) this.put(part) }
+  put(part: string) { const at = part.indexOf('='); this.values.set(part.slice(0, at), part.slice(at + 1)) }
+  receive(response: Response) { for (const cookie of response.headers.getSetCookie()) this.put(cookie.split(';')[0]!) }
+  header() { return [...this.values].map(([name, value]) => `${name}=${value}`).join('; ') }
+}
+
+async function begin(jar = new CookieJar(), next = '/events') {
+  const response = await fetch(`${enabledBase}/api/auth/google/start`, {
+    method: 'POST', redirect: 'manual', headers: { 'content-type': 'application/x-www-form-urlencoded', cookie: jar.header(), 'x-forwarded-for': uniqueIp() },
+    body: new URLSearchParams({ next }),
+  })
+  jar.receive(response)
+  return { jar, url: response.headers.get('location')! }
+}
+
+async function finish(url: string, jar: CookieJar, allowConfigurationFailure = false) {
+  const authorization = await fetch(url, { redirect: 'manual' })
+  const response = await fetch(authorization.headers.get('location')!, { redirect: 'manual', headers: { cookie: jar.header() } })
+  jar.receive(response)
+  if (!allowConfigurationFailure && response.headers.get('location')?.includes('error=Configuration')) throw new Error(`OIDC callback configuration failed: ${providerLog.join('').slice(-3500)}`)
+  return response
+}
+
+async function session(jar: CookieJar) {
+  return (await fetch(`${enabledBase}/api/auth/session`, { headers: { cookie: jar.header() } })).json()
+}
 
 function freePort(): Promise<number> {
   return new Promise((resolve, reject) => {
@@ -52,7 +95,7 @@ async function waitFor(url: string, ms: number) {
 beforeAll(async () => {
   if (!existsSync(path.join(ROOT, '.next', 'BUILD_ID'))) return
 
-  oidc = http.createServer((req, res) => {
+  oidc = http.createServer(async (req, res) => {
     if (req.url?.startsWith('/.well-known/openid-configuration')) {
       res.writeHead(200, { 'content-type': 'application/json' }).end(
         JSON.stringify({
@@ -67,6 +110,47 @@ beforeAll(async () => {
           code_challenge_methods_supported: ['S256'],
         }),
       )
+      return
+    }
+    const url = new URL(req.url!, oidcBase)
+    if (url.pathname === '/siteverify') {
+      const chunks: Buffer[] = []
+      for await (const chunk of req) chunks.push(Buffer.from(chunk))
+      const form = new URLSearchParams(Buffer.concat(chunks).toString())
+      res.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify({
+        success: form.get('secret') === 'integration-turnstile-secret' && form.get('response') === 'valid-token',
+      }))
+      return
+    }
+    if (url.pathname === '/authorize') {
+      const code = randomUUID()
+      codes.set(code, { identity: { ...identity }, challenge: url.searchParams.get('code_challenge')!, redirect: url.searchParams.get('redirect_uri')!, nonce: url.searchParams.get('nonce') })
+      const callback = new URL(url.searchParams.get('redirect_uri')!)
+      callback.searchParams.set('code', code)
+      callback.searchParams.set('state', url.searchParams.get('state')!)
+      res.writeHead(303, { location: callback.href }).end()
+      return
+    }
+    if (url.pathname === '/token') {
+      const chunks: Buffer[] = []
+      for await (const chunk of req) chunks.push(Buffer.from(chunk))
+      const form = new URLSearchParams(Buffer.concat(chunks).toString())
+      const code = form.get('code')!
+      const grant = codes.get(code)
+      codes.delete(code)
+      if (!grant || form.get('redirect_uri') !== grant.redirect || createHash('sha256').update(form.get('code_verifier') ?? '').digest('base64url') !== grant.challenge) {
+        providerLog.push(JSON.stringify({ grantFound: Boolean(grant), redirectRequested: form.get('redirect_uri'), redirectExpected: grant?.redirect, pkceMatches: Boolean(grant) && createHash('sha256').update(form.get('code_verifier') ?? '').digest('base64url') === grant?.challenge }))
+        res.writeHead(400, { 'content-type': 'application/json' }).end(JSON.stringify({ error: 'invalid_grant' }))
+        return
+      }
+      res.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify({
+        access_token: 'local-identity-test', token_type: 'Bearer', expires_in: 300,
+        id_token: idToken(grant.identity, grant.nonce), scope: 'openid email profile',
+      }))
+      return
+    }
+    if (url.pathname === '/jwks') {
+      res.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify({ keys: [jwk] }))
       return
     }
     res.writeHead(404).end()
@@ -90,6 +174,7 @@ beforeAll(async () => {
     AUTH_GOOGLE_ISSUER: oidcBase,
     TURNSTILE_SECRET_KEY: 'integration-turnstile-secret',
     TURNSTILE_SITE_KEY: 'integration-site-key',
+    TURNSTILE_VERIFY_URL: `${oidcBase}/siteverify`,
     EMAIL_TRANSPORT: 'smtp',
     SMTP_HOST: '127.0.0.1',
     SMTP_PORT: process.env.TEST_SMTP_PORT ?? '2525',
@@ -101,12 +186,13 @@ beforeAll(async () => {
     S3_ACCESS_KEY_ID: 'test-access-key-id',
     S3_SECRET_ACCESS_KEY: 'test-secret-access-key',
   }
-  server = spawn('npx', ['next', 'start', ROOT, '-p', String(port), '-H', '127.0.0.1'], {
+  server = spawn(process.execPath, [path.join(ROOT, 'node_modules/next/dist/bin/next'), 'start', ROOT, '-p', String(port), '-H', '127.0.0.1'], {
     cwd: os.tmpdir(),
     env,
-    shell: true,
-    stdio: 'ignore',
+    stdio: ['ignore', 'pipe', 'pipe'],
   })
+  server.stdout?.on('data', chunk => providerLog.push(String(chunk)))
+  server.stderr?.on('data', chunk => providerLog.push(String(chunk)))
   await waitFor(`${enabledBase}/login`, 90_000)
 }, 150_000)
 
@@ -116,6 +202,7 @@ afterAll(async () => {
     server.kill()
   }
   await new Promise<void>((resolve) => (oidc ? oidc.close(() => resolve()) : resolve()))
+  await closeDb()
 })
 
 const ready = () => Boolean(server)
@@ -178,6 +265,133 @@ describe('Google sign-in, enabled with a stubbed provider', () => {
     if (!ready()) return
     const res = await fetch(`${enabledBase}/login?error=OAuthCallbackError`)
     expect(await res.text()).toContain('Google sign-in didn’t finish')
+  })
+
+  it('completes a verified new identity, marks its email verified and stores no Google tokens', async () => {
+    if (!ready()) throw new Error('A production build is required for OAuth callback acceptance')
+    identity = { sub: 'google-new-person', email: 'Google.New@knest.test', email_verified: true, name: 'Google Test Person' }
+    const flow = await begin()
+    const response = await finish(flow.url, flow.jar)
+    expect(new URL(response.headers.get('location')!).pathname).toBe('/events')
+    const signedIn = await session(flow.jar)
+    expect(signedIn.user.email).toBe('google.new@knest.test')
+    expect(signedIn.user.staffRole).toBeNull()
+    expect(signedIn.user.onboardingComplete).toBe(false)
+    expect(JSON.stringify(signedIn)).not.toMatch(/sessionToken|access_token|passwordHash/)
+    const record = await db().query('select u.email_verified, a.access_token, a.refresh_token, a.id_token from app.users u join app.accounts a on a.user_id=u.id where u.id=$1', [signedIn.user.id])
+    expect(record.rows[0].email_verified).toBeTruthy()
+    expect(record.rows[0].access_token).toBeNull()
+    expect(record.rows[0].refresh_token).toBeNull()
+    expect(record.rows[0].id_token).toBeNull()
+    const returning = await begin()
+    await finish(returning.url, returning.jar)
+    expect((await session(returning.jar)).user.id).toBe(signedIn.user.id)
+  })
+
+  it('rejects an unverified email and a callback missing the state/PKCE cookies', async () => {
+    if (!ready()) throw new Error('A production build is required')
+    identity = { sub: 'google-unverified', email: 'unverified.google@knest.test', email_verified: false, name: 'Unverified' }
+    const flow = await begin()
+    expect((await finish(flow.url, flow.jar)).headers.get('location')).toContain('error=AccessDenied')
+    expect((await session(flow.jar))?.user).toBeUndefined()
+    expect((await db().query('select id from app.users where email=$1', [identity.email])).rowCount).toBe(0)
+    identity = { ...identity, email_verified: true }
+    const lostCookies = await begin()
+    const rejected = await finish(lostCookies.url, new CookieJar(), true)
+    expect(rejected.headers.get('location')).toContain('error=GoogleSessionExpired')
+    expect((await session(lostCookies.jar))?.user).toBeUndefined()
+    const recovery = await fetch(rejected.headers.get('location')!)
+    expect(await recovery.text()).toContain('Select Continue with Google to start again in this tab')
+    const missingPkce = await begin()
+    missingPkce.jar.values.delete('authjs.pkce.code_verifier')
+    expect((await finish(missingPkce.url, missingPkce.jar)).headers.get('location')).toContain('error=GoogleSessionExpired')
+    const tampered = await begin()
+    tampered.jar.put('authjs.state=invalid-state-cookie')
+    expect((await finish(tampered.url, tampered.jar, true)).headers.get('location')).toContain('error=')
+    expect((await session(tampered.jar))?.user).toBeUndefined()
+    // A fresh start recovers without changing or weakening either OAuth check.
+    const retry = await begin()
+    await finish(retry.url, retry.jar)
+    expect((await session(retry.jar)).user.email).toBe(identity.email)
+  })
+
+  it('lets a Google-first member add a password to the same account using a single-use email link', async () => {
+    if (!ready()) throw new Error('A production build is required')
+    identity = { sub: 'google-password-setup', email: 'google-password-setup@knest.test', email_verified: true, name: 'Password Setup' }
+    const flow = await begin()
+    await finish(flow.url, flow.jar)
+    const id = (await session(flow.jar)).user.id
+    const setup = await fetch(`${enabledBase}/api/auth/password/setup`, {
+      method: 'POST', headers: { cookie: flow.jar.header(), 'content-type': 'application/json' }, body: JSON.stringify({ email: 'another-person@knest.test' }),
+    })
+    expect(setup.status).toBe(200)
+    const mail = readMail().filter(m => m.to.includes(identity.email)).at(-1)
+    expect(mail).toBeTruthy()
+    const link = new URL(decodeMailText(mail!.body).match(/http:\/\/[^\s]+\/reset\/confirm\?[^\s]+/)![0])
+    expect(link.searchParams.get('next')).toBe('/dashboard/account')
+    const changed = await fetch(`${enabledBase}/api/auth/password/reset/confirm`, {
+      method: 'POST', headers: { 'content-type': 'application/json', 'x-forwarded-for': uniqueIp() },
+      body: JSON.stringify({ email: identity.email, token: link.searchParams.get('token'), password: PASSWORD }),
+    })
+    expect(changed.status).toBe(200)
+    expect((await session(flow.jar))?.user).toBeUndefined()
+    const passwordLogin = await fetch(`${enabledBase}/api/auth/password/login`, {
+      method: 'POST', headers: { 'content-type': 'application/json', 'x-forwarded-for': uniqueIp() },
+      body: JSON.stringify({ email: identity.email, password: PASSWORD, ...CAPTCHA }),
+    })
+    expect(passwordLogin.status).toBe(200)
+    const passwordJar = new CookieJar()
+    passwordJar.receive(passwordLogin)
+    expect((await session(passwordJar)).user.id).toBe(id)
+    const again = await begin()
+    await finish(again.url, again.jar)
+    expect((await session(again.jar)).user.id).toBe(id)
+    expect((await db().query('select id from app.users where email=$1', [identity.email])).rowCount).toBe(1)
+    expect((await fetch(`${enabledBase}/api/auth/password/setup`, { method: 'POST' })).status).toBe(401)
+  })
+
+  it('does not merge a password account by email; links only after password proof for the same session and email', async () => {
+    if (!ready()) throw new Error('A production build is required')
+    const email = 'google-existing-reviewer@knest.test'
+    const id = await createUser({ email, staffRole: 'reviewer' })
+    identity = { sub: 'google-existing-reviewer', email, email_verified: true, name: 'Reviewer' }
+    const collision = await begin()
+    expect((await finish(collision.url, collision.jar)).headers.get('location')).toContain('error=OAuthAccountNotLinked')
+    const passwordSession = randomUUID()
+    await db().query("insert into app.sessions (session_token,user_id,expires) values ($1,$2,now()+interval '1 hour')", [passwordSession, id])
+    const jar = new CookieJar(`authjs.session-token=${passwordSession}`)
+    const unintentional = await begin(jar)
+    expect(new URL(unintentional.url).pathname).toBe('/dashboard/account')
+    async function link(password: string) {
+      const response = await fetch(`${enabledBase}/api/auth/google/link`, {
+        method: 'POST', headers: { 'content-type': 'application/json', cookie: jar.header(), 'x-forwarded-for': uniqueIp() }, body: JSON.stringify({ password }),
+      })
+      jar.receive(response)
+      return response
+    }
+    expect((await link('incorrect-password')).status).toBe(400)
+    const linkResponse = await link(PASSWORD)
+    expect(linkResponse.status).toBe(200)
+    const linkUrl = (await linkResponse.json()).url
+    // A different logged-in browser cannot reuse the fresh proof.
+    const stolen = new CookieJar(jar.header().split('; ').filter(x => !x.startsWith('authjs.session-token=')).join('; '))
+    const other = await createUser({ email: 'google-other@knest.test' })
+    const otherToken = randomUUID()
+    await db().query("insert into app.sessions (session_token,user_id,expires) values ($1,$2,now()+interval '1 hour')", [otherToken, other])
+    stolen.put(`authjs.session-token=${otherToken}`)
+    expect((await finish(linkUrl, stolen)).headers.get('location')).toContain('GoogleLinkRequired')
+    expect((await db().query("select user_id from app.accounts where provider='google' and provider_account_id=$1", [identity.sub])).rowCount).toBe(0)
+    const freshLink = await link(PASSWORD)
+    expect((await finish((await freshLink.json()).url, jar)).headers.get('location')).toContain('google=connected')
+    const linked = await db().query("select user_id from app.accounts where provider='google' and provider_account_id=$1", [identity.sub])
+    expect(linked.rows[0].user_id).toBe(id)
+    const returning = await begin()
+    await finish(returning.url, returning.jar)
+    expect((await session(returning.jar)).user.staffRole).toBe('reviewer')
+    await db().query('update app.users set is_active=false where id=$1', [id])
+    const disabled = await begin()
+    expect((await finish(disabled.url, disabled.jar)).headers.get('location')).toContain('error=AccessDenied')
+    expect((await session(returning.jar))?.user).toBeUndefined()
   })
 })
 

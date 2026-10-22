@@ -19,6 +19,7 @@ export const RATE_LIMITS = {
   passwordResetRequest: { capacity: 5, refillIntervalSeconds: 60 * 60 },
   applicationStart: { capacity: 10, refillIntervalSeconds: 60 * 60 },
   fileUpload: { capacity: 20, refillIntervalSeconds: 60 * 60 },
+  fileDownload: { capacity: 120, refillIntervalSeconds: 60 * 60 },
   // Fire-and-forget selector clicks: far above what a person produces, far below flooding.
   analyticsTrack: { capacity: 60, refillIntervalSeconds: 10 * 60 },
   // Public contact form: a person sends a few, a bot sends hundreds.

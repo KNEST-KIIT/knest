@@ -1,6 +1,7 @@
 'use client'
 
 import { formRequest } from '@/lib/form-request'
+import { useClientReady } from '@/lib/use-client-ready'
 import Link from 'next/link'
 
 import { safeNext } from '@/lib/safe-next'
@@ -13,6 +14,7 @@ import { TurnstileWidget } from '@/components/security/turnstile-widget'
 
 export function SignupForm({ googleEnabled, turnstileSiteKey }: { googleEnabled: boolean; turnstileSiteKey: string }) {
   const router = useRouter()
+  const ready = useClientReady()
   const searchParams = useSearchParams()
   const returnTo = safeNext(searchParams.get('next'))
   const [pending, setPending] = useState(false)
@@ -54,7 +56,7 @@ export function SignupForm({ googleEnabled, turnstileSiteKey }: { googleEnabled:
     // The same screen for a new and an existing address (KN-22b). The link in
     // the mailbox signs the person in and carries them on to onboarding.
     const email = String(form.get('email') ?? '').trim()
-    router.push(`/verify?sent=1&email=${encodeURIComponent(email)}`)
+    router.push(`/verify?sent=1&email=${encodeURIComponent(email)}${returnTo ? `&next=${encodeURIComponent(returnTo)}` : ''}`)
   }
 
   return (
@@ -84,7 +86,8 @@ export function SignupForm({ googleEnabled, turnstileSiteKey }: { googleEnabled:
         </>
       )}
 
-      <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-5 sm:gap-6" noValidate>
+      <form method="post" onSubmit={onSubmit} className="mt-6" noValidate aria-busy={pending}>
+        <fieldset disabled={!ready || pending} className="flex min-w-0 flex-col gap-5 sm:gap-6">
         <Field label="Full name">
           {(fieldProps) => (
             <Input 
@@ -149,7 +152,7 @@ export function SignupForm({ googleEnabled, turnstileSiteKey }: { googleEnabled:
           type="submit" 
           size="lg" 
           fullWidth 
-          disabled={pending || captchaPending}
+          disabled={!ready || pending || captchaPending}
           aria-busy={pending}
           className={`${pending ? 'disabled:opacity-100 disabled:cursor-progress ' : ''}mt-4 h-14 text-sm font-bold tracking-widest uppercase bg-gradient-to-r from-[var(--color-signal)] to-[#5a141e] hover:from-[#8f2433] hover:to-[var(--color-signal)] shadow-sm hover:shadow-lg transition-all duration-300 rounded-lg`}
         >
@@ -165,6 +168,7 @@ export function SignupForm({ googleEnabled, turnstileSiteKey }: { googleEnabled:
             'Create account →'
           )}
         </Button>
+        </fieldset>
       </form>
 
       <div className="mt-8 pt-6 border-t border-[var(--color-line)]/50 text-center">

@@ -29,6 +29,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
   const staff = await requireStaff()
   const labs = isLabBookingEnabled()
   const items = NAV.filter((item) => (item.area === null || canAccessArea(staff.staffRole, item.area)) && (item.href !== '/admin/labs' || labs))
+  const managesContent = (['content', 'programs', 'startups', 'mentors', 'infrastructure'] as const).some((area) => canAccessArea(staff.staffRole, area))
 
   return (
     <>
@@ -48,13 +49,14 @@ export default async function StaffLayout({ children }: { children: React.ReactN
             </nav>
           </div>
           <div className="flex flex-wrap items-center gap-4">
-            <Link href="/admin" className="text-[length:var(--text-small)] text-[var(--color-ink-muted)]">
-              Full admin (content, programs, startups) →
-            </Link>
+            <Link href="/dashboard/account" className="text-sm">Account</Link>
+            {managesContent && <Link href="/admin" className="text-[length:var(--text-small)] text-[var(--color-ink-muted)]">
+              Content management →
+            </Link>}
             <LogoutButton className="h-9 rounded-[var(--radius-sm)] border border-[var(--color-line-strong)] bg-white px-3 text-[length:var(--text-small)] font-medium" />
           </div>
         </header>
-        <main id="main" className="mx-auto w-full max-w-137.5 px-6 py-10">
+        <main id="main" className="mx-auto w-full max-w-7xl px-6 py-10">
           {children}
         </main>
       </div>

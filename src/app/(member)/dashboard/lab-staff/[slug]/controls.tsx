@@ -2,7 +2,7 @@
 
 import { formRequest } from '@/lib/form-request'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { minuteLabel, WEEKDAYS } from '@/lib/lab-format'
 
@@ -13,6 +13,7 @@ const FIELD = 'h-10 rounded-[var(--radius-sm)] border border-[var(--color-line-s
 function useCall() {
   const router = useRouter()
   const [pending, setPending] = useState(false)
+  const [refreshing, startRefresh] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState(false)
   async function call(path: string, body: unknown): Promise<boolean> {
@@ -27,10 +28,10 @@ function useCall() {
       return false
     }
     setDone(true)
-    router.refresh()
+    startRefresh(() => router.refresh())
     return true
   }
-  return { pending, error, done, call }
+  return { pending: pending || refreshing, error, done, call }
 }
 
 const Error_ = ({ text }: { text: string | null }) =>
@@ -48,7 +49,7 @@ export function DecisionControls({ id, staff, requiresAssistant }: { id: string;
   const endpoint = `/api/labs/bookings/${id}/decide`
 
   return (
-    <div className="flex flex-col gap-3">
+    <fieldset disabled={pending} className="flex min-w-0 flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
         <label className="flex items-center gap-2 text-[length:var(--text-small)]">
           Assistant{requiresAssistant ? '' : ' (optional)'}
@@ -133,7 +134,7 @@ export function DecisionControls({ id, staff, requiresAssistant }: { id: string;
         </form>
       )}
       <Error_ text={error} />
-    </div>
+    </fieldset>
   )
 }
 

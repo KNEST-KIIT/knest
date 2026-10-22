@@ -30,7 +30,8 @@ const cspDirectives = [
   `manifest-src 'self'`,
   `object-src 'none'`,
   `base-uri 'self'`,
-  `form-action 'self'`,
+  // The Google POST button follows a 303 to Google's authorization page.
+  `form-action 'self' https://accounts.google.com`,
   `frame-ancestors 'none'`,
   `upgrade-insecure-requests`,
 ]
@@ -51,6 +52,7 @@ const PRIVATE_PATHS = [
   '/signup',
   '/verify/:path*',
   '/reset/:path*',
+  '/auth/:path*',
 ]
 const noStore = PRIVATE_PATHS.map((source) => ({
   source,
@@ -58,9 +60,14 @@ const noStore = PRIVATE_PATHS.map((source) => ({
 }))
 
 const nextConfig: NextConfig = {
+  // OAuth requires byte-for-byte redirect matching. NextRequest otherwise
+  // changes 127.0.0.1 to localhost between authorization and token exchange.
+  skipProxyUrlNormalize: true,
   output: isVercel ? undefined : 'standalone',
   reactStrictMode: true,
   experimental: {
+    // The public site and Payload each own their document; unmatched URLs need a shared 404.
+    globalNotFound: true,
     // With a proxy (src/proxy.ts) Next buffers each request body and silently truncates it at
     // this size (default 10 MB). Uploads may be exactly 10 MB plus multipart framing, so the
     // buffer must be larger, or a file at the limit arrives cut off and fails to parse.

@@ -27,6 +27,7 @@ export function Heading({
   className,
   style,
   children,
+  ...headingProps
 }: {
   as?: 'h1' | 'h2' | 'h3' | 'h4'
   size?: keyof typeof SIZES
@@ -34,9 +35,10 @@ export function Heading({
   className?: string
   style?: React.CSSProperties
   children: React.ReactNode
-}) {
+} & React.ComponentPropsWithRef<'h1'>) {
   return (
     <Tag
+      {...headingProps}
       style={style}
       className={cn(
         'font-[family-name:var(--font-display)]',

@@ -1,13 +1,16 @@
 'use client'
 
 import { formRequest } from '@/lib/form-request'
+import { useClientReady } from '@/lib/use-client-ready'
 
 import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Field, Heading, PasswordInput } from '@/components/ui'
 import { Button } from '@/components/ui/button'
 
-export function ResetConfirmForm({ email, token }: { email: string; token: string }) {
+export function ResetConfirmForm({ email, token, next }: { email: string; token: string; next?: string | null }) {
+  const ready = useClientReady()
+  const resetHref = next ? `/reset?next=${encodeURIComponent(next)}` : '/reset'
   const router = useRouter()
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -33,7 +36,7 @@ export function ResetConfirmForm({ email, token }: { email: string; token: strin
       return
     }
 
-    router.push('/login')
+    router.push(`/login?reset=success${next ? `&next=${encodeURIComponent(next)}` : ''}`)
   }
 
   return (
@@ -42,7 +45,8 @@ export function ResetConfirmForm({ email, token }: { email: string; token: strin
         Set a new password.
       </Heading>
 
-      <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-5" noValidate>
+      <form method="post" onSubmit={onSubmit} className="mt-6" noValidate aria-busy={pending}>
+        <fieldset disabled={!ready || pending} className="flex min-w-0 flex-col gap-5">
         <Field label="New password" hint="At least 12 characters.">
           {(fieldProps) => (
             <PasswordInput {...fieldProps} ref={passwordRef} name="password" autoComplete="new-password" minLength={12} required />
@@ -52,15 +56,16 @@ export function ResetConfirmForm({ email, token }: { email: string; token: strin
         {error && (
           <p role="alert" className="text-[length:var(--text-small)] text-[var(--color-critical)]">
             {error}{' '}
-            <a href="/reset" className="font-medium text-[var(--color-signal)]">
+            <a href={resetHref} className="font-medium text-[var(--color-signal)]">
               Request a new link.
             </a>
           </p>
         )}
 
-        <Button type="submit" size="lg" fullWidth disabled={pending} aria-busy={pending} className={pending ? 'disabled:opacity-100 disabled:cursor-progress' : undefined}>
+        <Button type="submit" size="lg" fullWidth disabled={!ready || pending} aria-busy={pending} className={pending ? 'disabled:opacity-100 disabled:cursor-progress' : undefined}>
           {pending ? 'Saving…' : 'Save new password'}
         </Button>
+        </fieldset>
       </form>
     </div>
   )

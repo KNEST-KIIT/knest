@@ -1,19 +1,25 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { formRequest } from '@/lib/form-request'
 import { Heading } from '@/components/ui'
 
 export function VerifyConfirm({ email, token, next }: { email: string; token: string; next: string | null }) {
   const [state, setState] = useState<'checking' | 'ok' | 'error' | 'network'>('checking')
   const [attempt, setAttempt] = useState(0)
+  const requestRef = useRef<{ key: string; promise: Promise<Response> } | null>(null)
 
   useEffect(() => {
     let cancelled = false
-    fetch('/api/auth/password/verify/confirm', {
+    const key = JSON.stringify([email, token, attempt])
+    // Reuse this attempt during Strict Mode's effect replay. Sending twice would
+    // consume the single-use link before the visible effect received its answer.
+    if (requestRef.current?.key !== key) requestRef.current = { key, promise: formRequest('/api/auth/password/verify/confirm', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, token }),
-    })
+    }) }
+    requestRef.current.promise
       .then((res) => {
         if (cancelled) return
         // A 5xx means the server could not decide; the link may still be good.

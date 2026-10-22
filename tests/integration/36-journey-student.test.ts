@@ -99,6 +99,8 @@ describe('a student first visit', () => {
 
   it('finishes onboarding and lands on a page that fits the answers', async () => {
     await answerOnboarding(page)
+    await page.reload()
+    await page.getByRole('heading', { level: 1, name: 'Your KNEST Path is Ready' }).waitFor()
     await Promise.all([page.waitForURL((u) => !u.pathname.startsWith('/onboarding'), { timeout: 60_000 }), page.getByRole('button', { name: ONBOARDING_CTA }).click()])
     expect(path()).toMatch(/^\/(events|programs)/)
 
@@ -159,7 +161,7 @@ describe('a student first visit', () => {
     await page.getByRole('radio', { name: 'A working prototype' }).click()
     await Promise.all([page.waitForResponse((r) => r.url().includes('/answer') && r.ok()), page.getByRole('button', { name: 'Save & continue' }).click()])
     await page.getByRole('heading', { level: 1, name: 'Describe your idea' }).waitFor()
-    await page.getByText('Saved automatically').waitFor()
+    await page.getByText('Draft saved', { exact: true }).waitFor()
 
     await page.getByLabel('Your answer').fill(ANSWER)
     await Promise.all([page.waitForResponse((r) => r.url().includes('/answer') && r.ok()), page.getByRole('button', { name: 'Save & continue' }).click()])
@@ -205,12 +207,16 @@ describe('a student first visit', () => {
 
   it('comes back to the saved draft, sees the answers still there, and submits', async () => {
     await page.goto(`${BASE()}/apply/${PROGRAM_SLUG}`)
+    await page.getByRole('heading', { level: 1, name: 'Have a last look.' }).waitFor()
+    await page.getByRole('button', { name: 'Edit Where is your idea today?', exact: true }).click()
     await page.getByRole('heading', { level: 1, name: 'Where is your idea today?' }).waitFor()
     expect(await page.getByRole('radio', { name: 'A working prototype' }).getAttribute('aria-checked')).toBe('true')
-    await page.getByRole('button', { name: 'Save & continue' }).click()
+    await page.getByRole('button', { name: 'Save and return to review' }).click()
+    await page.getByRole('heading', { level: 1, name: 'Have a last look.' }).waitFor()
+    await page.getByRole('button', { name: 'Edit Describe your idea', exact: true }).click()
     await page.getByLabel('Your answer').waitFor()
     expect(await page.getByLabel('Your answer').inputValue()).toBe(ANSWER)
-    await page.getByRole('button', { name: 'Save & continue' }).click()
+    await page.getByRole('button', { name: 'Save and return to review' }).click()
     await page.getByRole('heading', { level: 1, name: 'Have a last look.' }).waitFor()
 
     const submit = page.getByRole('button', { name: 'Submit application' })
@@ -228,13 +234,14 @@ describe('a student first visit', () => {
 
   it('tracks the submitted application on the dashboard and can no longer edit it', async () => {
     await page.getByRole('button', { name: 'Track your application' }).click()
-    await page.waitForURL((u) => u.pathname === '/dashboard/applications')
-    await page.getByRole('heading', { level: 2, name: PROGRAM }).waitFor()
+    await page.waitForURL((u) => u.pathname === `/dashboard/applications/${applicationId}`)
+    await page.getByRole('heading', { level: 1, name: PROGRAM }).waitFor()
+    await page.getByRole('heading', { name: 'What you submitted', exact: true }).waitFor()
     await page.getByText('Submitted', { exact: false }).first().waitFor()
     expect(await page.getByRole('link', { name: 'Continue' }).count()).toBe(0)
 
     await page.goto(`${BASE()}/apply/${PROGRAM_SLUG}`)
-    await page.waitForURL((u) => u.pathname === '/dashboard/applications') // a sent application is read-only
+    await page.waitForURL((u) => u.pathname === `/dashboard/applications/${applicationId}`) // a sent application is read-only
   })
 
   it('registers for an event from the events list and sees it among their events', async () => {
