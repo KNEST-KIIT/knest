@@ -3,7 +3,11 @@
 .next
 node_modules
 docs
-tests
+tests/*
+!tests/support/
+tests/support/*
+!tests/support/s3-stub.ts
+!tests/support/smtp-stub.ts
 infra
 uploads
 media
