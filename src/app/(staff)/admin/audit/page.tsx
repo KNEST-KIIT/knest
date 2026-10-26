@@ -33,11 +33,17 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
       </Heading>
       <p className="mt-2 text-[var(--color-ink-soft)]">Every privileged action, who did it, and what changed. Entries cannot be edited here.</p>
 
-      <form method="get" role="search" aria-label="Filter the audit trail" className="mt-6 flex flex-wrap gap-4">
+      <form key={`${action ?? ''}-${entityType ?? ''}`} method="get" role="search" aria-label="Filter the audit trail" className="mt-6 flex flex-wrap gap-4">
         <label className="sr-only" htmlFor="action">
           Action
         </label>
-        <select id="action" name="action" defaultValue={action ?? ''} className="h-11 rounded-[var(--radius-sm)] border border-[var(--color-line-strong)] bg-white px-3">
+        <select
+          id="action"
+          name="action"
+          key={`action-${action ?? ''}`}
+          defaultValue={action ?? ''}
+          className="h-[var(--control-height-lg)] min-h-[44px] rounded-[var(--radius-sm)] border border-[var(--color-line-strong)] bg-white px-3"
+        >
           <option value="">All actions</option>
           {facets.actions.map((a) => (
             <option key={a} value={a}>
@@ -48,7 +54,13 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
         <label className="sr-only" htmlFor="entity">
           Record type
         </label>
-        <select id="entity" name="entity" defaultValue={entityType ?? ''} className="h-11 rounded-[var(--radius-sm)] border border-[var(--color-line-strong)] bg-white px-3">
+        <select
+          id="entity"
+          name="entity"
+          key={`entity-${entityType ?? ''}`}
+          defaultValue={entityType ?? ''}
+          className="h-[var(--control-height-lg)] min-h-[44px] rounded-[var(--radius-sm)] border border-[var(--color-line-strong)] bg-white px-3"
+        >
           <option value="">All record types</option>
           {facets.entityTypes.map((e) => (
             <option key={e} value={e}>
@@ -56,7 +68,10 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
             </option>
           ))}
         </select>
-        <button type="submit" className="h-11 rounded-[var(--radius-sm)] bg-[var(--color-ink)] px-4 text-[length:var(--text-small)] text-white">
+        <button
+          type="submit"
+          className="h-[var(--control-height-lg)] min-h-[44px] rounded-[var(--radius-sm)] bg-[var(--color-ink)] px-4 text-[length:var(--text-small)] text-white"
+        >
           Filter
         </button>
       </form>

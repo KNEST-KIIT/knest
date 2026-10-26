@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: 'Page not found' }
  */
 export default function NotFound() {
   return (
-    <main className="mx-auto flex min-h-[60vh] w-full max-w-65 flex-col items-center justify-center px-6 text-center">
+    <section className="mx-auto flex min-h-[60vh] w-full max-w-65 flex-col items-center justify-center px-6 text-center">
       <Heading as="h1" size="title" uppercase>
         This page doesn&rsquo;t exist.
       </Heading>
@@ -21,6 +21,6 @@ export default function NotFound() {
           Search
         </ButtonLink>
       </div>
-    </main>
+    </section>
   )
 }

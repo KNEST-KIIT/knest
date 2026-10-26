@@ -36,7 +36,10 @@ describe.each([false, true])('public header fit (signed in: %s)', (signedIn) => 
       await page.evaluate(() => document.fonts.ready)
       const header = page.getByRole('banner')
       const menu = header.locator('button[aria-controls="mobile-nav"]')
-      if (width < 1024) {
+      if (width < 1280) {
+        const menuBox = (await menu.boundingBox())!
+        expect(menuBox.width).toBeGreaterThanOrEqual(44)
+        expect(menuBox.height).toBeGreaterThanOrEqual(44)
         await menu.click()
         await expect.poll(() => menu.getAttribute('aria-expanded')).toBe('true')
       } else {
@@ -45,8 +48,8 @@ describe.each([false, true])('public header fit (signed in: %s)', (signedIn) => 
       const nav = header.getByRole('navigation', { name: 'Main', exact: true }).filter({ visible: true })
       expect(await nav.getByRole('link').allTextContents()).toEqual(['Programs', 'Startups', 'Ecosystem', 'Events', 'Resources', 'About'])
       expect(await header.getByRole('link', { name: signedIn ? 'Dashboard' : 'Start building', exact: true }).filter({ visible: true }).isVisible()).toBe(true)
-      if (width < 1024) {
-        // The existing tablet drawer scrolls its links above pinned account
+      if (width < 1280) {
+        // The drawer scrolls its links above pinned account
         // controls. Verify every destination can be brought into that viewport.
         const navBounds = (await nav.boundingBox())!
         for (const link of await nav.getByRole('link').all()) {

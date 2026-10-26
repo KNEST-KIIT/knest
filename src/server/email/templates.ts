@@ -9,8 +9,8 @@
 
 export function verifyEmailTemplate(link: string) {
   return {
-    subject: 'Confirm your email for KNEST',
-    text: `You're one click from finishing your KNEST account.\n\n${link}\n\nThis link expires in 24 hours. If you didn't create a KNEST account, you can ignore this email.`,
+    subject: 'Activate your KNEST account',
+    text: `Use this link to choose your password and activate your KNEST account:\n\n${link}\n\nThis link expires in 24 hours. If you didn't create a KNEST account, you can ignore this email.`,
   }
 }
 

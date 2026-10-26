@@ -11,7 +11,7 @@ import { EcosystemSection } from './ecosystem-section'
 import { Hero } from './hero'
 import { JourneySelector } from './journey-selector'
 import { TheJourney } from './the-journey'
-import { Narrative } from './narrative'
+import { KnestSection, PersonSection, ProblemSection } from './narrative'
 
 export const metadata: Metadata = {
   title: 'KNEST — What if you actually built it?',
@@ -53,13 +53,13 @@ export default async function HomePage() {
             return <Hero key={key} homepage={homepage} />
 
           case 'problem':
-            return <Narrative key={key} homepage={homepage} />
+            return <ProblemSection key={key} homepage={homepage} />
 
           case 'person':
-            return null
+            return <PersonSection key={key} homepage={homepage} />
 
           case 'knest':
-            return null
+            return <KnestSection key={key} homepage={homepage} />
 
           case 'journey_selector':
             return (
@@ -126,7 +126,14 @@ export default async function HomePage() {
             )
 
           case 'ecosystem':
-            return <EcosystemSection key={key} groups={buildEcosystemGroups(counts)} />
+            return (
+              <EcosystemSection
+                key={key}
+                groups={buildEcosystemGroups(counts)}
+                metrics={homepage.metrics}
+                testimonials={homepage.testimonials}
+              />
+            )
 
           case 'startups':
             return null

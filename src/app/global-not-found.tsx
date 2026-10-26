@@ -3,5 +3,11 @@ import NotFoundPage from '@/components/layout/not-found-page'
 export { metadata } from '@/components/layout/not-found-page'
 
 export default function GlobalNotFound() {
-  return <SiteDocument><NotFoundPage /></SiteDocument>
+  return (
+    <SiteDocument>
+      <main id="main">
+        <NotFoundPage />
+      </main>
+    </SiteDocument>
+  )
 }

@@ -6,7 +6,10 @@ export async function POST(request: Request) {
   const limited = await limitByIp(request, 'tokenConfirm')
   if (limited) return limited
   const body = await request.json().catch(() => null)
-  const result = await confirmEmailVerification(body?.email, body?.token)
-  if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 })
+  const result = await confirmEmailVerification(body?.email, body?.token, body?.password)
+  if (!result.ok) {
+    const status = 'serverError' in result && result.serverError ? 500 : 400
+    return NextResponse.json({ error: result.error }, { status })
+  }
   return NextResponse.json({ ok: true })
 }

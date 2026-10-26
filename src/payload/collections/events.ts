@@ -32,7 +32,23 @@ export const Events: CollectionConfig = {
       type: 'row',
       fields: [
         { name: 'startsAt', type: 'date', required: true, index: true, admin: { date: { pickerAppearance: 'dayAndTime' } } },
-        { name: 'endsAt', type: 'date', admin: { date: { pickerAppearance: 'dayAndTime' } } },
+        {
+          name: 'endsAt',
+          type: 'date',
+          admin: { date: { pickerAppearance: 'dayAndTime' } },
+          validate: (val: unknown, { siblingData }: { siblingData?: Record<string, unknown> }) => {
+            if (!val) return true
+            const startsAt = siblingData?.startsAt as string | Date | undefined
+            if (startsAt) {
+              const startTime = new Date(startsAt).getTime()
+              const endTime = new Date(val as string | Date).getTime()
+              if (!isNaN(startTime) && !isNaN(endTime) && endTime <= startTime) {
+                return 'End time must be after start time.'
+              }
+            }
+            return true
+          },
+        },
       ],
     },
     {
@@ -56,7 +72,24 @@ export const Events: CollectionConfig = {
       ],
     },
     { name: 'location', type: 'text', admin: { description: 'Room or building. Leave blank for online events.' } },
-    { name: 'registrationUrl', type: 'text', admin: { description: 'External registration link, if any.' } },
+    {
+      name: 'registrationUrl',
+      type: 'text',
+      admin: { description: 'External registration link, if any.' },
+      validate: (val: unknown) => {
+        if (!val || typeof val !== 'string' || val.trim() === '') return true
+        const trimmed = val.trim()
+        try {
+          const parsed = new URL(trimmed)
+          if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+            return 'Registration URL must be an absolute web link (starting with http:// or https://).'
+          }
+          return true
+        } catch {
+          return 'Registration URL must be a valid absolute web address (e.g. https://example.com/register).'
+        }
+      },
+    },
     { name: 'capacity', type: 'number', min: 1 },
 
     {

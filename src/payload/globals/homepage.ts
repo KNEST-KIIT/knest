@@ -49,7 +49,33 @@ export const Homepage: GlobalConfig = {
               type: 'array',
               minRows: sectionKeys.length,
               maxRows: sectionKeys.length,
-              admin: { initCollapsed: true, description: 'The fixed set of homepage sections.' },
+              validate: (val: unknown) => {
+                if (!Array.isArray(val)) return true
+                const required = new Set<string>(sectionKeys.map((s) => s.value))
+                const seen = new Set<string>()
+                for (const item of val) {
+                  if (!item || typeof item !== 'object') continue
+                  const k = (item as { key?: string }).key
+                  if (!k || !required.has(k)) {
+                    return `Invalid section key: ${k}`
+                  }
+                  if (seen.has(k)) {
+                    return `Duplicate section key: ${k}. Each section key must be unique.`
+                  }
+                  seen.add(k)
+                }
+                if (seen.size !== required.size) {
+                  return 'All fixed homepage sections must be present.'
+                }
+                return true
+              },
+              admin: {
+                initCollapsed: true,
+                description: 'The fixed set of homepage sections.',
+                components: {
+                  RowLabel: '@/payload/components/SectionRowLabel#SectionRowLabel',
+                },
+              },
               fields: [
                 {
                   name: 'key',

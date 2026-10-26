@@ -5,9 +5,9 @@ import { useClientReady } from '@/lib/use-client-ready'
 import Link from 'next/link'
 
 import { safeNext } from '@/lib/safe-next'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Field, Input, PasswordInput } from '@/components/ui'
+import { Field, Input } from '@/components/ui'
 import { GoogleButton } from '@/components/auth/google-button'
 import { Button } from '@/components/ui/button'
 import { TurnstileWidget } from '@/components/security/turnstile-widget'
@@ -22,21 +22,48 @@ export function SignupForm({ googleEnabled, turnstileSiteKey }: { googleEnabled:
   const [captchaReset, setCaptchaReset] = useState(0)
   const captchaPending = Boolean(turnstileSiteKey) && !captchaToken
   const [error, setError] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<{ name?: string; email?: string }>({})
   const nameRef = useRef<HTMLInputElement>(null)
+  const emailRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (!pending) {
+      if (fieldErrors.name) {
+        nameRef.current?.focus()
+      } else if (fieldErrors.email) {
+        emailRef.current?.focus()
+      }
+    }
+  }, [fieldErrors, pending])
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setPending(true)
     setError(null)
+    setFieldErrors({})
 
     const form = new FormData(event.currentTarget)
+    const name = String(form.get('name') ?? '').trim()
+    const email = String(form.get('email') ?? '').trim()
+
+    if (!name) {
+      setFieldErrors({ name: 'Tell us your name.' })
+      setPending(false)
+      return
+    }
+
+    if (!email) {
+      setFieldErrors({ email: 'Enter your email address.' })
+      setPending(false)
+      return
+    }
+
     const res = await formRequest('/api/auth/password/signup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        name: form.get('name'),
-        email: form.get('email'),
-        password: form.get('password'),
+        name,
+        email,
         turnstileToken: captchaToken,
         next: returnTo,
       }),
@@ -44,18 +71,25 @@ export function SignupForm({ googleEnabled, turnstileSiteKey }: { googleEnabled:
     const data = await res.json().catch(() => ({}))
 
     if (!res.ok) {
-      setError(data.error ?? 'Something went wrong. Try again.')
       setPending(false)
       setCaptchaToken(null)
       setCaptchaReset((n) => n + 1)
-      // A failed submit moves focus to the first field, per UX_WIREFRAMES.md §5.
-      nameRef.current?.focus()
+      const err = data.error ?? 'Something went wrong. Try again.'
+      if (err.toLowerCase().includes('email') || err.toLowerCase().includes('address')) {
+        setFieldErrors({ email: err })
+        setError(null)
+      } else if (err.toLowerCase().includes('name')) {
+        setFieldErrors({ name: err })
+        setError(null)
+      } else {
+        setError(err)
+        setFieldErrors({})
+      }
       return
     }
 
     // The same screen for a new and an existing address (KN-22b). The link in
     // the mailbox signs the person in and carries them on to onboarding.
-    const email = String(form.get('email') ?? '').trim()
     router.push(`/verify?sent=1&email=${encodeURIComponent(email)}${returnTo ? `&next=${encodeURIComponent(returnTo)}` : ''}`)
   }
 
@@ -88,7 +122,7 @@ export function SignupForm({ googleEnabled, turnstileSiteKey }: { googleEnabled:
 
       <form method="post" onSubmit={onSubmit} className="mt-6" noValidate aria-busy={pending}>
         <fieldset disabled={!ready || pending} className="flex min-w-0 flex-col gap-5 sm:gap-6">
-        <Field label="Full name">
+        <Field label="Full name" error={fieldErrors.name}>
           {(fieldProps) => (
             <Input 
               {...fieldProps} 
@@ -98,32 +132,30 @@ export function SignupForm({ googleEnabled, turnstileSiteKey }: { googleEnabled:
               autoComplete="name" 
               placeholder="Aarav Sharma" 
               required 
+              onChange={() => {
+                if (fieldErrors.name) setFieldErrors((prev) => ({ ...prev, name: undefined }))
+              }}
             />
           )}
         </Field>
 
-        <Field label="Email address">
+        <Field
+          label="Email address"
+          hint="We’ll send an activation link to your inbox to establish your password."
+          error={fieldErrors.email}
+        >
           {(fieldProps) => (
             <Input 
               {...fieldProps} 
+              ref={emailRef}
               name="email" 
               type="email" 
               autoComplete="email" 
               placeholder="you@kiit.ac.in" 
               required 
-            />
-          )}
-        </Field>
-
-        <Field label="Create password" hint="At least 12 characters. Length matters more than symbols.">
-          {(fieldProps) => (
-            <PasswordInput 
-              {...fieldProps} 
-              name="password" 
-              autoComplete="new-password" 
-              placeholder="••••••••••••" 
-              minLength={12} 
-              required 
+              onChange={() => {
+                if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: undefined }))
+              }}
             />
           )}
         </Field>
@@ -154,7 +186,7 @@ export function SignupForm({ googleEnabled, turnstileSiteKey }: { googleEnabled:
           fullWidth 
           disabled={!ready || pending || captchaPending}
           aria-busy={pending}
-          className={`${pending ? 'disabled:opacity-100 disabled:cursor-progress ' : ''}mt-4 h-14 text-sm font-bold tracking-widest uppercase bg-gradient-to-r from-[var(--color-signal)] to-[#5a141e] hover:from-[#8f2433] hover:to-[var(--color-signal)] shadow-sm hover:shadow-lg transition-all duration-300 rounded-lg`}
+          className={`${pending ? 'disabled:opacity-100 disabled:cursor-progress ' : ''}mt-4 text-sm font-semibold tracking-wide uppercase`}
         >
           {pending ? (
             <span className="inline-flex items-center gap-2">
@@ -162,10 +194,10 @@ export function SignupForm({ googleEnabled, turnstileSiteKey }: { googleEnabled:
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-              Creating account…
+              Sending activation link…
             </span>
           ) : (
-            'Create account →'
+            'Continue with email →'
           )}
         </Button>
         </fieldset>

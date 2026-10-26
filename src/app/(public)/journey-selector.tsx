@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useRef, useSyncExternalStore } from 'react'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { ButtonLink, Heading, LiveRegion } from '@/components/ui'
 
 const OPTIONS = [
@@ -37,6 +37,52 @@ const OPTIONS = [
   },
 ] as const
 
+const journeyChoiceStore = {
+  memoryChoice: null as number | null,
+  listeners: [] as (() => void)[],
+  subscribe(callback: () => void) {
+    journeyChoiceStore.listeners.push(callback)
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'knest_journey_choice') callback()
+    }
+    window.addEventListener('storage', onStorage)
+    return () => {
+      journeyChoiceStore.listeners = journeyChoiceStore.listeners.filter((l) => l !== callback)
+      window.removeEventListener('storage', onStorage)
+    }
+  },
+  getSnapshot(): number | null {
+    try {
+      const saved = sessionStorage.getItem('knest_journey_choice')
+      if (saved !== null) {
+        const idx = Number(saved)
+        if (Number.isInteger(idx) && idx >= 0 && idx < OPTIONS.length) {
+          return idx
+        }
+      }
+    } catch {
+      // sessionStorage unavailable or restricted; fall back to memory
+    }
+    return journeyChoiceStore.memoryChoice !== null &&
+      Number.isInteger(journeyChoiceStore.memoryChoice) &&
+      journeyChoiceStore.memoryChoice >= 0 &&
+      journeyChoiceStore.memoryChoice < OPTIONS.length
+      ? journeyChoiceStore.memoryChoice
+      : null
+  },
+  getServerSnapshot(): number | null {
+    return null
+  },
+  set(i: number) {
+    if (!Number.isInteger(i) || i < 0 || i >= OPTIONS.length) return
+    journeyChoiceStore.memoryChoice = i
+    try {
+      sessionStorage.setItem('knest_journey_choice', String(i))
+    } catch {}
+    for (const listener of journeyChoiceStore.listeners) listener()
+  },
+}
+
 /**
  * WHERE ARE YOU? — signature experience 02 (CONTENT_SPEC.md §1.5). Choosing
  * an option reveals a response written for that answer, not a bare label
@@ -46,8 +92,14 @@ const OPTIONS = [
  * is remembered, per this section's own copy.
  */
 export function JourneySelector({ signedIn }: { signedIn: boolean }) {
-  const [selected, setSelected] = useState<number | null>(null)
+  const shouldReduceMotion = useReducedMotion()
+  const selected = useSyncExternalStore(
+    journeyChoiceStore.subscribe,
+    journeyChoiceStore.getSnapshot,
+    journeyChoiceStore.getServerSnapshot,
+  )
   const option = selected !== null ? OPTIONS[selected] : null
+  const buttonRefs = useRef<(HTMLButtonElement | null)[]>([])
 
   function destinationFor(href: string): string {
     if (signedIn || !href.startsWith('/onboarding')) return href
@@ -55,7 +107,7 @@ export function JourneySelector({ signedIn }: { signedIn: boolean }) {
   }
 
   function select(i: number) {
-    setSelected(i)
+    journeyChoiceStore.set(i)
     const chosen = OPTIONS[i]
     if (!chosen) return
     // Fire-and-forget — the one client-triggered analytics call in the app
@@ -68,6 +120,20 @@ export function JourneySelector({ signedIn }: { signedIn: boolean }) {
     }).catch(() => {})
   }
 
+  function handleKeyDown(e: React.KeyboardEvent<HTMLButtonElement>, index: number) {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+      e.preventDefault()
+      const nextIndex = (index + 1) % OPTIONS.length
+      select(nextIndex)
+      buttonRefs.current[nextIndex]?.focus()
+    } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+      e.preventDefault()
+      const prevIndex = (index - 1 + OPTIONS.length) % OPTIONS.length
+      select(prevIndex)
+      buttonRefs.current[prevIndex]?.focus()
+    }
+  }
+
   return (
     <div>
       <Heading as="h2" size="display">
@@ -78,88 +144,88 @@ export function JourneySelector({ signedIn }: { signedIn: boolean }) {
       </p>
 
       <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_1fr] items-stretch">
-        <motion.div layout role="radiogroup" aria-label="Where are you right now?" className="flex flex-col border-t border-[var(--color-line)]">
-          {OPTIONS.map((opt, i) => (
-            <motion.button layout initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: i * 0.1 }}
-              key={opt.label}
-              type="button"
-              role="radio"
-              aria-checked={selected === i}
-              onClick={() => select(i)}
-              className={`group relative flex items-center justify-between rounded-none border-b border-[var(--color-line)] py-4 sm:py-5 pr-5 pl-6 text-left font-[family-name:var(--font-display)] text-base sm:text-lg lg:text-xl font-bold uppercase tracking-wide transition-all duration-500 ease-[cubic-bezier(0.19,1,0.22,1)] ${
-                selected === i
-                  ? 'text-[var(--color-signal)]'
-                  : 'bg-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink)] hover:pl-8'
-              }`}
-            >
-              {selected === i && (
-                <motion.div
-                  layoutId="journey-active-bg"
-                  className="absolute inset-0 bg-gradient-to-r from-[var(--color-signal)]/10 to-transparent border-l-4 border-[var(--color-signal)]"
-                  transition={{ type: "spring", bounce: 0.15, duration: 0.6 }}
-                />
-              )}
-              <span className="relative z-10">{opt.label}</span>
-              <span
-                className={`relative z-10 font-mono text-sm transition-all duration-500 ease-[cubic-bezier(0.19,1,0.22,1)] ${
-                  selected === i
-                    ? 'text-[var(--color-signal)] translate-x-1 font-bold'
-                    : 'text-[var(--color-ink-muted)] opacity-0 group-hover:opacity-100 group-hover:translate-x-1'
+        <div role="radiogroup" aria-label="Where are you right now?" className="flex flex-col border-t border-[var(--color-line)]">
+          {OPTIONS.map((opt, i) => {
+            const isSelected = selected === i
+            const tabIndex = selected === null ? (i === 0 ? 0 : -1) : (isSelected ? 0 : -1)
+            return (
+              <button
+                key={opt.label}
+                ref={(el) => { buttonRefs.current[i] = el }}
+                type="button"
+                role="radio"
+                tabIndex={tabIndex}
+                aria-checked={isSelected}
+                onClick={() => select(i)}
+                onKeyDown={(e) => handleKeyDown(e, i)}
+                className={`relative flex items-center justify-between border-b border-[var(--color-line)] py-4 sm:py-5 px-4 sm:px-6 text-left font-[family-name:var(--font-display)] text-base sm:text-lg font-bold uppercase tracking-wide transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-signal)] ${
+                  isSelected
+                    ? 'bg-[var(--color-signal-wash)] text-[var(--color-signal)] border-l-4 border-l-[var(--color-signal)]'
+                    : 'bg-transparent text-[var(--color-ink-soft)] hover:bg-[var(--color-paper-soft)] hover:text-[var(--color-ink)]'
                 }`}
               >
-                →
-              </span>
-            </motion.button>
-          ))}
-        </motion.div>
+                <span>{opt.label}</span>
+                <span
+                  className={`font-mono text-sm transition-colors ${
+                    isSelected
+                      ? 'text-[var(--color-signal)] font-bold'
+                      : 'text-[var(--color-ink-muted)] opacity-60'
+                  }`}
+                  aria-hidden="true"
+                >
+                  →
+                </span>
+              </button>
+            )
+          })}
+        </div>
 
         <div className="flex items-center">
           <AnimatePresence mode="wait">
-          {option ? (
-            <motion.div 
-              key={selected}
-              initial={{ opacity: 0, scale: 0.98, x: 20 }}
-              animate={{ opacity: 1, scale: 1, x: 0 }}
-              exit={{ opacity: 0, scale: 0.98, x: -20 }}
-              transition={{ duration: 0.5, ease: [0.19, 1, 0.22, 1] }}
-              className="w-full rounded-none border-2 border-[var(--color-line)] bg-white/90 p-8 sm:p-10 relative overflow-hidden shadow-[0_8px_32px_rgba(13,19,33,0.06)] flex flex-col justify-between h-full min-h-32.5 backdrop-blur-md group"
-            >
-              <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-[var(--color-signal)] to-[var(--color-signal-deep)] scale-y-0 animate-[fill-down_0.6s_ease-out_forwards]"></div>
-              {/* The reveal replaces the "pick one" prompt with no page
-                  reload — a screen reader user needs this announced the
-                  same way a filter-count change already is elsewhere. */}
-              <LiveRegion message={option.response} />
-              <div className="relative z-10">
-                <span className="font-mono text-xs font-bold uppercase tracking-widest text-[var(--color-signal)] mb-4 block">
-                  Next Tactical Step
+            {option ? (
+              <motion.div
+                key={selected}
+                initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={shouldReduceMotion ? undefined : { opacity: 0 }}
+                transition={{ duration: shouldReduceMotion ? 0 : 0.2 }}
+                className="w-full rounded-[var(--radius-md)] border border-[var(--color-line)] bg-white p-6 sm:p-8 flex flex-col justify-between h-full min-h-[16rem]"
+              >
+                {/* The reveal replaces the "pick one" prompt with no page
+                    reload — a screen reader user needs this announced the
+                    same way a filter-count change already is elsewhere. */}
+                <LiveRegion message={option.response} />
+                <div>
+                  <span className="font-mono text-xs font-bold uppercase tracking-wider text-[var(--color-signal)] mb-3 block">
+                    Next Step
+                  </span>
+                  <p className="font-[family-name:var(--font-accent)] text-xl sm:text-2xl italic text-[var(--color-ink)] leading-snug">
+                    &ldquo;{option.response}&rdquo;
+                  </p>
+                </div>
+                <div className="mt-8 pt-6 border-t border-[var(--color-line)]">
+                  <ButtonLink
+                    href={destinationFor(option.href)}
+                    size="lg"
+                    className="rounded-[var(--radius-sm)] bg-[var(--color-signal)] hover:bg-[var(--color-signal-deep)] text-white font-medium text-sm px-6 py-3 transition-colors inline-flex items-center gap-2"
+                  >
+                    <span>{option.cta}</span>
+                    <span aria-hidden="true">→</span>
+                  </ButtonLink>
+                </div>
+              </motion.div>
+            ) : (
+              <div
+                className="w-full h-full min-h-[16rem] rounded-[var(--radius-md)] border border-dashed border-[var(--color-line)] p-8 flex flex-col items-center justify-center text-center bg-white"
+              >
+                <span className="font-mono text-xs font-bold uppercase tracking-wider text-[var(--color-signal)] mb-2 block">
+                  Select a Stage
                 </span>
-                <p className="font-[family-name:var(--font-accent)] text-xl sm:text-2xl md:text-3xl italic text-[var(--color-ink)] leading-[1.3]">
-                  &ldquo;{option.response}&rdquo;
+                <p className="font-[family-name:var(--font-display)] text-base sm:text-lg text-[var(--color-ink-muted)] font-medium">
+                  Choose your current building phase on the left to view the recommended next step.
                 </p>
               </div>
-              <div className="relative z-10 mt-10 pt-6 border-t border-[var(--color-line)]">
-                <ButtonLink href={destinationFor(option.href)} size="lg" className="rounded-none px-8 py-4 font-bold uppercase tracking-[0.15em] text-xs sm:text-sm bg-gradient-to-r from-[var(--color-signal)] to-[var(--color-signal-deep)] hover:from-[var(--color-signal-deep)] hover:to-red-900 text-white shadow-lg inline-flex items-center gap-3 transition-all duration-500 hover:shadow-[0_8px_24px_rgba(122,31,43,0.3)]">
-                  <span>{option.cta}</span>
-                  <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
-                </ButtonLink>
-              </div>
-            </motion.div>
-          ) : (
-            <motion.div 
-              key="empty"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="w-full h-full min-h-32.5 border-2 border-dashed border-[var(--color-line)] p-8 flex flex-col items-center justify-center text-center bg-white/40"
-            >
-              <span className="font-mono text-xs font-bold uppercase tracking-widest text-[var(--color-signal)] mb-2">
-                Self-Assessment
-              </span>
-              <p className="font-[family-name:var(--font-display)] text-base sm:text-lg text-[var(--color-ink-muted)] font-medium">
-                Select your current building phase on the left to reveal your dedicated trajectory.
-              </p>
-            </motion.div>
-          )}
+            )}
           </AnimatePresence>
         </div>
       </div>

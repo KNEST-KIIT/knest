@@ -76,10 +76,13 @@ describe('KN-22e: post-login redirect stays on our origin', () => {
     await page.goto(`${BASE()}/signup?next=${encodeURIComponent('//evil.example/pwned')}`)
     await page.getByLabel('Full name').fill('Test Person')
     await page.getByLabel('Email address').fill(email)
-    await page.getByLabel('Create password').fill(PASSWORD)
+    const pwInput = page.getByLabel(/create password|password/i)
+    if (await pwInput.count() > 0) {
+      await pwInput.fill(PASSWORD)
+    }
     await Promise.all([
       page.waitForURL((u) => !u.pathname.startsWith('/signup'), { timeout: 60_000 }),
-      page.getByRole('button', { name: /create account/i }).click(),
+      page.getByRole('button', { name: /continue with email|create account/i }).click(),
     ])
     // Sign-up ends on "Check your email" and issues no session (KN-22b).
     expect(new URL(page.url()).pathname).toBe('/verify')
@@ -91,7 +94,9 @@ describe('KN-22e: post-login redirect stays on our origin', () => {
     expect(mailText).not.toContain('evil.example')
     const path = /\/verify\/confirm\?[^\s"<>]+/.exec(mailText)![0]
     await page.goto(`${BASE()}${path}`)
-    await page.getByText('You’re signed in.').waitFor({ timeout: 30_000 })
+    await page.getByLabel(/choose password|password/i).fill(PASSWORD)
+    await page.getByRole('button', { name: /activate account/i }).click()
+    await page.getByText(/you’re signed in|you're signed in/i).waitFor({ timeout: 30_000 })
     const continueHref = await page.getByRole('link', { name: 'Continue.' }).getAttribute('href')
     expect(continueHref).toBe('/onboarding')
     await Promise.all([page.waitForURL((u) => u.pathname === '/onboarding', { timeout: 60_000 }), page.getByRole('link', { name: 'Continue.' }).click()])
@@ -181,11 +186,11 @@ describe('sign-up -> e-mailed link -> verified account (nodemailer 10, absolute 
     expect(params.get('email')).toBe(email)
     expect(token).toMatch(/^[0-9a-f]{64}$/)
 
-    const confirm = () =>
+    const confirm = (password = PASSWORD) =>
       fetch(`${BASE()}/api/auth/password/verify/confirm`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ email, token }),
+        body: JSON.stringify({ email, token, password }),
       })
     const first = await confirm()
     expect(first.status).toBe(200)

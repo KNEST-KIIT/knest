@@ -43,7 +43,8 @@ export function ApplicationForm({ applicationId, programTitle, questions, initia
   const [savedAnswers, setSavedAnswers] = useState(initialAnswers)
   const [documentNames, setDocumentNames] = useState<Record<string, string>>(initialDocuments)
   const [pending, setPending] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [fieldError, setFieldError] = useState<string | null>(null)
+  const [formError, setFormError] = useState<string | null>(null)
   const [captchaToken, setCaptchaToken] = useState<string | null>(null)
   const [captchaReset, setCaptchaReset] = useState(0)
   const captchaPending = Boolean(turnstileSiteKey) && !captchaToken
@@ -55,11 +56,28 @@ export function ApplicationForm({ applicationId, programTitle, questions, initia
   const total = questions.length
   const question = questions[index]
   function updateAnswer(questionId: string, value: unknown) {
-    setError(null)
+    setFieldError(null)
+    setFormError(null)
     setAnswers((previous) => ({ ...previous, [questionId]: value }))
   }
   const headingRef = useRef<HTMLHeadingElement>(null)
+  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null)
+  const alertRef = useRef<HTMLDivElement>(null)
   const dirty = JSON.stringify(answers) !== JSON.stringify(savedAnswers)
+
+  useEffect(() => {
+    if (!pending) {
+      if (fieldError) {
+        if (inputRef.current) {
+          inputRef.current.focus()
+        } else {
+          alertRef.current?.focus()
+        }
+      } else if (formError) {
+        alertRef.current?.focus()
+      }
+    }
+  }, [fieldError, formError, pending])
   useEffect(() => {
     headingRef.current?.focus({ preventScroll: true })
     window.scrollTo({ top: 0, behavior: 'instant' })
@@ -73,10 +91,15 @@ export function ApplicationForm({ applicationId, programTitle, questions, initia
 
   async function saveCurrent(): Promise<boolean> {
     if (!question) return true
-    if (question.fieldType === 'file') { setError(null); return true } // documents save on selection, not on continue
+    if (question.fieldType === 'file') {
+      setFieldError(null)
+      setFormError(null)
+      return true
+    } // documents save on selection, not on continue
 
     setPending(true)
-    setError(null)
+    setFieldError(null)
+    setFormError(null)
     const result = await postJSON(`/api/applications/${applicationId}/answer`, {
       questionId: question.id,
       value: answers[question.id] ?? (question.fieldType === 'multiselect' ? [] : ''),
@@ -88,7 +111,12 @@ export function ApplicationForm({ applicationId, programTitle, questions, initia
       return false
     }
     if (!result.ok) {
-      setError(result.data.error ?? 'Something went wrong.')
+      const err = result.data.error ?? 'Something went wrong.'
+      if (result.status === 400) {
+        setFieldError(err)
+      } else {
+        setFormError(err)
+      }
       return false
     }
     setLastSaved(new Date())
@@ -107,9 +135,14 @@ export function ApplicationForm({ applicationId, programTitle, questions, initia
 
   async function uploadFile(file: File) {
     if (!question) return
-    if (file.size > MAX_UPLOAD_BYTES) { setError('That file is over 10 MB. Try compressing it.'); return }
+    if (file.size > MAX_UPLOAD_BYTES) {
+      setFieldError('That file is over 10 MB. Try compressing it.')
+      setFormError(null)
+      return
+    }
     setPending(true)
-    setError(null)
+    setFieldError(null)
+    setFormError(null)
     const form = new FormData()
     form.append('file', file)
     form.append('questionId', question.id)
@@ -122,7 +155,12 @@ export function ApplicationForm({ applicationId, programTitle, questions, initia
       return
     }
     if (!res.ok) {
-      setError(data.error ?? 'That upload failed.')
+      const err = data.error ?? 'That upload failed.'
+      if (res.status === 400) {
+        setFieldError(err)
+      } else {
+        setFormError(err)
+      }
       return
     }
     setDocumentNames((prev) => ({ ...prev, [question.id]: file.name }))
@@ -131,7 +169,8 @@ export function ApplicationForm({ applicationId, programTitle, questions, initia
 
   async function submit() {
     setPending(true)
-    setError(null)
+    setFieldError(null)
+    setFormError(null)
     const res = await formRequest(`/api/applications/${applicationId}/submit`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -149,7 +188,7 @@ export function ApplicationForm({ applicationId, programTitle, questions, initia
         router.push(`/verify?next=${encodeURIComponent(window.location.pathname)}`)
         return
       }
-      setError(data.error ?? 'Something went wrong.')
+      setFormError(data.error ?? 'Something went wrong.')
       // A Turnstile token is single-use: ask for a fresh one.
       setCaptchaToken(null)
       setCaptchaReset((n) => n + 1)
@@ -165,7 +204,8 @@ export function ApplicationForm({ applicationId, programTitle, questions, initia
 
   async function back() {
     if (dirty && !(await saveCurrent())) return
-    setError(null)
+    setFieldError(null)
+    setFormError(null)
     setIndex((previous) => previous - 1)
   }
 
@@ -225,7 +265,8 @@ export function ApplicationForm({ applicationId, programTitle, questions, initia
                 onClick={() => {
                   setReviewing(false)
                   setReturnToReview(true)
-                  setError(null)
+                  setFieldError(null)
+                  setFormError(null)
                   setIndex(i)
                 }}
                 className="shrink-0 text-[length:var(--text-small)] font-medium text-[var(--color-signal)]"
@@ -236,13 +277,42 @@ export function ApplicationForm({ applicationId, programTitle, questions, initia
           ))}
         </div>
 
-        {error && <p role="alert" className="mt-4 text-[length:var(--text-small)] text-[var(--color-critical)]">{error}</p>}
-        {error && <button type="button" disabled={pending} onClick={() => router.push(`/dashboard/applications/${applicationId}`)} className="mt-3 text-sm underline">Check current application status</button>}
+        {formError && (
+          <div ref={alertRef} tabIndex={-1} role="alert" className="mt-4 p-3.5 rounded-lg bg-red-50 border border-red-200 text-xs font-medium text-[var(--color-critical)] outline-none flex items-start gap-2">
+            <svg className="size-4 shrink-0 mt-0.5 text-[var(--color-critical)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <span>{formError}</span>
+          </div>
+        )}
+        {formError && (
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => router.push(`/dashboard/applications/${applicationId}`)}
+            className="mt-3 text-sm underline text-[var(--color-ink-soft)] hover:text-[var(--color-signal)]"
+          >
+            Check current application status
+          </button>
+        )}
 
         <div className="mt-8 flex flex-wrap items-center gap-4">
-          {total > 0 && <button type="button" disabled={pending} onClick={() => { setReviewing(false); setError(null) }} className="text-[length:var(--text-small)] font-medium">
-            ← Back
-          </button>}
+          {total > 0 && (
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => {
+                setReviewing(false)
+                setFieldError(null)
+                setFormError(null)
+              }}
+              className="text-[length:var(--text-small)] font-medium"
+            >
+              ← Back
+            </button>
+          )}
           <Button onClick={submit} disabled={pending || captchaPending}>
             {pending ? 'Submitting…' : 'Submit application'}
           </Button>
@@ -289,10 +359,16 @@ export function ApplicationForm({ applicationId, programTitle, questions, initia
 
           <fieldset disabled={pending} className="mt-6 min-w-0" aria-label={question.label}>
             {(question.fieldType === 'text' || question.fieldType === 'url') && (
-              <Field label="Your answer" optional={question.required === false} hint={question.maxLength ? `${String(answers[question.id] ?? '').length} of ${question.maxLength} characters` : undefined}>
+              <Field
+                label="Your answer"
+                optional={question.required === false}
+                error={fieldError ?? undefined}
+                hint={question.maxLength ? `${String(answers[question.id] ?? '').length} of ${question.maxLength} characters` : undefined}
+              >
                 {(p) => (
                   <Input
                     {...p}
+                    ref={inputRef as React.Ref<HTMLInputElement>}
                     type={question.fieldType === 'url' ? 'url' : 'text'}
                     value={(answers[question.id] as string) ?? ''}
                     maxLength={question.maxLength ?? undefined}
@@ -303,10 +379,16 @@ export function ApplicationForm({ applicationId, programTitle, questions, initia
             )}
 
             {question.fieldType === 'textarea' && (
-              <Field label="Your answer" optional={question.required === false} hint={question.maxLength ? `${String(answers[question.id] ?? '').length} of ${question.maxLength} characters` : undefined}>
+              <Field
+                label="Your answer"
+                optional={question.required === false}
+                error={fieldError ?? undefined}
+                hint={question.maxLength ? `${String(answers[question.id] ?? '').length} of ${question.maxLength} characters` : undefined}
+              >
                 {(p) => (
                   <Textarea
                     {...p}
+                    ref={inputRef as React.Ref<HTMLTextAreaElement>}
                     value={(answers[question.id] as string) ?? ''}
                     maxLength={question.maxLength ?? undefined}
                     onChange={(e) => updateAnswer(question.id, e.target.value)}
@@ -356,7 +438,22 @@ export function ApplicationForm({ applicationId, programTitle, questions, initia
             )}
           </fieldset>
 
-          {error && <p role="alert" className="mt-4 text-[length:var(--text-small)] text-[var(--color-critical)]">{error}</p>}
+          {!['text', 'url', 'textarea'].includes(question.fieldType) && fieldError && (
+            <div ref={alertRef} tabIndex={-1} role="alert" className="mt-4 p-3 rounded-lg bg-red-50 border border-red-200 text-xs font-medium text-[var(--color-critical)] outline-none">
+              {fieldError}
+            </div>
+          )}
+
+          {formError && (
+            <div ref={alertRef} tabIndex={-1} role="alert" className="mt-4 p-3.5 rounded-lg bg-red-50 border border-red-200 text-xs font-medium text-[var(--color-critical)] flex items-start gap-2 outline-none">
+              <svg className="size-4 shrink-0 mt-0.5 text-[var(--color-critical)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              <span>{formError}</span>
+            </div>
+          )}
 
           <div className="mt-10 flex items-center justify-between">
             {index > 0 ? (

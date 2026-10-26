@@ -31,16 +31,16 @@ export async function MentorDashboard({ user }: { user: SessionUser }) {
             action={<ButtonLink href="/contact?topic=mentor" variant="secondary">Contact the mentor team</ButtonLink>}
           />
         ) : (
-          <div className="mt-6 flex items-center gap-4 rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-white p-6">
+          <div className="mt-6 flex flex-col items-start gap-4 rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-white p-6 sm:flex-row sm:items-center">
             <Avatar name={mentor.name} src={typeof mentor.photo === 'object' ? mentor.photo?.url : null} size="lg" />
-            <div>
+            <div className="w-full min-w-0 flex-1 [overflow-wrap:anywhere]">
               <p className="font-medium">{mentor.name}</p>
               <p className="text-[length:var(--text-small)] text-[var(--color-ink-muted)]">
                 {[mentor.title, mentor.organization].filter(Boolean).join(' · ')}
               </p>
               <div className="mt-2 flex flex-wrap gap-2">
                 {mentor.expertise.map((area) => (
-                  <Tag key={area} tone="archive">
+                  <Tag key={area} tone="archive" className="max-w-full whitespace-normal text-left">
                     {expertiseLabel(area)}
                   </Tag>
                 ))}

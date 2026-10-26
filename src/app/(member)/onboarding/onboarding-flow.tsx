@@ -2,9 +2,9 @@
 
 import { formRequest } from '@/lib/form-request'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { motion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 import { EXPERTISE_OPTIONS, SECTOR_OPTIONS } from '@/payload/fields/taxonomy'
 import { Field, Heading, Input, MultiSelect, SingleSelect, Textarea } from '@/components/ui'
 import type { JourneyStage, PlatformRole } from '@/server/auth/roles'
@@ -72,24 +72,38 @@ type Props = {
   initialStep?: string
 }
 
-async function postStep(step: string, data?: unknown): Promise<{ ok: boolean; error?: string }> {
-  const res = await formRequest('/api/onboarding/step', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ step, data }),
-  })
+async function postStep(
+  step: string,
+  data?: unknown,
+): Promise<{ ok: boolean; error?: string; fieldErrors?: Record<string, string> }> {
+  try {
+    const res = await formRequest('/api/onboarding/step', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ step, data }),
+    })
 
-  // A 401 means the session expired mid-flow. Sending them to log back in
-  // (with ?next= so they land back on /onboarding) is the honest response —
-  // a generic "something went wrong" would hide that their answers past this
-  // point were never saved.
-  if (res.status === 401) {
-    window.location.href = `/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`
-    return { ok: false, error: 'Your session expired. Redirecting to log in…' }
+    // A 401 means the session expired mid-flow. Sending them to log back in
+    // (with ?next= so they land back on /onboarding) is the honest response —
+    // a generic "something went wrong" would hide that their answers past this
+    // point were never saved.
+    if (res.status === 401) {
+      window.location.href = `/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`
+      return { ok: false, error: 'Your session expired. Redirecting to log in…' }
+    }
+
+    const body = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      return {
+        ok: false,
+        error: body.error ?? 'Something went wrong. Try again.',
+        fieldErrors: body.fieldErrors,
+      }
+    }
+    return { ok: true }
+  } catch {
+    return { ok: false, error: 'Network error. Please check your connection and try again.' }
   }
-
-  const body = await res.json().catch(() => ({}))
-  return res.ok ? { ok: true } : { ok: false, error: body.error }
 }
 
 /**
@@ -101,10 +115,24 @@ async function postStep(step: string, data?: unknown): Promise<{ ok: boolean; er
  */
 export function OnboardingFlow({ initial, stagePrefill, next, initialStep }: Props) {
   const router = useRouter()
+  const shouldReduceMotion = useReducedMotion()
   const [answers, setAnswers] = useState<Answers>(initial)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<{ linkedinUrl?: string; name?: string }>({})
   const [skippedStagePrefillNotice, setSkippedStagePrefillNotice] = useState(Boolean(stagePrefill))
+  const linkedinRef = useRef<HTMLInputElement>(null)
+  const nameRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (!pending) {
+      if (fieldErrors.name) {
+        nameRef.current?.focus()
+      } else if (fieldErrors.linkedinUrl) {
+        linkedinRef.current?.focus()
+      }
+    }
+  }, [fieldErrors, pending])
 
   const isPeopleRole = answers.platformRole === 'mentor' || answers.platformRole === 'investor' || answers.platformRole === 'partner'
   const isMentor = answers.platformRole === 'mentor'
@@ -139,10 +167,17 @@ export function OnboardingFlow({ initial, stagePrefill, next, initialStep }: Pro
   async function advance(step: string, data?: unknown) {
     setPending(true)
     setError(null)
+    setFieldErrors({})
     const result = await postStep(step, data)
     setPending(false)
     if (!result.ok) {
-      setError(result.error ?? 'Something went wrong. Try again.')
+      if (result.fieldErrors && Object.keys(result.fieldErrors).length > 0) {
+        setFieldErrors(result.fieldErrors)
+        setError(null)
+      } else {
+        setError(result.error ?? 'Something went wrong. Try again.')
+        setFieldErrors({})
+      }
       return
     }
     if (index === steps.length - 1) return
@@ -151,6 +186,7 @@ export function OnboardingFlow({ initial, stagePrefill, next, initialStep }: Pro
 
   function back() {
     setError(null)
+    setFieldErrors({})
     goTo(Math.max(0, index - 1))
   }
 
@@ -271,8 +307,19 @@ export function OnboardingFlow({ initial, stagePrefill, next, initialStep }: Pro
         pending={pending}
       >
         <div className="flex flex-col gap-6">
-          <Field label="Name">
-            {(p) => <Input {...p} value={answers.name} onChange={(e) => update('name', e.target.value)} required />}
+          <Field label="Name" error={fieldErrors.name}>
+            {(p) => (
+              <Input
+                {...p}
+                ref={nameRef}
+                value={answers.name}
+                onChange={(e) => {
+                  update('name', e.target.value)
+                  if (fieldErrors.name) setFieldErrors((prev) => ({ ...prev, name: undefined }))
+                }}
+                required
+              />
+            )}
           </Field>
           <Field label="Organization" optional>
             {(p) => <Input {...p} value={answers.organization} onChange={(e) => update('organization', e.target.value)} />}
@@ -293,8 +340,19 @@ export function OnboardingFlow({ initial, stagePrefill, next, initialStep }: Pro
               onChange={(v) => update('mentorAvailability', v)}
             />
           </div>
-          <Field label="LinkedIn" optional>
-            {(p) => <Input {...p} type="url" value={answers.linkedinUrl} onChange={(e) => update('linkedinUrl', e.target.value)} />}
+          <Field label="LinkedIn" optional error={fieldErrors.linkedinUrl}>
+            {(p) => (
+              <Input
+                {...p}
+                ref={linkedinRef}
+                type="url"
+                value={answers.linkedinUrl}
+                onChange={(e) => {
+                  update('linkedinUrl', e.target.value)
+                  if (fieldErrors.linkedinUrl) setFieldErrors((prev) => ({ ...prev, linkedinUrl: undefined }))
+                }}
+              />
+            )}
           </Field>
         </div>
         {error && <p role="alert" className="mt-4 text-[length:var(--text-small)] text-[var(--color-critical)]">{error}</p>}
@@ -322,14 +380,36 @@ export function OnboardingFlow({ initial, stagePrefill, next, initialStep }: Pro
         pending={pending}
       >
         <div className="flex flex-col gap-6">
-          <Field label="Name">
-            {(p) => <Input {...p} value={answers.name} onChange={(e) => update('name', e.target.value)} required />}
+          <Field label="Name" error={fieldErrors.name}>
+            {(p) => (
+              <Input
+                {...p}
+                ref={nameRef}
+                value={answers.name}
+                onChange={(e) => {
+                  update('name', e.target.value)
+                  if (fieldErrors.name) setFieldErrors((prev) => ({ ...prev, name: undefined }))
+                }}
+                required
+              />
+            )}
           </Field>
           <Field label="School or department" optional>
             {(p) => <Input {...p} value={answers.school} onChange={(e) => update('school', e.target.value)} />}
           </Field>
-          <Field label="LinkedIn" optional>
-            {(p) => <Input {...p} type="url" value={answers.linkedinUrl} onChange={(e) => update('linkedinUrl', e.target.value)} />}
+          <Field label="LinkedIn" optional error={fieldErrors.linkedinUrl}>
+            {(p) => (
+              <Input
+                {...p}
+                ref={linkedinRef}
+                type="url"
+                value={answers.linkedinUrl}
+                onChange={(e) => {
+                  update('linkedinUrl', e.target.value)
+                  if (fieldErrors.linkedinUrl) setFieldErrors((prev) => ({ ...prev, linkedinUrl: undefined }))
+                }}
+              />
+            )}
           </Field>
           <Field label="A line about yourself" optional hint="What are you interested in building, or figuring out?">
             {(p) => <Textarea {...p} value={answers.bio} onChange={(e) => update('bio', e.target.value)} />}
@@ -346,72 +426,68 @@ export function OnboardingFlow({ initial, stagePrefill, next, initialStep }: Pro
   return (
     <div className="relative">
       <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        initial={shouldReduceMotion ? false : { opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: shouldReduceMotion ? 0 : 0.25, ease: 'easeOut' }}
         className="mx-auto max-w-2xl text-center"
       >
-        <div className="mb-8 inline-flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-signal-wash)] text-[var(--color-signal)]">
-          <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-signal-wash)] text-[var(--color-signal)]">
+          <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
         </div>
 
-        <Heading as="h1" size="display" className="mb-4 text-[var(--color-ink)]">
+        <Heading as="h1" size="display" className="mb-3 text-[var(--color-ink)]">
           Your KNEST Path is Ready
         </Heading>
-        <p className="mb-10 text-[length:var(--text-body)] text-[var(--color-ink-soft)]">
-          Based on your profile, here is exactly where you should start.
+        <p className="mb-8 text-[length:var(--text-body)] text-[var(--color-ink-soft)]">
+          Based on your profile, here is where you should begin.
         </p>
 
-        <div className="relative overflow-hidden rounded-[var(--radius-xl)] border border-[var(--color-line)] bg-white p-1 shadow-2xl">
-          <div className="absolute inset-0 bg-gradient-to-br from-[var(--color-signal-wash)] to-transparent opacity-50" />
-          <div className="relative rounded-[var(--radius-lg)] bg-white p-8 sm:p-12 text-left">
-            <div className="mb-6 flex items-center gap-3">
-              <span className="flex h-8 items-center rounded-full bg-[var(--color-signal)] px-3 text-[length:var(--text-small)] font-semibold uppercase tracking-wider text-white">
-                Recommended
-              </span>
-              <span className="text-[length:var(--text-small)] font-medium text-[var(--color-ink-muted)] uppercase tracking-widest">
-                {result.path}
-              </span>
-            </div>
-            
-            <h2 className="mb-4 font-[family-name:var(--font-display)] text-3xl md:text-4xl leading-tight text-[var(--color-ink)]">
-              {result.headline || result.body}
-            </h2>
-            
-            <p className="mb-8 text-[length:var(--text-body)] leading-relaxed text-[var(--color-ink-soft)]">
-              {result.reason}
-            </p>
-
-            <button
-              type="button"
-              disabled={pending}
-              onClick={async () => {
-                setPending(true)
-                setError(null)
-                const done = await postStep('complete')
-                if (!done.ok) {
-                  // Never navigate on failure: /dashboard would bounce back to step 1
-                  // with no explanation (the old behaviour, KN-14).
-                  setPending(false)
-                  setError(done.error ?? 'We could not finish setting up your account. Try again.')
-                  return
-                }
-                router.push(completionDestination(next, result.path, answers.journeyStage))
-                router.refresh()
-              }}
-              className="group relative inline-flex w-full sm:w-auto items-center justify-center overflow-hidden rounded-full bg-[var(--color-ink)] px-8 py-4 font-medium text-white transition-all hover:scale-105 hover:bg-[var(--color-signal)] disabled:opacity-50"
-            >
-              <span className="relative z-10">{pending ? 'Finishing setup…' : next?.startsWith('/apply/') ? 'Continue to your application' : next === '/dashboard' ? 'Open your dashboard' : result.cta}</span>
-              <div className="absolute inset-0 -z-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-            </button>
-            {error && (
-              <p role="alert" className="mt-4 text-[length:var(--text-small)] text-[var(--color-critical)]">
-                {error}
-              </p>
-            )}
+        <div className="rounded-[var(--radius-md)] border border-[var(--color-line-strong)] bg-white p-6 sm:p-10 text-left">
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-2 border-b border-[var(--color-line)] pb-4">
+            <span className="text-[length:var(--text-small)] font-semibold uppercase tracking-wider text-[var(--color-signal)]">
+              Recommended Path
+            </span>
+            <span className="text-[length:var(--text-small)] font-medium text-[var(--color-ink-muted)] uppercase tracking-wider">
+              {result.path}
+            </span>
           </div>
+
+          <h2 className="mb-4 font-[family-name:var(--font-display)] text-2xl sm:text-3xl leading-snug text-[var(--color-ink)] font-bold">
+            {result.headline || result.body}
+          </h2>
+
+          <p className="mb-8 text-[length:var(--text-body)] leading-relaxed text-[var(--color-ink-soft)]">
+            {result.reason}
+          </p>
+
+          <button
+            type="button"
+            disabled={pending}
+            onClick={async () => {
+              setPending(true)
+              setError(null)
+              const done = await postStep('complete')
+              if (!done.ok) {
+                // Never navigate on failure: /dashboard would bounce back to step 1
+                // with no explanation (the old behaviour, KN-14).
+                setPending(false)
+                setError(done.error ?? 'We could not finish setting up your account. Try again.')
+                return
+              }
+              router.push(completionDestination(next, result.path, answers.journeyStage))
+              router.refresh()
+            }}
+            className="inline-flex min-h-[44px] w-full sm:w-auto items-center justify-center rounded-[var(--radius-sm)] bg-[var(--color-ink)] px-6 py-3 font-medium text-white transition-colors hover:bg-[var(--color-ink-soft)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-signal)] disabled:opacity-50"
+          >
+            {pending ? 'Finishing setup…' : next?.startsWith('/apply/') ? 'Continue to your application' : next === '/dashboard' ? 'Open your dashboard' : result.cta}
+          </button>
+          {error && (
+            <p role="alert" className="mt-4 text-[length:var(--text-small)] text-[var(--color-critical)]">
+              {error}
+            </p>
+          )}
         </div>
 
         <button

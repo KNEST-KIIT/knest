@@ -31,14 +31,30 @@ export const auditAfterChange: CollectionAfterChangeHook = async ({ collection, 
   const before = previousDoc as Doc
   const after = doc as Doc
   const statusChanged = (before?._status ?? null) !== (after?._status ?? null)
-  const action =
-    operation === 'create'
-      ? 'cms.create'
-      : statusChanged && after?._status === 'published'
-        ? 'cms.publish'
-        : statusChanged && after?._status === 'draft'
-          ? 'cms.unpublish'
-          : 'cms.update'
+  let action = 'cms.update'
+  if (operation === 'create') {
+    action = 'cms.create'
+  } else if (statusChanged && after?._status === 'published') {
+    action = 'cms.publish'
+  } else if (statusChanged && after?._status === 'draft') {
+    let hasPublishedBase = false
+    try {
+      if (after?.id && req.payload) {
+        const live = await req.payload
+          .findByID({
+            collection: collection.slug as unknown as Parameters<typeof req.payload.findByID>[0]['collection'],
+            id: after.id,
+            draft: false,
+            overrideAccess: true,
+          })
+          .catch(() => null)
+        if (live && typeof live === 'object' && '_status' in live && (live as { _status?: unknown })._status === 'published') {
+          hasPublishedBase = true
+        }
+      }
+    } catch {}
+    action = hasPublishedBase ? 'cms.update' : 'cms.unpublish'
+  }
   await record(
     req.user?.id ? String(req.user.id) : undefined,
     action,

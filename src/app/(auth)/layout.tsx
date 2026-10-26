@@ -14,7 +14,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <SkipLink />
       <main id="main" className="flex min-h-dvh bg-white">
         {/* Left Side: Auth Forms */}
-        <div className="flex flex-1 flex-col justify-center px-4 py-12 sm:px-6 lg:flex-none lg:w-1/2 lg:px-20 xl:px-24">
+        <div className="flex min-w-0 flex-1 flex-col justify-center px-4 py-12 sm:px-6 lg:flex-none lg:w-1/2 lg:px-20 xl:px-24">
           <div className="mx-auto w-full max-w-sm">
             {/* Brand Header */}
             <div className="mb-10">
@@ -29,7 +29,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                     KNEST
                   </span>
                   <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-[var(--color-ink-muted)] group-hover:text-[var(--color-signal)] transition-colors">
-                    Innovation Ecosystem
+                    Student Talent &amp; Ventures
                   </span>
                 </div>
               </Link>
@@ -61,7 +61,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <Image
             className="absolute inset-0 h-full w-full object-cover opacity-90"
             src="/auth-cover.jpg"
-            alt="KNEST Innovation Hub"
+            alt="KNEST · KIIT University"
             width={1200}
             height={1600}
             priority
@@ -69,20 +69,19 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           {/* Overlay Gradient for contrast */}
           <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-ink)] via-[var(--color-ink)]/20 to-transparent mix-blend-multiply" />
           
-          {/* Right Side Overlay Content (Optional Quote/Branding) */}
+          {/* Right Side Overlay Content */}
           <div className="absolute bottom-12 left-12 right-12 z-10">
             <div className="max-w-xl">
-              <p className="text-2xl font-[family-name:var(--font-display)] leading-tight text-white/90">
-                Innovation ready. Enterprise ready. Market ready.
+              <p className="font-[family-name:var(--font-display)] text-2xl sm:text-3xl font-bold leading-tight text-white">
+                What if you actually built it?
               </p>
-              <div className="mt-4 flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white">
-                  K
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-white">KNEST</p>
-                  <p className="text-xs text-white/60 uppercase tracking-widest">KIIT University</p>
-                </div>
+              <p className="mt-2 text-sm text-white/80 leading-relaxed">
+                Structured support from first prototype to funded venture.
+              </p>
+              <div className="mt-4 flex items-center gap-2 text-xs uppercase tracking-widest text-[var(--color-paper-soft)] font-mono font-medium">
+                <span>School of Innovation &amp; Entrepreneurship</span>
+                <span>·</span>
+                <span>KIIT</span>
               </div>
             </div>
           </div>

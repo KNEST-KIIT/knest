@@ -1,18 +1,18 @@
 import type { CollectionConfig } from 'payload'
-import { canWrite, readAlways } from '../access'
+import { canWrite, readConsentedTestimonials } from '../access'
 
 /**
  * Real quotes from real people only.
  *
- * `consentGiven` is required rather than a checkbox someone might forget: KNEST
- * publishes these with a name and a photo attached, and a quote nobody agreed
- * to is a problem for the person quoted, not just for the page.
+ * `consentGiven` defaults to false: KNEST publishes these with a name and a
+ * photo attached, and anonymous visitors only see testimonials with affirmative
+ * consent (`readConsentedTestimonials`).
  */
 export const Testimonials: CollectionConfig = {
   slug: 'testimonials',
   admin: { useAsTitle: 'attribution', defaultColumns: ['attribution', 'role', 'consentGiven'] },
   access: {
-    read: readAlways,
+    read: readConsentedTestimonials,
     create: canWrite('content'),
     update: canWrite('content'),
     delete: canWrite('content'),
@@ -27,8 +27,8 @@ export const Testimonials: CollectionConfig = {
     {
       name: 'consentGiven',
       type: 'checkbox',
-      required: true,
-      admin: { description: 'This person has agreed to be quoted publicly, by name.' },
+      defaultValue: false,
+      admin: { description: 'This person has agreed to be quoted publicly, by name. Anonymous visitors only see testimonials with affirmative consent.' },
     },
   ],
 }

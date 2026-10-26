@@ -28,3 +28,7 @@ The build, pure-unit and API-only baseline cases have now been reviewed against 
 - The analytics expected-failure is retained visibly, and will be interpreted separately from framework pass counts. A trusted-header harness does not prove a deployed spoofing defect.
 
 Baseline execution gate: **EXECUTED**. Explicit browser cases have a separate reviewed ledger; cases not covered by that review remain **PENDING**. No independent human or second-agent review is claimed.
+
+## Relationship/mentor review refinements
+
+The collection schemas, public joins/detail views, role dashboards, user journeys, transition policy and actual filter controls were reviewed before this cohort. The mentor UI exposes expertise only: no missing sector filter was invented from schema metadata. A founder has an editorial profile but no standalone founder URL in this build; the accepted-founder account consumer was tested from its actual linked graph instead. Fresh users/control program and route-driven accepted status are explicit test preconditions. Click filtering, radio keyboard behavior and pointer/keyboard array sorting remain distinct acceptance claims. A verified 429 caused the evidence helper to reuse one scoped session rather than alter security controls.

@@ -21,6 +21,6 @@ export const credentialsSchema = z.object({
 
 export const signupSchema = z.object({
   email: emailSchema,
-  password: passwordSchema,
+  password: passwordSchema.optional(),
   name: z.string().trim().min(1, 'Tell us your name.').max(120),
 })

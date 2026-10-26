@@ -37,8 +37,17 @@ export const readPublished: Access = ({ req }) => {
 export const isAnyStaff: Access = ({ req }) => roleOf(req.user) !== null
 
 /**
+ * Anonymous visitors can only read testimonials with affirmative consent;
+ * staff can read all testimonials to correct or manage them.
+ */
+export const readConsentedTestimonials: Access = ({ req }) => {
+  if (roleOf(req.user)) return true
+  return { consentGiven: { equals: true } }
+}
+
+/**
  * Public read for collections that have no draft/publish concept at all
- * (Cohorts, Testimonials, FAQs, Metrics). `readPublished` filters on
+ * (Cohorts, FAQs, Metrics). `readPublished` filters on
  * `_status`, which only exists on collections with `versions.drafts` enabled —
  * applying it to one of these throws "Cannot find field for path at _status"
  * the moment anything queries or relates to them.

@@ -423,8 +423,6 @@ export interface Media {
    * Photographer or source, if needed.
    */
   credit?: string | null;
-  prefix?: string | null;
-  _objectKey?: string | null;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -938,9 +936,9 @@ export interface Testimonial {
   startup?: (number | null) | Startup;
   program?: (number | null) | Program;
   /**
-   * This person has agreed to be quoted publicly, by name.
+   * This person has agreed to be quoted publicly, by name. Anonymous visitors only see testimonials with affirmative consent.
    */
-  consentGiven: boolean;
+  consentGiven?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1480,8 +1478,6 @@ export interface MetricsSelect<T extends boolean = true> {
 export interface MediaSelect<T extends boolean = true> {
   alt?: T;
   credit?: T;
-  prefix?: T;
-  _objectKey?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;

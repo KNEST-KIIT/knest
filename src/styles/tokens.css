@@ -71,8 +71,11 @@
   --text-small: 0.875rem;
   --text-micro: 0.75rem;
 
-  /* --- Space: 8pt --- */
+  /* --- Spacing scale (established 0.5rem scale) --- */
   --spacing: 0.5rem;
+  --control-height-sm: 2rem;
+  --control-height-md: 2.5rem;
+  --control-height-lg: 2.75rem;
 
   /* --- Focus ring (spec section 44) --- */
   --focus-width: 2px;

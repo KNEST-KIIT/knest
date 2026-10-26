@@ -8,6 +8,14 @@ const CONFIG: Record<Program['applicationStatus'], { label: string; tone: 'signa
   in_progress: { label: 'In progress', tone: 'archive' },
 }
 
-export function ProgramStatusBadge({ status }: { status: Program['applicationStatus'] }) {
-  return <StatusBadge status={status} config={CONFIG} variant="pill" />
+export function ProgramStatusBadge({
+  status,
+  deadline,
+}: {
+  status: Program['applicationStatus']
+  deadline?: string | null
+}) {
+  const isExpired = status === 'open' && Boolean(deadline && new Date(deadline) < new Date())
+  const effectiveStatus = isExpired ? 'closed' : status
+  return <StatusBadge status={effectiveStatus} config={CONFIG} variant="pill" />
 }

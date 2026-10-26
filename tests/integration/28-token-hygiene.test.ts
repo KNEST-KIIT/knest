@@ -129,8 +129,8 @@ describe('e-mail verification links', () => {
     expect(await storedFor(`verify-email:${mail}`)).toEqual([sha256(token)])
 
     const [a, b] = await Promise.all([
-      post('/api/auth/password/verify/confirm', { email: mail, token }),
-      post('/api/auth/password/verify/confirm', { email: mail, token }),
+      post('/api/auth/password/verify/confirm', { email: mail, token, password: 'Fresh-Owner-Password-2026!' }),
+      post('/api/auth/password/verify/confirm', { email: mail, token, password: 'Fresh-Owner-Password-2026!' }),
     ])
     expect([a.status, b.status].sort()).toEqual([200, 400])
     expect((await db().query('select email_verified from app.users where email = $1', [mail])).rows[0].email_verified).not.toBeNull()

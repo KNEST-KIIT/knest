@@ -32,7 +32,12 @@ export async function POST(request: Request) {
 
   try {
     const result = await (step === 'complete' ? handler(undefined) : handler(body?.data))
-    if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 })
+    if (!result.ok) {
+      return NextResponse.json(
+        { error: result.error, fieldErrors: result.fieldErrors },
+        { status: 400 }
+      )
+    }
     return NextResponse.json({ ok: true })
   } catch (error) {
     if (error instanceof UnauthorizedError) {

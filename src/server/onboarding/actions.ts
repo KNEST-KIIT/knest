@@ -14,7 +14,7 @@ import {
   stepStageSchema,
 } from './validation'
 
-export type StepResult = { ok: true } | { ok: false; error: string }
+export type StepResult = { ok: true } | { ok: false; error: string; fieldErrors?: Record<string, string> }
 
 /**
  * One function per step. Each writes immediately and independently — closing
@@ -78,7 +78,16 @@ export async function saveInterestsStep(input: unknown): Promise<StepResult> {
 export async function saveProfileStep(input: unknown): Promise<StepResult> {
   const user = await requireUserOrThrow()
   const parsed = stepProfileSchema.safeParse(input)
-  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? 'Check your details.' }
+  if (!parsed.success) {
+    const fieldErrors: Record<string, string> = {}
+    for (const issue of parsed.error.issues) {
+      const field = issue.path[0]
+      if (typeof field === 'string' && !fieldErrors[field]) {
+        fieldErrors[field] = issue.message
+      }
+    }
+    return { ok: false, error: parsed.error.issues[0]?.message ?? 'Check your details.', fieldErrors }
+  }
 
   await db
     .update(users)
@@ -100,7 +109,16 @@ export async function saveProfileStep(input: unknown): Promise<StepResult> {
 export async function saveMentorProfileStep(input: unknown): Promise<StepResult> {
   const user = await requireUserOrThrow()
   const parsed = stepMentorProfileSchema.safeParse(input)
-  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? 'Check your details.' }
+  if (!parsed.success) {
+    const fieldErrors: Record<string, string> = {}
+    for (const issue of parsed.error.issues) {
+      const field = issue.path[0]
+      if (typeof field === 'string' && !fieldErrors[field]) {
+        fieldErrors[field] = issue.message
+      }
+    }
+    return { ok: false, error: parsed.error.issues[0]?.message ?? 'Check your details.', fieldErrors }
+  }
 
   await db
     .update(users)

@@ -1,9 +1,9 @@
 import 'server-only'
 
 import { compare, hash } from 'bcryptjs'
-import { eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 import { db } from '@/db/client'
-import { sessions, users } from '@/db/schema'
+import { accounts, sessions, users } from '@/db/schema'
 import { accountExistsTemplate, resetPasswordTemplate, setupPasswordTemplate, verifyEmailTemplate } from '@/server/email/templates'
 import { sendEmail } from '@/server/email/send'
 import { consumeToken, issueToken } from './tokens'
@@ -14,8 +14,14 @@ import { track } from '@/server/analytics/track'
 import { siteUrl } from '@/lib/site-url'
 import { safeNext } from '@/lib/safe-next'
 
-export type AuthResult = { ok: true } | { ok: false; error: string }
+export type AuthResult = { ok: true } | { ok: false; error: string; serverError?: boolean }
 
+export class ActivationError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'ActivationError'
+  }
+}
 
 const VERIFY_TTL_MS = 24 * 60 * 60 * 1000
 const RESET_TTL_MS = 60 * 60 * 1000
@@ -35,6 +41,10 @@ export async function loginWithPassword(input: unknown): Promise<AuthResult> {
 
   if (!user || !user.passwordHash || !matches || !user.isActive) {
     return { ok: false, error: 'That email and password don’t match.' }
+  }
+
+  if (!user.emailVerified) {
+    return { ok: false, error: 'Verify your email before signing in.' }
   }
 
   await createDatabaseSession(user.id)
@@ -63,7 +73,7 @@ export async function signUpWithPassword(input: unknown): Promise<AuthResult> {
   }
   const next = safeNext((input as { next?: unknown } | null)?.next as string | undefined)
 
-  const passwordHash = await hash(parsed.data.password, 12)
+  const passwordHash = parsed.data.password ? await hash(parsed.data.password, 12) : null
   const [created] = await db
     .insert(users)
     .values({
@@ -117,24 +127,112 @@ export async function sendVerificationEmail(emailInput: string, next?: string | 
   return { ok: true }
 }
 
-export async function confirmEmailVerification(emailInput: string, token: string): Promise<AuthResult> {
+export async function confirmEmailVerification(
+  emailInput: string,
+  token: string,
+  newPassword?: string,
+): Promise<AuthResult> {
   const parsed = emailSchema.safeParse(emailInput)
   if (!parsed.success || !token) return { ok: false, error: 'That link is invalid.' }
 
-  const userId = await db.transaction(async (tx) => {
-    if (!(await consumeToken('verify-email', parsed.data, token, tx))) return null
-    const [user] = await tx
-      .update(users)
-      .set({ emailVerified: new Date(), updatedAt: new Date() })
-      .where(eq(users.email, parsed.data))
-      .returning({ id: users.id, isActive: users.isActive })
-    return user?.isActive ? user.id : ''
-  })
-  if (userId === null) return { ok: false, error: 'That link has expired. Request a new one.' }
-  // Opening the link proves control of the mailbox, which is what signing in
-  // needs. This is how a new account gets its first session (see signUpWithPassword).
-  if (userId) await createDatabaseSession(userId)
-  return { ok: true }
+  // 1. If newPassword is provided, validate and hash it upfront
+  let newPasswordHash: string | null = null
+  if (newPassword !== undefined && newPassword !== '') {
+    const parsedPw = passwordSchema.safeParse(newPassword)
+    if (!parsedPw.success) {
+      return { ok: false, error: parsedPw.error.issues[0]?.message ?? 'Choose a password of at least 12 characters to activate your account.' }
+    }
+    newPasswordHash = await hash(parsedPw.data, 12)
+  }
+
+  // 2. Perform verification inside a transaction with row locking
+  // If anything is invalid (e.g. missing password on unverified account), throwing rolls back the transaction
+  // so the single-use token is NEVER consumed.
+  try {
+    const result = await db.transaction(async (tx) => {
+      // Lock user row with FOR UPDATE to prevent race conditions
+      const [user] = await tx
+        .select({
+          id: users.id,
+          isActive: users.isActive,
+          emailVerified: users.emailVerified,
+          passwordHash: users.passwordHash,
+        })
+        .from(users)
+        .where(eq(users.email, parsed.data))
+        .for('update')
+
+      if (!user || !user.isActive) {
+        throw new ActivationError('That link has expired. Request a new one.')
+      }
+
+      // Check for linked OAuth accounts (e.g. Google) inside transaction
+      const [linkedAccount] = await tx
+        .select({ provider: accounts.provider })
+        .from(accounts)
+        .where(eq(accounts.userId, user.id))
+        .limit(1)
+
+      const isAlreadyVerified = user.emailVerified !== null || Boolean(linkedAccount)
+
+      // QA-004 protection: For unverified accounts, a freshly supplied owner password is MANDATORY.
+      // Never fall back to an unverified stored hash from signup.
+      // Throwing before consumeToken ensures the single-use token is NOT consumed on missing password.
+      if (!isAlreadyVerified && !newPasswordHash) {
+        throw new ActivationError('Choose a password of at least 12 characters to activate your account.')
+      }
+
+      // Consume token inside transaction after all prerequisite checks pass
+      const consumed = await consumeToken('verify-email', parsed.data, token, tx)
+      if (!consumed) {
+        throw new ActivationError('That link has expired. Request a new one.')
+      }
+
+      if (isAlreadyVerified) {
+        // Account is already established: preserve credentials, do not overwrite password, do not revoke existing sessions
+        return { userId: user.id }
+      }
+
+      // Unverified account being activated: set freshly supplied owner password
+      const [updated] = await tx
+        .update(users)
+        .set({
+          emailVerified: new Date(),
+          passwordHash: newPasswordHash,
+          updatedAt: new Date(),
+        })
+        .where(and(eq(users.id, user.id), isNull(users.emailVerified)))
+        .returning({ id: users.id })
+
+      if (!updated) {
+        // If another concurrent transaction just verified the account, preserve it
+        return { userId: user.id }
+      }
+
+      // Revoke all pre-verification sessions
+      await tx.delete(sessions).where(eq(sessions.userId, user.id))
+      return { userId: user.id }
+    })
+
+    // Proving mailbox ownership creates a session for the owner
+    if (result.userId) {
+      await createDatabaseSession(result.userId)
+    }
+    return { ok: true }
+  } catch (err: unknown) {
+    if (err instanceof ActivationError) {
+      return { ok: false, error: err.message }
+    }
+    const errCategory = err && typeof err === 'object' && 'name' in err && typeof err.name === 'string'
+      ? `${err.name}${'code' in err && typeof err.code === 'string' ? ` [${err.code}]` : ''}`
+      : 'UnknownError'
+    console.error(`Unexpected error during email verification confirmation: category=${errCategory}`)
+    return {
+      ok: false,
+      error: 'We could not complete your account activation. Please try again.',
+      serverError: true,
+    }
+  }
 }
 
 export async function requestPasswordReset(emailInput: string, next?: string | null): Promise<AuthResult> {
@@ -175,7 +273,7 @@ export async function resetPassword(
   const valid = await db.transaction(async (tx) => {
     if (!(await consumeToken('reset-password', parsedEmail.data, token, tx))) return false
     const [user] = await tx.update(users)
-      .set({ passwordHash, updatedAt: new Date() })
+      .set({ passwordHash, emailVerified: new Date(), updatedAt: new Date() })
       .where(eq(users.email, parsedEmail.data))
       .returning({ id: users.id })
     if (user) await tx.delete(sessions).where(eq(sessions.userId, user.id))

@@ -59,3 +59,31 @@ FAIL indicates at least one reproduced variant issue; NOT RUN means the entire s
 | `src/components/ui/timeline.tsx` | Timeline | NOT RUN |
 
 Source-only hypotheses still need browser reproduction: the undefined `--color-line-strong` reference and possible independently styled password/input variants. They are not registered bugs without verified visible or behavioral consequences.
+
+## CMS and result-summary variants
+
+- QA-012: On the Event editor, date inputs and seven select/relationship comboboxes lack accessible names; rich text is also unnamed. Visible date/select labels target wrapper elements instead of inputs. Title is correctly labelled. Source tracing is limited to the installed Payload 3.90.2 DateTime/Select renderers; no framework-wide or assistive-technology acceptance is inferred.
+- QA-014/QA-015: CMS publication accepts an inverted event date range and an invalid registration target; the public details then show misleading availability or an unusable Register action.
+- QA-016: The extracted shared resultSummary helper uses a plural verb for one filtered result. Its zero/plural assertions pass, and functional event filtering is unaffected. Actual one-result browser text and the pure-helper probe agree.
+
+The rich-text Tab behavior observed during discovery remains an unconfirmed hypothesis; no keyboard-trap allegation is made without an escape/keyboard-mode replay.
+
+## Homepage controls and content safeguards
+
+- QA-017: Three independently exposed narrative controls actually share the Problem rendering branch. Person/KNEST flags cannot independently hide their content.
+- QA-018: The fixed section model is enforced by row count and allowed values only; a duplicate Hero key visibly duplicates the hero. This requires an authorized content request and is not a privilege bypass.
+- QA-019: A required checkbox does not require affirmative consent. Unchecked/missing consent saves, including in the real form, and the attributed quote is anonymously readable.
+- QA-020: The CMS permission refusal incorrectly asks a valid signed-in staff member to log in. Enforcement works and the navigation shell remains.
+- QA-021: Selected testimonial/metric relationships are persisted but have no homepage renderer. Internal metric source redaction works.
+
+The section keyboard-sort attempt remains unaccepted: Space activated sorting, repeated ArrowDown left the same target in expanded and collapsed layouts, and Escape cancelled. Its cause and pointer behavior remain to verify; no framework-wide keyboard defect is registered from that attempt. A valid stored order change did render in the correct order. Original homepage content/settings and public headings were restored and reconciled.
+
+## Relationship and mentor variants
+
+- QA-022: The accepted-founder dashboard does not consume the profile/startup relation promised by Journey 3. Public graph storage and propagation work; the missing account-facing card/link is independently reproduced.
+- QA-002 now includes the Mentor need selector: Product remains checked/focused on ArrowDown, with all nine radio buttons as tab stops. Pointer filter behavior passed for every option.
+- QA-006 now also has startup/mentor detail not-found snapshots with nested main landmarks; no new bug count is added for the shared boundary.
+- The new Mentor draft/publish/unavailable/unpublish states, public profile, directory and linked dashboard were executed. Current samples include all three availability categories and preserve honest ordering; an unavailable profile remains visible.
+- Story editing and rendering order were checked. A supported API reorder preserves row identity and public order, but does not accept unexecuted drag controls or rich-text toolbar variants.
+
+The public mentor radiogroup is unnamed in the saved snapshot despite the visible I need help with question; question association remains a separately queued semantic review. No screen-reader pass or comprehensive Mentor accessibility claim follows from the functional lifecycle.

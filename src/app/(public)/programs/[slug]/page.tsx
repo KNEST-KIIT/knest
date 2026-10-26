@@ -38,10 +38,11 @@ export default async function ProgramDetailPage({ params }: { params: Promise<{ 
     <div className="mx-auto w-full max-w-160 px-6 py-16 md:px-10">
       <div className="max-w-[68ch]">
         <div className="flex items-center gap-3">
-          <ProgramStatusBadge status={program.applicationStatus} />
+          <ProgramStatusBadge status={program.applicationStatus} deadline={program.applicationDeadline} />
           {program.applicationDeadline && program.applicationStatus === 'open' && (
             <span className="text-[length:var(--text-small)] text-[var(--color-ink-muted)]">
-              Closes {formatDate(program.applicationDeadline)}
+              {new Date(program.applicationDeadline) < new Date() ? 'Closed ' : 'Closes '}
+              {formatDate(program.applicationDeadline)}
             </span>
           )}
         </div>

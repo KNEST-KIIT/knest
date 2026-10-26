@@ -95,23 +95,26 @@ describe('sign up', () => {
     await page.goto(`${BASE()}/signup`, { waitUntil: 'networkidle' })
     await page.getByLabel('Full name').fill('Net Person')
     await page.getByLabel('Email address').fill(email)
-    await page.getByLabel('Create password').fill(PASSWORD)
+    const pwInput = page.getByLabel(/create password|password/i)
+    if (await pwInput.count() > 0) {
+      await pwInput.fill(PASSWORD)
+    }
 
     const dropped = await abortOnce(page, '/api/auth/password/signup')
-    await page.getByRole('button', { name: /create account/i }).click()
+    await page.getByRole('button', { name: /continue with email|create account/i }).click()
     const alert = page.locator('form div[role="alert"]')
     await alert.waitFor({ timeout: 15_000 })
     expect(await alert.textContent()).toMatch(NO_CONNECTION)
     expect(await page.getByLabel('Full name').inputValue()).toBe('Net Person')
     expect(await page.getByLabel('Email address').inputValue()).toBe(email)
-    expect(await page.getByRole('button', { name: /create account/i }).isEnabled()).toBe(true)
+    expect(await page.getByRole('button', { name: /continue with email|create account/i }).isEnabled()).toBe(true)
     // nothing reached the server, so nothing was created
     expect((await db().query('select count(*)::int c from app.users where email = $1', [email])).rows[0].c).toBe(0)
 
     await dropped.restore()
     await Promise.all([
       page.waitForURL((u) => u.pathname === '/verify', { timeout: 60_000 }),
-      page.getByRole('button', { name: /create account/i }).click(),
+      page.getByRole('button', { name: /continue with email|create account/i }).click(),
     ])
     await page.context().close()
   })
@@ -161,10 +164,20 @@ describe('confirming an email link', () => {
     const page = await newPage(browser)
     const dropped = await abortOnce(page, '/api/auth/password/verify/confirm')
     await page.goto(`${BASE()}/verify/confirm?email=${encodeURIComponent(`x-${stamp}@account.test`)}&token=${'a'.repeat(64)}`)
-    await page.getByRole('heading', { level: 1, name: /couldn.t confirm your email/i }).waitFor({ timeout: 15_000 })
+    const pwInput = page.getByLabel(/choose password|password/i)
+    if (await pwInput.count() > 0) {
+      await pwInput.fill(PASSWORD)
+      await page.getByRole('button', { name: /activate account/i }).click()
+    }
+    await page.getByRole('heading', { level: 1, name: /couldn.t (confirm your email|activate your account)/i }).waitFor({ timeout: 15_000 })
     expect(dropped.count()).toBeGreaterThanOrEqual(1)
     await dropped.restore()
     await page.getByRole('button', { name: 'Try again.' }).click()
+    const pwInput2 = page.getByLabel(/choose password|password/i)
+    if (await pwInput2.count() > 0) {
+      await pwInput2.fill(PASSWORD)
+      await page.getByRole('button', { name: /activate account/i }).click()
+    }
     // the server now answers: this token is not real, so the honest answer is "expired"
     await page.getByRole('heading', { level: 1, name: 'That link has expired.' }).waitFor({ timeout: 15_000 })
     await page.context().close()

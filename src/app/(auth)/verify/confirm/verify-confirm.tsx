@@ -1,74 +1,90 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { formRequest } from '@/lib/form-request'
-import { Heading } from '@/components/ui'
+import { Heading, Field, PasswordInput } from '@/components/ui'
+import { Button } from '@/components/ui/button'
 
-export function VerifyConfirm({ email, token, next }: { email: string; token: string; next: string | null }) {
-  const [state, setState] = useState<'checking' | 'ok' | 'error' | 'network'>('checking')
-  const [attempt, setAttempt] = useState(0)
-  const requestRef = useRef<{ key: string; promise: Promise<Response> } | null>(null)
+export function VerifyConfirm({
+  email,
+  token,
+  next,
+}: {
+  email: string
+  token: string
+  next: string | null
+}) {
+  const [password, setPassword] = useState('')
+  const [pending, setPending] = useState(false)
+  const [fieldError, setFieldError] = useState<string | undefined>()
+  const [formError, setFormError] = useState<string | null>(null)
+  const [status, setStatus] = useState<'idle' | 'ok' | 'expired' | 'network'>('idle')
+  const passwordRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => {
-    let cancelled = false
-    const key = JSON.stringify([email, token, attempt])
-    // Reuse this attempt during Strict Mode's effect replay. Sending twice would
-    // consume the single-use link before the visible effect received its answer.
-    if (requestRef.current?.key !== key) requestRef.current = { key, promise: formRequest('/api/auth/password/verify/confirm', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, token }),
-    }) }
-    requestRef.current.promise
-      .then((res) => {
-        if (cancelled) return
-        // A 5xx means the server could not decide; the link may still be good.
-        setState(res.ok ? 'ok' : res.status >= 500 ? 'network' : 'error')
-      })
-      .catch(() => {
-        if (!cancelled) setState('network')
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [email, token, attempt])
-
-  // A return path that already targets onboarding goes there directly; any
-  // other path rides along as onboarding's own `next`.
   const continueHref = next?.startsWith('/onboarding')
     ? next
     : next
       ? `/onboarding?next=${encodeURIComponent(next)}`
       : '/onboarding'
 
-  if (state === 'checking') {
-    return <p className="text-[length:var(--text-small)] text-[var(--color-ink-muted)]">Confirming…</p>
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    setFieldError(undefined)
+    setFormError(null)
+
+    if (password.length < 12) {
+      setFieldError('Use at least 12 characters.')
+      passwordRef.current?.focus()
+      return
+    }
+
+    setPending(true)
+    try {
+      const res = await formRequest('/api/auth/password/verify/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, token, password }),
+      })
+
+      if (res.ok) {
+        setStatus('ok')
+        return
+      }
+
+      if (res.status >= 500) {
+        setStatus('network')
+      } else {
+        const data = await res.json().catch(() => ({}))
+        if (data.error?.toLowerCase().includes('expired') || data.error?.toLowerCase().includes('invalid')) {
+          setStatus('expired')
+        } else {
+          setFormError(data.error ?? 'That link has expired. Request a new one.')
+        }
+      }
+    } catch {
+      setStatus('network')
+    } finally {
+      setPending(false)
+    }
   }
 
-  if (state === 'network') {
+  if (status === 'ok') {
     return (
       <div>
         <Heading as="h1" size="title">
-          We couldn&rsquo;t confirm your email.
+          Account activated.
         </Heading>
         <p className="mt-3 text-[length:var(--text-small)] text-[var(--color-ink-soft)]">
-          The connection dropped before we got an answer. Try again, and if it keeps failing, request a new link from the log in page.{' '}
-          <button
-            type="button"
-            className="font-medium text-[var(--color-signal)] underline"
-            onClick={() => {
-              setState('checking')
-              setAttempt((n) => n + 1)
-            }}
-          >
-            Try again.
-          </button>
+          You&rsquo;re signed in.{' '}
+          <a href={continueHref} className="font-medium text-[var(--color-signal)]">
+            Continue.
+          </a>
         </p>
       </div>
     )
   }
 
-  if (state === 'error') {
+  if (status === 'expired') {
     return (
       <div>
         <Heading as="h1" size="title">
@@ -83,17 +99,81 @@ export function VerifyConfirm({ email, token, next }: { email: string; token: st
     )
   }
 
+  if (status === 'network') {
+    return (
+      <div>
+        <Heading as="h1" size="title">
+          We couldn&rsquo;t activate your account.
+        </Heading>
+        <p className="mt-3 text-[length:var(--text-small)] text-[var(--color-ink-soft)]">
+          The connection dropped before we got an answer.{' '}
+          <button
+            type="button"
+            className="font-medium text-[var(--color-signal)] underline"
+            onClick={() => setStatus('idle')}
+          >
+            Try again.
+          </button>
+        </p>
+      </div>
+    )
+  }
+
   return (
-    <div>
-      <Heading as="h1" size="title">
-        Email confirmed.
-      </Heading>
-      <p className="mt-3 text-[length:var(--text-small)] text-[var(--color-ink-soft)]">
-        You&rsquo;re signed in.{' '}
-        <a href={continueHref} className="font-medium text-[var(--color-signal)]">
-          Continue.
-        </a>
-      </p>
+    <div className="max-w-md">
+      <div className="mb-6">
+        <span className="inline-block text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--color-signal)] mb-2">
+          Confirm your email
+        </span>
+        <Heading as="h1" size="title">
+          Activate your account.
+        </Heading>
+        <p className="mt-2 text-sm text-[var(--color-ink-soft)] leading-relaxed">
+          Welcome to KNEST, <strong className="text-[var(--color-ink)]">{email}</strong>. Set your password to complete activation and sign in.
+        </p>
+      </div>
+
+      <form onSubmit={onSubmit} className="space-y-5" noValidate>
+        <Field
+          label="Choose password"
+          hint="At least 12 characters. Length matters more than symbols."
+          error={fieldError}
+        >
+          {(fieldProps) => (
+            <PasswordInput
+              {...fieldProps}
+              ref={passwordRef}
+              name="password"
+              autoComplete="new-password"
+              placeholder="••••••••••••"
+              minLength={12}
+              required
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value)
+                if (fieldError) setFieldError(undefined)
+              }}
+            />
+          )}
+        </Field>
+
+        {formError && (
+          <div role="alert" className="p-3 rounded-lg bg-red-50 border border-red-200 text-xs font-medium text-[var(--color-critical)]">
+            {formError}
+          </div>
+        )}
+
+        <Button
+          type="submit"
+          size="lg"
+          fullWidth
+          disabled={pending}
+          aria-busy={pending}
+          className={`${pending ? 'disabled:opacity-100 disabled:cursor-progress ' : ''}text-xs font-semibold tracking-widest uppercase`}
+        >
+          {pending ? 'Activating account…' : 'Activate account & sign in →'}
+        </Button>
+      </form>
     </div>
   )
 }

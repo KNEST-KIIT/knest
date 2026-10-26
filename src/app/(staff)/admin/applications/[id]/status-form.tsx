@@ -65,7 +65,7 @@ export function StatusForm({ applicationId, options }: { applicationId: string; 
         disabled={busy}
         value={selectedStatus}
         onChange={(e) => { setStatus(e.target.value); setSuccess(null); setError(null) }}
-        className="h-11 rounded-[var(--radius-sm)] border border-[var(--color-line)] bg-white px-3"
+        className="h-[var(--control-height-lg)] rounded-[var(--radius-sm)] border border-[var(--color-line)] bg-white px-3"
       >
         <option value="" disabled>Choose the next status</option>
         {options.map((o) => (

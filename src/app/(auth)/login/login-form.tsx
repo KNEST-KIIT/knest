@@ -155,7 +155,7 @@ export function LoginForm({ googleEnabled, turnstileSiteKey, recoveryNext = null
           fullWidth 
           disabled={!ready || pending || captchaPending}
           aria-busy={pending}
-          className={`${pending ? 'disabled:opacity-100 disabled:cursor-progress ' : ''}mt-2 h-14 text-sm font-bold tracking-widest uppercase bg-gradient-to-r from-[var(--color-signal)] to-[#5a141e] hover:from-[#8f2433] hover:to-[var(--color-signal)] shadow-sm hover:shadow-lg transition-all duration-300 rounded-lg`}
+          className={`${pending ? 'disabled:opacity-100 disabled:cursor-progress ' : ''}mt-2 text-sm font-semibold tracking-wide uppercase`}
         >
           {pending ? (
             <span className="inline-flex items-center gap-2">

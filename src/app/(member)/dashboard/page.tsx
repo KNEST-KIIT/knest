@@ -36,6 +36,10 @@ export default async function DashboardPage() {
   // Lab heads, assistants and administrators get a link to their console while lab booking is on.
   const runsLabs = isLabBookingEnabled() && (isLabAdmin((user.staffRole ?? null) as StaffRole | null) || (await labsRunBy(user.id)).length > 0)
 
+  const notificationsSlot = notifications.length > 0 ? (
+    <NotificationsList notifications={notifications} />
+  ) : null
+
   return (
     <Section>
       <Heading as="h1" size="display">
@@ -50,21 +54,21 @@ export default async function DashboardPage() {
         </p>
       )}
 
-      {notifications.length > 0 && (
-        <div className="mt-8">
-          <NotificationsList notifications={notifications} />
-        </div>
-      )}
-
-      <div className="mt-10">
+      <div className="mt-8">
         {user.platformRole === 'founder' ? (
-          <FounderDashboard user={user} />
+          <FounderDashboard user={user} notificationsSlot={notificationsSlot} />
         ) : user.platformRole === 'mentor' ? (
-          <MentorDashboard user={user} />
+          <>
+            <MentorDashboard user={user} />
+            {notificationsSlot && <div className="mt-8">{notificationsSlot}</div>}
+          </>
         ) : user.platformRole === 'investor' || user.platformRole === 'alumni' || user.platformRole === 'partner' ? (
-          <ContributionDashboard role={user.platformRole} />
+          <>
+            <ContributionDashboard role={user.platformRole} />
+            {notificationsSlot && <div className="mt-8">{notificationsSlot}</div>}
+          </>
         ) : (
-          <StudentDashboard user={user} />
+          <StudentDashboard user={user} notificationsSlot={notificationsSlot} />
         )}
       </div>
     </Section>

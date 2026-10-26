@@ -11,50 +11,67 @@ import type { Homepage } from '@/payload/payload-types'
  * KNEST beyond what the global holds. The homepage restructure (information
  * architecture) is a later, separately approved phase.
  */
-export function Narrative({ homepage }: { homepage: Homepage }) {
+export function ProblemSection({ homepage }: { homepage: Homepage }) {
   const problemParagraphs = (homepage.problemBody ?? '').split(/\n{2,}/).filter(Boolean)
-  const personLines = (homepage.personLines ?? []).map((l) => l.line).filter(Boolean)
-
   return (
-    <>
-      <Section className="border-b border-[var(--color-line)]">
-        <div className="max-w-3xl">
-            <Heading as="h2" size="display" uppercase className="whitespace-pre-line">
-              {homepage.problemHeading}
-            </Heading>
-          <div className="mt-8 space-y-5 text-lg leading-relaxed text-[var(--color-ink-soft)]">
-            {problemParagraphs.map((p) => (
-              <p key={p}>{p}</p>
+    <Section className="border-b border-[var(--color-line)]">
+      <div className="max-w-3xl">
+        <Heading as="h2" size="display" uppercase className="whitespace-pre-line">
+          {homepage.problemHeading}
+        </Heading>
+        <div className="mt-8 space-y-5 text-lg leading-relaxed text-[var(--color-ink-soft)]">
+          {problemParagraphs.map((p) => (
+            <p key={p}>{p}</p>
+          ))}
+        </div>
+      </div>
+    </Section>
+  )
+}
+
+export function PersonSection({ homepage }: { homepage: Homepage }) {
+  const personLines = (homepage.personLines ?? []).map((l) => l.line).filter(Boolean)
+  if (personLines.length === 0 && !homepage.personHeading) return null
+  return (
+    <Section className="bg-[var(--color-paper-soft)] border-b border-[var(--color-line)]">
+      <div className="max-w-3xl">
+        <Heading as="h2" size="display" uppercase className="whitespace-pre-line">
+          {homepage.personHeading}
+        </Heading>
+        {personLines.length > 0 && (
+          <div className="mt-8 space-y-2 text-lg leading-relaxed text-[var(--color-ink-soft)]">
+            {personLines.map((line) => (
+              <p key={line}>{line}</p>
             ))}
           </div>
-        </div>
-      </Section>
+        )}
+      </div>
+    </Section>
+  )
+}
 
-      {personLines.length > 0 && (
-        <Section className="bg-[var(--color-paper-soft)] border-b border-[var(--color-line)]">
-          <div className="max-w-3xl">
-              <Heading as="h2" size="display" uppercase className="whitespace-pre-line">
-                {homepage.personHeading}
-              </Heading>
-            <div className="mt-8 space-y-2 text-lg leading-relaxed text-[var(--color-ink-soft)]">
-              {personLines.map((line) => (
-                <p key={line}>{line}</p>
-              ))}
-            </div>
-          </div>
-        </Section>
-      )}
+export function KnestSection({ homepage }: { homepage: Homepage }) {
+  if (!homepage.knestHeading && !homepage.knestBody) return null
+  return (
+    <Section className="border-b border-[var(--color-line)]">
+      <div className="max-w-3xl">
+        <Heading as="h2" size="display" uppercase className="whitespace-pre-line">
+          {homepage.knestHeading}
+        </Heading>
+        {homepage.knestBody && (
+          <p className="mt-8 text-lg leading-relaxed text-[var(--color-ink-soft)]">{homepage.knestBody}</p>
+        )}
+      </div>
+    </Section>
+  )
+}
 
-      {homepage.knestBody && (
-        <Section className="border-b border-[var(--color-line)]">
-          <div className="max-w-3xl">
-              <Heading as="h2" size="display" uppercase className="whitespace-pre-line">
-                {homepage.knestHeading}
-              </Heading>
-            <p className="mt-8 text-lg leading-relaxed text-[var(--color-ink-soft)]">{homepage.knestBody}</p>
-          </div>
-        </Section>
-      )}
+export function Narrative({ homepage }: { homepage: Homepage }) {
+  return (
+    <>
+      <ProblemSection homepage={homepage} />
+      <PersonSection homepage={homepage} />
+      <KnestSection homepage={homepage} />
     </>
   )
 }

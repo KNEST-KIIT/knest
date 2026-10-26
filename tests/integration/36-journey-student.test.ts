@@ -74,13 +74,18 @@ describe('a student first visit', () => {
     await page.goto(`${BASE()}/signup`, { waitUntil: 'networkidle' })
     await page.getByLabel('Full name').fill(NAME)
     await page.getByLabel('Email address').fill(EMAIL)
-    await page.getByLabel('Create password').fill(PASSWORD)
-    await Promise.all([page.waitForURL((u) => u.pathname === '/verify', { timeout: 60_000 }), page.getByRole('button', { name: /create account/i }).click()])
+    // Password creation belongs to the verified mailbox handoff, never the
+    // anonymous sign-up form. Keep this contract explicit so the flow cannot
+    // silently regress to accepting an untrusted password before ownership proof.
+    expect(await page.getByLabel(/create password|password/i).count()).toBe(0)
+    await Promise.all([page.waitForURL((u) => u.pathname === '/verify', { timeout: 60_000 }), page.getByRole('button', { name: /continue with email|create account/i }).click()])
     expect((await one('select count(*)::int c from app.sessions s join app.users u on u.id = s.user_id where u.email = $1', [EMAIL])).c).toBe(0)
 
     const mailText = await waitForMailText(EMAIL, /verify\/confirm/i)
     await page.goto(`${BASE()}${verifyPathIn(mailText)}`)
-    await page.getByText('You’re signed in.').waitFor({ timeout: 30_000 })
+    await page.getByLabel(/choose password|password/i).fill(PASSWORD)
+    await page.getByRole('button', { name: /activate account/i }).click()
+    await page.getByText(/you’re signed in|you're signed in/i).waitFor({ timeout: 30_000 })
     await Promise.all([page.waitForURL((u) => u.pathname === '/onboarding', { timeout: 60_000 }), page.getByRole('link', { name: 'Continue.' }).click()])
 
     expect(await page.getByRole('heading', { level: 1 }).textContent()).toContain('Who are you?')
@@ -177,8 +182,8 @@ describe('a student first visit', () => {
   })
 
   it('is stopped at submit until the e-mail address is confirmed, and the draft is kept', async () => {
-    // Sign-up now verifies the address, but an account can still be unverified: someone who signs
-    // up, skips the link and later logs in with the password. Put this account in that state.
+    // Revoke verification during this existing synthetic session to prove the
+    // submit boundary checks current account state, not only session creation.
     await db().query('update app.users set email_verified = null where id = $1', [userId])
     await Promise.all([page.waitForURL((u) => u.pathname === '/verify', { timeout: 30_000 }), page.getByRole('button', { name: 'Submit application' }).click()])
     expect(await page.getByRole('heading', { level: 1 }).textContent()).toContain('Check your email')
@@ -197,11 +202,15 @@ describe('a student first visit', () => {
     expect(verifyMails().length).toBeGreaterThan(before)
     const link = linkIn(decodeMailText(verifyMails().at(-1)!.body))
     await page.goto(link)
-    await page.getByRole('heading', { level: 1, name: 'Email confirmed.' }).waitFor({ timeout: 30_000 })
+    await page.getByLabel(/choose password|password/i).fill(PASSWORD)
+    await page.getByRole('button', { name: /activate account/i }).click()
+    await page.getByRole('heading', { level: 1, name: 'Account activated.' }).waitFor({ timeout: 30_000 })
     expect((await one<{ email_verified: Date | null }>('select email_verified from app.users where id = $1', [userId])).email_verified).not.toBeNull()
 
     // the link is single-use
     await page.goto(link)
+    await page.getByLabel(/choose password|password/i).fill(PASSWORD)
+    await page.getByRole('button', { name: /activate account/i }).click()
     await page.getByRole('heading', { level: 1, name: 'That link has expired.' }).waitFor({ timeout: 30_000 })
   })
 
@@ -280,7 +289,10 @@ describe('a student first visit', () => {
     expect((await one('select count(*)::int c from app.notifications where user_id = $1 and read_at is null', [userId])).c).toBe(0)
 
     // a notice leads to what it is about
-    await Promise.all([page.waitForURL((u) => u.pathname === '/dashboard/applications'), page.getByRole('link', { name: `We've got your application to ${PROGRAM}` }).click()])
+    await Promise.all([
+      page.waitForURL((u) => u.pathname === `/dashboard/applications/${applicationId}`),
+      page.getByRole('link', { name: `We've got your application to ${PROGRAM}` }).click(),
+    ])
   })
 
   it('cancelling the registration frees the place and the event page says so', async () => {

@@ -9,7 +9,7 @@ import { formatDate } from '@/lib/dates'
  * Returns the sentence to show, or null when applications are open.
  */
 export function closedReason(
-  program: { applicationStatus: string; applicationDeadline: string | null },
+  program: { applicationStatus: string; applicationDeadline?: string | null },
   now: Date = new Date(),
 ): string | null {
   if (program.applicationStatus !== 'open') {

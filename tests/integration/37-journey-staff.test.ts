@@ -131,7 +131,7 @@ describe('an administrator reviews applications', () => {
   })
 
   it('moves it through review to an acceptance, each step recorded and each step offering only legal next moves', async () => {
-    const options = async () => (await adminPage.getByRole('combobox').locator('option').allTextContents()).map((t) => t.replace('Move to: ', ''))
+    const options = async () => (await adminPage.getByRole('combobox').locator('option:not([disabled])').allTextContents()).map((t) => t.replace('Move to: ', ''))
     expect(await options()).toEqual(['Under review', 'Not this time']) // a submitted application cannot be accepted outright
 
     await moveTo(adminPage, applicantA.applicationId, 'Under review', 'under_review')

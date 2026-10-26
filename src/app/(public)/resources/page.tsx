@@ -5,6 +5,7 @@ import { PageHeader } from '@/components/layout/page-header'
 import { resultSummary } from '@/lib/result-summary'
 import { RESOURCES_EMPTY } from '@/lib/empty-state-copy'
 import { listResources, type ResourceFilters as Filters } from '@/server/content/resources'
+import { resourceDestination } from '@/lib/resource-url'
 import { ResourceFilters } from './filters'
 
 export const metadata: Metadata = {
@@ -55,10 +56,12 @@ async function ResourcesList({ filters }: { filters: Filters }) {
       </p>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {resources.map((resource) => {
-          const hosted = Boolean(resource.body)
-          const href = hosted ? `/resources/${resource.slug}` : resource.externalUrl || '#'
+          const dest = resourceDestination(resource)
+          const hasBody = Boolean(resource.body && (typeof resource.body === 'object' ? Object.keys(resource.body).length > 0 : true))
+          const hasFile = Boolean(resource.file)
+
           return (
-            <LinkCard key={resource.id} href={href} label={`View ${resource.title}`}>
+            <LinkCard key={resource.id} href={dest.href} label={dest.label}>
               <div className="flex items-center justify-between border-b border-[var(--color-line)] pb-3">
                 <Tag tone="archive">{FORMAT_LABELS[resource.format] ?? resource.format}</Tag>
                 {resource.stages && resource.stages.length > 0 && (
@@ -80,10 +83,10 @@ async function ResourcesList({ filters }: { filters: Filters }) {
                 {resource.readingMinutes ? (
                   <span>{resource.readingMinutes} min read</span>
                 ) : (
-                  <span>Interactive Resource</span>
+                  <span>{hasFile && !hasBody ? 'Downloadable Resource' : 'Interactive Resource'}</span>
                 )}
                 <span className="font-bold uppercase tracking-widest text-[var(--color-signal)]">
-                  {hosted ? 'Read Guide →' : 'Access Tool →'}
+                  {dest.ctaText}
                 </span>
               </div>
             </LinkCard>

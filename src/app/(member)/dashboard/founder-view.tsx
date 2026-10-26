@@ -1,19 +1,30 @@
 import { ButtonLink, EmptyState, Heading, LinkCard } from '@/components/ui'
 import { formatDate } from '@/lib/dates'
 import { RESOURCES_EMPTY } from '@/lib/empty-state-copy'
+import { resourceDestination } from '@/lib/resource-url'
 import { listApplicationsForUser } from '@/server/applications/actions'
 import { getProgramById } from '@/server/content/programs'
+import { getStartupForUser } from '@/server/content/startups'
 import { isLabBookingEnabled } from '@/server/features'
 import { listRecommendedResources } from '@/server/content/resources'
 import type { SessionUser } from '@/server/auth/guards'
 import { ApplicationStatusBadge } from './applications/status-badge'
 import { NextStepCard } from './next-step-card'
 
-export async function FounderDashboard({ user }: { user: SessionUser }) {
-  const applications = await listApplicationsForUser(user.id)
+export async function FounderDashboard({
+  user,
+  notificationsSlot,
+}: {
+  user: SessionUser
+  notificationsSlot?: React.ReactNode
+}) {
+  const [applications, startup, resources] = await Promise.all([
+    listApplicationsForUser(user.id),
+    getStartupForUser(user.id),
+    listRecommendedResources(user.journeyStage),
+  ])
   const accepted = applications.find((row) => row.application.status === 'accepted')
   const program = accepted ? await getProgramById(accepted.application.programId) : null
-  const resources = await listRecommendedResources(user.journeyStage)
 
   const nextMilestone = program?.timeline?.[0]
 
@@ -21,7 +32,7 @@ export async function FounderDashboard({ user }: { user: SessionUser }) {
     <div className="flex flex-col gap-8">
       {/* Top Row: Command Center */}
       <section className="grid gap-6 lg:grid-cols-12">
-        <div className="lg:col-span-8">
+        <div className={startup ? 'lg:col-span-6' : 'lg:col-span-8'}>
           <NextStepCard
             eyebrow="Next milestone"
             heading={nextMilestone?.label ?? program?.title ?? 'Start Your Application'}
@@ -30,7 +41,39 @@ export async function FounderDashboard({ user }: { user: SessionUser }) {
             actionHref={program ? `/programs/${program.slug}` : '/programs'}
           />
         </div>
-        {isLabBookingEnabled() && (
+
+        {startup && (
+          <div className="lg:col-span-6 flex flex-col justify-between rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-white p-6 shadow-sm">
+            <div>
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <span className="text-[length:var(--text-small)] font-bold uppercase tracking-wider text-[var(--color-signal)]">
+                  Your startup
+                </span>
+                {startup.stage && (
+                  <span className="font-mono text-xs uppercase tracking-wider text-[var(--color-ink-muted)]">
+                    {startup.stage}
+                  </span>
+                )}
+              </div>
+              <Heading as="h2" size="heading" uppercase={false} className="mt-1">
+                {startup.name}
+              </Heading>
+              <p className="mt-2 text-[length:var(--text-small)] text-[var(--color-ink-soft)] line-clamp-2">
+                {startup.tagline}
+              </p>
+            </div>
+            <div className="mt-6 flex items-center justify-between border-t border-[var(--color-line)]/60 pt-4">
+              <span className="text-xs text-[var(--color-ink-muted)]">
+                Public profile
+              </span>
+              <ButtonLink href={`/startups/${startup.slug}`} size="sm" variant="secondary">
+                View startup profile →
+              </ButtonLink>
+            </div>
+          </div>
+        )}
+
+        {isLabBookingEnabled() && !startup && (
           <div className="lg:col-span-4 flex flex-col gap-4">
             <div className="rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-white p-6 shadow-sm flex-1 flex flex-col justify-center items-start">
               <Heading as="h3" size="heading" uppercase={false} className="mb-2">Lab & Infrastructure</Heading>
@@ -42,6 +85,18 @@ export async function FounderDashboard({ user }: { user: SessionUser }) {
           </div>
         )}
       </section>
+
+      {isLabBookingEnabled() && startup && (
+        <section className="rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-white p-6 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <Heading as="h3" size="heading" uppercase={false} className="mb-1">Lab & Infrastructure</Heading>
+            <p className="text-[length:var(--text-small)] text-[var(--color-ink-muted)]">Book maker spaces, founder cabins, and studios.</p>
+          </div>
+          <ButtonLink href="/dashboard/lab-booking" variant="secondary" size="sm">
+            Book a Space
+          </ButtonLink>
+        </section>
+      )}
 
       {/* Middle Row: applications. (A "Founder Playbooks" widget with hardcoded
           progress used to sit beside this: KN-17.) */}
@@ -78,6 +133,9 @@ export async function FounderDashboard({ user }: { user: SessionUser }) {
         </div>
       </section>
 
+      {/* Notification history */}
+      {notificationsSlot}
+
       {/* Bottom Row: Resources feed */}
       <section className="rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-white p-6 shadow-sm">
         <Heading as="h2" size="heading" className="mb-6" uppercase={false}>
@@ -88,10 +146,9 @@ export async function FounderDashboard({ user }: { user: SessionUser }) {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {resources.map((resource) => {
-              const hosted = Boolean(resource.body)
-              const href = hosted ? `/resources/${resource.slug}` : resource.externalUrl || '#'
+              const dest = resourceDestination(resource)
               return (
-                <LinkCard key={resource.id} href={href} label={`${hosted ? 'Read' : 'Visit'} ${resource.title}`} className="group hover:border-[var(--color-signal)]/50">
+                <LinkCard key={resource.id} href={dest.href} label={dest.label} className="group hover:border-[var(--color-signal)]/50">
                   <p className="font-medium text-[var(--color-ink)] group-hover:text-[var(--color-signal)] transition-colors">{resource.title}</p>
                   <p className="mt-2 text-[length:var(--text-small)] text-[var(--color-ink-soft)] line-clamp-2">
                     {resource.summary}

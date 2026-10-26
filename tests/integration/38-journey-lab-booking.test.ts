@@ -99,7 +99,7 @@ describe('a member books a lab and the lab head decides', () => {
     const { page } = people.member
     await openDay(page, SLOT_DATE)
     // opening hours 09:00 to 18:00 give nine one-hour blocks
-    expect(await page.locator('fieldset').getByRole('button').count()).toBe(9)
+    expect(await page.getByRole('group', { name: /Times \(India Standard Time\)/ }).getByRole('button').count()).toBe(9)
     expect(await slotButton(page, '10:00', '11:00').isEnabled()).toBe(true)
     await sendRequest(page, '10:00', '11:00', PURPOSE, 2)
 

@@ -37,9 +37,22 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
 
   const [user, registeredCount] = await Promise.all([getSessionUser(), getRegistrationCount(event.id)])
   const initiallyRegistered = user ? await getRegistrationStatus(user.id, event.id) : false
-  // An event is over once its end time (or, with none, its start) has passed.
-  const finished = hasPassed(event.endsAt ?? event.startsAt)
+  // Defend against legacy inverted date ranges: if endsAt is earlier than startsAt, use startsAt
+  const startTime = new Date(event.startsAt).getTime()
+  const endTime = event.endsAt ? new Date(event.endsAt).getTime() : NaN
+  const validRange = isNaN(endTime) || endTime > startTime
+  const effectiveEnd = validRange && event.endsAt ? event.endsAt : event.startsAt
+  const finished = hasPassed(effectiveEnd)
   const full = Boolean(event.capacity && registeredCount >= event.capacity && !initiallyRegistered)
+  let hasValidExternalRegistration = false
+  if (event.registrationUrl) {
+    try {
+      const parsed = new URL(event.registrationUrl.trim())
+      hasValidExternalRegistration = parsed.protocol === 'http:' || parsed.protocol === 'https:'
+    } catch {
+      hasValidExternalRegistration = false
+    }
+  }
 
   const mentorSpeakers = (event.mentorSpeakers ?? []).filter((m) => typeof m === 'object')
   const otherSpeakers = event.speakers ?? []
@@ -115,9 +128,9 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
               </div>
             ) : (
               <>
-                {event.registrationUrl ? (
+                {hasValidExternalRegistration ? (
                   <a
-                    href={event.registrationUrl}
+                    href={event.registrationUrl!.trim()}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex h-14 w-full items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-signal)] px-6 font-medium text-white hover:bg-[var(--color-signal-deep)]"

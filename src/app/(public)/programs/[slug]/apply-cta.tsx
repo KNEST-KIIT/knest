@@ -3,6 +3,7 @@ import { formatDeadline, formatDate } from '@/lib/dates'
 import type { Program } from '@/payload/payload-types'
 import { getSessionUser } from '@/server/auth/guards'
 import { findApplicationForProgram } from '@/server/applications/actions'
+import { closedReason } from '@/server/applications/availability'
 
 /**
  * Every state a visitor can be in when they reach the apply decision
@@ -40,6 +41,20 @@ export async function ApplyCta({ program }: { program: Program }) {
             : program.nextCohortStart
               ? `The next cohort opens ${formatDate(program.nextCohortStart)}.`
               : 'Applications for this cohort have closed.'}
+        </p>
+        <ButtonLink href="/contact" variant="secondary" size="lg" fullWidth className="mt-3">
+          Ask about the next cohort
+        </ButtonLink>
+      </div>
+    )
+  }
+
+  const closed = closedReason(program)
+  if (closed) {
+    return (
+      <div>
+        <p className="text-[length:var(--text-small)] text-[var(--color-ink-muted)]">
+          {closed}
         </p>
         <ButtonLink href="/contact" variant="secondary" size="lg" fullWidth className="mt-3">
           Ask about the next cohort

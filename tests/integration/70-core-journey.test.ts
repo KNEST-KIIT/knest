@@ -1,6 +1,6 @@
 import { chromium, type Browser, type Page } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { CAPTCHA, BASE, PASSWORD, closeDb, createUser, db, get, login, uniqueIp, type Session } from '../support/helpers'
+import { CAPTCHA, BASE, closeDb, createUser, db, get, login, uniqueIp, type Session } from '../support/helpers'
 import { stubTurnstileScript } from '../support/turnstile-stub'
 import { payloadClient, richText } from '../support/payload'
 import { signUpThroughForm } from '../support/journey'

@@ -68,3 +68,44 @@ export async function getStartupBySlug(slug: string): Promise<Startup | null> {
     return null
   }
 }
+
+/**
+ * Resolves the public startup linked to a platform user via their editorial
+ * Founder profile (Founders.userId -> Startups.founders).
+ */
+export async function getStartupForUser(userId: string): Promise<Startup | null> {
+  try {
+    const payload = await getContentClient()
+
+    // 1. Find the editorial founder profile pointing to this platform user
+    const foundersResult = await payload.find({
+      collection: 'founders',
+      where: { userId: { equals: userId } },
+      depth: 0,
+      limit: 1,
+      overrideAccess: false,
+    })
+
+    const founder = foundersResult?.docs?.[0]
+    if (!founder) return null
+
+    // 2. Find the startup whose founders relationship contains this founder
+    const startupsResult = await payload.find({
+      collection: 'startups',
+      where: {
+        founders: {
+          in: [founder.id],
+        },
+      },
+      depth: 2,
+      limit: 1,
+      sort: '-createdAt',
+      overrideAccess: false,
+    })
+
+    return startupsResult?.docs?.[0] ?? null
+  } catch (error) {
+    console.warn('Could not fetch startup for user:', error)
+    return null
+  }
+}

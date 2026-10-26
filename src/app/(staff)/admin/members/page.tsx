@@ -32,18 +32,35 @@ export default async function MembersPage({ searchParams }: { searchParams: Prom
       </Heading>
       <p className="mt-2 text-[var(--color-ink-soft)]">Find an account, deactivate or reactivate it, or change a staff role. Each change ends that person’s sessions and is recorded in the audit trail.</p>
 
-      <form method="get" role="search" aria-label="Find members" className="mt-6 flex flex-wrap items-center gap-4">
+      <form
+        key={`${params.q ?? ''}-${params.staff ?? ''}-${params.inactive ?? ''}`}
+        method="get"
+        role="search"
+        aria-label="Find members"
+        className="mt-6 flex flex-wrap items-center gap-4"
+      >
         <label className="sr-only" htmlFor="q">
           Name or email
         </label>
-        <input id="q" name="q" type="search" defaultValue={params.q ?? ''} placeholder="Name or email" className="h-11 min-w-[14rem] rounded-[var(--radius-sm)] border border-[var(--color-line-strong)] bg-white px-3" />
-        <label className="flex items-center gap-2 text-[length:var(--text-small)]">
+        <input
+          id="q"
+          name="q"
+          key={`q-${params.q ?? ''}`}
+          type="search"
+          defaultValue={params.q ?? ''}
+          placeholder="Name or email"
+          className="h-[var(--control-height-lg)] min-h-[44px] min-w-[14rem] rounded-[var(--radius-sm)] border border-[var(--color-line-strong)] bg-white px-3"
+        />
+        <label className="flex items-center gap-2 min-h-[44px] text-[length:var(--text-small)]">
           <input type="checkbox" name="staff" value="1" defaultChecked={params.staff === '1'} /> Staff only
         </label>
-        <label className="flex items-center gap-2 text-[length:var(--text-small)]">
+        <label className="flex items-center gap-2 min-h-[44px] text-[length:var(--text-small)]">
           <input type="checkbox" name="inactive" value="1" defaultChecked={params.inactive === '1'} /> Deactivated only
         </label>
-        <button type="submit" className="h-11 rounded-[var(--radius-sm)] bg-[var(--color-ink)] px-4 text-[length:var(--text-small)] text-white">
+        <button
+          type="submit"
+          className="h-[var(--control-height-lg)] min-h-[44px] rounded-[var(--radius-sm)] bg-[var(--color-ink)] px-4 text-[length:var(--text-small)] text-white"
+        >
           Search
         </button>
       </form>

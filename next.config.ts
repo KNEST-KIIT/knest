@@ -66,6 +66,8 @@ const nextConfig: NextConfig = {
   output: isVercel ? undefined : 'standalone',
   reactStrictMode: true,
   experimental: {
+    // Keep the framework's production gate on the minimum patched release.
+    agentUpgrade: 'security',
     // The public site and Payload each own their document; unmatched URLs need a shared 404.
     globalNotFound: true,
     // With a proxy (src/proxy.ts) Next buffers each request body and silently truncates it at

@@ -110,7 +110,7 @@ export function ResetForm({ turnstileSiteKey, next }: { turnstileSiteKey: string
           fullWidth 
           disabled={!ready || pending || captchaPending}
           aria-busy={pending}
-          className={`${pending ? 'disabled:opacity-100 disabled:cursor-progress ' : ''}mt-2 text-sm font-semibold tracking-wide uppercase bg-gradient-to-r from-[var(--color-signal)] to-[#5a141e] hover:from-[#8f2433] hover:to-[var(--color-signal)] shadow-md hover:shadow-lg transition-all duration-300`}
+          className={`${pending ? 'disabled:opacity-100 disabled:cursor-progress ' : ''}mt-2 text-sm font-semibold tracking-wide uppercase`}
         >
           {pending ? (
             <span className="inline-flex items-center gap-2">

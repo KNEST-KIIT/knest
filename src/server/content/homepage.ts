@@ -63,5 +63,13 @@ export async function getHomepage(): Promise<Homepage> {
 export function enabledSections(homepage: Homepage): SectionKey[] {
   const sections = homepage?.sections
   if (!sections || sections.length === 0) return DEFAULT_ORDER
-  return sections.filter((s) => s.enabled !== false).map((s) => s.key)
+  const seen = new Set<SectionKey>()
+  const result: SectionKey[] = []
+  for (const s of sections) {
+    if (s.enabled !== false && !seen.has(s.key)) {
+      seen.add(s.key)
+      result.push(s.key)
+    }
+  }
+  return result
 }

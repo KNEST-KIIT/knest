@@ -42,11 +42,11 @@ const COLUMNS: Column<Row>[] = [
 
 function Card({ row }: { row: Row }) {
   return (
-    <div className="flex flex-col gap-1">
-      <Link href={`/admin/applications/${row.application.id}`} className="font-medium text-[var(--color-signal)]">
+    <div className="flex flex-col gap-1 overflow-hidden min-w-0 [overflow-wrap:anywhere]">
+      <Link href={`/admin/applications/${row.application.id}`} className="font-medium text-[var(--color-signal)] min-w-0 [overflow-wrap:anywhere] hover:underline">
         {row.applicant.name ?? row.applicant.email}
       </Link>
-      <p className="text-[length:var(--text-small)] text-[var(--color-ink-muted)]">{row.programTitle}</p>
+      <p className="text-[length:var(--text-small)] text-[var(--color-ink-muted)] [overflow-wrap:anywhere]">{row.programTitle}</p>
       <p className="mt-2 text-[length:var(--text-small)]">
         {STATUS_LABELS[row.application.status] ?? row.application.status}
         {row.application.submittedAt && ` · ${formatDate(row.application.submittedAt)}`}
@@ -85,28 +85,41 @@ export default async function AdminApplicationsPage({
   }
 
   return (
-    <div>
+    <div className="overflow-hidden">
       <Heading as="h1" size="title">
         Applications
       </Heading>
       <p className="mt-2 text-sm text-[var(--color-ink-soft)]">{result.total} {result.total === 1 ? 'application' : 'applications'}{params.q || params.program || params.status ? ' match these filters' : ' in the review queue'}. Student drafts stay private until submission.</p>
 
-      <form className="mt-6 flex flex-wrap gap-4" method="get" role="search" aria-label="Filter applications">
+      <form
+        key={`${params.q ?? ''}-${params.program ?? ''}-${params.status ?? ''}`}
+        className="mt-6 flex flex-wrap gap-4 max-w-full"
+        method="get"
+        role="search"
+        aria-label="Filter applications"
+      >
         <label className="sr-only" htmlFor="q">
           Search by applicant name or email
         </label>
         <input
           id="q"
           name="q"
+          key={`q-${params.q ?? ''}`}
           type="search"
           defaultValue={params.q ?? ''}
           placeholder="Name or email"
-          className="h-11 w-full min-w-0 rounded-[var(--radius-sm)] border border-[var(--color-line-strong)] bg-white px-3 sm:w-auto sm:min-w-[14rem]"
+          className="h-[var(--control-height-lg)] min-h-[44px] w-full min-w-0 rounded-[var(--radius-sm)] border border-[var(--color-line-strong)] bg-white px-3 sm:w-auto sm:min-w-[14rem]"
         />
         <label className="sr-only" htmlFor="program">
           Program
         </label>
-        <select id="program" name="program" defaultValue={params.program ?? ''} className="h-11 max-w-full rounded-[var(--radius-sm)] border border-[var(--color-line-strong)] bg-white px-3">
+        <select
+          id="program"
+          name="program"
+          key={`program-${params.program ?? ''}`}
+          defaultValue={params.program ?? ''}
+          className="h-[var(--control-height-lg)] min-h-[44px] w-full sm:w-auto max-w-full rounded-[var(--radius-sm)] border border-[var(--color-line-strong)] bg-white px-3"
+        >
           <option value="">All programs</option>
           {programs.docs.map((p) => (
             <option key={p.id} value={p.id}>
@@ -117,7 +130,13 @@ export default async function AdminApplicationsPage({
         <label className="sr-only" htmlFor="status">
           Status
         </label>
-        <select id="status" name="status" defaultValue={params.status ?? ''} className="h-11 rounded-[var(--radius-sm)] border border-[var(--color-line-strong)] bg-white px-3">
+        <select
+          id="status"
+          name="status"
+          key={`status-${params.status ?? ''}`}
+          defaultValue={params.status ?? ''}
+          className="h-[var(--control-height-lg)] min-h-[44px] w-full sm:w-auto max-w-full rounded-[var(--radius-sm)] border border-[var(--color-line-strong)] bg-white px-3"
+        >
           <option value="">All statuses</option>
           <option value="in_progress">All in-progress applications</option>
           {Object.entries(STATUS_LABELS).map(([value, label]) => (
@@ -126,7 +145,10 @@ export default async function AdminApplicationsPage({
             </option>
           ))}
         </select>
-        <button type="submit" className="h-11 rounded-[var(--radius-sm)] bg-[var(--color-ink)] px-4 text-[length:var(--text-small)] text-white">
+        <button
+          type="submit"
+          className="h-[var(--control-height-lg)] min-h-[44px] w-full sm:w-auto rounded-[var(--radius-sm)] bg-[var(--color-ink)] px-4 text-[length:var(--text-small)] text-white"
+        >
           Filter
         </button>
       </form>

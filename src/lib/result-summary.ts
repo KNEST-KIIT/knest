@@ -23,6 +23,7 @@ export function resultSummary(
     return emptyWithFilters ?? `No ${noun}s match that combination.`
   }
 
-  const suffix = qualifier ?? (hasFilters ? 'match your filters' : '')
+  const defaultSuffix = count === 1 ? 'matches your filters' : 'match your filters'
+  const suffix = qualifier ?? (hasFilters ? defaultSuffix : '')
   return `${count} ${noun}${count === 1 ? '' : 's'}${suffix ? ` ${suffix}` : ''}.`
 }

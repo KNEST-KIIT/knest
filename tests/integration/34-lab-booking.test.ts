@@ -275,11 +275,12 @@ describe('requesting a booking', () => {
     expect(String(over.body.error)).toMatch(/the limit is 2/)
   })
 
-  it('applies eligibility: unverified e-mail and unfinished profile are refused; a lab can relax it', async () => {
+  it('rejects an unverified account at authentication and applies configurable onboarding eligibility', async () => {
     const unverified = await makeMember('el-unverified', { verified: false })
     const fresh = await makeMember('el-fresh', { onboarded: false })
     const a = await request(labA.slug, unverified.session, slot(9, 10))
-    expect([a.status, a.body.code]).toEqual([403, 'ineligible'])
+    // Unverified accounts no longer have a valid application session at all.
+    expect([a.status, a.body.code]).toEqual([401, undefined])
     const b = await request(labA.slug, fresh.session, slot(9, 11))
     expect([b.status, b.body.code]).toEqual([403, 'ineligible'])
     expect((await json(await api(`/api/labs/${labA.slug}/manage`, head, { action: 'update', settings: { eligibility: 'verified' } }))).status).toBe(200)

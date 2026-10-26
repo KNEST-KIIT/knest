@@ -58,7 +58,7 @@ describe('collection read policy (regression guard for KN-02 / NF-02)', () => {
     resources: 'published-only',
     staff: 'denied',
     startups: 'published-only',
-    testimonials: 'public',
+    testimonials: 'published-only',
   }
   const ALL = [
     Articles, Cohorts, Events, Faqs, Founders, Infrastructure, Media,

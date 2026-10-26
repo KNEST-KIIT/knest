@@ -38,16 +38,23 @@ export async function getResourceBySlug(slug: string): Promise<Resource | null> 
 
     const result = await payload.find({
       collection: 'resources',
-      // Hosted-only: an externally-hosted resource (body empty, externalUrl set)
-      // never gets a /resources/[slug] route — its card links straight out —
-      // so this excludes it here rather than the page having to redirect.
-      where: { and: [{ slug: { equals: slug } }, { body: { exists: true } }] },
+      where: {
+        slug: { equals: slug },
+      },
       depth: 1,
       limit: 1,
       overrideAccess: false,
     })
 
-    return result?.docs?.[0] ?? null
+    const resource = result?.docs?.[0] ?? null
+    if (!resource) return null
+
+    // Purely external resources (no body and no file) do not have a dedicated detail route
+    if (!resource.body && !resource.file) {
+      return null
+    }
+
+    return resource
   } catch (error) {
     console.warn('Could not fetch resource by slug:', error)
     return null

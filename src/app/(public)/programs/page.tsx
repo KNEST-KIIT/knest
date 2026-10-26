@@ -50,7 +50,7 @@ async function ProgramsList({ filters }: { filters: Filters }) {
         {programs.map((program) => (
           <LinkCard key={program.id} href={`/programs/${program.slug}`} label={`View ${program.title}`}>
             <div className="flex items-center justify-between border-b border-[var(--color-line)] pb-3">
-              <ProgramStatusBadge status={program.applicationStatus} />
+              <ProgramStatusBadge status={program.applicationStatus} deadline={program.applicationDeadline} />
               {program.stage && program.stage.length > 0 && (
                 <span className="font-mono text-[11px] uppercase tracking-wider text-[var(--color-signal)] font-semibold">
                   {program.stage[0]}

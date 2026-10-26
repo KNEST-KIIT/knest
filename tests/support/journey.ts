@@ -93,16 +93,22 @@ export async function signUpThroughForm(
   await page.goto(`${BASE()}/signup${input.next ? `?next=${encodeURIComponent(input.next)}` : ''}`, { waitUntil: 'networkidle' })
   await page.getByLabel('Full name').fill(input.name)
   await page.getByLabel('Email address').fill(input.email)
-  await page.getByLabel('Create password').fill(input.password ?? PASSWORD)
+  const passwordToUse = input.password ?? PASSWORD
+  const pwInput = page.getByLabel(/create password|password/i)
+  if (await pwInput.count() > 0) {
+    await pwInput.fill(passwordToUse)
+  }
   await Promise.all([
     page.waitForURL((u) => u.pathname === '/verify', { timeout: 60_000 }),
-    page.getByRole('button', { name: /create account/i }).click(),
+    page.getByRole('button', { name: /continue with email|create account/i }).click(),
   ])
   const text = await waitForMailText(input.email, /verify\/confirm/i)
   await page.goto(`${BASE()}${verifyPathIn(text)}`)
-  await page.getByText('You’re signed in.').waitFor({ timeout: 30_000 })
+  await page.getByLabel(/choose password|password/i).fill(passwordToUse)
+  await page.getByRole('button', { name: /activate account/i }).click()
+  await page.getByText(/you’re signed in|you're signed in/i).waitFor({ timeout: 30_000 })
   await Promise.all([
     page.waitForURL((u) => u.pathname.startsWith('/onboarding'), { timeout: 60_000 }),
-    page.getByRole('link', { name: 'Continue.' }).click(),
+    page.getByRole('link', { name: /continue/i }).click(),
   ])
 }

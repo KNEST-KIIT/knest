@@ -41,7 +41,7 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
   // behind it must not scroll and Escape must close it.
   useEffect(() => {
     if (!open) return
-    const desktop = window.matchMedia('(min-width: 1024px)')
+    const desktop = window.matchMedia('(min-width: 1280px)')
     const closeOnDesktop = () => {
       if (desktop.matches) setOpen(false)
     }
@@ -97,7 +97,7 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
             <Logo size="md" />
           </Link>
 
-          <nav aria-label="Main" className="hidden items-center gap-1.5 xl:gap-3 2xl:gap-5 lg:flex">
+          <nav aria-label="Main" className="hidden items-center gap-3 2xl:gap-5 xl:flex">
             {NAV.map((item) => {
               const active = pathname.startsWith(item.href)
               return (
@@ -120,7 +120,7 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
         </div>
 
         {/* Right: Log In and Start Building CTA */}
-        <div className="hidden items-center gap-2 lg:flex shrink-0">
+        <div className="hidden items-center gap-2 xl:flex shrink-0">
           {signedIn ? (
             <>
               <div className="relative shrink-0">
@@ -161,7 +161,7 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
         <button
           ref={toggleRef}
           type="button"
-          className="-mr-1 flex size-10 shrink-0 items-center justify-center rounded-lg text-[var(--color-ink)] hover:bg-black/[0.04] transition-colors lg:hidden"
+          className="-mr-1 flex min-h-[44px] min-w-[44px] size-11 shrink-0 items-center justify-center rounded-lg text-[var(--color-ink)] hover:bg-black/[0.04] transition-colors xl:hidden"
           aria-expanded={open}
           aria-controls="mobile-nav"
           onClick={() => setOpen((v) => !v)}
@@ -191,7 +191,7 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
         <div
           ref={panelRef}
           id="mobile-nav"
-          className="absolute inset-x-0 top-full z-50 flex h-[calc(100dvh-4.5rem)] flex-col bg-[var(--color-paper)] lg:hidden"
+          className="absolute inset-x-0 top-full z-50 flex h-[calc(100dvh-4.5rem)] flex-col bg-[var(--color-paper)] xl:hidden"
         >
           <nav aria-label="Main" className="flex flex-1 flex-col gap-1 overflow-y-auto px-6 py-6">
             {NAV.map((item) => (

@@ -45,7 +45,7 @@ export function Field({
 
       {children({ id, 'aria-describedby': describedBy, 'aria-invalid': Boolean(error) })}
 
-      {hint && !error && (
+      {hint && (
         <p id={hintId} className="text-xs text-[var(--color-ink-muted)]">
           {hint}
         </p>
@@ -78,19 +78,22 @@ export function Input({
 
 export function Textarea({
   className,
+  ref,
   ...props
-}: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea className={cn(control, 'min-h-28 py-2.5 leading-relaxed', className)} {...props} />
+}: React.TextareaHTMLAttributes<HTMLTextAreaElement> & { ref?: React.Ref<HTMLTextAreaElement> }) {
+  return <textarea ref={ref} className={cn(control, 'min-h-28 py-2.5 leading-relaxed', className)} {...props} />
 }
 
 export function Select({
   className,
+  ref,
   children,
   ...props
-}: React.SelectHTMLAttributes<HTMLSelectElement>) {
+}: React.SelectHTMLAttributes<HTMLSelectElement> & { ref?: React.Ref<HTMLSelectElement> }) {
   return (
     <div className={cn("relative group", className)}>
       <select 
+        ref={ref}
         className={cn(control, 'appearance-none h-10 w-full pr-10 cursor-pointer')} 
         {...props}
       >

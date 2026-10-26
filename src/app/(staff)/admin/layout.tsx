@@ -35,25 +35,25 @@ export default async function StaffLayout({ children }: { children: React.ReactN
     <>
       <SkipLink />
       <div className="min-h-dvh bg-[var(--color-paper-soft)]">
-        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-line)] bg-[var(--color-paper)] px-6 py-4">
-          <div className="flex flex-wrap items-center gap-6">
-            <Link href="/admin/overview" className="font-[family-name:var(--font-display)] text-base uppercase tracking-[0.12em]">
+        <header className="flex flex-wrap items-center justify-between gap-2.5 border-b border-[var(--color-line)] bg-[var(--color-paper)] px-4 py-1.5 sm:px-6 sm:py-2">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 sm:gap-6">
+            <Link href="/admin/overview" className="inline-flex min-h-[44px] items-center font-[family-name:var(--font-display)] text-sm sm:text-base uppercase tracking-[0.12em] font-semibold">
               KNEST Admin
             </Link>
-            <nav aria-label="Admin" className="flex flex-wrap gap-4 text-[length:var(--text-small)]">
+            <nav aria-label="Admin" className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs sm:text-[length:var(--text-small)] sm:gap-4">
               {items.map((item) => (
-                <Link key={item.href} href={item.href}>
+                <Link key={item.href} href={item.href} className="inline-flex min-h-[44px] items-center text-[var(--color-ink-soft)] hover:text-[var(--color-ink)] hover:underline">
                   {item.label}
                 </Link>
               ))}
             </nav>
           </div>
-          <div className="flex flex-wrap items-center gap-4">
-            <Link href="/dashboard/account" className="text-sm">Account</Link>
-            {managesContent && <Link href="/admin" className="text-[length:var(--text-small)] text-[var(--color-ink-muted)]">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 sm:gap-4">
+            <Link href="/dashboard/account" className="inline-flex min-h-[44px] items-center text-xs sm:text-sm text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]">Account</Link>
+            {managesContent && <Link href="/admin" className="inline-flex min-h-[44px] items-center text-xs sm:text-[length:var(--text-small)] text-[var(--color-ink-muted)] hover:underline">
               Content management →
             </Link>}
-            <LogoutButton className="h-9 rounded-[var(--radius-sm)] border border-[var(--color-line-strong)] bg-white px-3 text-[length:var(--text-small)] font-medium" />
+            <LogoutButton className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-sm)] border border-[var(--color-line-strong)] bg-white px-3 text-xs sm:text-[length:var(--text-small)] font-medium" />
           </div>
         </header>
         <main id="main" className="mx-auto w-full max-w-7xl px-6 py-10">
