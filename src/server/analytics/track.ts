@@ -1,4 +1,5 @@
 import { cookies } from 'next/headers'
+import { unstable_rethrow } from 'next/navigation'
 import { db } from '@/db/client'
 import { analyticsEvents } from '@/db/schema'
 import { getSessionUser } from '@/server/auth/guards'
@@ -41,8 +42,9 @@ async function getOrSetSessionId(): Promise<string> {
  * Server-side only — no client analytics SDK. A five-collection funnel
  * doesn't justify a third-party dependency, and writing directly here means
  * the data is owned, not sent anywhere else (PHASE-10-12-IMPLEMENTATION-
- * PLAN.md §3). Never throws: a tracking failure must not break the request
- * that triggered it.
+ * PLAN.md §3). Application-level tracking failures never escape, so analytics
+ * cannot break the request that triggered it. Next.js framework control-flow
+ * exceptions are deliberately rethrown to preserve rendering semantics.
  *
  * `userId` defaults to the current session, but can be overridden — the one
  * case that needs this is `application_accepted`, fired from
@@ -64,6 +66,10 @@ export async function track(
       props,
     })
   } catch (error) {
+    // Next uses framework-controlled exceptions to opt a route out of static
+    // rendering. Swallowing one here makes the build noisy and can render with
+    // the wrong caching semantics; only genuine analytics failures are best-effort.
+    unstable_rethrow(error)
     console.error('Failed to record analytics event:', event, error)
   }
 }

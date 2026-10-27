@@ -5,15 +5,12 @@ import { fileTypeFromBuffer } from 'file-type'
  * renamed .exe with a `.pdf` name and a spoofed header sails straight past
  * ALLOWED_UPLOAD_MIME_TYPES otherwise (§4.2). This sniffs the actual bytes.
  *
- * Legacy .doc/.ppt (the pre-2007 OLE formats) share one container format
- * (CFBF) that magic-number sniffing can't tell apart without parsing the
- * whole structure — file-type reports both as `application/x-cfb`, so that's
- * accepted for either declared type rather than treated as a mismatch.
+ * Legacy OLE .doc/.ppt files are deliberately unsupported. Their shared CFBF
+ * container cannot be distinguished safely by this lightweight verifier and
+ * they are a poor production boundary without a quarantine/scanning service.
  */
 const ACCEPTED_SNIFFED_MIME_TYPES: Record<string, readonly string[]> = {
   'application/pdf': ['application/pdf'],
-  'application/msword': ['application/x-cfb'],
-  'application/vnd.ms-powerpoint': ['application/x-cfb'],
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document': [
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   ],

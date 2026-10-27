@@ -11,7 +11,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
     const limited = await limitByUser('labRequest')
     if (limited) return limited
     const body = await readJson(request)
-    const captcha = await captchaFailure(request, body)
+    const captcha = await captchaFailure(request, body, 'lab-booking')
     if (captcha) return captcha
     const { slug } = await params
     return respond(await requestBooking(slug, body), 201)

@@ -7,10 +7,13 @@ import { startTestDatabase } from '../support/pg'
 import { startS3Stub } from '../support/s3-stub'
 import { startSmtpStub } from '../support/smtp-stub'
 import { startTurnstileVerifyStub, TURNSTILE_TEST_SECRET, TURNSTILE_TEST_SITE_KEY } from '../support/turnstile-stub'
+import { startScannerStub } from '../support/scanner-stub'
 
 const ROOT = path.resolve(import.meta.dirname, '../..')
 const SECRET = 'integration-test-secret-0123456789abcdef0123456789'
 const S3_TEST_BUCKET = 'knest-it-documents'
+const TSX_CLI = path.join(ROOT, 'node_modules/tsx/dist/cli.mjs')
+const PAYLOAD_CLI = path.join(ROOT, 'node_modules/payload/bin.js')
 
 function freePort(): Promise<number> {
   return new Promise((resolve, reject) => {
@@ -46,6 +49,7 @@ export default async function setup() {
   const smtp = await startSmtpStub(captureFile)
   const s3 = await startS3Stub(path.join(work, 's3'))
   const turnstile = await startTurnstileVerifyStub()
+  const scanner = await startScannerStub()
   const port = await freePort()
   const baseUrl = `http://127.0.0.1:${port}`
 
@@ -64,6 +68,7 @@ export default async function setup() {
     TURNSTILE_SECRET_KEY: TURNSTILE_TEST_SECRET,
     TURNSTILE_SITE_KEY: TURNSTILE_TEST_SITE_KEY,
     TURNSTILE_VERIFY_URL: turnstile.endpoint,
+    MALWARE_SCANNER_URL: scanner.endpoint,
     DATABASE_SSL: 'off',
     // Lab booking is built and tested locally, but stays off by default everywhere else (HD-16 is open).
     FEATURE_LAB_BOOKING: 'true',
@@ -90,14 +95,13 @@ export default async function setup() {
   //    Drizzle migrations for `app`, then Payload migrations for `cms`, with
   //    NODE_ENV=production so no development-only schema push can mask a gap.
   for (const args of [
-    ['tsx', 'src/db/migrate.ts'],
-    ['payload', 'migrate'],
+    [TSX_CLI, 'src/db/migrate.ts'],
+    [PAYLOAD_CLI, 'migrate'],
   ]) {
-    const step = spawnSync('npx', args, {
+    const step = spawnSync(process.execPath, args, {
       cwd: ROOT,
       env: { ...env, NODE_ENV: 'production' },
       encoding: 'utf8',
-      shell: true,
       input: '',
       timeout: 240_000,
     })
@@ -113,11 +117,10 @@ ${step.stderr.slice(-1500)}`)
   //     schema rights (src/db/runtime-role.ts). Tests and helpers keep using the owner's URL.
   const RUNTIME_USER = 'knest_app'
   const RUNTIME_PASSWORD = 'integration-runtime-password-0123456789'
-  const roleStep = spawnSync('npx', ['tsx', 'src/db/runtime-role.ts'], {
+  const roleStep = spawnSync(process.execPath, [TSX_CLI, 'src/db/runtime-role.ts'], {
     cwd: ROOT,
     env: { ...env, NODE_ENV: 'production', DB_RUNTIME_USER: RUNTIME_USER, DB_RUNTIME_PASSWORD: RUNTIME_PASSWORD },
     encoding: 'utf8',
-    shell: true,
     input: '',
     timeout: 120_000,
   })
@@ -163,16 +166,20 @@ ${roleStep.stderr.slice(-800)}`)
   process.env.TEST_PORT = String(port)
   process.env.AUTH_SECRET = SECRET
   process.env.PAYLOAD_SECRET = SECRET
+  process.env.MALWARE_SCANNER_URL = scanner.endpoint
 
   return async () => {
     if (server?.pid) {
-      // `npx` runs next through a shell, so stop the whole tree.
-      spawnSync('taskkill', ['/pid', String(server.pid), '/t', '/f'], { shell: true })
-      server.kill()
+      if (process.platform === 'win32') {
+        spawnSync('taskkill', ['/pid', String(server.pid), '/t', '/f'], { windowsHide: true, stdio: 'ignore' })
+      } else {
+        server.kill('SIGTERM')
+      }
     }
     await smtp.close()
     await s3.close()
     await turnstile.close()
+    await scanner.close()
     await db.stop()
     rmSync(work, { recursive: true, force: true })
   }

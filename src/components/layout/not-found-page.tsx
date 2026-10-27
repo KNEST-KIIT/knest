@@ -1,7 +1,13 @@
 import type { Metadata } from 'next'
 import { ButtonLink, Heading } from '@/components/ui'
+import { siteUrl } from '@/lib/site-url'
 
-export const metadata: Metadata = { title: 'Page not found' }
+// global-not-found bypasses every route layout, so it must provide its own
+// metadata base for the generated Open Graph image and other relative URLs.
+export const metadata: Metadata = {
+  title: 'Page not found',
+  metadataBase: new URL(siteUrl()),
+}
 
 /**
  * The 404 for any URL no route matches (CONTENT_SPEC section 9). Before this

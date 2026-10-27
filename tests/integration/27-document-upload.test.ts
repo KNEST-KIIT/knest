@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { EICAR_SIGNATURE } from '@/server/security/malware-scan'
 import { CAPTCHA, BASE, closeDb, createUser, db, get, login, uniqueIp, type Session } from '../support/helpers'
 import { payloadClient, richText } from '../support/payload'
 
@@ -172,6 +173,18 @@ describe('uploading an application document', () => {
     const wrongType = await upload(applicationId, me, { name: 'notes.txt', type: 'text/plain', bytes: Buffer.from('hello') })
     expect(wrongType.status).toBe(400)
     expect(storedObjects().length).toBe(before)
+    expect((await db().query('select count(*)::int c from app.application_documents where application_id = $1', [applicationId])).rows[0].c).toBe(0)
+  })
+
+  it('refuses an uploaded document containing malware/EICAR signature and quarantines it', async () => {
+    const { me, applicationId } = await startDraft('malware')
+    const primaryBefore = storedObjects().filter((k) => !k.startsWith('quarantine/')).length
+    const infectedPdf = Buffer.from(`%PDF-1.4\n${EICAR_SIGNATURE}\n%%EOF\n`, 'latin1')
+    const infected = await upload(applicationId, me, { name: 'deck.pdf', type: 'application/pdf', bytes: infectedPdf })
+    expect(infected.status).toBe(400)
+    expect((await infected.json()).error).toMatch(/failed security screening/i)
+    expect(storedObjects().filter((k) => !k.startsWith('quarantine/')).length).toBe(primaryBefore)
+    expect(storedObjects().some((k) => k.startsWith('quarantine/'))).toBe(true)
     expect((await db().query('select count(*)::int c from app.application_documents where application_id = $1', [applicationId])).rows[0].c).toBe(0)
   })
 

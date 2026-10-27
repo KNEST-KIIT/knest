@@ -6,7 +6,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { createHash, generateKeyPairSync, randomUUID, sign } from 'node:crypto'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { BASE, CAPTCHA, PASSWORD, closeDb, createUser, db, decodeMailText, readMail, uniqueIp } from '../support/helpers'
+import { BASE, PASSWORD, captcha, closeDb, createUser, db, decodeMailText, readMail, uniqueIp } from '../support/helpers'
 
 /**
  * Module 6: Google sign-in in its ENABLED state, with no real credentials. A second copy of the
@@ -117,8 +117,12 @@ beforeAll(async () => {
       const chunks: Buffer[] = []
       for await (const chunk of req) chunks.push(Buffer.from(chunk))
       const form = new URLSearchParams(Buffer.concat(chunks).toString())
+      const token = form.get('response') ?? ''
+      const action = token.startsWith('valid-token:') ? token.slice('valid-token:'.length) : ''
       res.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify({
-        success: form.get('secret') === 'integration-turnstile-secret' && form.get('response') === 'valid-token',
+        success: form.get('secret') === 'integration-turnstile-secret' && action.length > 0,
+        action,
+        hostname: '127.0.0.1',
       }))
       return
     }
@@ -198,8 +202,11 @@ beforeAll(async () => {
 
 afterAll(async () => {
   if (server?.pid) {
-    spawnSync('taskkill', ['/pid', String(server.pid), '/t', '/f'], { shell: true })
-    server.kill()
+    if (process.platform === 'win32') {
+      spawnSync('taskkill', ['/pid', String(server.pid), '/t', '/f'], { windowsHide: true, stdio: 'ignore' })
+    } else {
+      server.kill('SIGTERM')
+    }
   }
   await new Promise<void>((resolve) => (oidc ? oidc.close(() => resolve()) : resolve()))
   await closeDb()
@@ -337,7 +344,7 @@ describe('Google sign-in, enabled with a stubbed provider', () => {
     expect((await session(flow.jar))?.user).toBeUndefined()
     const passwordLogin = await fetch(`${enabledBase}/api/auth/password/login`, {
       method: 'POST', headers: { 'content-type': 'application/json', 'x-forwarded-for': uniqueIp() },
-      body: JSON.stringify({ email: identity.email, password: PASSWORD, ...CAPTCHA }),
+      body: JSON.stringify({ email: identity.email, password: PASSWORD, ...captcha('login') }),
     })
     expect(passwordLogin.status).toBe(200)
     const passwordJar = new CookieJar()

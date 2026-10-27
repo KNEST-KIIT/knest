@@ -10,6 +10,7 @@ import { track } from '@/server/analytics/track'
 import { deleteFile, generateStorageKey, putFile } from '@/server/storage'
 import { enforceRateLimit, RATE_LIMITS } from '@/server/security/rate-limit'
 import { verifyFileContents } from '@/server/security/file-verify'
+import { recordQuarantinedFile, scanForMalware } from '@/server/security/malware-scan'
 import { getApplicationProgram, getApplicationProgramBySlug, getProgramTitlesByIds } from './program-questions'
 import { closedReason } from './availability'
 import { ALLOWED_UPLOAD_MIME_TYPES, findSubmissionProblem, MAX_UPLOAD_BYTES, schemaForQuestion } from './validation'
@@ -185,6 +186,31 @@ export async function uploadDocument(
   // ever reaches storage (§4.2).
   if (!(await verifyFileContents(file.buffer, file.type))) {
     return { ok: false, error: 'We can take PDF, DOC or PPT files.' }
+  }
+
+  // Real malware scanning: beyond container magic bytes, inspect for weaponized
+  // scripts, embedded PE/ELF binaries, EICAR test signatures, or remote AV daemon
+  // detection. Fail-closed: if the scanner errors, times out, or detects malware,
+  // the file is quarantined/rejected before ever touching primary storage.
+  const scan = await scanForMalware(file.buffer, file.name)
+  if (!scan.clean) {
+    if (scan.reason === 'infected') {
+      await recordQuarantinedFile({
+        userId: user.id,
+        applicationId,
+        fileName: file.name,
+        buffer: file.buffer,
+        threat: scan.threat,
+      }).catch((err) => console.error('[security] Failed to record quarantine:', err))
+      return {
+        ok: false,
+        error: 'The uploaded file failed security screening and was rejected.',
+      }
+    }
+    return {
+      ok: false,
+      error: 'Security screening is temporarily unavailable. Please try again shortly.',
+    }
   }
 
   const storageKey = generateStorageKey(file.name)

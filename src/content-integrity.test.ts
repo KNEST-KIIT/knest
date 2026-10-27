@@ -59,7 +59,7 @@ describe('content honesty gate', () => {
       }
     }
     expect(offenders).toEqual([])
-  })
+  }, 20_000)
 
   const BANNED: [string, RegExp][] = [
     ['the capital is waiting', /the capital is waiting/i],

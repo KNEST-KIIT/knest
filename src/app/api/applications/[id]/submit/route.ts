@@ -6,7 +6,7 @@ import { captchaFailure } from '@/server/security/captcha'
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const body = await request.json().catch(() => null)
-  const captcha = await captchaFailure(request, body)
+  const captcha = await captchaFailure(request, body, 'application-submit')
   if (captcha) return captcha
 
   try {

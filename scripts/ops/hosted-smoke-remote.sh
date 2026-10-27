@@ -36,9 +36,11 @@ umask 077
 WORK=$(mktemp -d /run/knest-smoke.XXXXXX)
 trap 'rm -rf "$WORK"' EXIT
 echo "__PAYLOAD__" | base64 -d > "$WORK/hosted-smoke.mjs"
-# Prefer the runtime identity when the release provides one; otherwise the database master (the current state).
-RUNTIME_ARN=$(param db-runtime-secret-arn 2>/dev/null || true)
-if [ -n "$RUNTIME_ARN" ] && [ "$RUNTIME_ARN" != "None" ]; then DB_SECRET=$(secret "$RUNTIME_ARN"); else DB_SECRET=$(secret "$(param db-secret-arn)"); fi
+# Hosted acceptance must exercise the same least-privilege identity as the web process.
+# Never hide a broken runtime-role deployment by falling back to the database master.
+RUNTIME_ARN=$(param db-runtime-secret-arn)
+[ -n "$RUNTIME_ARN" ] && [ "$RUNTIME_ARN" != "None" ] || { echo "runtime database secret is not configured" >&2; exit 1; }
+DB_SECRET=$(secret "$RUNTIME_ARN")
 DB_USER=$(echo "$DB_SECRET" | jq -r .username)
 DB_PASSWORD=$(echo "$DB_SECRET" | jq -rj .password | jq -sRr @uri)
 {

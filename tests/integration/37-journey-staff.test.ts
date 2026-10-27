@@ -52,10 +52,20 @@ async function applicant(tag: string, name: string, answer: string) {
 async function moveTo(page: Page, applicationId: string, label: string, status: string, note?: string) {
   await page.getByRole('combobox').selectOption({ label: `Move to: ${label}` })
   if (note) await page.getByPlaceholder('Optional note (not shown to the applicant)').fill(note)
-  await Promise.all([
-    page.waitForResponse((r) => r.url().includes(`/api/admin/applications/${applicationId}/status`) && r.ok()),
-    page.getByRole('button', { name: 'Update status' }).click(),
-  ])
+  const isFinal = status === 'accepted' || status === 'rejected'
+  if (isFinal) {
+    await page.getByRole('button', { name: new RegExp(`Review & confirm ${label}`) }).click()
+    await page.getByRole('alertdialog').waitFor()
+    await Promise.all([
+      page.waitForResponse((r) => r.url().includes(`/api/admin/applications/${applicationId}/status`) && r.ok()),
+      page.getByRole('button', { name: new RegExp(`Yes, confirm ${label}`) }).click(),
+    ])
+  } else {
+    await Promise.all([
+      page.waitForResponse((r) => r.url().includes(`/api/admin/applications/${applicationId}/status`) && r.ok()),
+      page.getByRole('button', { name: 'Update status' }).click(),
+    ])
+  }
   await page.locator('strong', { hasText: new RegExp(`^${status.replaceAll('_', ' ')}$`) }).waitFor({ timeout: 30_000 })
 }
 

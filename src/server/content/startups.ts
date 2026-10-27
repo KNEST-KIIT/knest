@@ -83,7 +83,7 @@ export async function getStartupForUser(userId: string): Promise<Startup | null>
       where: { userId: { equals: userId } },
       depth: 0,
       limit: 1,
-      overrideAccess: false,
+      overrideAccess: true,
     })
 
     const founder = foundersResult?.docs?.[0]

@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { canWrite, readPublished } from '../access'
+import { canWrite, canWriteField, readPublished } from '../access'
 import { slugField } from '../fields/slug'
 
 /**
@@ -33,6 +33,7 @@ export const Founders: CollectionConfig = {
       name: 'userId',
       type: 'text',
       index: true,
+      access: { read: canWriteField('startups') },
       admin: {
         position: 'sidebar',
         description: 'Links this profile to a platform account. Leave blank if they have none.',

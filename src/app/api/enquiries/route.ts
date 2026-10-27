@@ -9,7 +9,7 @@ export async function POST(request: Request) {
   if (!allowed) return NextResponse.json({ error: 'Too many messages from this connection. Try again later.' }, { status: 429 })
 
   const body = await request.json().catch(() => null)
-  const captcha = await captchaFailure(request, body)
+  const captcha = await captchaFailure(request, body, 'contact')
   if (captcha) return captcha
 
   const user = await getSessionUser()

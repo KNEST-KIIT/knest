@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { BASE, CAPTCHA, closeDb, createUser, db, get, login, uniqueIp, type Session } from '../support/helpers'
+import { BASE, captcha, closeDb, createUser, db, get, login, uniqueIp, type Session } from '../support/helpers'
 import { payloadClient, richText } from '../support/payload'
 
 /**
@@ -50,7 +50,7 @@ afterAll(closeDb)
 
 describe('pages the footer links to', () => {
   it.each([
-    ['/privacy', '10-year retention period'],
+    ['/privacy', '5-year retention period'],
     ['/terms', 'Mentorship and facility terms'],
     ['/disclaimer', 'Disclaimer and third-party content policy'],
   ])('%s publishes the supplied policy while the site-wide indexing gate remains active', async (path, content) => {
@@ -79,7 +79,7 @@ describe('the contact form (POST /api/enquiries)', () => {
 
   it('stores a valid message, without a user when anonymous', async () => {
     const email = `anon-${stamp}@example.test`
-    const res = await postJson('/api/enquiries', { ...valid, email, ...CAPTCHA })
+    const res = await postJson('/api/enquiries', { ...valid, email, ...captcha('contact') })
     expect(res.status).toBe(201)
     const row = (await db().query('select name, topic, status, user_id from app.enquiries where email = $1', [email])).rows[0]
     expect(row).toMatchObject({ name: 'Asha Verma', topic: 'general', status: 'new', user_id: null })
@@ -87,14 +87,14 @@ describe('the contact form (POST /api/enquiries)', () => {
 
   it('attaches the signed-in account when there is one', async () => {
     const email = `signed-${stamp}@example.test`
-    expect((await postJson('/api/enquiries', { ...valid, email, ...CAPTCHA }, uniqueIp(), member.cookie)).status).toBe(201)
+    expect((await postJson('/api/enquiries', { ...valid, email, ...captcha('contact') }, uniqueIp(), member.cookie)).status).toBe(201)
     const row = (await db().query('select user_id from app.enquiries where email = $1', [email])).rows[0]
     expect(row.user_id).toBeTruthy()
   })
 
   it('drops a bot silently: the honeypot field is filled, nothing is stored', async () => {
     const email = `bot-${stamp}@example.test`
-    const res = await postJson('/api/enquiries', { ...valid, email, website: 'http://spam.example', ...CAPTCHA })
+    const res = await postJson('/api/enquiries', { ...valid, email, website: 'http://spam.example', ...captcha('contact') })
     expect(res.status).toBe(201)
     expect((await db().query('select count(*)::int c from app.enquiries where email = $1', [email])).rows[0].c).toBe(0)
   })
@@ -106,7 +106,7 @@ describe('the contact form (POST /api/enquiries)', () => {
     ['a too-long message', { message: 'x'.repeat(2001) }],
     ['a missing name', { name: '' }],
   ])('rejects %s with a readable message', async (_label, patch) => {
-    const res = await postJson('/api/enquiries', { ...valid, email: `v-${stamp}@example.test`, ...patch, ...CAPTCHA })
+    const res = await postJson('/api/enquiries', { ...valid, email: `v-${stamp}@example.test`, ...patch, ...captcha('contact') })
     expect(res.status).toBe(400)
     expect(typeof (await res.json()).error).toBe('string')
     expect((await db().query("select count(*)::int c from app.enquiries where email = $1", [`v-${stamp}@example.test`])).rows[0].c).toBe(0)
@@ -115,7 +115,7 @@ describe('the contact form (POST /api/enquiries)', () => {
   it('limits one connection to a few messages an hour', async () => {
     const ip = '198.51.100.250'
     const results: number[] = []
-    for (let i = 0; i < 5; i++) results.push((await postJson('/api/enquiries', { ...valid, email: `rl${i}-${stamp}@example.test`, ...CAPTCHA }, ip)).status)
+    for (let i = 0; i < 5; i++) results.push((await postJson('/api/enquiries', { ...valid, email: `rl${i}-${stamp}@example.test`, ...captcha('contact') }, ip)).status)
     expect(results.slice(0, 3)).toEqual([201, 201, 201])
     expect(results.slice(3)).toEqual([429, 429])
   })

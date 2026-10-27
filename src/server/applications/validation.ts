@@ -1,5 +1,22 @@
 import { z } from 'zod'
-import type { ApplicationQuestion } from './types'
+import {
+  DEFAULT_MAX_TEXT_ANSWER,
+  DEFAULT_MAX_TEXTAREA_ANSWER,
+  effectiveMaxLength,
+  type ApplicationQuestion,
+} from './types'
+
+export { DEFAULT_MAX_TEXT_ANSWER, DEFAULT_MAX_TEXTAREA_ANSWER, effectiveMaxLength }
+import { STAFF_PERMITTED_STATUSES } from './transitions'
+
+export const staffStatusChangeSchema = z.object({
+  status: z.enum(STAFF_PERMITTED_STATUSES, {
+    message: 'Invalid or prohibited status for staff decision.',
+  }),
+  note: z.string().max(2000, 'The note must be at most 2000 characters.').optional().nullable(),
+})
+
+export type StaffStatusChangeInput = z.infer<typeof staffStatusChangeSchema>
 
 /**
  * Builds a Zod schema for one question from its Payload definition. The
@@ -13,7 +30,8 @@ export function schemaForQuestion(question: ApplicationQuestion): z.ZodTypeAny {
     case 'text':
     case 'textarea': {
       let schema = z.string().trim()
-      if (question.maxLength) schema = schema.max(question.maxLength)
+      const limit = effectiveMaxLength(question)
+      if (limit != null) schema = schema.max(limit, `This answer must be at most ${limit} characters.`)
       return required ? schema.min(1, 'This one’s needed.') : schema.optional().or(z.literal(''))
     }
     case 'url': {
@@ -39,9 +57,7 @@ export function schemaForQuestion(question: ApplicationQuestion): z.ZodTypeAny {
 
 export const ALLOWED_UPLOAD_MIME_TYPES = [
   'application/pdf',
-  'application/msword',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.ms-powerpoint',
   'application/vnd.openxmlformats-officedocument.presentationml.presentation',
 ]
 

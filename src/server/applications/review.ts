@@ -11,7 +11,7 @@ import { sendNotificationEmail, writeNotification } from '@/server/notifications
 import { applicationStatusChangedTemplate } from '@/server/notifications/templates'
 import { track } from '@/server/analytics/track'
 import { getApplicationProgram, getProgramTitlesByIds } from './program-questions'
-import { isLegalTransition } from './transitions'
+import { isLegalStaffTransition } from './transitions'
 import type { ActionResult } from './actions'
 
 type Status = (typeof applicationStatus.enumValues)[number]
@@ -134,7 +134,15 @@ export async function changeApplicationStatus(
   const application = await db.query.applications.findFirst({ where: eq(applications.id, applicationId) })
   if (!application) return { ok: false, error: 'That application doesn’t exist.' }
 
-  if (!isLegalTransition(application.status, newStatus)) {
+  if (application.status === 'draft') {
+    return { ok: false, error: 'Cannot change the status of a draft application; only the applicant can submit.' }
+  }
+
+  if (newStatus === 'submitted' || newStatus === 'draft') {
+    return { ok: false, error: `Staff cannot transition an application to ${newStatus}. Only the applicant can submit.` }
+  }
+
+  if (!isLegalStaffTransition(application.status, newStatus)) {
     return {
       ok: false,
       error: `Can’t move an application from ${application.status} to ${newStatus}.`,

@@ -9,7 +9,7 @@ export async function POST(request: Request) {
   if (!allowed) return NextResponse.json({ error: 'Too many attempts. Try again later.' }, { status: 429 })
 
   const body = await request.json().catch(() => null)
-  const captcha = await captchaFailure(request, body)
+  const captcha = await captchaFailure(request, body, 'login')
   if (captcha) return captcha
 
   // Per-account throttle on FAILED attempts only, keyed on a hash of the e-mail whether or not the

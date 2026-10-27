@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import { HomeLink } from '@/components/layout/home-link'
 import { SkipLink } from '@/components/layout/skip-link'
 import { requireUser } from '@/server/auth/guards'
 
@@ -15,9 +15,9 @@ export default async function OnboardingLayout({ children }: { children: React.R
       <SkipLink />
       <div className="min-h-dvh bg-[var(--color-paper)]">
         <header className="border-b border-[var(--color-line)] px-6 py-4">
-          <Link href="/" className="font-[family-name:var(--font-display)] text-base uppercase tracking-[0.12em]">
+          <HomeLink className="font-[family-name:var(--font-display)] text-base uppercase tracking-[0.12em]">
             KNEST
-          </Link>
+          </HomeLink>
         </header>
         <main id="main" className="mx-auto w-full max-w-80 px-6 pb-32 pt-10 md:pb-16">
           {children}

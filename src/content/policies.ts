@@ -14,7 +14,8 @@ export const POLICIES = {
       {
         "heading": "Who is responsible for the data?",
         "paragraphs": [
-          "The responsible entity for KIITNEST is Dr. Pinaki Nandan Pattnaik, having its Address The Registered Office of KIITNEST INCUBATION FORUM is at Plot-386, Sub Plot-1, Sai Anandam, KIIT, Khorda, Bhubaneswar, Orissa, India,751024 and situated at campus 15B, KiiT University, Patia, Bhuabneswar 751024"
+          "The responsible entity for KIITNEST is Dr. Pinaki Nandan Pattnaik, having its Address The Registered Office of KIITNEST INCUBATION FORUM is at Plot-386, Sub Plot-1, Sai Anandam, KIIT, Khorda, Bhubaneswar, Orissa, India,751024 and situated at campus 15B, KiiT University, Patia, Bhuabneswar 751024",
+          "The designated data officer for KIITNEST is Ms. Charanjit Kaur. Enquiries relating to data protection or privacy may be directed to contact@kiitnest.com."
         ]
       },
       {
@@ -36,7 +37,7 @@ export const POLICIES = {
       {
         "heading": "Legal basis, notice and consent",
         "paragraphs": [
-          "KiiTNEST will process personal data only on a basis permitted by applicable law. Where consent is relied upon, the notice and consent mechanism must be clear, specific, informed, unambiguous and capable of being demonstrated, and users must be given a practical way to withdraw consent where required."
+          "KIITNEST processes personal data in accordance with the Digital Personal Data Protection Act, 2023 (DPDP Act) and other applicable Indian law. Where consent is relied upon, the notice and consent mechanism must be clear, specific, informed, unambiguous and capable of being demonstrated, and users must be given a practical way to withdraw consent where required."
         ]
       },
       {
@@ -50,10 +51,10 @@ export const POLICIES = {
       {
         "heading": "Retention and deletion",
         "paragraphs": [
-          "KIITNEST shall retain records and information collected, generated or stored through the platform for a period of 10 years, after which the records shall be archived in accordance with KIITNEST’s approved record management and archiving procedures.",
+          "KIITNEST shall retain records and information collected, generated or stored through the platform for a period of 5 years, after which the records shall be transferred to an approved backup and archive in accordance with KIITNEST’s approved record management and archiving procedures.",
           "This retention period shall apply to user accounts and profiles, successful and unsuccessful applications, uploaded documents, laboratory bookings, QR-code attendance records, event registrations, mentor records, communications, support tickets, and system access and security logs, subject to applicable legal and regulatory requirements.",
-          "After the 10-year retention period, records shall be transferred to an approved archive with appropriate access controls and security safeguards. Archived records shall be accessed only for authorised institutional, legal, regulatory, audit or historical purposes.",
-          "Backups shall be managed in accordance with KIITNEST’s approved backup and recovery procedures. Where applicable law requires a different retention or deletion period, or where records are subject to a legal hold or ongoing investigation, the applicable requirements shall take precedence."
+          "After the 5-year retention period, records shall be transferred to an approved backup archive with appropriate access controls and security safeguards. Archived records shall be accessed only for authorised institutional, legal, regulatory, audit or historical purposes.",
+          "Backups shall be managed in accordance with KIITNEST’s approved backup and recovery procedures. Where applicable law, including the Digital Personal Data Protection Act, 2023 (DPDP Act), requires a different retention or deletion period, or where records are subject to a legal hold or ongoing investigation, the applicable requirements shall take precedence."
         ]
       },
       {

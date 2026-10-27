@@ -1,15 +1,15 @@
 import { NextResponse } from 'next/server'
 import { clientIp } from './rate-limit'
-import { verifyTurnstile } from './turnstile'
+import { verifyTurnstile, type TurnstileAction } from './turnstile'
 
 /**
  * For route handlers: returns a ready response when the request's Turnstile token is
  * missing or rejected, or null when the handler may go on. Reads `turnstileToken` from
  * the already-parsed JSON body.
  */
-export async function captchaFailure(request: Request, body: unknown): Promise<NextResponse | null> {
+export async function captchaFailure(request: Request, body: unknown, expectedAction: TurnstileAction): Promise<NextResponse | null> {
   const token = typeof body === 'object' && body !== null ? (body as Record<string, unknown>).turnstileToken : undefined
-  const result = await verifyTurnstile(token, clientIp(request))
+  const result = await verifyTurnstile(token, clientIp(request), expectedAction)
   if (result.ok) return null
 
   if (result.reason === 'unavailable' || result.reason === 'not-configured') {

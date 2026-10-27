@@ -58,7 +58,7 @@ export function StepShell({
             initial={{ width: `${((index - 1) / total) * 100}%` }}
             animate={{ width: `${(index / total) * 100}%` }}
             transition={{ type: 'spring', stiffness: 100, damping: 20 }}
-            className="h-full rounded-full bg-gradient-to-r from-[var(--color-signal)] to-red-500"
+            className="h-full rounded-full bg-[var(--color-signal)]"
           />
         </div>
       </motion.div>
