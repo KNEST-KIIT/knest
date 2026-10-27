@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Heading, Section } from '@/components/ui'
 import { PageHeader } from '@/components/layout/page-header'
+import { SIEL } from '@/content/siel'
+import { SielAdmissions } from './siel-admissions'
 
 export const metadata: Metadata = {
   title: 'About KNEST',
@@ -62,10 +64,10 @@ const PILLARS_SIEL = [
 
 const INSTITUTIONAL_ROLES = [
   {
-    group: 'School of Innovation & Entrepreneurial Leadership',
+    group: SIEL.name,
     role: 'Entrepreneurial leadership, venture development, innovation education, and bespoke startup mentorship.',
-    program: 'AICTE-approved MBA - IEV Program',
-    link: 'https://sld.kiit.ac.in/mba',
+    program: SIEL.programmeName,
+    link: SIEL.programmeUrl,
   },
   {
     group: 'KIIT Kareer School',
@@ -171,7 +173,7 @@ export default function AboutPage() {
               Academic Anchor
             </p>
             <Heading as="h2" size="display" className="mt-2 text-[var(--color-ink)] text-3xl md:text-4xl">
-              School of Innovation &amp; Entrepreneurial Leadership
+              {SIEL.name}
             </Heading>
             <p className="mt-3 text-base text-[var(--color-ink-soft)] font-light leading-relaxed">
               Prepares future founders, innovators, and transformational leaders to explore possibilities
@@ -179,7 +181,7 @@ export default function AboutPage() {
             </p>
             <div className="mt-6">
               <a
-                href="https://sld.kiit.ac.in/mba"
+                href={SIEL.programmeUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 border border-[var(--color-signal)] bg-[var(--color-signal)] px-6 py-2.5 font-bold uppercase tracking-widest text-xs text-white hover:bg-[var(--color-signal-deep)] transition-colors"
@@ -202,6 +204,7 @@ export default function AboutPage() {
             ))}
           </div>
         </div>
+        <SielAdmissions />
       </Section>
 
       {/* Institutional Support Table */}
