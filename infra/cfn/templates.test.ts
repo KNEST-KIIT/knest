@@ -11,7 +11,9 @@ import { render } from '../../scripts/render-cfn.mjs'
  * that CloudFormation will accept a template; the first real deployment (S-1) is.
  */
 
-const read = (rel: string) => readFileSync(new URL(rel, import.meta.url), 'utf8')
+// Checked-out text files carry CRLF on Windows (core.autocrlf), LF in CI. Normalising here keeps every
+// assertion about line-oriented content (the DNS snapshot fence, multi-line script fragments) the same on both.
+const read = (rel: string) => readFileSync(new URL(rel, import.meta.url), 'utf8').replace(/\r\n/g, '\n')
 
 // CloudFormation's short-form functions (!Ref, !Sub, ...) become ordinary objects.
 const FUNCTIONS = ['Ref', 'GetAtt', 'Sub', 'If', 'Equals', 'Not', 'And', 'Or', 'Join', 'Select', 'Cidr', 'Split', 'Base64', 'FindInMap', 'ImportValue', 'GetAZs', 'Condition']
