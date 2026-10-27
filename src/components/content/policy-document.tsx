@@ -27,7 +27,7 @@ export function PolicyDocument({ kind }: { kind: PolicyKind }) {
   return (
     <article className="mx-auto w-full max-w-4xl px-6 py-16 md:px-10">
       <Heading as="h1" size="display">{policy.title}</Heading>
-      <p className="mt-4 text-sm text-[var(--color-ink-muted)]">Policy version: 17 October 2026</p>
+      <p className="mt-4 text-sm text-[var(--color-ink-muted)]">Policy version: {policy.version}</p>
 
       <nav aria-label="On this page" className="mt-10 rounded-[var(--radius-sm)] border border-[var(--color-line)] p-6">
         <h2 className="font-semibold">On this page</h2>

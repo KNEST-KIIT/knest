@@ -25,7 +25,7 @@ let articleSlug = ''
 let labSlug = ''
 const sessions: Record<string, Session> = {}
 
-const PUBLIC = ['/', '/about', '/programs', '/events', '/mentors', '/startups', '/resources', '/blog', '/ecosystem', '/invest', '/get-involved', '/contact', '/privacy', '/terms', '/disclaimer', '/search', '/search?q=lab', '/login', '/signup', '/reset']
+const PUBLIC = ['/', '/about', '/programs', '/events', '/mentors', '/startups', '/resources', '/blog', '/ecosystem', '/invest', '/get-involved', '/contact', '/privacy', '/terms', '/terms/facilities', '/disclaimer', '/search', '/search?q=lab', '/login', '/signup', '/reset']
 
 async function contextFor(role: string | null, viewport: { width: number; height: number }): Promise<BrowserContext> {
   const context = await browser.newContext({ viewport, extraHTTPHeaders: { 'x-forwarded-for': uniqueIp() }, reducedMotion: 'reduce' })

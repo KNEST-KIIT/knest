@@ -51,7 +51,8 @@ afterAll(closeDb)
 describe('pages the footer links to', () => {
   it.each([
     ['/privacy', '5-year retention period'],
-    ['/terms', 'Mentorship and facility terms'],
+    ['/terms', 'KIITNEST Terms and Conditions'],
+    ['/terms/facilities', 'Mentorship and facility terms'],
     ['/disclaimer', 'Disclaimer and third-party content policy'],
   ])('%s publishes the supplied policy while the site-wide indexing gate remains active', async (path, content) => {
     const res = await get(path)
@@ -170,12 +171,13 @@ describe('sitemap and robots', () => {
     expect(xml).not.toContain(`draft-${articleSlug}`)
     expect(xml).toContain('/privacy')
     expect(xml).toContain('/terms')
+    expect(xml).toContain('/terms/facilities')
     expect(xml).toContain('/disclaimer')
   })
 })
 
 describe('no dead links', () => {
-  const SEEDS = ['/', '/about', '/programs', '/events', '/mentors', '/startups', '/resources', '/blog', '/ecosystem', '/invest', '/get-involved', '/contact', '/privacy', '/terms', '/disclaimer', '/login', '/signup', '/search']
+  const SEEDS = ['/', '/about', '/programs', '/events', '/mentors', '/startups', '/resources', '/blog', '/ecosystem', '/invest', '/get-involved', '/contact', '/privacy', '/terms', '/terms/facilities', '/disclaimer', '/login', '/signup', '/search']
 
   it('every internal link on every public page leads somewhere that is not an error', async () => {
     const seen = new Set<string>()

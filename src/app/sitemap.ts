@@ -11,7 +11,7 @@ import { listStartups } from '@/server/content/startups'
 export const dynamic = 'force-dynamic'
 
 /** Public pages, including the owner-confirmed policy documents. Indexing remains controlled site-wide. */
-const STATIC_PATHS = ['/', '/about', '/programs', '/events', '/mentors', '/startups', '/resources', '/blog', '/ecosystem', '/invest', '/get-involved', '/contact', '/privacy', '/terms', '/disclaimer']
+const STATIC_PATHS = ['/', '/about', '/programs', '/events', '/mentors', '/startups', '/resources', '/blog', '/ecosystem', '/invest', '/get-involved', '/contact', '/privacy', '/terms', '/terms/facilities', '/disclaimer']
 
 async function safely<T>(label: string, load: () => Promise<T[]>): Promise<T[]> {
   try {

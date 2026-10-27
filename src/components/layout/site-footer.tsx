@@ -93,7 +93,7 @@ export function SiteFooter() {
               Privacy Policy
             </Link>
             <Link href="/terms" className="inline-flex min-h-11 items-center hover:text-white transition-colors">
-              Service terms
+              Terms and Conditions
             </Link>
             <Link href="/disclaimer" className="inline-flex min-h-11 items-center hover:text-white transition-colors">
               Disclaimer

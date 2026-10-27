@@ -177,7 +177,7 @@ export function SignupForm({ googleEnabled, turnstileSiteKey }: { googleEnabled:
           Before creating an account, read our{' '}
           <Link href="/privacy" className="font-medium text-[var(--color-signal)] underline underline-offset-4">privacy policy</Link>{' '}
           and{' '}
-          <Link href="/terms" className="font-medium text-[var(--color-signal)] underline underline-offset-4">service terms</Link>.
+          <Link href="/terms" className="font-medium text-[var(--color-signal)] underline underline-offset-4">Terms and Conditions</Link>.
         </p>
 
         <Button 
