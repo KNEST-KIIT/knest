@@ -114,7 +114,7 @@ export function StatusForm({ applicationId, options }: { applicationId: string; 
               variant={selectedStatus === 'rejected' ? 'danger' : 'primary'}
               disabled={busy}
               onClick={submit}
-              className="min-h-[44px]"
+              className="min-h-11"
             >
               {busy ? 'Updating…' : `Yes, confirm ${LABELS[selectedStatus] ?? selectedStatus}`}
             </Button>
@@ -123,7 +123,7 @@ export function StatusForm({ applicationId, options }: { applicationId: string; 
               variant="secondary"
               disabled={busy}
               onClick={() => setConfirmingDecision(false)}
-              className="min-h-[44px]"
+              className="min-h-11"
             >
               Cancel
             </Button>
@@ -140,7 +140,7 @@ export function StatusForm({ applicationId, options }: { applicationId: string; 
             }
           }}
           disabled={!selectedStatus || busy}
-          className="min-h-[44px]"
+          className="min-h-11"
         >
           {busy ? 'Updating…' : isFinalDecision ? `Review & confirm ${LABELS[selectedStatus] ?? selectedStatus}` : 'Update status'}
         </Button>
