@@ -89,6 +89,10 @@ describe('/privacy retention wording', () => {
     expect(html).toContain('transferred to an approved backup and archive')
     expect(html).not.toMatch(/ten[- ]year|10[- ]year|ten years|10 years/i)
   })
+
+  it('is dated from the day that wording went on the site', async () => {
+    expect(await page('/privacy')).toContain('Policy version: 27 October 2026')
+  })
 })
 
 describe('/about shows SIEL, its address, and honest admissions facts', () => {

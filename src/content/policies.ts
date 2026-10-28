@@ -8,7 +8,7 @@ export const POLICIES = {
   "privacy": {
     "title": "KIITNEST Privacy Policy",
     "href": "/privacy",
-    "version": "17 October 2026",
+    "version": "27 October 2026",
     "sections": [
       {
         "heading": "About this Policy",

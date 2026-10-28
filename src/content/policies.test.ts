@@ -90,6 +90,15 @@ describe('retention wording after the five-years-then-backup decision', () => {
     expect(text).toMatch(/After the 5-year retention period/)
   })
 
+  it('dates the privacy policy from the day its retention text changed, not from the superseded text', () => {
+    // `version` is the date the text was put on the site. The retention section changed from ten years to five years then
+    // approved backup and archive on 27 October 2026, so the policy must not keep presenting itself as the 17 October text.
+    expect(POLICIES.privacy.version).toBe('27 October 2026')
+    // The documents whose text did not change keep the date they were put on the site.
+    expect(POLICIES.disclaimer.version).toBe('17 October 2026')
+    expect(POLICIES.facilityTerms.version).toBe('17 October 2026')
+  })
+
   it('no longer contains any ten-year retention language in any published document', () => {
     const offenders = allText().filter((text) => /ten[- ]year|10[- ]year|\bten years\b|\b10 years\b|decade/i.test(text))
     expect(offenders).toEqual([])
