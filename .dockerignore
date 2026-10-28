@@ -8,6 +8,9 @@ tests/*
 tests/support/*
 !tests/support/s3-stub.ts
 !tests/support/smtp-stub.ts
+!tests/support/sqs-stub.ts
+!tests/support/guardduty-simulator.ts
+!tests/support/eicar.ts
 infra
 uploads
 media

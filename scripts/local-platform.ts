@@ -9,8 +9,10 @@ import os from 'node:os'
 import path from 'node:path'
 import { parse } from 'dotenv'
 import EmbeddedPostgres from 'embedded-postgres'
+import { startGuardDutySimulator } from '../tests/support/guardduty-simulator'
 import { startS3Stub } from '../tests/support/s3-stub'
 import { startSmtpStub } from '../tests/support/smtp-stub'
+import { startSqsStub } from '../tests/support/sqs-stub'
 
 const root = path.resolve(import.meta.dirname, '..')
 const work = path.join(process.env.LOCALAPPDATA || os.homedir(), 'KNEST', 'local-platform')
@@ -71,6 +73,8 @@ async function run(args: string[], childEnv = env) {
 let pg: EmbeddedPostgres | undefined
 let smtp: Awaited<ReturnType<typeof startSmtpStub>> | undefined
 let s3: Awaited<ReturnType<typeof startS3Stub>> | undefined
+let sqs: Awaited<ReturnType<typeof startSqsStub>> | undefined
+let simulator: Awaited<ReturnType<typeof startGuardDutySimulator>> | undefined
 let inbox: http.Server | undefined
 let stopping = false
 async function stop(code = 0) {
@@ -82,7 +86,7 @@ async function stop(code = 0) {
   }
   inbox?.closeAllConnections()
   inbox?.close()
-  await Promise.allSettled([smtp?.close(), s3?.close()])
+  await Promise.allSettled([smtp?.close(), s3?.close(), simulator?.close(), sqs?.close()])
   await pg?.stop()
   process.exit(code)
 }
@@ -105,7 +109,14 @@ async function main() {
   await pg.start()
   if (fresh) await pg.createDatabase('knest_local_test')
   smtp = await startSmtpStub(capture)
-  s3 = await startS3Stub(path.join(work, 'objects'))
+  s3 = await startS3Stub(path.join(work, 'objects'), { persist: true })
+  // Document screening runs the same code as production against local stand-ins. The GuardDuty stand-in only tags
+  // new quarantine versions and queues EventBridge-shaped results (a few fixed marker strings pick the verdict); it
+  // is NOT a scanner, so a document that passes here has proved nothing about malware (tests/support/guardduty-simulator.ts).
+  sqs = await startSqsStub()
+  sqs.createQueue('knest-local-scan-results-dlq')
+  sqs.createQueue('knest-local-scan-results', { deadLetterQueue: 'knest-local-scan-results-dlq', maxReceiveCount: 5 })
+  simulator = await startGuardDutySimulator({ s3, sqs, queue: 'knest-local-scan-results', quarantineBucket: 'knest-local-quarantine', delayMs: 1500 })
   Object.assign(env, {
     NODE_ENV: 'development', APP_ENV: 'local', VERCEL_ENV: '',
     DATABASE_URL: `postgres://knest_local:${settings.password}@127.0.0.1:${port}/knest_local_test`, DATABASE_SSL: 'off',
@@ -113,7 +124,9 @@ async function main() {
     SITE_URL: base, NEXT_PUBLIC_SITE_URL: base, CLIENT_IP_SOURCE: 'x-forwarded-for', SITE_INDEXING: 'off',
     FEATURE_LAB_BOOKING: 'true', FEATURE_LAB_ATTENDANCE_QR: 'true',
     EMAIL_TRANSPORT: 'smtp', EMAIL_FROM: 'KNEST Local <no-reply@knest.test>', SMTP_HOST: '127.0.0.1', SMTP_PORT: String(smtp.port), SMTP_USER: '', SMTP_PASSWORD: '', EMAIL_OUTBOX: '',
-    S3_BUCKET: 'knest-local-documents', S3_REGION: 'ap-south-1', S3_ENDPOINT: s3.endpoint, S3_ACCESS_KEY_ID: 'local-only', S3_SECRET_ACCESS_KEY: 'local-only', CLOUDFRONT_URL: '',
+    S3_BUCKET: 'knest-local-media', S3_REGION: 'ap-south-1', S3_ENDPOINT: s3.endpoint, S3_ACCESS_KEY_ID: 'local-only', S3_SECRET_ACCESS_KEY: 'local-only', CLOUDFRONT_URL: '',
+    QUARANTINE_BUCKET: 'knest-local-quarantine', DOCUMENTS_BUCKET: 'knest-local-documents', DOCUMENTS_KMS_KEY_ARN: 'arn:aws:kms:ap-south-1:000000000000:key/00000000-0000-0000-0000-000000000000',
+    MALWARE_SCAN_QUEUE_URL: sqs.queueUrl('knest-local-scan-results'), SQS_ENDPOINT: sqs.endpoint, MALWARE_SCAN_POLL_WAIT_SECONDS: '2',
     AWS_EC2_METADATA_DISABLED: 'true', AUTH_GOOGLE_ID: '', AUTH_GOOGLE_SECRET: '', TURNSTILE_SECRET_KEY: '', TURNSTILE_SITE_KEY: '', ORIGIN_VERIFY_SECRET: '',
     SEED_PASSWORD: 'Knest-Local-Test-2026!', SEED_ADMIN_EMAIL: 'admin@knest.local', SEED_RESET_EXISTING: '',
   })

@@ -1,19 +1,20 @@
 import { db } from '@/db/client'
 import { applicationDocuments } from '@/db/schema'
-import { deleteFile, listFiles, type StoredObject } from '@/server/storage'
+import { documentStorage, type StoredObject } from '@/server/storage'
 
 /**
- * Orphan reconciliation for application documents.
+ * Orphan reconciliation for the clean documents bucket.
  *
- * Uploads write the object first and the database row second, and a superseded object is
- * deleted afterwards on a best-effort basis (src/server/applications/actions.ts). A crash or a
+ * A document reaches this bucket only by promotion after a clean verdict, and a superseded one is
+ * removed afterwards on a best-effort basis (src/server/applications/actions.ts). A crash or a
  * failed delete between those steps leaves an object that no row points at. This compares the
- * bucket with the table and removes such objects once they are old enough that no upload can
- * still be in flight.
+ * bucket with the table and removes such objects once they are old enough that no promotion can
+ * still be in flight. The quarantine bucket is not reconciled here: it holds only objects waiting
+ * for, or rejected by, screening, and its lifecycle rules remove them.
  *
  * Only keys that look like generated document keys (YYYY-MM-DD/<hex>.<ext>) are considered, so
- * CMS media (media/...) and anything else in the bucket is never touched. Production buckets
- * are versioned, so a removal leaves a recoverable delete marker.
+ * anything else in the bucket is never touched. The bucket is versioned, so a removal leaves a
+ * recoverable delete marker.
  */
 
 const DOCUMENT_KEY = /^\d{4}-\d{2}-\d{2}\/[0-9a-f]{32}(\.[A-Za-z0-9]{1,9})?$/
@@ -32,7 +33,10 @@ export type ReconcilePlan = {
 /** Pure: decides what is an orphan, with guards against acting on a bad comparison. */
 export function planReconciliation(input: {
   objects: StoredObject[]
+  /** Every key any row points at, whatever its screening state: none of these may be removed. */
   knownKeys: Set<string>
+  /** Keys that must be present because their row is `clean`. Defaults to knownKeys. */
+  expectedKeys?: Set<string>
   now: number
   graceMs?: number
 }): ReconcilePlan {
@@ -42,7 +46,7 @@ export function planReconciliation(input: {
   const orphans = documents
     .filter((o) => !input.knownKeys.has(o.key) && input.now - o.lastModified.getTime() >= grace)
     .map((o) => o.key)
-  const missing = [...input.knownKeys].filter((key) => DOCUMENT_KEY.test(key) && !inBucket.has(key))
+  const missing = [...(input.expectedKeys ?? input.knownKeys)].filter((key) => DOCUMENT_KEY.test(key) && !inBucket.has(key))
   const plan: ReconcilePlan = { considered: documents.length, orphans, missing }
   // An empty table beside a non-empty bucket, or a majority of orphans, means the database the
   // job is looking at is not the one the objects belong to. Do not delete on that evidence.
@@ -54,18 +58,28 @@ export function planReconciliation(input: {
 export type ReconcileResult = ReconcilePlan & { removed: number; applied: boolean }
 
 export async function reconcileDocuments(options: { apply: boolean; now?: number } = { apply: false }): Promise<ReconcileResult> {
+  const storage = documentStorage()
+  if (!storage) {
+    console.log('storage_reconcile skipped reason=document-storage-not-configured')
+    return { considered: 0, orphans: [], missing: [], refused: 'document storage is not configured', removed: 0, applied: false }
+  }
   const [objects, rows] = await Promise.all([
-    listFiles(),
-    db.select({ key: applicationDocuments.storageKey }).from(applicationDocuments),
+    storage.listClean(),
+    db.select({ key: applicationDocuments.storageKey, status: applicationDocuments.scanStatus }).from(applicationDocuments),
   ])
-  const plan = planReconciliation({ objects, knownKeys: new Set(rows.map((r) => r.key)), now: options.now ?? Date.now() })
+  const plan = planReconciliation({
+    objects,
+    knownKeys: new Set(rows.map((r) => r.key)),
+    expectedKeys: new Set(rows.filter((r) => r.status === 'clean').map((r) => r.key)),
+    now: options.now ?? Date.now(),
+  })
   let removed = 0
   if (options.apply && !plan.refused) {
     for (const key of plan.orphans.slice(0, MAX_REMOVALS)) {
       // Re-check the row immediately before removing: an upload may have just recorded it.
       const again = await db.query.applicationDocuments.findFirst({ where: (t, { eq }) => eq(t.storageKey, key), columns: { id: true } })
       if (again) continue
-      await deleteFile(key)
+      await storage.deleteClean(key)
       removed += 1
     }
   }

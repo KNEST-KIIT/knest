@@ -41,6 +41,17 @@ export function applicationStatusChangedTemplate(
   }
 }
 
+/**
+ * To an applicant whose uploaded file did not pass the malware check. The message is already plain language
+ * (applicantMessage); it never names a threat. The subject says nothing about the application's merits.
+ */
+export function documentScreeningFailedTemplate(input: { fileName: string; message: string; applicationId: string }) {
+  return {
+    subject: 'A file you uploaded needs attention',
+    text: `We checked ${input.fileName} before adding it to your application, and it was not accepted.\n\n${input.message}\n\nOpen your application to upload a replacement: ${absoluteUrl(`/dashboard/applications/${encodeURIComponent(input.applicationId)}`)}\n\nYour other answers and files are unchanged.`,
+  }
+}
+
 /** Confirmation for an event registration. The time is shown in IST by the caller (src/lib/dates.ts). */
 export function eventRegisteredTemplate(input: { title: string; when: string; location?: string | null; path: string }) {
   const where = input.location ? `\nWhere: ${input.location}` : ''

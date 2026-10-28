@@ -103,4 +103,28 @@ export const notificationType = appSchema.enum('notification_type', [
   'booking_decided',
   'booking_alternative',
   'booking_cancelled',
+  'document_screening_failed',
+])
+
+/**
+ * Where an uploaded application document is in malware screening. The database owns this state.
+ *
+ *   pending      stored in the quarantine bucket; no verdict yet. Not readable by anyone.
+ *   clean        GuardDuty reported NO_THREATS_FOUND for the exact bucket, key AND version recorded on the
+ *                row, and that version was copied to clean storage. The only state a document can be read in.
+ *   infected     GuardDuty reported THREATS_FOUND.
+ *   unscannable  GuardDuty skipped the object (UNSUPPORTED: password protected, too large, unsupported
+ *                archive), or the row pre-dates screening and was never verified.
+ *   scan_error   GuardDuty could not scan (FAILED, ACCESS_DENIED), no verdict arrived in time, or the verdict
+ *                could not be bound to the stored object.
+ *
+ * Everything except `clean` is a rejection: such a document is never served and never lets an application
+ * be submitted. See src/server/security/scan-verdict.ts for the mapping from GuardDuty results.
+ */
+export const documentScanStatus = appSchema.enum('document_scan_status', [
+  'pending',
+  'clean',
+  'infected',
+  'unscannable',
+  'scan_error',
 ])

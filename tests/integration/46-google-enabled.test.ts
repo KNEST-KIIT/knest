@@ -184,11 +184,18 @@ beforeAll(async () => {
     SMTP_PORT: process.env.TEST_SMTP_PORT ?? '2525',
     SMTP_USER: '',
     EMAIL_FROM: 'KNEST Tests <no-reply@knest.test>',
-    S3_BUCKET: process.env.TEST_S3_BUCKET ?? 'knest-it-documents',
+    S3_BUCKET: process.env.TEST_S3_BUCKET ?? 'knest-it-media',
     S3_REGION: 'ap-south-1',
     S3_ENDPOINT: process.env.TEST_S3_ENDPOINT ?? 'http://127.0.0.1:9',
     S3_ACCESS_KEY_ID: 'test-access-key-id',
     S3_SECRET_ACCESS_KEY: 'test-secret-access-key',
+    // Document screening is required for a production server to start; this server shares the suite's stand-ins.
+    QUARANTINE_BUCKET: process.env.TEST_QUARANTINE_BUCKET ?? 'knest-it-quarantine',
+    DOCUMENTS_BUCKET: process.env.TEST_DOCUMENTS_BUCKET ?? 'knest-it-documents',
+    DOCUMENTS_KMS_KEY_ARN: process.env.TEST_KMS_KEY_ARN ?? 'arn:aws:kms:ap-south-1:000000000000:key/00000000-0000-0000-0000-000000000000',
+    MALWARE_SCAN_QUEUE_URL: process.env.TEST_SCAN_QUEUE_URL ?? 'http://127.0.0.1:9/000000000000/knest-it-scan-results',
+    SQS_ENDPOINT: process.env.TEST_SQS_ENDPOINT ?? 'http://127.0.0.1:9',
+    MALWARE_SCAN_POLL_WAIT_SECONDS: '1',
   }
   server = spawn(process.execPath, [path.join(ROOT, 'node_modules/next/dist/bin/next'), 'start', ROOT, '-p', String(port), '-H', '127.0.0.1'], {
     cwd: os.tmpdir(),

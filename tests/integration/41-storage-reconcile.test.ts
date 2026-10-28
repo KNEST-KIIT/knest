@@ -4,9 +4,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { closeDb } from '../support/helpers'
 
 /**
- * Orphan reconciliation against the S3 stand-in: an old object no row points at is removed, a young
- * one and anything outside the document key pattern (CMS media) are left alone, and a dry run
- * changes nothing.
+ * Orphan reconciliation against the S3 stand-in, on the CLEAN documents bucket: an old object no row points at is
+ * removed, a young one and anything outside the document key pattern are left alone, and a dry run changes nothing.
  */
 const DIR = () => process.env.TEST_S3_DIR!
 const key = (n: string) => `2026-01-02/${n.padStart(32, '0')}.pdf`
@@ -23,6 +22,10 @@ let reconcile: typeof import('@/server/storage/reconcile')
 
 beforeAll(async () => {
   process.env.S3_BUCKET = process.env.TEST_S3_BUCKET
+  process.env.QUARANTINE_BUCKET = process.env.TEST_QUARANTINE_BUCKET
+  process.env.DOCUMENTS_BUCKET = process.env.TEST_DOCUMENTS_BUCKET
+  process.env.DOCUMENTS_KMS_KEY_ARN = process.env.TEST_KMS_KEY_ARN
+  process.env.MALWARE_SCAN_QUEUE_URL = process.env.TEST_SCAN_QUEUE_URL
   process.env.S3_ENDPOINT = process.env.TEST_S3_ENDPOINT
   process.env.S3_REGION = 'ap-south-1'
   process.env.S3_ACCESS_KEY_ID = 'test-access-key-id'

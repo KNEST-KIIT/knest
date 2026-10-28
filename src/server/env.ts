@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { readScanConfig } from '@/server/security/scan-config'
 
 /**
  * Startup check of the environment a production deployment must have. It reports
@@ -29,7 +30,8 @@ const productionSchema = z.object({
     SMTP_HOST: z.string().optional(),
     SMTP_PORT: z.string().regex(/^\d+$/, 'must be a port number').optional(),
     EMAIL_FROM: z.string().min(3, 'is required'),
-    S3_BUCKET: z.string().min(1, 'is required: application documents have nowhere to be stored without it'),
+    // The CMS media bucket. Application documents use QUARANTINE_BUCKET and DOCUMENTS_BUCKET (checked in crossChecks).
+    S3_BUCKET: z.string().min(1, 'is required: CMS media has nowhere to be stored without it'),
     S3_REGION: z.string().min(1, 'is required'),
     S3_ACCESS_KEY_ID: z.string().optional(),
     S3_SECRET_ACCESS_KEY: z.string().optional(),
@@ -52,6 +54,7 @@ function crossChecks(env: Env): string[] {
     problems.push('SMTP_HOST: is required unless EMAIL_TRANSPORT=ses: verification and notification e-mails cannot be sent without it')
   }
   const site = env.SITE_URL || env.NEXT_PUBLIC_SITE_URL
+  let hostedProduction = false
   if (!site) {
     problems.push('SITE_URL: is required but not set (the public address of the site; NEXT_PUBLIC_SITE_URL is accepted as a fallback)')
   } else {
@@ -63,10 +66,14 @@ function crossChecks(env: Env): string[] {
     }
     const local = host === 'localhost' || host === '127.0.0.1' || host === '[::1]'
     if (host && !local && !site.startsWith('https://')) problems.push('SITE_URL: must be https:// outside localhost')
+    hostedProduction = Boolean(host) && !local
     if (host && !local) {
       if (!env.ORIGIN_VERIFY_SECRET) problems.push('ORIGIN_VERIFY_SECRET: is required for hosted production')
       if (env.CLIENT_IP_SOURCE !== 'cloudfront') problems.push('CLIENT_IP_SOURCE: must be cloudfront for hosted production')
       if (env.DATABASE_SSL !== 'verify') problems.push('DATABASE_SSL: must be verify for hosted production')
+      // A hosted deployment talks to AWS itself, never to a stand-in that would accept anything.
+      if (env.S3_ENDPOINT) problems.push('S3_ENDPOINT: must not be set for hosted production (it is for local stand-ins)')
+      if (env.SQS_ENDPOINT) problems.push('SQS_ENDPOINT: must not be set for hosted production (it is for local stand-ins)')
       if (!env.AUTH_URL) problems.push('AUTH_URL: is required for hosted production')
       else {
         try {
@@ -77,6 +84,11 @@ function crossChecks(env: Env): string[] {
       }
     }
   }
+  // Document screening is not optional: without a quarantine bucket, a clean bucket, the key and the verdict queue,
+  // the server does not start, so there is no way to run with uploads that skip screening.
+  const screening = readScanConfig(env)
+  if (!screening.ok) problems.push(...screening.problems)
+  else if (hostedProduction && !screening.config.queueUrl.startsWith('https://')) problems.push('MALWARE_SCAN_QUEUE_URL: must be https:// for hosted production')
   if (Boolean(env.S3_ACCESS_KEY_ID) !== Boolean(env.S3_SECRET_ACCESS_KEY)) {
     problems.push('S3_SECRET_ACCESS_KEY: S3_ACCESS_KEY_ID and S3_SECRET_ACCESS_KEY must be set together (or neither, to use the instance role)')
   }

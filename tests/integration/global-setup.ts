@@ -7,11 +7,18 @@ import { startTestDatabase } from '../support/pg'
 import { startS3Stub } from '../support/s3-stub'
 import { startSmtpStub } from '../support/smtp-stub'
 import { startTurnstileVerifyStub, TURNSTILE_TEST_SECRET, TURNSTILE_TEST_SITE_KEY } from '../support/turnstile-stub'
-import { startScannerStub } from '../support/scanner-stub'
+import { startGuardDutySimulator } from '../support/guardduty-simulator'
+import { startSqsStub } from '../support/sqs-stub'
 
 const ROOT = path.resolve(import.meta.dirname, '../..')
 const SECRET = 'integration-test-secret-0123456789abcdef0123456789'
-const S3_TEST_BUCKET = 'knest-it-documents'
+// Three buckets, as in production: CMS media, clean documents, and the quarantine every upload lands in first.
+const S3_MEDIA_BUCKET = 'knest-it-media'
+const DOCUMENTS_BUCKET = 'knest-it-documents'
+const QUARANTINE_BUCKET = 'knest-it-quarantine'
+const SCAN_QUEUE = 'knest-it-scan-results'
+const SCAN_DLQ = 'knest-it-scan-results-dlq'
+const KMS_KEY_ARN = 'arn:aws:kms:ap-south-1:000000000000:key/00000000-0000-0000-0000-000000000000'
 const TSX_CLI = path.join(ROOT, 'node_modules/tsx/dist/cli.mjs')
 const PAYLOAD_CLI = path.join(ROOT, 'node_modules/payload/bin.js')
 
@@ -49,7 +56,12 @@ export default async function setup() {
   const smtp = await startSmtpStub(captureFile)
   const s3 = await startS3Stub(path.join(work, 's3'))
   const turnstile = await startTurnstileVerifyStub()
-  const scanner = await startScannerStub()
+  const sqs = await startSqsStub()
+  sqs.createQueue(SCAN_DLQ)
+  sqs.createQueue(SCAN_QUEUE, { deadLetterQueue: SCAN_DLQ, maxReceiveCount: 4, defaultVisibilitySeconds: 30 })
+  // A TEST DOUBLE for GuardDuty's event source (see tests/support/guardduty-simulator.ts): it tags new quarantine
+  // versions and queues EventBridge-shaped results. It is not a scanner and proves nothing about malware detection.
+  const simulator = await startGuardDutySimulator({ s3, sqs, queue: SCAN_QUEUE, quarantineBucket: QUARANTINE_BUCKET })
   const port = await freePort()
   const baseUrl = `http://127.0.0.1:${port}`
 
@@ -68,7 +80,6 @@ export default async function setup() {
     TURNSTILE_SECRET_KEY: TURNSTILE_TEST_SECRET,
     TURNSTILE_SITE_KEY: TURNSTILE_TEST_SITE_KEY,
     TURNSTILE_VERIFY_URL: turnstile.endpoint,
-    MALWARE_SCANNER_URL: scanner.endpoint,
     DATABASE_SSL: 'off',
     // Lab booking is built and tested locally, but stays off by default everywhere else (HD-16 is open).
     FEATURE_LAB_BOOKING: 'true',
@@ -81,9 +92,15 @@ export default async function setup() {
     EMAIL_FROM: 'KNEST Tests <no-reply@knest.test>',
     // Every S3_* variable is set explicitly so nothing from a developer's own
     // .env files can reach the server: documents go to the local stub only.
-    S3_BUCKET: S3_TEST_BUCKET,
+    S3_BUCKET: S3_MEDIA_BUCKET,
     S3_REGION: 'ap-south-1',
     S3_ENDPOINT: s3.endpoint,
+    QUARANTINE_BUCKET,
+    DOCUMENTS_BUCKET,
+    DOCUMENTS_KMS_KEY_ARN: KMS_KEY_ARN,
+    MALWARE_SCAN_QUEUE_URL: sqs.queueUrl(SCAN_QUEUE),
+    SQS_ENDPOINT: sqs.endpoint,
+    MALWARE_SCAN_POLL_WAIT_SECONDS: '1',
     S3_ACCESS_KEY_ID: 'test-access-key-id',
     S3_SECRET_ACCESS_KEY: 'test-secret-access-key',
     AUTH_GOOGLE_ID: '',
@@ -159,14 +176,23 @@ ${roleStep.stderr.slice(-800)}`)
   process.env.DATABASE_URL = db.url
   process.env.TEST_SMTP_CAPTURE = captureFile
   process.env.TEST_SMTP_PORT = String(smtp.port)
-  process.env.TEST_S3_DIR = path.join(s3.dir, S3_TEST_BUCKET)
+  // TEST_S3_DIR is the CLEAN documents bucket's directory (what the document tests have always inspected).
+  process.env.TEST_S3_DIR = path.join(s3.dir, DOCUMENTS_BUCKET)
+  process.env.TEST_QUARANTINE_DIR = path.join(s3.dir, QUARANTINE_BUCKET)
   process.env.TEST_S3_ENDPOINT = s3.endpoint
-  process.env.TEST_S3_BUCKET = S3_TEST_BUCKET
+  process.env.TEST_S3_BUCKET = S3_MEDIA_BUCKET
+  process.env.TEST_DOCUMENTS_BUCKET = DOCUMENTS_BUCKET
+  process.env.TEST_QUARANTINE_BUCKET = QUARANTINE_BUCKET
+  process.env.TEST_KMS_KEY_ARN = KMS_KEY_ARN
+  process.env.TEST_SQS_ENDPOINT = sqs.endpoint
+  process.env.TEST_SCAN_QUEUE = SCAN_QUEUE
+  process.env.TEST_SCAN_DLQ = SCAN_DLQ
+  process.env.TEST_SCAN_QUEUE_URL = sqs.queueUrl(SCAN_QUEUE)
+  process.env.TEST_SIM_URL = simulator.controlUrl
   process.env.TEST_WORKDIR = work
   process.env.TEST_PORT = String(port)
   process.env.AUTH_SECRET = SECRET
   process.env.PAYLOAD_SECRET = SECRET
-  process.env.MALWARE_SCANNER_URL = scanner.endpoint
 
   return async () => {
     if (server?.pid) {
@@ -179,7 +205,8 @@ ${roleStep.stderr.slice(-800)}`)
     await smtp.close()
     await s3.close()
     await turnstile.close()
-    await scanner.close()
+    await simulator.close()
+    await sqs.close()
     await db.stop()
     rmSync(work, { recursive: true, force: true })
   }

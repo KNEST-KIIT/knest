@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { createHash } from 'node:crypto'
 import { and, desc, eq } from 'drizzle-orm'
 import { db } from '@/db/client'
 import { applicationAnswers, applicationDocuments, applications, auditLogs, users } from '@/db/schema'
@@ -7,15 +8,16 @@ import { requireSelf, requireUserOrThrow, UnauthorizedError } from '@/server/aut
 import { sendNotificationEmail, writeNotification } from '@/server/notifications/send'
 import { applicationReceivedTemplate } from '@/server/notifications/templates'
 import { track } from '@/server/analytics/track'
-import { deleteFile, generateStorageKey, putFile } from '@/server/storage'
+import { documentStorage, generateStorageKey, type DocumentStorage, type QuarantineUpload } from '@/server/storage'
 import { enforceRateLimit, RATE_LIMITS } from '@/server/security/rate-limit'
 import { verifyFileContents } from '@/server/security/file-verify'
-import { recordQuarantinedFile, scanForMalware } from '@/server/security/malware-scan'
+import { applicantMessage } from '@/server/security/scan-verdict'
 import { getApplicationProgram, getApplicationProgramBySlug, getProgramTitlesByIds } from './program-questions'
 import { closedReason } from './availability'
 import { ALLOWED_UPLOAD_MIME_TYPES, findSubmissionProblem, MAX_UPLOAD_BYTES, schemaForQuestion } from './validation'
 
 export type ActionResult = { ok: true } | { ok: false; error: string; code?: string }
+export type UploadResult = { ok: true; scanStatus: 'pending' } | { ok: false; error: string; code?: string }
 
 /** Read-only status for the signed-in owner, used by the public program CTA. */
 export async function getApplicationStatusForUser(userId: string, programId: number) {
@@ -152,13 +154,22 @@ export async function saveAnswer(
   return { ok: true }
 }
 
+/**
+ * Accepts an upload into quarantine. The file is stored in the isolated quarantine bucket and recorded as
+ * `pending`, bound to the exact object version S3 created. It is not readable, not downloadable and not
+ * submittable until a GuardDuty verdict for that same bucket, key and version has been applied and the version has
+ * been copied to clean storage (src/server/security/scan-processor.ts). This call never waits for screening and
+ * never decides anything about the file's safety.
+ */
 export async function uploadDocument(
   applicationId: string,
   questionId: string,
   file: { name: string; type: string; size: number; buffer: Buffer },
-): Promise<ActionResult> {
+): Promise<UploadResult> {
   const user = await requireUserOrThrow()
   await enforceRateLimit(`file-upload:${user.id}`, RATE_LIMITS.fileUpload)
+  // Every accepted upload is scanned at a per-GB and per-object price, so the whole site has a ceiling too.
+  await enforceRateLimit('file-upload:all', RATE_LIMITS.fileUploadAll)
   const application = await loadOwnedApplication(applicationId, user.id)
   if (!application) throw new UnauthorizedError(403)
   if (application.status !== 'draft') {
@@ -168,7 +179,7 @@ export async function uploadDocument(
   // Validated server-side regardless of what the client already checked
   // (spec §31) — a client-side check is a courtesy, never the enforcement.
   if (!ALLOWED_UPLOAD_MIME_TYPES.includes(file.type)) {
-    return { ok: false, error: 'We can take PDF, DOC or PPT files.' }
+    return { ok: false, error: 'We can take PDF, DOCX or PPTX files.' }
   }
   const program = await getApplicationProgram(application.programId)
   const closedUpload = program ? closedReason(program) : null
@@ -183,38 +194,27 @@ export async function uploadDocument(
   // The declared Content-Type above is client-supplied and trivially spoofed
   // (rename a .exe to .pdf) — this sniffs the actual file's magic numbers and
   // rejects a mismatch the same way an oversized file already is, before it
-  // ever reaches storage (§4.2).
+  // ever reaches storage (§4.2). This is a cheap first filter, not malware screening.
   if (!(await verifyFileContents(file.buffer, file.type))) {
-    return { ok: false, error: 'We can take PDF, DOC or PPT files.' }
+    return { ok: false, error: 'We can take PDF, DOCX or PPTX files.' }
   }
 
-  // Real malware scanning: beyond container magic bytes, inspect for weaponized
-  // scripts, embedded PE/ELF binaries, EICAR test signatures, or remote AV daemon
-  // detection. Fail-closed: if the scanner errors, times out, or detects malware,
-  // the file is quarantined/rejected before ever touching primary storage.
-  const scan = await scanForMalware(file.buffer, file.name)
-  if (!scan.clean) {
-    if (scan.reason === 'infected') {
-      await recordQuarantinedFile({
-        userId: user.id,
-        applicationId,
-        fileName: file.name,
-        buffer: file.buffer,
-        threat: scan.threat,
-      }).catch((err) => console.error('[security] Failed to record quarantine:', err))
-      return {
-        ok: false,
-        error: 'The uploaded file failed security screening and was rejected.',
-      }
-    }
-    return {
-      ok: false,
-      error: 'Security screening is temporarily unavailable. Please try again shortly.',
-    }
+  // Screening needs somewhere to put the file. Without it nothing is accepted: there is no unscreened path.
+  const storage = documentStorage()
+  if (!storage) {
+    console.error('[uploads] document storage is not configured; refusing the upload')
+    return { ok: false, error: 'Document uploads are unavailable right now. Try again later.', code: 'storage-unavailable' }
   }
 
+  const sha256 = createHash('sha256').update(file.buffer).digest('hex')
   const storageKey = generateStorageKey(file.name)
-  await putFile(storageKey, file.buffer)
+  let quarantined: QuarantineUpload
+  try {
+    quarantined = await storage.putQuarantine({ key: storageKey, body: file.buffer, contentType: file.type, sha256Hex: sha256 })
+  } catch (error) {
+    console.error('[uploads] quarantine write failed:', error instanceof Error ? error.message : String(error))
+    return { ok: false, error: 'We couldn’t store that file. Try again in a moment.', code: 'storage-unavailable' }
+  }
 
   // Same row lock as saveAnswer and submit: a file cannot be attached to an
   // application that a concurrent submit has already frozen (R-05).
@@ -222,32 +222,90 @@ export async function uploadDocument(
     if (!(await lockDraft(tx, applicationId))) return { ok: false as const }
     const previous = await tx.query.applicationDocuments.findFirst({
       where: and(eq(applicationDocuments.applicationId, applicationId), eq(applicationDocuments.questionId, questionId)),
-      columns: { storageKey: true },
     })
+    const fresh = {
+      fileName: file.name,
+      storageKey,
+      mimeType: file.type,
+      fileSize: file.buffer.byteLength,
+      uploadedAt: new Date(),
+      scanStatus: 'pending' as const,
+      quarantineBucket: quarantined.bucket,
+      quarantineKey: quarantined.key,
+      quarantineVersionId: quarantined.versionId,
+      quarantineEtag: quarantined.etag,
+      sha256,
+      cleanVersionId: null,
+      scanResult: null,
+      scanReasons: null,
+      scanThreat: null,
+      scanEventId: null,
+      scanDecidedAt: null,
+    }
     await tx
       .insert(applicationDocuments)
-      .values({
-        applicationId,
-        questionId,
-        fileName: file.name,
-        storageKey,
-        mimeType: file.type,
-        fileSize: file.buffer.byteLength,
-      })
-      .onConflictDoUpdate({
-        target: [applicationDocuments.applicationId, applicationDocuments.questionId],
-        set: { fileName: file.name, storageKey, mimeType: file.type, fileSize: file.buffer.byteLength, uploadedAt: new Date() },
-      })
+      .values({ applicationId, questionId, ...fresh })
+      .onConflictDoUpdate({ target: [applicationDocuments.applicationId, applicationDocuments.questionId], set: fresh })
     await tx.update(applications).set({ updatedAt: new Date() }).where(eq(applications.id, applicationId))
-    return { ok: true as const, previousKey: previous?.storageKey }
+    return { ok: true as const, previous }
   })
-  const obsoleteKey = saved.ok ? saved.previousKey : storageKey
-  if (obsoleteKey) {
-    await deleteFile(obsoleteKey).catch(() => console.error('[uploads] obsolete object cleanup failed'))
+  if (!saved.ok) {
+    await storage.deleteQuarantineVersion(quarantined).catch(() => console.error('[uploads] quarantine cleanup failed'))
+    return { ok: false, error: 'This application has already been submitted.' }
   }
-  if (!saved.ok) return { ok: false, error: 'This application has already been submitted.' }
+  await discardStored(storage, saved.previous)
+  return { ok: true, scanStatus: 'pending' }
+}
 
+type StoredDocument = typeof applicationDocuments.$inferSelect
+
+/** Removes what a replaced or deleted document left in storage. Best effort: lifecycle rules are the backstop. */
+async function discardStored(storage: DocumentStorage, previous: StoredDocument | undefined | null): Promise<void> {
+  if (!previous) return
+  if (previous.quarantineBucket && previous.quarantineKey && previous.quarantineVersionId) {
+    await storage
+      .deleteQuarantineVersion({ bucket: previous.quarantineBucket, key: previous.quarantineKey, versionId: previous.quarantineVersionId })
+      .catch(() => console.error('[uploads] superseded quarantine object cleanup failed'))
+  }
+  if (previous.cleanVersionId) {
+    await storage.deleteClean(previous.storageKey).catch(() => console.error('[uploads] superseded clean object cleanup failed'))
+  }
+}
+
+/** The owner takes a file off their draft, in any screening state, so a rejected file never blocks the application. */
+export async function removeDocument(applicationId: string, questionId: string): Promise<ActionResult> {
+  const user = await requireUserOrThrow()
+  const application = await loadOwnedApplication(applicationId, user.id)
+  if (!application) throw new UnauthorizedError(403)
+  if (application.status !== 'draft') return { ok: false, error: 'This application has already been submitted.' }
+
+  const removed = await db.transaction(async (tx) => {
+    if (!(await lockDraft(tx, applicationId))) return { ok: false as const }
+    const [row] = await tx
+      .delete(applicationDocuments)
+      .where(and(eq(applicationDocuments.applicationId, applicationId), eq(applicationDocuments.questionId, questionId)))
+      .returning()
+    if (row) await tx.update(applications).set({ updatedAt: new Date() }).where(eq(applications.id, applicationId))
+    return { ok: true as const, row }
+  })
+  if (!removed.ok) return { ok: false, error: 'This application has already been submitted.' }
+  if (!removed.row) return { ok: false, error: 'There is no file to remove.' }
+  const storage = documentStorage()
+  if (storage) await discardStored(storage, removed.row)
   return { ok: true }
+}
+
+/** What the owner's form needs to show about one attached file. Nothing about buckets, versions or threats. */
+export async function getDocumentScanStatus(applicationId: string, questionId: string) {
+  const user = await requireUserOrThrow()
+  const application = await loadOwnedApplication(applicationId, user.id)
+  if (!application) throw new UnauthorizedError(403)
+  const row = await db.query.applicationDocuments.findFirst({
+    where: and(eq(applicationDocuments.applicationId, applicationId), eq(applicationDocuments.questionId, questionId)),
+    columns: { fileName: true, scanStatus: true, scanReasons: true },
+  })
+  if (!row) return null
+  return { fileName: row.fileName, scanStatus: row.scanStatus, message: applicantMessage(row.scanStatus, row.scanReasons ?? []) }
 }
 
 export async function submitApplication(applicationId: string): Promise<ActionResult> {
@@ -312,6 +370,13 @@ export async function submitApplication(applicationId: string): Promise<ActionRe
       tx.select().from(applicationAnswers).where(eq(applicationAnswers.applicationId, applicationId)),
       tx.select().from(applicationDocuments).where(eq(applicationDocuments.applicationId, applicationId)),
     ])
+    // A file counts only once it has passed screening. One still waiting holds the submission (the caller is told to
+    // retry); one that was rejected must be replaced or removed first. Nothing unscreened is ever frozen into a submission.
+    const waiting = documents.filter((d) => d.scanStatus === 'pending')
+    if (waiting.length > 0) return { kind: 'scan-pending' as const, names: waiting.map((d) => d.fileName) }
+    const blocked = documents.filter((d) => d.scanStatus !== 'clean')
+    if (blocked.length > 0) return { kind: 'scan-blocked' as const, names: blocked.map((d) => d.fileName) }
+
     // Re-validate what is stored against the program's current questions (KN-31).
     const problem = findSubmissionProblem(
       program.questions,
@@ -339,6 +404,12 @@ export async function submitApplication(applicationId: string): Promise<ActionRe
   })
   if (outcome.kind === 'already') return { ok: false, error: 'This application has already been submitted.' }
   if (outcome.kind === 'invalid') return { ok: false, error: outcome.message }
+  if (outcome.kind === 'scan-pending') {
+    return { ok: false, error: `We are still checking ${outcome.names.join(', ')} for malware. Try again in a minute or two.`, code: 'scan-pending' }
+  }
+  if (outcome.kind === 'scan-blocked') {
+    return { ok: false, error: `${outcome.names.join(', ')} did not pass the security check. Remove it or upload a different file, then submit again.`, code: 'scan-blocked' }
+  }
 
   await sendNotificationEmail(sessionUser.id, notifyInput.email)
   await track('application_submit', { applicationId, programId: program.id })
@@ -369,10 +440,19 @@ export async function getOwnedApplicationDetail(applicationId: string, userId: s
   if (!application) return null
 
   const program = await getApplicationProgram(application.programId)
-  const [answers, documents] = await Promise.all([
+  const [answers, storedDocuments] = await Promise.all([
     db.query.applicationAnswers.findMany({ where: eq(applicationAnswers.applicationId, applicationId) }),
     db.query.applicationDocuments.findMany({ where: eq(applicationDocuments.applicationId, applicationId) }),
   ])
+  // The applicant sees a file's name and screening state in words. Bucket names, versions, checksums and threat names stay on the server.
+  const documents = storedDocuments.map((d) => ({
+    id: d.id,
+    questionId: d.questionId,
+    fileName: d.fileName,
+    fileSize: d.fileSize,
+    scanStatus: d.scanStatus,
+    scanMessage: applicantMessage(d.scanStatus, d.scanReasons ?? []),
+  }))
 
   // After submission the applicant sees the questions they actually answered.
   const asSubmitted =

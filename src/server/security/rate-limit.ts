@@ -19,7 +19,12 @@ export const RATE_LIMITS = {
   passwordResetRequest: { capacity: 5, refillIntervalSeconds: 60 * 60 },
   applicationStart: { capacity: 10, refillIntervalSeconds: 60 * 60 },
   fileUpload: { capacity: 20, refillIntervalSeconds: 60 * 60 },
+  // Every accepted upload is scanned at a per-GB and per-object price. One bucket for the whole site bounds the cost of
+  // many accounts uploading at once; it is far above a deadline rush, so ordinary use never meets it.
+  fileUploadAll: { capacity: 1200, refillIntervalSeconds: 60 * 60 },
   fileDownload: { capacity: 120, refillIntervalSeconds: 60 * 60 },
+  // The upload form asks "is it checked yet?" every few seconds while a file is waiting for its verdict.
+  documentStatus: { capacity: 900, refillIntervalSeconds: 60 * 60 },
   // Fire-and-forget selector clicks: far above what a person produces, far below flooding.
   analyticsTrack: { capacity: 60, refillIntervalSeconds: 10 * 60 },
   // Public contact form: a person sends a few, a bot sends hundreds.

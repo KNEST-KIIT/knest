@@ -4,6 +4,10 @@ import { uploadDocument } from '@/server/applications/actions'
 import { MAX_UPLOAD_BYTES } from '@/server/applications/validation'
 import { RateLimitError } from '@/server/security/rate-limit'
 
+/**
+ * Accepts an upload into quarantine. 202 means "received and waiting for its malware check", not "accepted":
+ * the file cannot be downloaded or submitted until the check has passed.
+ */
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
 
@@ -28,8 +32,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       size: file.size,
       buffer,
     })
-    if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 })
-    return NextResponse.json({ ok: true })
+    if (!result.ok) {
+      return NextResponse.json({ error: result.error, code: result.code }, { status: result.code === 'storage-unavailable' ? 503 : 400 })
+    }
+    return NextResponse.json({ ok: true, scanStatus: result.scanStatus }, { status: 202 })
   } catch (error) {
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: 'Sign in to continue.' }, { status: error.status })

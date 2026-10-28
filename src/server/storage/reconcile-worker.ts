@@ -1,3 +1,4 @@
+import { scanConfigOrNull } from '@/server/security/scan-config'
 import { reconcileDocuments } from './reconcile'
 
 /**
@@ -10,7 +11,7 @@ const DAY_MS = 24 * 60 * 60 * 1000
 let timer: ReturnType<typeof setInterval> | undefined
 
 export function startReconcileWorker(): void {
-  if (timer || !process.env.S3_BUCKET || process.env.STORAGE_RECONCILE === 'off') return
+  if (timer || !scanConfigOrNull() || process.env.STORAGE_RECONCILE === 'off') return
   const run = () =>
     reconcileDocuments({ apply: process.env.STORAGE_RECONCILE === 'apply' }).catch((error) => {
       console.error('storage_reconcile_failed', error instanceof Error ? error.message : String(error))
