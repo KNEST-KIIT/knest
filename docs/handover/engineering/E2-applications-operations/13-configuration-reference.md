@@ -1,5 +1,7 @@
 # 13. Configuration reference for E2 modules
 
+> **Superseded in part on 2026-10-28.** `S3_BUCKET` is now the **CMS media** bucket only, and there is no local-disk (`uploads/`) mode for application documents. Production now also requires `QUARANTINE_BUCKET`, `DOCUMENTS_BUCKET`, `DOCUMENTS_KMS_KEY_ARN` and `MALWARE_SCAN_QUEUE_URL` (the server refuses to start without them). Optional: `MALWARE_SCAN_DEADLINE_MINUTES` (default 30), `MALWARE_SCAN_POLL_WAIT_SECONDS` (default 20); `S3_ENDPOINT` and `SQS_ENDPOINT` are for local stand-ins only and are refused for a hosted `SITE_URL`. `MALWARE_SCANNER_URL` is retired and reported if set. See `src/server/security/scan-config.ts`, `src/server/env.ts` and [MALWARE-PROTECTION-ARCHITECTURE-2026-10-27.md](../../../delivery/MALWARE-PROTECTION-ARCHITECTURE-2026-10-27.md).
+
 Everything below was found by reading the E2 source. Variables used only by other volumes (auth, mail transport, labs) are listed where an E2 module depends on them. The authoritative environment reference is `docs/handover/REFERENCE-ENVIRONMENT.md`; this file does not replace it.
 
 ## 1. Environment variables

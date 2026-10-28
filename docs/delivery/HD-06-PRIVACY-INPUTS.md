@@ -1,6 +1,6 @@
 # HD-06: privacy notice and terms: inputs, gaps and draft status
 
-**Current status, 2026-10-17: supplied policy documents confirmed final by the owner.** See [policy acceptance](POLICY-ACCEPTANCE-2026-10-17.md) for source hashes, publication adjustments and the ten-year retention requirement. `/privacy`, `/terms` (the supplied mentorship/facility service terms) and `/disclaimer` now render those documents in the candidate. This acceptance supersedes the draft footer and the historical unwritten-policy status below. Hosted retention/archiving, operating acceptance, content approval and public cutover remain separate work. The rest of this file records the historical October 8 inputs and gaps, not current implementation status.
+**Current status, 2026-10-28: the supplied policy documents are published.** The owner confirmed the privacy, disclaimer and facility documents final on 2026-10-17 ([policy acceptance](POLICY-ACCEPTANCE-2026-10-17.md): source hashes and publication adjustments). The 2026-10-27 release brief then supplied the KIITNEST Terms and Conditions and set retention to **five years, then transfer to an approved backup and archive**, superseding the earlier ten-year wording ([retention assessment](RETENTION-ASSURANCE-2026-10-17.md); [traceability](STAKEHOLDER-REQUIREMENTS-TRACEABILITY-2026-10-27.md)). `/privacy`, `/terms` (the Terms and Conditions), `/terms/facilities` (the earlier mentorship and facility service terms) and `/disclaimer` render those documents in the candidate. This supersedes the draft footer and the historical unwritten-policy status below. Hosted retention/archiving, operating acceptance, content approval and public cutover remain separate work. The rest of this file records the historical October 8 inputs and gaps, not current implementation status.
 
 ## 1. Facts the notice has to be built from (from the code, verified 2026-10-08)
 
@@ -13,7 +13,7 @@ Personal data the system stores, by table (`src/db/schema`):
 | `sessions` | session token, expiry (cookie `authjs.session-token`, 30 days) | login |
 | `verification_tokens` | e-mail verification and password-reset tokens (currently stored in plaintext; hashing is planned, R-08) | sign-up, reset |
 | `applications`, `application_answers` | which program, status, submission and decision times, decision note, every free-text answer | applying |
-| `application_documents` | file name, type, size, storage key; the file itself in S3 | uploads (PDF/Office) |
+| `application_documents` | file name, type, size, SHA-256 of the file, storage key, malware-screening state and evidence (status, GuardDuty result code, event id, decision time, threat label if any); the file itself in S3, first in a private quarantine bucket and, only if GuardDuty found no threat, in a separate clean bucket ([architecture](MALWARE-PROTECTION-ARCHITECTURE-2026-10-27.md)) | uploads (PDF/Office) |
 | `event_registrations` | which events a person registered for | events |
 | `notifications` | in-app notices and the e-mails sent (subject/body kept as in-app rows) | system |
 | `audit_logs` | staff actions with before/after values | staff actions |
@@ -57,7 +57,7 @@ Cookies: one first-party session cookie; one anonymous analytics cookie (`knest_
 
 Each statement about security in the final text must be checked against `docs/delivery/EVIDENCE/` before publication; for example, "encrypted at rest" is true of AWS storage only after S-1/F-05 configure it.
 
-## 5. Approval record
+## 5. Approval record (historical, 2026-10-08; policy text has since been supplied, see the status line above)
 
 | Item | Owner | Status |
 |---|---|---|

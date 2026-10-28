@@ -4,6 +4,8 @@ System of record for the R1-approved blueprint. Status vocabulary: `NOT_STARTED`
 
 **IMPLEMENTED is not VERIFIED.** A task is VERIFIED only when every closing check named for it has passed and the evidence is in `EVIDENCE/`. "Verified" here means **verified locally**: on an ephemeral PostgreSQL 16, against the production build, in a real browser. It does not mean verified on staging or in production; neither exists. Per-task evidence and what each check does not cover: `EVIDENCE/phase1-verification-matrix.md`.
 
+**Update 2026-10-28.** This tracker records the 2026-10 blueprint and has not been re-tracked for the later commercial pass (document malware screening, the Terms and Conditions, SIEL facts, five-year retention). Current status and evidence for that pass: [RELEASE-EVIDENCE-2026-10-27.md](RELEASE-EVIDENCE-2026-10-27.md), [EVIDENCE/phase1-release-gates-2026-10-28.md](EVIDENCE/phase1-release-gates-2026-10-28.md) and [STAKEHOLDER-REQUIREMENTS-TRACEABILITY-2026-10-27.md](STAKEHOLDER-REQUIREMENTS-TRACEABILITY-2026-10-27.md).
+
 **Reconciled 2026-10-12.** Work branch is now `codex/production-v1`, the repository's default branch, at `b5ca498`; CI is green on it (run 38171899823; history in `EVIDENCE/ci-runs.md`). The phase-1 branch `delivery/p1-containment` is history. The public site is **not** served by this application: a password-gated preview runs on AWS (reported in `V1-DEPLOYMENT-REPORT.md`, not re-checked here), and `kiitnest.com` is untouched. Rows below keep their original wording and evidence; the rows added under "Phases 2 to 4" and the corrections marked `2026-10-12` are the reconciliation. Item-level truth for security findings is in `FINDINGS.md`; for the 53 modules, `LOCAL-COMPLETENESS.md`.
 
 ## Phase 0

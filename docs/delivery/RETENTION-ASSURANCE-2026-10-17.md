@@ -59,6 +59,7 @@ These are real gaps, not omissions to be hidden:
 - **No archive destination has been approved** by the owner, so "approved backup and archive" is not yet satisfied in the policy's own terms. Deep Archive in this account is a proposal.
 - **No log export pipeline exists.** Logs expire from CloudWatch at day 1827. If they must also be archived, a pipeline must be designed, costed and alarmed first.
 - **No database archive worker, legal-hold mechanism or automated erasure workflow exists.** Correction and erasure requests go through the grievance route in the privacy policy (contact@kiitnest.com). Where law or a hold requires a different treatment, the policy says that treatment takes precedence; the platform does not yet automate it.
+- **Replaced draft files are not archived.** When an applicant replaces or removes a file before submitting, the earlier file is withdrawn from the clean bucket (a delete marker; the version stays recoverable for 90 days, then is permanently removed) and its quarantine copy is deleted. After submission uploads are refused, so only unsubmitted drafts are affected. Whether a replaced draft counts as an "uploaded document" under the five-year rule is the owner's decision; if it does, the 90-day noncurrent expiry must be removed or lengthened and its storage cost accepted.
 - **No restore drill** from Deep Archive has been performed. Do it with a synthetic object before relying on the archive.
 - **Nothing was run against AWS.** Every statement about deployed state is a statement about templates until Phase 2.
 

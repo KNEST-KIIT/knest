@@ -1,5 +1,7 @@
 # 03. Review console
 
+> **Superseded in part on 2026-10-28.** The staff download no longer uses `getFile`. Both the applicant and the staff routes serve through `serveDocument` (`src/server/applications/document-response.ts`): pending answers 423, a rejected file answers 404, and a clean file is read from the **clean** bucket at the version recorded when it was promoted. See [MALWARE-PROTECTION-ARCHITECTURE-2026-10-27.md](../../../delivery/MALWARE-PROTECTION-ARCHITECTURE-2026-10-27.md), section 7.
+
 Module: `src/server/applications/review.ts` (191 lines), `review-constants.ts`, `transitions.ts`; pages under `src/app/(staff)/admin/applications/`; routes `src/app/api/admin/applications/[id]/status/route.ts` and `.../documents/[questionId]/route.ts`.
 
 The console is a custom shell for operational data that lives in the `app` schema, separate from Payload's own admin (`src/app/(staff)/admin/layout.tsx:8-15`). Staff reach CMS content through the "Full admin" link in the same header (`layout.tsx:51-53`).

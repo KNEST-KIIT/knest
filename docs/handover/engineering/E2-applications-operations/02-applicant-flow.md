@@ -1,5 +1,7 @@
 # 02. Applications engine: the applicant flow
 
+> **Superseded in part on 2026-10-28.** The document-upload steps below that call `putFile` now call `storage.putQuarantine` and record a `pending` row bound to the quarantine object version; the file is readable only after a clean GuardDuty verdict, and answers HTTP 423 until then. Submission is refused with 423 while a required file is pending and 422 when one is blocked. See [MALWARE-PROTECTION-ARCHITECTURE-2026-10-27.md](../../../delivery/MALWARE-PROTECTION-ARCHITECTURE-2026-10-27.md), sections 3, 6 and 7.
+
 Module: `src/server/applications/actions.ts` (366 lines), `validation.ts`, plus the four applicant API routes and the two member pages that drive them.
 
 ## 1. Shape of the module

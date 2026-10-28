@@ -1,5 +1,7 @@
 # E4.17 Media collection and S3 storage
 
+> **Superseded in part on 2026-10-28.** Application documents no longer use `putFile` or the shared bucket: they go to a private quarantine bucket and, after a clean GuardDuty verdict, to a separate clean documents bucket (both encrypted with a customer-managed key). The CMS media bucket described here is unchanged. See [MALWARE-PROTECTION-ARCHITECTURE-2026-10-27.md](../../../delivery/MALWARE-PROTECTION-ARCHITECTURE-2026-10-27.md).
+
 Files: `src/payload/collections/media.ts`, the `s3Storage` plugin block in
 `src/payload/payload.config.ts:85-95`, `src/server/storage/s3-config.ts`,
 `src/server/storage/index.ts`, `src/server/storage/reconcile.ts`.

@@ -1,5 +1,12 @@
 # 04. Documents and object storage
 
+> **Superseded in part on 2026-10-28.** Read this first. This page was written against the earlier storage layer; application documents are now screened for malware and the storage layer changed with them. **Still accurate:** section 3 (key generation) and the content-verification table in section 4 (`file-verify.ts`). **Out of date:**
+> - Sections 1 and 2: documents no longer share the CMS media bucket, and there is no local-disk backend and no `putFile` / `getFile` / `deleteFile`. An upload goes to a private, versioned **quarantine bucket**; a copy reaches a separate **clean documents bucket** only after a GuardDuty verdict bound to that exact object version. The S3 calls are in `src/server/storage/documents.ts` (`documentStorage()`). `S3_BUCKET` is now the CMS media bucket only; production also requires `QUARANTINE_BUCKET`, `DOCUMENTS_BUCKET`, `DOCUMENTS_KMS_KEY_ARN` and `MALWARE_SCAN_QUEUE_URL`.
+> - Section 4, "no malware scanning exists": screening exists (GuardDuty Malware Protection for S3; verdict worker `src/server/security/scan-worker.ts`). Magic-number sniffing still runs first and is still not a malware check.
+> - Section 5: reconciliation now compares the **clean** bucket only; the quarantine bucket is cleaned by lifecycle rules.
+>
+> Current design, controls, limits and tests: [MALWARE-PROTECTION-ARCHITECTURE-2026-10-27.md](../../../delivery/MALWARE-PROTECTION-ARCHITECTURE-2026-10-27.md).
+
 Module: `src/server/storage/` (`index.ts`, `s3-config.ts`, `reconcile.ts`, `reconcile-worker.ts`), `src/server/security/file-verify.ts`, and the call sites in `src/server/applications/actions.ts` and the staff download route.
 
 ## 1. What is stored where
