@@ -33,6 +33,11 @@ export function assessRetention(input) {
       (rule.Transitions ?? []).some((transition) => /^(GLACIER|DEEP_ARCHIVE|GLACIER_IR)$/.test(transition.StorageClass ?? '') && Number.isInteger(transition.Days) && transition.Days >= FIVE_YEAR_LOG_DAYS),
   )
   if (Array.isArray(input.bucket?.rules) && !archiveTransition) gaps.push('No enabled rule moves documents to an archive storage class at five years or later.')
+  // Since September 2024 S3 does not transition objects under 128 KB to any storage class unless the configuration opts in.
+  // Without this, small documents would stay in the primary bucket past five years while the archive rule looks correct.
+  if (archiveTransition && input.bucket?.transitionDefaultMinimumObjectSize !== 'varies_by_storage_class') {
+    gaps.push('Documents smaller than 128 KB are not moved to the archive tier (the lifecycle default minimum object size is not varies_by_storage_class).')
+  }
   // Inventory alone cannot certify an archive, legal holds, collection coverage,
   // record-level history, restoration or institutional access procedures.
   gaps.push('Approved archive destination, five-year transfer, legal holds, access and restore evidence are still required.')
@@ -76,7 +81,12 @@ export function collectRetention({ profile, stack }, run = execFileSync) {
   if (!Array.isArray(logs.logGroups) || !Array.isArray(lifecycle.Rules) || !database) throw new Error('Incomplete provider observations.')
   const observation = {
     logGroup: group ? { name: logName, ...(group.retentionInDays === undefined ? {} : { retentionInDays: group.retentionInDays }) } : null,
-    bucket: { name: bucketName, versioning: versioning.Status ?? 'unconfirmed', rules: lifecycle.Rules },
+    bucket: {
+      name: bucketName,
+      versioning: versioning.Status ?? 'unconfirmed',
+      rules: lifecycle.Rules,
+      ...(typeof lifecycle.TransitionDefaultMinimumObjectSize === 'string' ? { transitionDefaultMinimumObjectSize: lifecycle.TransitionDefaultMinimumObjectSize } : {}),
+    },
     database: { name: dbName, backupRetentionDays: database.BackupRetentionPeriod },
   }
   return { observedAt: new Date().toISOString(), stack, observation, assessment: assessRetention(observation) }

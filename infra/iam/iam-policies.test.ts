@@ -10,6 +10,9 @@ import { describe, expect, it } from 'vitest'
 const dir = new URL('./', import.meta.url)
 const load = (name: string) => JSON.parse(readFileSync(new URL(name, dir), 'utf8')) as Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any -- policy documents are open-ended
 const actionsOf = (statement: Record<string, any>): string[] => [statement.Action].flat() // eslint-disable-line @typescript-eslint/no-explicit-any
+/** IAM action matching: `*` and `?` wildcards, case-insensitive, so `logs:Describe*` grants `logs:DescribeLogGroups`. */
+const matches = (patterns: string[], action: string): boolean =>
+  patterns.some((pattern) => new RegExp(`^${pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.')}$`, 'i').test(action))
 
 describe('every IAM draft is valid JSON', () => {
   it.each(readdirSync(dir).filter((f) => f.endsWith('.json')))('%s parses', (name) => {
@@ -30,15 +33,24 @@ describe('operator policy and document screening', () => {
   })
 
   it('does not let the operator read documents, change tags, or use the key for data', () => {
+    // Wildcard-aware: an `s3:Get*` grant would give this away without ever naming the action.
     for (const action of ['s3:GetObject', 's3:GetObjectVersion', 's3:PutObjectTagging', 's3:PutObjectVersionTagging', 'kms:Decrypt', 'kms:GenerateDataKey', 'sqs:ReceiveMessage', 'sqs:DeleteMessage']) {
-      expect(allowed, action).not.toContain(action)
+      expect(matches(allowed, action), `${action} must not be granted`).toBe(false)
     }
     for (const action of ['kms:Decrypt', 'kms:ScheduleKeyDeletion', 's3:DeleteObject', 's3:DeleteObjectVersion', 's3:DeleteBucket']) expect(denied, action).toContain(action)
   })
 
-  it('lets the retention evidence script read the lifecycle configuration it needs', () => {
-    expect(allowed).toContain('s3:GetLifecycleConfiguration')
-    expect(allowed).toContain('s3:GetBucketVersioning')
+  it('lets the retention evidence script make every call it makes', () => {
+    // One IAM action per AWS CLI call in scripts/ops/retention-evidence.mjs. sts:GetCallerIdentity needs no permission.
+    // The singular DescribeStackResource is what `cloudformation describe-stack-resource` requires; the plural is a different action.
+    for (const action of ['cloudformation:DescribeStackResource', 'logs:DescribeLogGroups', 's3:GetBucketVersioning', 's3:GetLifecycleConfiguration', 'rds:DescribeDBInstances']) {
+      expect(matches(allowed, action), `${action} is allowed`).toBe(true)
+      expect(matches(denied, action), `${action} is not denied`).toBe(false)
+    }
+    const script = readFileSync(new URL('../../scripts/ops/retention-evidence.mjs', import.meta.url), 'utf8')
+    for (const call of ["'describe-stack-resource'", "'describe-log-groups'", "'get-bucket-versioning'", "'get-bucket-lifecycle-configuration'", "'describe-db-instances'"]) {
+      expect(script, `${call} is still what the script runs`).toContain(call)
+    }
   })
 })
 

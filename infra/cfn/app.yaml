@@ -427,6 +427,9 @@ Resources:
   # The clean store: separate bucket, same key, versioned. A document is served from here only, at a recorded version.
   # Policy (owner-stated): kept five years, then moved to the archive tier (not deleted); superseded drafts are kept
   # 90 days for recovery. The archive destination is S3 Glacier Deep Archive in this account until KIIT approves another.
+  # TransitionDefaultMinimumObjectSize: since September 2024 S3 does not transition objects under 128 KB to any class by
+  # default. Applicant scans and photos are often that small, and the policy covers every document, so this opts in to
+  # archiving them too (the S3 lifecycle documentation allows it for Glacier Flexible Retrieval and Deep Archive only).
   DocumentsBucket:
     Type: AWS::S3::Bucket
     DeletionPolicy: Retain # DELETION
@@ -441,6 +444,7 @@ Resources:
             ServerSideEncryptionByDefault: { SSEAlgorithm: 'aws:kms', KMSMasterKeyID: !GetAtt DocumentsKey.Arn }
       VersioningConfiguration: { Status: Enabled }
       LifecycleConfiguration:
+        TransitionDefaultMinimumObjectSize: varies_by_storage_class
         Rules:
           - { Id: abort-incomplete-uploads, Status: Enabled, AbortIncompleteMultipartUpload: { DaysAfterInitiation: 7 } }
           - !If
@@ -531,6 +535,10 @@ Resources:
       Tags: [{ Key: Name, Value: !Sub 'knest-${Environment}-quarantine' }]
 
   # Scan results -> the app. Standard SQS with a dead-letter queue: nothing the app cannot settle is dropped.
+  # maxReceiveCount: every wait the verdict worker makes (for a row, a scan tag, a working S3) is a retry, and every retry is
+  # another receive. The worker doubles the delay each time (src/server/security/scan-retry.ts), so its longest deadline
+  # (one hour) needs 10 receives; 12 leaves two to spare, and a message nothing can fix still reaches the dead-letter queue,
+  # and the alarm, in under two hours. infra/cfn/malware-protection.test.ts keeps this number in step with that module.
   ScanResultDeadLetterQueue:
     Type: AWS::SQS::Queue
     Properties:
@@ -545,7 +553,7 @@ Resources:
       MessageRetentionPeriod: 1209600
       VisibilityTimeout: 300
       ReceiveMessageWaitTimeSeconds: 20
-      RedrivePolicy: { deadLetterTargetArn: !GetAtt ScanResultDeadLetterQueue.Arn, maxReceiveCount: 8 }
+      RedrivePolicy: { deadLetterTargetArn: !GetAtt ScanResultDeadLetterQueue.Arn, maxReceiveCount: 12 }
   ScanResultQueuePolicy:
     Type: AWS::SQS::QueuePolicy
     Properties:

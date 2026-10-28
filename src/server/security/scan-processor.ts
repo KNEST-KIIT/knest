@@ -1,4 +1,5 @@
 import { DRILL_KEY_PREFIX, decideVerdict, GUARDDUTY_VALIDATION_KEY, parseScanResultMessage, type ParsedScanEvent } from './scan-verdict'
+import { PROMOTION_GRACE_MS, RETRY_HINT_SECONDS, TAG_GRACE_MS, UNKNOWN_OBJECT_GRACE_MS } from './scan-retry'
 import type { ScanConfig } from './scan-config'
 import { StorageError, type ObjectRef, type QuarantineUpload } from '@/server/storage/documents'
 
@@ -72,12 +73,8 @@ export type ProcessDeps = {
 export type MessageContext = { body: string; sentAt: Date; receiveCount: number }
 export type Disposition = { disposition: 'ack' | 'retry'; retryAfterSeconds?: number; outcome: string }
 
-/** A verdict for an object no row knows about is held this long, in case the row is still being committed. */
-export const UNKNOWN_OBJECT_GRACE_MS = 15 * 60_000
-/** A clean verdict whose scan tag has not appeared yet is held this long before it is treated as an error. */
-export const TAG_GRACE_MS = 20 * 60_000
-/** A clean verdict that cannot be promoted because S3 keeps failing is held this long before it is treated as an error. */
-export const PROMOTION_GRACE_MS = 60 * 60_000
+// The three waits are defined in scan-retry.ts, next to the backoff and the queue receive limit they have to fit within.
+export { PROMOTION_GRACE_MS, TAG_GRACE_MS, UNKNOWN_OBJECT_GRACE_MS }
 
 /** The decision is already recorded when this runs; a failed notice must never turn it into a processing error. */
 async function notifySafely(deps: ProcessDeps, row: DocumentRow, status: RejectedStatus, reasons: string[]): Promise<void> {
@@ -100,12 +97,12 @@ export async function processScanMessage(ctx: MessageContext, deps: ProcessDeps)
   if (!parsed.ok) {
     // Left in the queue on purpose: it ends in the dead-letter queue, which alarms, instead of vanishing.
     log(line('malware_scan_event_rejected', { reason: parsed.reason, detail: parsed.detail.replace(/\s+/g, '_') }))
-    return retry(`rejected:${parsed.reason}`, 300)
+    return retry(`rejected:${parsed.reason}`, RETRY_HINT_SECONDS.unusable)
   }
   const event = parsed.event
   if (event.bucket !== config.quarantineBucket || event.region !== config.region) {
     log(line('malware_scan_event_rejected', { reason: 'foreign-bucket-or-region', event: event.eventId }))
-    return retry('rejected:foreign-bucket-or-region', 300)
+    return retry('rejected:foreign-bucket-or-region', RETRY_HINT_SECONDS.unusable)
   }
   if (event.key === GUARDDUTY_VALIDATION_KEY) return ack('ignored-validation-object')
   if (event.key.startsWith(DRILL_KEY_PREFIX)) {
@@ -119,7 +116,7 @@ export async function processScanMessage(ctx: MessageContext, deps: ProcessDeps)
   if (!row) {
     // Either the upload's row is not committed yet, or this verdict is for an object the application no longer
     // tracks (a replaced upload, a removed draft, something put there by hand). Wait, then let it go with a trace.
-    if (ageMs < UNKNOWN_OBJECT_GRACE_MS) return retry('row-not-visible', 30)
+    if (ageMs < UNKNOWN_OBJECT_GRACE_MS) return retry('row-not-visible', RETRY_HINT_SECONDS.waiting)
     log(line('malware_scan_unknown_object', { event: event.eventId, key: event.key, version: event.versionId }))
     return ack('unknown-object')
   }
@@ -176,13 +173,13 @@ async function promoteVerified(row: DocumentRow, event: ParsedScanEvent, ctx: Me
   } catch (error) {
     if (ageMs < TAG_GRACE_MS) {
       log(line('malware_scan_tag_pending', { doc: row.id, why: error instanceof StorageError ? error.kind : 'error' }))
-      return retry('tag-not-readable', 30)
+      return retry('tag-not-readable', RETRY_HINT_SECONDS.waiting)
     }
     log(line('malware_scan_promotion_failed', { doc: row.id, why: 'tag-unreadable-after-grace' }))
     return reject(row, event, 'scan_error', 'TAG_UNREADABLE', ['the scan tag could not be read'], null, deps)
   }
   if (inspected.scanTag === null) {
-    if (ageMs < TAG_GRACE_MS) return retry('tag-not-yet-present', 30)
+    if (ageMs < TAG_GRACE_MS) return retry('tag-not-yet-present', RETRY_HINT_SECONDS.waiting)
     log(line('malware_scan_promotion_failed', { doc: row.id, why: 'tag-missing-after-grace' }))
     return reject(row, event, 'scan_error', 'TAG_MISSING', ['the scan tag never appeared'], null, deps)
   }
@@ -220,7 +217,7 @@ async function promoteVerified(row: DocumentRow, event: ParsedScanEvent, ctx: Me
     const kind = error instanceof StorageError ? error.kind : 'transient'
     log(line('malware_scan_promotion_failed', { doc: row.id, kind, receive: ctx.receiveCount }))
     if (kind === 'mismatch') return reject(row, event, 'scan_error', 'PROMOTION_INTEGRITY', ['the clean copy failed its integrity check'], null, deps)
-    if (ageMs < PROMOTION_GRACE_MS) return retry(`promotion-retry:${kind}`, 60)
+    if (ageMs < PROMOTION_GRACE_MS) return retry(`promotion-retry:${kind}`, RETRY_HINT_SECONDS.storage)
     return reject(row, event, 'scan_error', 'PROMOTION_FAILED', ['the clean copy could not be written'], null, deps)
   }
 

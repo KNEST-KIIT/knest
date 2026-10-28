@@ -92,6 +92,28 @@ describe('five years, then archive: what the evidence recognises', () => {
     expect(report.gaps.join(' ')).toContain('No enabled rule moves documents to an archive storage class at five years or later')
   })
 
+  it('flags an archive rule that would skip small files, since S3 does not archive objects under 128 KB by default', () => {
+    const optedIn = assessRetention({ ...baseline(), bucket: { versioning: 'Enabled', transitionDefaultMinimumObjectSize: 'varies_by_storage_class', rules: [archive()] } })
+    expect(optedIn.gaps.join(' ')).not.toContain('128 KB')
+    for (const setting of [undefined, 'all_storage_classes_128K']) {
+      const report = assessRetention({ ...baseline(), bucket: { versioning: 'Enabled', transitionDefaultMinimumObjectSize: setting, rules: [archive()] } })
+      expect(report.archiveTransition).toBe('five-year-archive-transition')
+      expect(report.gaps.join(' ')).toContain('smaller than 128 KB are not moved to the archive tier')
+    }
+  })
+
+  it('reads the default-minimum-object-size setting from the lifecycle response', () => {
+    const replies = [
+      { Arn: 'arn:aws:sts::166917387892:assumed-role/knest-production-operator/test' },
+      ...['/knest-production', 'documents-bucket', 'db'].map((id) => ({ StackResourceDetail: { PhysicalResourceId: id } })),
+      { logGroups: [{ logGroupName: '/knest-production', retentionInDays: 1827 }] },
+      { Status: 'Enabled' }, { TransitionDefaultMinimumObjectSize: 'varies_by_storage_class', Rules: [archive()] }, { DBInstances: [{ BackupRetentionPeriod: 7 }] },
+    ]
+    const report = collectRetention({ profile: 'test', stack: 'knest-production-app' }, () => JSON.stringify(replies.shift()))
+    expect(report.observation.bucket.transitionDefaultMinimumObjectSize).toBe('varies_by_storage_class')
+    expect(report.assessment.gaps.join(' ')).not.toContain('128 KB')
+  })
+
   it('still flags a rule that deletes current versions, even beside a valid archive rule', () => {
     const report = withRules([archive(), { ID: 'delete-old', Status: 'Enabled', Expiration: { Days: 3650 } }])
     expect(report.archiveTransition).toBe('five-year-archive-transition')

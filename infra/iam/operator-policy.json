@@ -13,6 +13,7 @@
         "cloudformation:UpdateStack",
         "cloudformation:DescribeStacks",
         "cloudformation:DescribeStackEvents",
+        "cloudformation:DescribeStackResource",
         "cloudformation:DescribeStackResources",
         "cloudformation:GetTemplate",
         "cloudformation:ListChangeSets"

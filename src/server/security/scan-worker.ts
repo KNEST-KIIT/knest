@@ -2,6 +2,7 @@ import { ChangeMessageVisibilityCommand, DeleteMessageCommand, ReceiveMessageCom
 import { documentStorage } from '@/server/storage/documents'
 import { scanConfigOrNull } from './scan-config'
 import { processScanMessage, sweepOverdue, type Disposition, type MessageContext, type ProcessDeps } from './scan-processor'
+import { nextRetryDelaySeconds } from './scan-retry'
 import { dbScanNotifier } from './scan-notifier'
 import { dbScanStore } from './scan-store'
 
@@ -10,8 +11,9 @@ import { dbScanStore } from './scan-store'
  *
  * GuardDuty -> EventBridge rule -> SQS queue -> this worker (long polling over the instance role, so there is no
  * inbound endpoint and nothing to authenticate). A message is deleted only after its outcome is recorded or it is
- * provably a duplicate; anything else is returned to the queue to be tried again and, if it never settles, lands in
- * the dead-letter queue, which has an alarm. If the process is down, results simply wait in the queue.
+ * provably a duplicate; anything else is returned to the queue to be tried again, each time after a longer wait, and, if
+ * it never settles, lands in the dead-letter queue, which has an alarm. If the process is down, results simply wait in
+ * the queue.
  */
 
 export type QueueClient = { send(command: unknown): Promise<unknown> }
@@ -42,8 +44,14 @@ export function createScanWorker(deps: {
     if (result.disposition === 'ack') {
       await queue.send(new DeleteMessageCommand({ QueueUrl: queueUrl, ReceiptHandle: message.ReceiptHandle }))
     } else {
+      // The processor's delay is the minimum; it doubles on every receive of the same message (scan-retry.ts) so the
+      // message outlives the processor's own deadlines instead of using up the queue's receive limit within minutes.
       await queue.send(
-        new ChangeMessageVisibilityCommand({ QueueUrl: queueUrl, ReceiptHandle: message.ReceiptHandle, VisibilityTimeout: result.retryAfterSeconds ?? 60 }),
+        new ChangeMessageVisibilityCommand({
+          QueueUrl: queueUrl,
+          ReceiptHandle: message.ReceiptHandle,
+          VisibilityTimeout: nextRetryDelaySeconds(result.retryAfterSeconds ?? 60, ctx.receiveCount),
+        }),
       )
     }
   }

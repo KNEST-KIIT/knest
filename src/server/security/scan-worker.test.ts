@@ -66,16 +66,32 @@ describe('the verdict worker', () => {
     expect(q.calls[1]!.input).toEqual({ QueueUrl: 'https://sqs.example/q', ReceiptHandle: 'handle-1' })
   })
 
-  it('returns a message it could not settle to the queue, after the delay it asked for, without deleting it', async () => {
-    const q = fakeQueue([message('1')])
+  it('returns a message it could not settle to the queue, after the delay it asked for on the first try, without deleting it', async () => {
+    const q = fakeQueue([message('1', '{}', { ApproximateReceiveCount: '1' })])
     await worker(q, async () => ({ disposition: 'retry', retryAfterSeconds: 45, outcome: 'tag-not-yet-present' })).pollOnce()
     expect(q.calls.map((c) => c.name)).toEqual(['ReceiveMessageCommand', 'ChangeMessageVisibilityCommand'])
     expect(q.calls[1]!.input).toEqual({ QueueUrl: 'https://sqs.example/q', ReceiptHandle: 'handle-1', VisibilityTimeout: 45 })
     expect(q.calls.some((c) => c.name === 'DeleteMessageCommand')).toBe(false)
   })
 
+  it('waits longer each time the same message comes back, up to a cap, so it outlives the processor’s own deadlines', async () => {
+    const delays: number[] = []
+    for (const count of ['1', '2', '3', '4', '5', '8', '50']) {
+      const q = fakeQueue([message('1', '{}', { ApproximateReceiveCount: count })])
+      await worker(q, async () => ({ disposition: 'retry', retryAfterSeconds: 30, outcome: 'tag-not-yet-present' })).pollOnce()
+      delays.push(Number(q.calls[1]!.input.VisibilityTimeout))
+    }
+    expect(delays).toEqual([30, 60, 120, 240, 480, 600, 600])
+  })
+
+  it('applies the same escalation to the "unusable message" delay, which is meant to end in the dead-letter queue', async () => {
+    const q = fakeQueue([message('1', 'not json', { ApproximateReceiveCount: '2' })])
+    await worker(q, async () => ({ disposition: 'retry', retryAfterSeconds: 300, outcome: 'rejected:not-json' })).pollOnce()
+    expect(q.calls[1]!.input.VisibilityTimeout).toBe(600)
+  })
+
   it('treats an exception while processing as "try again later", never as success', async () => {
-    const q = fakeQueue([message('1'), message('2')])
+    const q = fakeQueue([message('1', '{}', { ApproximateReceiveCount: '1' }), message('2')])
     const logs: string[] = []
     let n = 0
     await worker(
