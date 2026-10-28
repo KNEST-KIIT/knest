@@ -48,7 +48,7 @@ export function StartApplication({ programSlug, programTitle, questions }: { pro
         <div className="mt-5 rounded-lg border border-[var(--color-line)] p-4">
           <p className="font-semibold">Have these documents ready</p>
           <ul className="mt-2 list-disc pl-5">{questions.filter((question) => question.fieldType === 'file').map((question) => <li key={question.id}>{question.label}{question.required === false ? ' (optional)' : ' (required)'}</li>)}</ul>
-          <p className="mt-2 text-sm">PDF, DOC or PPT · up to 10 MB per file.</p>
+          <p className="mt-2 text-sm">PDF, DOCX or PPTX · up to 10 MB per file. Each file is checked for malware before it can be submitted.</p>
         </div>
       )}
       {error && (

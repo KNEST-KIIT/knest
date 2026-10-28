@@ -71,7 +71,7 @@ export default async function ApplyPage({ params }: { params: Promise<{ program:
       programTitle={program.title}
       questions={program.questions}
       initialAnswers={Object.fromEntries(detail.answers.map((a) => [a.questionId, a.value]))}
-      initialDocuments={Object.fromEntries(detail.documents.map((d) => [d.questionId, d.fileName]))}
+      initialDocuments={Object.fromEntries(detail.documents.map((d) => [d.questionId, { fileName: d.fileName, scanStatus: d.scanStatus, message: d.scanMessage }]))}
       turnstileSiteKey={turnstileSiteKey()}
     />
   )

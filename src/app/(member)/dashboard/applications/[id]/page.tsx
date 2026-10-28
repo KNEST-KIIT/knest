@@ -16,7 +16,7 @@ export default async function ApplicationDetail({ params }: { params: Promise<{ 
   const detail = await getOwnedApplicationDetail(id, user.id)
   if (!detail) notFound()
   const answers = new Map(detail.answers.map((answer) => [answer.questionId, answer.value]))
-  const documents = new Map(detail.documents.map((document) => [document.questionId, document.fileName]))
+  const documents = new Map(detail.documents.map((document) => [document.questionId, document]))
   return (
     <Section>
       <ButtonLink href="/dashboard/applications" variant="secondary" size="sm">← Your applications</ButtonLink>
@@ -29,7 +29,7 @@ export default async function ApplicationDetail({ params }: { params: Promise<{ 
       {detail.application.status === 'draft' && <ButtonLink href={`/apply/${detail.program?.slug ?? ''}`} className="mt-6">Continue application</ButtonLink>}
       <Heading as="h2" size="heading" className="mt-10">{detail.application.status === 'draft' ? 'Saved answers' : 'What you submitted'}</Heading>
       <dl className="mt-4 divide-y divide-[var(--color-line)] border-y border-[var(--color-line)]">
-        {(detail.program?.questions ?? []).map((question) => <div key={question.id} className="py-4"><dt className="font-medium">{question.label}</dt><dd className="mt-2 whitespace-pre-wrap break-words">{question.fieldType === 'file' && documents.has(question.id) ? <a href={`/api/applications/${id}/documents/${question.id}`} className="text-[var(--color-signal)] underline">{documents.get(question.id)} — download</a> : question.fieldType === 'file' ? 'Not provided' : formatApplicationAnswer(answers.get(question.id), question.options)}</dd></div>)}
+        {(detail.program?.questions ?? []).map((question) => <div key={question.id} className="py-4"><dt className="font-medium">{question.label}</dt><dd className="mt-2 whitespace-pre-wrap break-words">{question.fieldType === 'file' && documents.has(question.id) ? (documents.get(question.id)!.scanStatus === 'clean' ? <a href={`/api/applications/${id}/documents/${question.id}`} className="text-[var(--color-signal)] underline">{documents.get(question.id)!.fileName} — download</a> : <span>{documents.get(question.id)!.fileName} — {documents.get(question.id)!.scanMessage}</span>) : question.fieldType === 'file' ? 'Not provided' : formatApplicationAnswer(answers.get(question.id), question.options)}</dd></div>)}
       </dl>
     </Section>
   )

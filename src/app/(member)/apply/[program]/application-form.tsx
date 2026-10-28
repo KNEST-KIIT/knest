@@ -9,6 +9,7 @@ import { Field, Heading, Input, LiveRegion, MultiSelect, SingleSelect, Textarea 
 import { effectiveMaxLength, type ApplicationQuestion } from '@/server/applications/types'
 import { TurnstileWidget } from '@/components/security/turnstile-widget'
 import { applicationResumeIndex, formatApplicationAnswer as formatAnswer } from '@/lib/application-progress'
+import { attachedNames, isRejected, pollDelayMs, PENDING_MESSAGE, submissionBlockers, type ClientDocument } from '@/lib/document-scan'
 import { MAX_UPLOAD_BYTES } from '@/lib/upload-limits'
 
 type Props = {
@@ -16,8 +17,26 @@ type Props = {
   programTitle: string
   questions: ApplicationQuestion[]
   initialAnswers: Record<string, unknown>
-  initialDocuments: Record<string, string>
+  initialDocuments: Record<string, ClientDocument>
   turnstileSiteKey: string
+}
+
+/**
+ * One line about an attached file's malware check. The state is always in words, never in colour alone, and a file
+ * that is still being checked is announced politely so a screen reader hears the outcome without moving focus.
+ */
+function FileState({ document }: { document: ClientDocument }) {
+  if (document.scanStatus === 'pending') {
+    return <p role="status" className="text-[length:var(--text-small)] text-[var(--color-ink-soft)]">Checking {document.fileName} for malware… {document.message}</p>
+  }
+  if (document.scanStatus === 'clean') {
+    return <p className="text-[length:var(--text-small)] font-medium text-[var(--color-positive)]">Passed the security check: {document.fileName}</p>
+  }
+  return (
+    <p role="alert" className="text-[length:var(--text-small)] font-medium text-[var(--color-critical)]">
+      Blocked: {document.fileName}. {document.message}
+    </p>
+  )
 }
 
 async function postJSON(url: string, body: unknown) {
@@ -37,11 +56,13 @@ async function postJSON(url: string, body: unknown) {
  */
 export function ApplicationForm({ applicationId, programTitle, questions, initialAnswers, initialDocuments, turnstileSiteKey }: Props) {
   const router = useRouter()
-  const resumeIndex = applicationResumeIndex(questions, initialAnswers, initialDocuments)
+  const resumeIndex = applicationResumeIndex(questions, initialAnswers, attachedNames(initialDocuments))
   const [index, setIndex] = useState(Math.max(0, resumeIndex))
   const [answers, setAnswers] = useState<Record<string, unknown>>(initialAnswers)
   const [savedAnswers, setSavedAnswers] = useState(initialAnswers)
-  const [documentNames, setDocumentNames] = useState<Record<string, string>>(initialDocuments)
+  const [documents, setDocuments] = useState<Record<string, ClientDocument>>(initialDocuments)
+  const [announcement, setAnnouncement] = useState('')
+  const blockers = submissionBlockers(documents)
   const [pending, setPending] = useState(false)
   const [fieldError, setFieldError] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
@@ -89,6 +110,38 @@ export function ApplicationForm({ applicationId, programTitle, questions, initia
     window.addEventListener('beforeunload', warn)
     return () => window.removeEventListener('beforeunload', warn)
   }, [dirty, submitted])
+
+  // While any file is waiting for its malware verdict, ask the server whether it has been decided. The browser never
+  // decides anything: it only reports what the database says (quick at first, gentler later).
+  const waitingIds = Object.entries(documents).filter(([, d]) => d.scanStatus === 'pending').map(([id]) => id).join('|')
+  useEffect(() => {
+    if (!waitingIds) return
+    let stopped = false
+    let attempt = 0
+    let timer: ReturnType<typeof setTimeout>
+    const check = async () => {
+      for (const questionId of waitingIds.split('|')) {
+        const res = await fetch(`/api/applications/${applicationId}/documents/${questionId}/status`, { cache: 'no-store' }).catch(() => null)
+        if (stopped || !res) continue
+        if (res.status === 401) {
+          window.location.href = `/login?next=${encodeURIComponent(window.location.pathname)}`
+          return
+        }
+        if (!res.ok) continue
+        const data = (await res.json().catch(() => null)) as ClientDocument | null
+        if (!data || data.scanStatus === 'pending') continue
+        setDocuments((previous) => (previous[questionId] ? { ...previous, [questionId]: { fileName: data.fileName, scanStatus: data.scanStatus, message: data.message } } : previous))
+        setAnnouncement(data.scanStatus === 'clean' ? `${data.fileName} passed the security check.` : `${data.fileName} did not pass the security check. ${data.message}`)
+      }
+      attempt += 1
+      if (!stopped) timer = setTimeout(check, pollDelayMs(attempt))
+    }
+    timer = setTimeout(check, pollDelayMs(0))
+    return () => {
+      stopped = true
+      clearTimeout(timer)
+    }
+  }, [waitingIds, applicationId])
 
   async function saveCurrent(): Promise<boolean> {
     if (!question) return true
@@ -164,8 +217,32 @@ export function ApplicationForm({ applicationId, programTitle, questions, initia
       }
       return
     }
-    setDocumentNames((prev) => ({ ...prev, [question.id]: file.name }))
+    // 202: stored and waiting for its malware check. It cannot be opened or submitted until the check passes.
+    setDocuments((prev) => ({ ...prev, [question.id]: { fileName: file.name, scanStatus: 'pending', message: PENDING_MESSAGE } }))
+    setAnnouncement(`${file.name} was received and is being checked for malware.`)
     setLastSaved(new Date())
+  }
+
+  async function removeFile(questionId: string) {
+    setPending(true)
+    setFieldError(null)
+    setFormError(null)
+    const res = await formRequest(`/api/applications/${applicationId}/documents/${questionId}`, { method: 'DELETE' })
+    const data = await res.json().catch(() => ({}))
+    setPending(false)
+    if (res.status === 401) {
+      window.location.href = `/login?next=${encodeURIComponent(window.location.pathname)}`
+      return
+    }
+    if (!res.ok) {
+      setFormError(data.error ?? 'We could not remove that file.')
+      return
+    }
+    setDocuments((previous) => {
+      const { [questionId]: removed, ...rest } = previous
+      if (removed) setAnnouncement(`${removed.fileName} was removed.`)
+      return rest
+    })
   }
 
   async function submit() {
@@ -212,12 +289,15 @@ export function ApplicationForm({ applicationId, programTitle, questions, initia
 
   const canContinue = useMemo(() => {
     if (!question) return true
+    // A rejected file must be replaced or removed before moving on, even for an optional question.
+    if (question.fieldType === 'file' && documents[question.id] && isRejected(documents[question.id]!.scanStatus)) return false
     if (question.required === false) return true
-    if (question.fieldType === 'file') return Boolean(documentNames[question.id])
+    // A file that is still being checked counts: the person has done their part and can carry on to the next question.
+    if (question.fieldType === 'file') return Boolean(documents[question.id])
     const value = answers[question.id]
     if (question.fieldType === 'multiselect') return Array.isArray(value) && value.length > 0
     return typeof value === 'string' && value.trim().length > 0
-  }, [question, answers, documentNames])
+  }, [question, answers, documents])
 
   if (submitted) {
     return (
@@ -257,7 +337,19 @@ export function ApplicationForm({ applicationId, programTitle, questions, initia
             <div key={q.id} className="flex items-start justify-between gap-4 py-4">
               <div className="min-w-0 flex-1">
                 <p className="text-[length:var(--text-small)] font-medium text-[var(--color-ink-muted)]">{q.label}</p>
-                <p className="mt-1 break-words">{q.fieldType === 'file' && documentNames[q.id] ? <a className="text-[var(--color-signal)] underline" href={`/api/applications/${applicationId}/documents/${q.id}`}>{documentNames[q.id]} — download to check</a> : q.fieldType === 'file' ? 'Not provided' : formatAnswer(answers[q.id], q.options)}</p>
+                {q.fieldType === 'file' ? (
+                  documents[q.id] ? (
+                    documents[q.id]!.scanStatus === 'clean' ? (
+                      <p className="mt-1 break-words"><a className="text-[var(--color-signal)] underline" href={`/api/applications/${applicationId}/documents/${q.id}`}>{documents[q.id]!.fileName} — download to check</a></p>
+                    ) : (
+                      <div className="mt-1 break-words"><FileState document={documents[q.id]!} /></div>
+                    )
+                  ) : (
+                    <p className="mt-1 break-words">Not provided</p>
+                  )
+                ) : (
+                  <p className="mt-1 break-words">{formatAnswer(answers[q.id], q.options)}</p>
+                )}
               </div>
               <button
                 type="button"
@@ -288,6 +380,16 @@ export function ApplicationForm({ applicationId, programTitle, questions, initia
             <span>{formError}</span>
           </div>
         )}
+        {blockers.waiting.length > 0 && (
+          <p role="status" className="mt-4 text-[length:var(--text-small)] text-[var(--color-ink-soft)]">
+            Waiting for the malware check on {blockers.waiting.join(', ')}. You can submit as soon as it passes; this page updates by itself.
+          </p>
+        )}
+        {blockers.rejected.length > 0 && (
+          <p role="alert" className="mt-4 text-[length:var(--text-small)] font-medium text-[var(--color-critical)]">
+            {blockers.rejected.join(', ')} did not pass the security check. Use Edit to remove it or upload a different file, then submit.
+          </p>
+        )}
         {formError && (
           <button
             type="button"
@@ -314,7 +416,7 @@ export function ApplicationForm({ applicationId, programTitle, questions, initia
               ← Back
             </button>
           )}
-          <Button onClick={submit} disabled={pending || captchaPending}>
+          <Button onClick={submit} disabled={pending || captchaPending || blockers.waiting.length > 0 || blockers.rejected.length > 0}>
             {pending ? 'Submitting…' : 'Submit application'}
           </Button>
           <Button variant="secondary" disabled={pending} onClick={saveAndLeave}>Save and exit</Button>
@@ -335,14 +437,14 @@ export function ApplicationForm({ applicationId, programTitle, questions, initia
           </p>
         </div>
         <div className="flex flex-wrap items-center justify-between gap-3 sm:max-w-[45%] sm:justify-end">
-          <p role="status" className="text-[length:var(--text-micro)] text-[var(--color-ink-muted)]">{dirty ? 'Unsaved changes' : lastSaved || Object.keys(savedAnswers).length || Object.keys(documentNames).length ? 'Draft saved' : 'Save each answer to keep your progress'}</p>
+          <p role="status" className="text-[length:var(--text-micro)] text-[var(--color-ink-muted)]">{dirty ? 'Unsaved changes' : lastSaved || Object.keys(savedAnswers).length || Object.keys(documents).length ? 'Draft saved' : 'Save each answer to keep your progress'}</p>
           <button type="button" disabled={pending} onClick={saveAndLeave} className="text-sm font-semibold text-[var(--color-signal)] underline">Save and exit</button>
         </div>
       </div>
       {/* Announced separately from the visible indicator above: the visible
           text alone doesn't reliably reach a screen reader user whose focus
           is still in the field they just filled in. */}
-      <LiveRegion message={dirty ? 'Unsaved changes.' : lastSaved ? 'Answer saved.' : ''} />
+      <LiveRegion message={announcement || (dirty ? 'Unsaved changes.' : lastSaved ? 'Answer saved.' : '')} />
       <div role="progressbar" aria-label="Application questions" aria-valuemin={0} aria-valuemax={total} aria-valuenow={index + 1} className="h-1 w-full rounded-full bg-[var(--color-paper-soft)]">
         <div
           className="h-1 rounded-full bg-[var(--color-signal)] transition-[width] duration-300"
@@ -418,14 +520,14 @@ export function ApplicationForm({ applicationId, programTitle, questions, initia
               <div>
                 <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-[var(--radius-md)] border-2 border-dashed border-[var(--color-line)] px-6 py-10 text-center hover:border-[var(--color-signal)]">
                   <span className="text-[length:var(--text-small)]">
-                    {pending ? 'Uploading…' : documentNames[question.id] ? `${documentNames[question.id]} — choose a replacement` : 'Choose a file'}
+                    {pending ? 'Uploading…' : documents[question.id] ? `${documents[question.id]!.fileName} — choose a replacement` : 'Choose a file'}
                   </span>
                   <span className="text-[length:var(--text-micro)] text-[var(--color-ink-muted)]">
-                    PDF, DOC or PPT. Up to 10 MB.
+                    PDF, DOCX or PPTX. Up to 10 MB. Every file is checked for malware before it can be submitted.
                   </span>
                   <input
                     type="file"
-                    accept=".pdf,.doc,.docx,.ppt,.pptx"
+                    accept=".pdf,.docx,.pptx"
                     className="sr-only"
                     aria-label={question.label}
                     onChange={(e) => {
@@ -435,6 +537,19 @@ export function ApplicationForm({ applicationId, programTitle, questions, initia
                     }}
                   />
                 </label>
+                {documents[question.id] && (
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                    <div className="min-w-0 break-words"><FileState document={documents[question.id]!} /></div>
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => removeFile(question.id)}
+                      className="inline-flex min-h-11 items-center text-[length:var(--text-small)] font-medium text-[var(--color-signal)] underline underline-offset-4"
+                    >
+                      Remove file
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </fieldset>

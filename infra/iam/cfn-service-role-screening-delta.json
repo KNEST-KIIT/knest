@@ -1,0 +1,170 @@
+{
+  "_readme": "REFERENCE, NOT APPLIED. What the CloudFormation service role knest-production-cfn-deploy must additionally be allowed so the app stack can create, update and (for S-1 only) delete the document-screening resources in infra/cfn/app.yaml. That role is created by the account owner (docs/delivery/IAM-OPERATOR-AND-SETTINGS.md step 1, 'start from AdministratorAccess, then narrow'); if it is already AdministratorAccess this delta is already satisfied and exists to narrow it later. Every statement is limited to the knest-* names the template uses and to ap-south-1. Actions that cannot be resource-scoped (kms:CreateKey) say so. Validate with a CloudFormation change set before the first execute: an AccessDenied in a change set names the missing action, and the list below is the expected full set, not a guarantee.",
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "KeyForDocumentBuckets",
+      "Effect": "Allow",
+      "Action": [
+        "kms:CreateKey",
+        "kms:DescribeKey",
+        "kms:PutKeyPolicy",
+        "kms:GetKeyPolicy",
+        "kms:EnableKeyRotation",
+        "kms:GetKeyRotationStatus",
+        "kms:TagResource",
+        "kms:UntagResource",
+        "kms:ListResourceTags",
+        "kms:ScheduleKeyDeletion",
+        "kms:CreateAlias",
+        "kms:UpdateAlias",
+        "kms:DeleteAlias",
+        "kms:ListAliases"
+      ],
+      "Resource": "*",
+      "Condition": { "StringEquals": { "aws:RequestedRegion": "ap-south-1" } }
+    },
+    {
+      "Sid": "QuarantineAndDocumentsBuckets",
+      "Effect": "Allow",
+      "Action": [
+        "s3:CreateBucket",
+        "s3:DeleteBucket",
+        "s3:PutBucketVersioning",
+        "s3:GetBucketVersioning",
+        "s3:PutEncryptionConfiguration",
+        "s3:GetEncryptionConfiguration",
+        "s3:PutBucketPublicAccessBlock",
+        "s3:GetBucketPublicAccessBlock",
+        "s3:PutBucketOwnershipControls",
+        "s3:GetBucketOwnershipControls",
+        "s3:PutLifecycleConfiguration",
+        "s3:GetLifecycleConfiguration",
+        "s3:PutBucketNotification",
+        "s3:GetBucketNotification",
+        "s3:PutBucketPolicy",
+        "s3:GetBucketPolicy",
+        "s3:DeleteBucketPolicy",
+        "s3:PutBucketTagging",
+        "s3:GetBucketTagging",
+        "s3:GetBucketLocation",
+        "s3:ListBucket"
+      ],
+      "Resource": [
+        "arn:aws:s3:::knest-production-quarantine-166917387892",
+        "arn:aws:s3:::knest-production-documents-166917387892",
+        "arn:aws:s3:::knest-s1-quarantine-166917387892",
+        "arn:aws:s3:::knest-s1-documents-166917387892"
+      ]
+    },
+    {
+      "Sid": "VerdictQueues",
+      "Effect": "Allow",
+      "Action": [
+        "sqs:CreateQueue",
+        "sqs:DeleteQueue",
+        "sqs:SetQueueAttributes",
+        "sqs:GetQueueAttributes",
+        "sqs:GetQueueUrl",
+        "sqs:TagQueue",
+        "sqs:UntagQueue",
+        "sqs:ListQueueTags"
+      ],
+      "Resource": [
+        "arn:aws:sqs:ap-south-1:166917387892:knest-production-scan-results",
+        "arn:aws:sqs:ap-south-1:166917387892:knest-production-scan-results-dlq",
+        "arn:aws:sqs:ap-south-1:166917387892:knest-s1-scan-results",
+        "arn:aws:sqs:ap-south-1:166917387892:knest-s1-scan-results-dlq"
+      ]
+    },
+    {
+      "Sid": "ScanResultAndHealthRules",
+      "Effect": "Allow",
+      "Action": [
+        "events:PutRule",
+        "events:DeleteRule",
+        "events:DescribeRule",
+        "events:EnableRule",
+        "events:DisableRule",
+        "events:PutTargets",
+        "events:RemoveTargets",
+        "events:ListTargetsByRule",
+        "events:TagResource",
+        "events:UntagResource"
+      ],
+      "Resource": [
+        "arn:aws:events:ap-south-1:166917387892:rule/knest-production-scan-*",
+        "arn:aws:events:ap-south-1:166917387892:rule/knest-s1-scan-*"
+      ]
+    },
+    {
+      "Sid": "AlertTopicPolicy",
+      "Effect": "Allow",
+      "Action": ["sns:SetTopicAttributes", "sns:GetTopicAttributes"],
+      "Resource": [
+        "arn:aws:sns:ap-south-1:166917387892:knest-production-alerts",
+        "arn:aws:sns:ap-south-1:166917387892:knest-s1-alerts"
+      ]
+    },
+    {
+      "Sid": "ScanRoleForGuardDuty",
+      "Effect": "Allow",
+      "Action": [
+        "iam:CreateRole",
+        "iam:DeleteRole",
+        "iam:GetRole",
+        "iam:TagRole",
+        "iam:UntagRole",
+        "iam:PutRolePolicy",
+        "iam:GetRolePolicy",
+        "iam:DeleteRolePolicy",
+        "iam:UpdateAssumeRolePolicy"
+      ],
+      "Resource": [
+        "arn:aws:iam::166917387892:role/knest-production-guardduty-malware",
+        "arn:aws:iam::166917387892:role/knest-s1-guardduty-malware"
+      ]
+    },
+    {
+      "Sid": "HandTheScanRoleToGuardDutyOnly",
+      "Effect": "Allow",
+      "Action": "iam:PassRole",
+      "Resource": [
+        "arn:aws:iam::166917387892:role/knest-production-guardduty-malware",
+        "arn:aws:iam::166917387892:role/knest-s1-guardduty-malware"
+      ],
+      "Condition": { "StringEquals": { "iam:PassedToService": "malware-protection-plan.guardduty.amazonaws.com" } }
+    },
+    {
+      "Sid": "MalwareProtectionPlan",
+      "Effect": "Allow",
+      "Action": [
+        "guardduty:CreateMalwareProtectionPlan",
+        "guardduty:GetMalwareProtectionPlan",
+        "guardduty:UpdateMalwareProtectionPlan",
+        "guardduty:DeleteMalwareProtectionPlan",
+        "guardduty:ListMalwareProtectionPlans",
+        "guardduty:TagResource",
+        "guardduty:UntagResource",
+        "guardduty:ListTagsForResource"
+      ],
+      "Resource": "*",
+      "Condition": { "StringEquals": { "aws:RequestedRegion": "ap-south-1" } }
+    },
+    {
+      "Sid": "AlarmsAndLogFilters",
+      "Effect": "Allow",
+      "Action": [
+        "cloudwatch:PutMetricAlarm",
+        "cloudwatch:DeleteAlarms",
+        "cloudwatch:DescribeAlarms",
+        "cloudwatch:TagResource",
+        "logs:PutMetricFilter",
+        "logs:DeleteMetricFilter",
+        "logs:DescribeMetricFilters"
+      ],
+      "Resource": "*",
+      "Condition": { "StringEquals": { "aws:RequestedRegion": "ap-south-1" } }
+    }
+  ]
+}

@@ -3,8 +3,9 @@ Description: >-
   KNEST application stack for ONE environment (the disposable S-1 spike, or
   production): VPC with a public subnet for the host and two private subnets for the
   database, EC2 (Graviton) running the container, private RDS PostgreSQL 16 with a
-  managed master password, an S3 bucket for documents and media, the generated
-  origin-verification secret, log group, an instance role with no stored keys, and
+  managed master password, an S3 bucket for CMS media, the document-screening pipeline (a quarantine bucket,
+  GuardDuty Malware Protection for S3, an EventBridge rule and SQS queue for results, a separate versioned
+  bucket for clean documents, one KMS key), the generated origin-verification secret, log group, an instance role with no stored keys, and
   an SSM document that deploys an image by digest. DEPLOY IN ap-south-1. STATUS:
   written, not deployed, not validated by CloudFormation. Production differs from
   S-1 in its retention policy and inbound path: production accepts traffic only
@@ -95,8 +96,8 @@ Parameters:
     Description: Address that is emailed when someone sends a contact message (ENQUIRY_NOTIFY_EMAIL).
   LogRetentionDays:
     Type: Number
-    Default: 7
-    Description: Hot-log expiry only; seven days is not the accepted ten-year record policy. Review archive coverage and cost before changing production.
+    Default: 1827
+    Description: How long application logs stay in CloudWatch. Owner policy is five years of retention and then transfer to an approved backup and archive, so the default is 1827 days (five years, leap day included). CloudWatch only expires logs; it does not archive them, so the transfer after five years is a separate operating procedure (docs/delivery/RETENTION-ASSURANCE-2026-10-17.md). Lowering this below 1827 contradicts the published privacy policy.
     AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1096, 1827, 2192, 2557, 2922, 3288, 3653]
   AlertEmail:
     Type: String
@@ -106,6 +107,17 @@ Parameters:
     Type: String
     Default: ''
     Description: S-1 only. Informational tag (the stack is deleted by the scheduled teardown, not by this tag).
+
+  ArchiveDocumentsAfterDays:
+    Type: Number
+    Default: 1827
+    MinValue: 90
+    Description: Owner policy is five years of retention and then transfer to an approved backup and archive. 1827 days is five years (leap day included). Applicant documents move to S3 Glacier Deep Archive after this many days and are never deleted by the template.
+  ScanVolumeAlarmBytesPerDay:
+    Type: Number
+    Default: 5368709120
+    MinValue: 1048576
+    Description: Cost control. The alarm fires when GuardDuty scans more than this many bytes in a day (default 5 GiB, about 500 uploads of the 10 MB maximum).
 
 Conditions:
   IsProduction: !Equals [!Ref Environment, production]
@@ -305,6 +317,367 @@ Resources:
             Resource: [!GetAtt Bucket.Arn, !Sub '${Bucket.Arn}/*']
             Condition: { Bool: { 'aws:SecureTransport': 'false' } }
 
+  # ------------------------------------------------------- document screening
+  # Every applicant upload lands in QuarantineBucket, which nobody can read until GuardDuty Malware Protection for
+  # S3 has scanned THAT object version and tagged it clean (bucket policy below). The app then copies exactly that
+  # version into DocumentsBucket (separate, versioned, kept five years and then archived) and records the outcome
+  # in its database; a document is served only from there. Results reach the app as EventBridge events delivered to
+  # an SQS queue the app polls over its instance role (no inbound endpoint). Design, limits and the hosted drill:
+  # docs/delivery/MALWARE-PROTECTION-ARCHITECTURE-2026-10-27.md. Role names are fixed so policies can name them
+  # without creating dependency cycles.
+
+  # One customer-managed key for both document buckets. Only the app's instance role and GuardDuty's scan role can
+  # use it for data (the deny below covers every other principal, administrators included); changing that needs a
+  # key-policy edit, which CloudTrail records. Rotation is on.
+  DocumentsKey:
+    Type: AWS::KMS::Key
+    DeletionPolicy: Retain # DELETION
+    UpdateReplacePolicy: Retain # DELETION
+    Properties:
+      Description: !Sub 'KNEST ${Environment}: encrypts the quarantine and clean document buckets'
+      EnableKeyRotation: true
+      PendingWindowInDays: 7
+      KeyPolicy:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: EnableIamPoliciesToGrantAccess
+            Effect: Allow
+            Principal: { AWS: !Sub 'arn:${AWS::Partition}:iam::${AWS::AccountId}:root' }
+            Action: 'kms:*'
+            Resource: '*'
+          - Sid: OnlyTheAppAndTheScannerMayUseTheKeyOnData
+            Effect: Deny
+            Principal: '*'
+            Action: ['kms:Decrypt', 'kms:Encrypt', 'kms:GenerateDataKey', 'kms:GenerateDataKeyWithoutPlaintext', 'kms:ReEncryptFrom', 'kms:ReEncryptTo']
+            Resource: '*'
+            Condition:
+              ArnNotEquals:
+                'aws:PrincipalArn':
+                  - !Sub 'arn:${AWS::Partition}:iam::${AWS::AccountId}:role/knest-${Environment}-ec2'
+                  - !Sub 'arn:${AWS::Partition}:iam::${AWS::AccountId}:role/knest-${Environment}-guardduty-malware'
+  DocumentsKeyAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: !Sub 'alias/knest-${Environment}-documents'
+      TargetKeyId: !Ref DocumentsKey
+
+  # Isolated holding area. Private, versioned (a verdict is bound to a version id), encrypted with the key above, and
+  # unreadable by anyone but GuardDuty until a version is tagged NO_THREATS_FOUND. Whatever is left (rejected files,
+  # leftovers) is removed by the lifecycle rules.
+  QuarantineBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain # DELETION
+    UpdateReplacePolicy: Retain # DELETION
+    Properties:
+      BucketName: !Sub 'knest-${Environment}-quarantine-${AWS::AccountId}'
+      OwnershipControls: { Rules: [{ ObjectOwnership: BucketOwnerEnforced }] }
+      PublicAccessBlockConfiguration: { BlockPublicAcls: true, BlockPublicPolicy: true, IgnorePublicAcls: true, RestrictPublicBuckets: true }
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - BucketKeyEnabled: true
+            ServerSideEncryptionByDefault: { SSEAlgorithm: 'aws:kms', KMSMasterKeyID: !GetAtt DocumentsKey.Arn }
+      VersioningConfiguration: { Status: Enabled }
+      # GuardDuty's managed rule listens to these events; enabling them here keeps the setting in the template.
+      NotificationConfiguration: { EventBridgeConfiguration: { EventBridgeEnabled: true } }
+      LifecycleConfiguration:
+        Rules:
+          - { Id: abort-incomplete-uploads, Status: Enabled, AbortIncompleteMultipartUpload: { DaysAfterInitiation: 1 } }
+          - { Id: expire-quarantined-objects, Status: Enabled, ExpirationInDays: !If [IsProduction, 14, 1], NoncurrentVersionExpiration: { NoncurrentDays: 1 } }
+          - { Id: remove-lone-delete-markers, Status: Enabled, ExpiredObjectDeleteMarker: true }
+
+  QuarantineBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref QuarantineBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: TlsOnly
+            Effect: Deny
+            Principal: '*'
+            Action: 's3:*'
+            Resource: [!GetAtt QuarantineBucket.Arn, !Sub '${QuarantineBucket.Arn}/*']
+            Condition: { Bool: { 'aws:SecureTransport': 'false' } }
+          # The load-bearing control: no principal except GuardDuty can read a version that is not tagged clean, so an
+          # unscanned, infected, skipped or failed object cannot be fetched, copied or served by anyone, whatever the app does.
+          - Sid: NoReadUnlessScannedClean
+            Effect: Deny
+            Principal: '*'
+            Action: ['s3:GetObject', 's3:GetObjectVersion']
+            Resource: !Sub '${QuarantineBucket.Arn}/*'
+            Condition:
+              StringNotEquals: { 's3:ExistingObjectTag/GuardDutyMalwareScanStatus': NO_THREATS_FOUND }
+              ArnNotEquals: { 'aws:PrincipalArn': !Sub 'arn:${AWS::Partition}:iam::${AWS::AccountId}:role/knest-${Environment}-guardduty-malware' }
+          # Only GuardDuty writes the scan tag; nobody can mark an object clean by tagging it.
+          - Sid: OnlyGuardDutyMayChangeTags
+            Effect: Deny
+            Principal: '*'
+            Action: ['s3:PutObjectTagging', 's3:PutObjectVersionTagging', 's3:DeleteObjectTagging', 's3:DeleteObjectVersionTagging']
+            Resource: !Sub '${QuarantineBucket.Arn}/*'
+            Condition:
+              ArnNotEquals: { 'aws:PrincipalArn': !Sub 'arn:${AWS::Partition}:iam::${AWS::AccountId}:role/knest-${Environment}-guardduty-malware' }
+          # GuardDuty cannot scan customer-key (SSE-C) objects, so none may be written.
+          - Sid: NoCustomerProvidedKeys
+            Effect: Deny
+            Principal: '*'
+            Action: 's3:PutObject'
+            Resource: !Sub '${QuarantineBucket.Arn}/*'
+            Condition: { 'Null': { 's3:x-amz-server-side-encryption-customer-algorithm': 'false' } }
+
+  # The clean store: separate bucket, same key, versioned. A document is served from here only, at a recorded version.
+  # Policy (owner-stated): kept five years, then moved to the archive tier (not deleted); superseded drafts are kept
+  # 90 days for recovery. The archive destination is S3 Glacier Deep Archive in this account until KIIT approves another.
+  DocumentsBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain # DELETION
+    UpdateReplacePolicy: Retain # DELETION
+    Properties:
+      BucketName: !Sub 'knest-${Environment}-documents-${AWS::AccountId}'
+      OwnershipControls: { Rules: [{ ObjectOwnership: BucketOwnerEnforced }] }
+      PublicAccessBlockConfiguration: { BlockPublicAcls: true, BlockPublicPolicy: true, IgnorePublicAcls: true, RestrictPublicBuckets: true }
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - BucketKeyEnabled: true
+            ServerSideEncryptionByDefault: { SSEAlgorithm: 'aws:kms', KMSMasterKeyID: !GetAtt DocumentsKey.Arn }
+      VersioningConfiguration: { Status: Enabled }
+      LifecycleConfiguration:
+        Rules:
+          - { Id: abort-incomplete-uploads, Status: Enabled, AbortIncompleteMultipartUpload: { DaysAfterInitiation: 7 } }
+          - !If
+            - IsProduction
+            - { Id: expire-superseded-versions, Status: Enabled, NoncurrentVersionExpiration: { NoncurrentDays: 90 } }
+            - { Id: s1-expire-objects, Status: Enabled, ExpirationInDays: 1, NoncurrentVersionExpiration: { NoncurrentDays: 1 } }
+          - !If
+            - IsProduction
+            - { Id: archive-after-five-years, Status: Enabled, Transitions: [{ StorageClass: DEEP_ARCHIVE, TransitionInDays: !Ref ArchiveDocumentsAfterDays }] }
+            - !Ref 'AWS::NoValue'
+
+  DocumentsBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref DocumentsBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: TlsOnly
+            Effect: Deny
+            Principal: '*'
+            Action: 's3:*'
+            Resource: [!GetAtt DocumentsBucket.Arn, !Sub '${DocumentsBucket.Arn}/*']
+            Condition: { Bool: { 'aws:SecureTransport': 'false' } }
+
+  # GuardDuty's scan role. The permission set is the one AWS documents for a protection plan, narrowed to this one
+  # bucket, this key and this account's managed rule. Trust is the GuardDuty service principal only.
+  GuardDutyMalwareRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'knest-${Environment}-guardduty-malware'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement: [{ Effect: Allow, Principal: { Service: malware-protection-plan.guardduty.amazonaws.com }, Action: 'sts:AssumeRole' }]
+  GuardDutyMalwarePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: scan-the-quarantine-bucket
+      Roles: [!Ref GuardDutyMalwareRole]
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowManagedRuleToSendS3EventsToGuardDuty
+            Effect: Allow
+            Action: ['events:PutRule', 'events:DeleteRule', 'events:PutTargets', 'events:RemoveTargets']
+            Resource: !Sub 'arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/DO-NOT-DELETE-AmazonGuardDutyMalwareProtectionS3*'
+            Condition: { StringLike: { 'events:ManagedBy': malware-protection-plan.guardduty.amazonaws.com } }
+          - Sid: AllowGuardDutyToMonitorEventBridgeManagedRule
+            Effect: Allow
+            Action: ['events:DescribeRule', 'events:ListTargetsByRule']
+            Resource: !Sub 'arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/DO-NOT-DELETE-AmazonGuardDutyMalwareProtectionS3*'
+          - Sid: AllowPostScanTag
+            Effect: Allow
+            Action: ['s3:PutObjectTagging', 's3:GetObjectTagging', 's3:PutObjectVersionTagging', 's3:GetObjectVersionTagging']
+            Resource: !Sub '${QuarantineBucket.Arn}/*'
+          - Sid: AllowEnableS3EventBridgeEvents
+            Effect: Allow
+            Action: ['s3:PutBucketNotification', 's3:GetBucketNotification']
+            Resource: !GetAtt QuarantineBucket.Arn
+          - Sid: AllowPutValidationObject
+            Effect: Allow
+            Action: ['s3:PutObject']
+            Resource: !Sub '${QuarantineBucket.Arn}/malware-protection-resource-validation-object'
+          - Sid: AllowCheckBucketOwnership
+            Effect: Allow
+            Action: ['s3:ListBucket']
+            Resource: !GetAtt QuarantineBucket.Arn
+          - Sid: AllowMalwareScan
+            Effect: Allow
+            Action: ['s3:GetObject', 's3:GetObjectVersion']
+            Resource: !Sub '${QuarantineBucket.Arn}/*'
+          - Sid: AllowDecryptForMalwareScan
+            Effect: Allow
+            Action: ['kms:GenerateDataKey', 'kms:Decrypt']
+            Resource: !GetAtt DocumentsKey.Arn
+            Condition: { StringLike: { 'kms:ViaService': !Sub 's3.${AWS::Region}.amazonaws.com' } }
+
+  # Scans every new object version in QuarantineBucket, tags it, and publishes the result to EventBridge. Tagging is on
+  # because the bucket policy above and the app's corroboration step both rely on the tag. Standalone: GuardDuty
+  # itself need not be enabled for this feature. Usage is billed per GB scanned and per object (see the cost plan).
+  MalwareProtectionPlan:
+    Type: AWS::GuardDuty::MalwareProtectionPlan
+    DependsOn: [GuardDutyMalwarePolicy, QuarantineBucketPolicy]
+    Properties:
+      Role: !GetAtt GuardDutyMalwareRole.Arn
+      ProtectedResource: { S3Bucket: { BucketName: !Ref QuarantineBucket } }
+      Actions: { Tagging: { Status: ENABLED } }
+      Tags: [{ Key: Name, Value: !Sub 'knest-${Environment}-quarantine' }]
+
+  # Scan results -> the app. Standard SQS with a dead-letter queue: nothing the app cannot settle is dropped.
+  ScanResultDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub 'knest-${Environment}-scan-results-dlq'
+      SqsManagedSseEnabled: true
+      MessageRetentionPeriod: 1209600
+  ScanResultQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub 'knest-${Environment}-scan-results'
+      SqsManagedSseEnabled: true
+      MessageRetentionPeriod: 1209600
+      VisibilityTimeout: 300
+      ReceiveMessageWaitTimeSeconds: 20
+      RedrivePolicy: { deadLetterTargetArn: !GetAtt ScanResultDeadLetterQueue.Arn, maxReceiveCount: 8 }
+  ScanResultQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues: [!Ref ScanResultQueue]
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: OnlyTheScanResultRuleMaySend
+            Effect: Allow
+            Principal: { Service: events.amazonaws.com }
+            Action: 'sqs:SendMessage'
+            Resource: !GetAtt ScanResultQueue.Arn
+            Condition: { ArnEquals: { 'aws:SourceArn': !GetAtt ScanResultRule.Arn } }
+          - Sid: TlsOnly
+            Effect: Deny
+            Principal: '*'
+            Action: 'sqs:*'
+            Resource: !GetAtt ScanResultQueue.Arn
+            Condition: { Bool: { 'aws:SecureTransport': 'false' } }
+  ScanResultDeadLetterQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues: [!Ref ScanResultDeadLetterQueue]
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: TlsOnly
+            Effect: Deny
+            Principal: '*'
+            Action: 'sqs:*'
+            Resource: !GetAtt ScanResultDeadLetterQueue.Arn
+            Condition: { Bool: { 'aws:SecureTransport': 'false' } }
+  ScanResultRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub 'knest-${Environment}-scan-results'
+      Description: GuardDuty Malware Protection scan results for the quarantine bucket, delivered to the verdict queue.
+      State: ENABLED
+      EventPattern:
+        source: ['aws.guardduty']
+        detail-type: ['GuardDuty Malware Protection Object Scan Result']
+        account: [!Ref 'AWS::AccountId']
+        region: [!Ref 'AWS::Region']
+        detail:
+          s3ObjectDetails:
+            bucketName: [!Ref QuarantineBucket]
+      Targets:
+        - Id: verdict-queue
+          Arn: !GetAtt ScanResultQueue.Arn
+
+  # Tell a person when the protection itself is unhealthy (a plan in ERROR or WARNING, or a failed post-scan action).
+  GuardDutyStatusRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub 'knest-${Environment}-scan-plan-status'
+      Description: The malware protection plan reports anything other than ACTIVE.
+      State: ENABLED
+      EventPattern:
+        source: ['aws.guardduty']
+        detail-type: [{ prefix: 'GuardDuty Malware Protection Resource Status' }]
+        account: [!Ref 'AWS::AccountId']
+        detail: { resourceStatus: [{ 'anything-but': 'ACTIVE' }] }
+      Targets: [{ Id: alerts, Arn: !Ref AlertTopic }]
+  GuardDutyPostScanRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub 'knest-${Environment}-scan-post-action-failed'
+      Description: GuardDuty could not tag a scanned object.
+      State: ENABLED
+      EventPattern:
+        source: ['aws.guardduty']
+        detail-type: ['GuardDuty Malware Protection Post Scan Action Failed']
+        account: [!Ref 'AWS::AccountId']
+      Targets: [{ Id: alerts, Arn: !Ref AlertTopic }]
+  AlertTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics: [!Ref AlertTopic]
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          # SNS's own default (account owner), kept so CloudWatch alarms can still publish.
+          - Sid: AccountOwnerDefault
+            Effect: Allow
+            Principal: { AWS: '*' }
+            Action: ['SNS:GetTopicAttributes', 'SNS:SetTopicAttributes', 'SNS:AddPermission', 'SNS:RemovePermission', 'SNS:DeleteTopic', 'SNS:Subscribe', 'SNS:ListSubscriptionsByTopic', 'SNS:Publish']
+            Resource: !Ref AlertTopic
+            Condition: { StringEquals: { 'AWS:SourceOwner': !Ref 'AWS::AccountId' } }
+          - Sid: EventBridgeMayPublishScanHealth
+            Effect: Allow
+            Principal: { Service: events.amazonaws.com }
+            Action: 'sns:Publish'
+            Resource: !Ref AlertTopic
+            Condition: { ArnEquals: { 'aws:SourceArn': [!GetAtt GuardDutyStatusRule.Arn, !GetAtt GuardDutyPostScanRule.Arn] } }
+
+  # What the app's instance role may do with documents, and nothing else: write to quarantine, read back only versions
+  # the bucket policy already shows are clean, write and read the clean bucket, use the key through S3, and consume
+  # the verdict queue. It cannot tag, cannot permanently delete clean documents, and cannot reach any other bucket.
+  InstanceDocumentsPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: documents-and-screening
+      Roles: [!Ref InstanceRole]
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: WriteUploadsToQuarantine
+            Effect: Allow
+            Action: ['s3:PutObject']
+            Resource: !Sub '${QuarantineBucket.Arn}/*'
+          - Sid: ReadAndRemoveScannedQuarantineVersions
+            Effect: Allow
+            Action: ['s3:GetObject', 's3:GetObjectVersion', 's3:GetObjectTagging', 's3:GetObjectVersionTagging', 's3:DeleteObjectVersion']
+            Resource: !Sub '${QuarantineBucket.Arn}/*'
+          - Sid: CleanDocuments
+            Effect: Allow
+            Action: ['s3:PutObject', 's3:GetObject', 's3:GetObjectVersion', 's3:DeleteObject']
+            Resource: !Sub '${DocumentsBucket.Arn}/*'
+          - Sid: ListCleanDocuments
+            Effect: Allow
+            Action: ['s3:ListBucket']
+            Resource: !GetAtt DocumentsBucket.Arn
+          - Sid: UseTheDocumentsKeyThroughS3Only
+            Effect: Allow
+            Action: ['kms:GenerateDataKey', 'kms:Decrypt']
+            Resource: !GetAtt DocumentsKey.Arn
+            Condition: { StringEquals: { 'kms:ViaService': !Sub 's3.${AWS::Region}.amazonaws.com' } }
+          - Sid: ConsumeScanVerdicts
+            Effect: Allow
+            Action: ['sqs:ReceiveMessage', 'sqs:DeleteMessage', 'sqs:ChangeMessageVisibility', 'sqs:GetQueueAttributes']
+            Resource: !GetAtt ScanResultQueue.Arn
+
   # The token CloudFront adds to every request so the host can tell it came through the distribution.
   OriginVerifySecret:
     Type: AWS::SecretsManager::Secret
@@ -465,6 +838,19 @@ Resources:
       Type: String
       Value: !Sub 'knest-${Environment}/origin-verify,knest-${Environment}/auth-secret,knest-${Environment}/payload-secret'
 
+  ConfigQuarantineBucket:
+    Type: AWS::SSM::Parameter
+    Properties: { Name: !Sub '/knest-${Environment}/config/quarantine-bucket', Type: String, Value: !Ref QuarantineBucket }
+  ConfigDocumentsBucket:
+    Type: AWS::SSM::Parameter
+    Properties: { Name: !Sub '/knest-${Environment}/config/documents-bucket', Type: String, Value: !Ref DocumentsBucket }
+  ConfigDocumentsKmsKeyArn:
+    Type: AWS::SSM::Parameter
+    Properties: { Name: !Sub '/knest-${Environment}/config/documents-kms-key-arn', Type: String, Value: !GetAtt DocumentsKey.Arn }
+  ConfigMalwareScanQueueUrl:
+    Type: AWS::SSM::Parameter
+    Properties: { Name: !Sub '/knest-${Environment}/config/malware-scan-queue-url', Type: String, Value: !Ref ScanResultQueue }
+
   # --------------------------------------------------------------- the host
   AppInstance:
     Type: AWS::EC2::Instance
@@ -583,6 +969,10 @@ Resources:
                     echo "TURNSTILE_SECRET_KEY=$(secret "knest-$ENVIRONMENT/turnstile-secret")"
                     echo "S3_BUCKET=$(param bucket)"
                     echo "S3_REGION=${REGION}"
+                    echo "QUARANTINE_BUCKET=$(param quarantine-bucket)"
+                    echo "DOCUMENTS_BUCKET=$(param documents-bucket)"
+                    echo "DOCUMENTS_KMS_KEY_ARN=$(param documents-kms-key-arn)"
+                    echo "MALWARE_SCAN_QUEUE_URL=$(param malware-scan-queue-url)"
                     echo "EMAIL_TRANSPORT=ses"
                     echo "EMAIL_FROM=$(param email-from)"
                     echo "FEATURE_LAB_BOOKING=$(param feature-lab-booking)"
@@ -721,6 +1111,137 @@ Resources:
       ComparisonOperator: LessThanThreshold
       AlarmActions: [!Ref AlertTopic]
 
+  # ----------------------------------------------- document screening: alarms
+  # The pipeline fails closed (a file that cannot be screened is never released), so an unhealthy pipeline shows up
+  # as applicants stuck waiting. These make a person hear about it. All go to AlertTopic.
+  # App log lines (src/server/security/scan-processor.ts, scan-worker.ts) that mean "a person should look":
+  MalwareScanAttentionMetricFilter:
+    Type: AWS::Logs::MetricFilter
+    Properties:
+      LogGroupName: !Ref LogGroup
+      FilterPattern: '?malware_scan_overdue ?malware_scan_timeout ?malware_scan_promotion_failed ?malware_scan_binding_violation ?malware_scan_event_rejected ?malware_scan_poll_failed ?malware_scan_process_failed ?malware_scan_sweep_failed'
+      MetricTransformations:
+        - MetricNamespace: !Sub 'knest-${Environment}'
+          MetricName: MalwareScanAttention
+          MetricValue: '1'
+          DefaultValue: 0
+  MalwareScanAttentionAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: The document verdict pipeline logged a problem (overdue or timed-out screening, a failed copy, a verdict that did not match its upload, an unusable event, or the worker cannot reach its queue). Applicants may be waiting.
+      Namespace: !Sub 'knest-${Environment}'
+      MetricName: MalwareScanAttention
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref AlertTopic]
+  MalwareInfectedMetricFilter:
+    Type: AWS::Logs::MetricFilter
+    Properties:
+      LogGroupName: !Ref LogGroup
+      FilterPattern: malware_scan_infected
+      MetricTransformations:
+        - MetricNamespace: !Sub 'knest-${Environment}'
+          MetricName: MalwareScanInfected
+          MetricValue: '1'
+          DefaultValue: 0
+  MalwareInfectedAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: GuardDuty reported malware in an applicant upload. The file was blocked and stays unreadable in quarantine; the applicant was told. Review who uploaded it.
+      Namespace: !Sub 'knest-${Environment}'
+      MetricName: MalwareScanInfected
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref AlertTopic]
+
+  ScanResultDeadLetterAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: A scan result the app could not settle after repeated tries is in the dead-letter queue. Those files stay pending until they time out and fail closed.
+      Namespace: AWS/SQS
+      MetricName: ApproximateNumberOfMessagesVisible
+      Dimensions: [{ Name: QueueName, Value: !GetAtt ScanResultDeadLetterQueue.QueueName }]
+      Statistic: Maximum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref AlertTopic]
+  ScanResultQueueAgeAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: The oldest scan result has waited over 15 minutes, so the app is not consuming the verdict queue (host down, permissions, or an application fault).
+      Namespace: AWS/SQS
+      MetricName: ApproximateAgeOfOldestMessage
+      Dimensions: [{ Name: QueueName, Value: !GetAtt ScanResultQueue.QueueName }]
+      Statistic: Maximum
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 900
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref AlertTopic]
+
+  GuardDutyFailedScanAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: GuardDuty could not scan an upload because of an internal error. That applicant must upload again.
+      Namespace: AWS/GuardDuty/MalwareProtection
+      MetricName: FailedScanCount
+      Dimensions:
+        - { Name: Malware Protection Plan Id, Value: !GetAtt MalwareProtectionPlan.MalwareProtectionPlanId }
+        - { Name: Resource Name, Value: !Ref QuarantineBucket }
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref AlertTopic]
+  GuardDutyMissingPermissionsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: GuardDuty skipped a scan for missing permissions (its role or the key policy). Every upload will fail closed until this is fixed.
+      Namespace: AWS/GuardDuty/MalwareProtection
+      MetricName: SkippedScanCount
+      Dimensions:
+        - { Name: Malware Protection Plan Id, Value: !GetAtt MalwareProtectionPlan.MalwareProtectionPlanId }
+        - { Name: Resource Name, Value: !Ref QuarantineBucket }
+        - { Name: Skipped Reason, Value: MissingPermissions }
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref AlertTopic]
+  # Cost control: scanning is billed per GB, so a day with far more scanned bytes than a cohort rush explains is worth a look.
+  ScanVolumeAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: More bytes were scanned in one day than expected. Check for abusive uploads before the bill does.
+      Namespace: AWS/GuardDuty/MalwareProtection
+      MetricName: CompletedScanBytes
+      Dimensions:
+        - { Name: Malware Protection Plan Id, Value: !GetAtt MalwareProtectionPlan.MalwareProtectionPlanId }
+        - { Name: Resource Name, Value: !Ref QuarantineBucket }
+      Statistic: Sum
+      Period: 86400
+      EvaluationPeriods: 1
+      Threshold: !Ref ScanVolumeAlarmBytesPerDay
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref AlertTopic]
+
 Outputs:
   VpcId:
     Value: !Ref Vpc
@@ -745,3 +1266,17 @@ Outputs:
     Value: !Sub 'knest-${Environment}/origin-verify'
   DeployDocumentName:
     Value: !Ref DeployDocument
+  QuarantineBucketName:
+    Description: Where every upload lands first. Nobody but GuardDuty can read it until a version is scanned clean.
+    Value: !Ref QuarantineBucket
+  DocumentsBucketName:
+    Description: Clean applicant documents (versioned, five years then archived).
+    Value: !Ref DocumentsBucket
+  DocumentsKeyArn:
+    Value: !GetAtt DocumentsKey.Arn
+  MalwareProtectionPlanId:
+    Value: !GetAtt MalwareProtectionPlan.MalwareProtectionPlanId
+  ScanResultQueueUrl:
+    Value: !Ref ScanResultQueue
+  ScanResultDeadLetterQueueUrl:
+    Value: !Ref ScanResultDeadLetterQueue

@@ -17,6 +17,12 @@ export const GUARDDUTY_SOURCE = 'aws.guardduty'
 export const OBJECT_SCAN_DETAIL_TYPE = 'GuardDuty Malware Protection Object Scan Result'
 /** GuardDuty writes this object itself when a protection plan is created or checked. It is not an upload. */
 export const GUARDDUTY_VALIDATION_KEY = 'malware-protection-resource-validation-object'
+/**
+ * Objects the hosted acceptance drill puts in quarantine (scripts/ops/malware-protection-drill.mjs) start with this.
+ * The app never generates such a key (upload keys are YYYY-MM-DD/<hex>), so a verdict for one is logged and
+ * acknowledged without touching any record. That lets the drill prove the whole delivery path with a real EICAR file.
+ */
+export const DRILL_KEY_PREFIX = 'malware-drill/'
 /** The tag GuardDuty writes on a scanned object version when tagging is enabled on the plan. */
 export const SCAN_TAG_KEY = 'GuardDutyMalwareScanStatus'
 

@@ -56,6 +56,16 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+      # Schema-level validation of every CloudFormation template, including the rendered S-1 variant and the
+      # document-screening resources (KMS, S3, SQS, EventBridge, GuardDuty Malware Protection). The repository's own
+      # template tests check what the design depends on; this checks that CloudFormation's resource schemas accept it.
+      - name: CloudFormation template lint
+        run: |
+          python3 -m pip install --quiet 'cfn-lint==1.58.0'
+          node scripts/render-cfn.mjs s1 app > "$RUNNER_TEMP/app-s1.yaml"
+          node scripts/render-cfn.mjs production ci > "$RUNNER_TEMP/ci-production.yaml"
+          cfn-lint infra/cfn/*.yaml "$RUNNER_TEMP/app-s1.yaml" "$RUNNER_TEMP/ci-production.yaml"
+
       - name: Unit tests (includes the content-honesty gate)
         run: pnpm test
 
@@ -181,7 +191,10 @@ jobs:
             -e PAYLOAD_SECRET=ci-only-payload-secret-0123456789abcdef012345 \
             -e SITE_URL=http://127.0.0.1:3000 -e AUTH_URL=http://127.0.0.1:3000 -e AUTH_TRUST_HOST=true \
             -e CLIENT_IP_SOURCE=x-forwarded-for \
-            -e S3_BUCKET=ci-bucket -e S3_REGION=ap-south-1 -e S3_ACCESS_KEY_ID=ci -e S3_SECRET_ACCESS_KEY=ci \
+            -e S3_BUCKET=ci-media-bucket -e S3_REGION=ap-south-1 -e S3_ACCESS_KEY_ID=ci -e S3_SECRET_ACCESS_KEY=ci \
+            -e QUARANTINE_BUCKET=ci-quarantine-bucket -e DOCUMENTS_BUCKET=ci-documents-bucket \
+            -e DOCUMENTS_KMS_KEY_ARN=arn:aws:kms:ap-south-1:000000000000:key/00000000-0000-0000-0000-000000000000 \
+            -e MALWARE_SCAN_QUEUE_URL=http://127.0.0.1:9/000000000000/ci-scan-results -e SQS_ENDPOINT=http://127.0.0.1:9 \
             -e SMTP_HOST=127.0.0.1 -e EMAIL_FROM=ci@knest.test \
             -e TURNSTILE_SECRET_KEY=ci-turnstile-secret -e TURNSTILE_SITE_KEY=ci-site \
             knest-app:ci
@@ -202,11 +215,33 @@ jobs:
           [ "$code" != "200" ]
           docker logs knest-bad 2>&1 | grep -q 'Invalid production environment'
 
+      # Document screening is not optional. The same production-shaped container, minus the quarantine bucket, the clean
+      # bucket, the key and the verdict queue, must refuse to start rather than accept uploads it cannot screen.
+      - name: A container without document screening refuses to serve
+        run: |
+          docker run -d --name knest-unscreened --network host -e PORT=3998 \
+            -e DATABASE_URL="$IMAGE_RUNTIME_DB" -e DATABASE_SSL=off \
+            -e AUTH_SECRET=ci-only-auth-secret-0123456789abcdef0123456789 \
+            -e PAYLOAD_SECRET=ci-only-payload-secret-0123456789abcdef012345 \
+            -e SITE_URL=http://127.0.0.1:3998 -e AUTH_URL=http://127.0.0.1:3998 -e AUTH_TRUST_HOST=true \
+            -e CLIENT_IP_SOURCE=x-forwarded-for \
+            -e S3_BUCKET=ci-media-bucket -e S3_REGION=ap-south-1 -e S3_ACCESS_KEY_ID=ci -e S3_SECRET_ACCESS_KEY=ci \
+            -e SMTP_HOST=127.0.0.1 -e EMAIL_FROM=ci@knest.test \
+            -e TURNSTILE_SECRET_KEY=ci-turnstile-secret -e TURNSTILE_SITE_KEY=ci-site \
+            knest-app:ci
+          sleep 20
+          code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3998/login || true)
+          echo "unscreened container answered: $code"
+          [ "$code" != "200" ]
+          docker logs knest-unscreened 2>&1 | grep -q 'QUARANTINE_BUCKET: is required'
+          docker logs knest-unscreened 2>&1 | grep -q 'MALWARE_SCAN_QUEUE_URL: is required'
+
       - name: Container log on failure
         if: failure()
         run: |
           docker logs knest || true
           docker logs knest-bad || true
+          docker logs knest-unscreened || true
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()

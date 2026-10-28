@@ -5,7 +5,7 @@
 // synthetic accounts and to read the verification state.
 //
 // Journey: sign up -> verify (database, because mail cannot be read back) -> sign in ->
-// staff creates an open program -> apply (answers + a PDF upload) -> submit -> staff reviews
+// staff creates an open program -> apply (answers + a PDF upload that must pass GuardDuty's malware check) -> submit -> staff reviews
 // (status change, document download) -> clean up: synthetic users deactivated, program closed.
 //
 // Run it inside the migrate image so `pg` and `bcryptjs` resolve, with the app's environment file:
@@ -170,10 +170,29 @@ async function main() {
     form.set('questionId', fileQ.id)
     form.set('file', new Blob([pdf], { type: 'application/pdf' }), 'smoke.pdf')
     const up = await call(`/api/applications/${appId}/documents`, { method: 'POST', cookie: student, form })
-    record('PDF uploaded to S3', up.status === 200, `${up.status} ${up.data?.error ?? ''}`.trim())
+    record('PDF accepted into quarantine (202, pending)', up.status === 202 && up.data?.scanStatus === 'pending', `${up.status} ${up.data?.error ?? ''}`.trim())
 
-    const doc = await pool.query('select storage_key, file_size from app.application_documents where application_id = $1', [appId]).catch(() => null)
-    if (doc) record('document row recorded', doc.rowCount === 1)
+    // Until GuardDuty's verdict is applied the file cannot be read by anyone: 423 (or already 200 if the scan was very fast).
+    const early = await call(`/api/applications/${appId}/documents/${fileQ.id}`, { cookie: student })
+    record('file is locked while being checked (423), or already passed (200)', early.status === 423 || early.status === 200, String(early.status))
+
+    // The real verdict arrives through GuardDuty -> EventBridge -> SQS -> the app's worker. Wait for it (up to 5 minutes).
+    let scan = 'pending'
+    const waitedFrom = Date.now()
+    while (scan === 'pending' && Date.now() - waitedFrom < 300_000) {
+      const state = await call(`/api/applications/${appId}/documents/${fileQ.id}/status`, { cookie: student })
+      scan = state.data?.scanStatus ?? 'unknown'
+      if (scan === 'pending') await new Promise((resolve) => setTimeout(resolve, 5000))
+    }
+    record('GuardDuty verdict applied: the file is clean', scan === 'clean', `${scan} after ${Math.round((Date.now() - waitedFrom) / 1000)}s`)
+
+    const doc = await pool.query('select scan_status, scan_result, quarantine_version_id, clean_version_id, scan_event_id, sha256 from app.application_documents where application_id = $1', [appId]).catch(() => null)
+    if (doc) {
+      const r = doc.rows[0]
+      record('document row bound to a quarantine version, a clean version and the deciding event', doc.rowCount === 1 && r.scan_status === 'clean' && r.scan_result === 'NO_THREATS_FOUND' && Boolean(r.quarantine_version_id && r.clean_version_id && r.scan_event_id && r.sha256))
+    }
+    const own = await call(`/api/applications/${appId}/documents/${fileQ.id}`, { cookie: student })
+    record('owner can download the clean file', own.status === 200, String(own.status))
 
     const submit = await call(`/api/applications/${appId}/submit`, { method: 'POST', cookie: student, json: { ...CAPTCHA } })
     record('application submitted', submit.status === 200, `${submit.status} ${submit.data?.error ?? ''}`.trim())

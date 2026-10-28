@@ -1,4 +1,4 @@
-import { decideVerdict, GUARDDUTY_VALIDATION_KEY, parseScanResultMessage, type ParsedScanEvent } from './scan-verdict'
+import { DRILL_KEY_PREFIX, decideVerdict, GUARDDUTY_VALIDATION_KEY, parseScanResultMessage, type ParsedScanEvent } from './scan-verdict'
 import type { ScanConfig } from './scan-config'
 import { StorageError, type ObjectRef, type QuarantineUpload } from '@/server/storage/documents'
 
@@ -108,6 +108,11 @@ export async function processScanMessage(ctx: MessageContext, deps: ProcessDeps)
     return retry('rejected:foreign-bucket-or-region', 300)
   }
   if (event.key === GUARDDUTY_VALIDATION_KEY) return ack('ignored-validation-object')
+  if (event.key.startsWith(DRILL_KEY_PREFIX)) {
+    // The hosted drill's own objects: record what arrived (that proves GuardDuty -> EventBridge -> SQS -> this worker) and move on.
+    log(line('malware_scan_drill', { key: event.key, version: event.versionId, status: event.scanStatus, result: event.scanResultStatus, threats: event.threatNames.length }))
+    return ack('drill-object')
+  }
 
   const row = await store.findByBinding({ bucket: event.bucket, key: event.key, versionId: event.versionId })
   const ageMs = now().getTime() - ctx.sentAt.getTime()

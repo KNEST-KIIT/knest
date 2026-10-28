@@ -38,12 +38,17 @@ export default async function AdminApplicationDetailPage({ params }: { params: P
               <p className="text-[length:var(--text-small)] font-medium text-[var(--color-ink-muted)]">{q.label}</p>
               {q.fieldType === 'file' ? (
                 documentMap.has(q.id) ? (
-                  <a
-                    href={`/api/admin/applications/${application.id}/documents/${q.id}`}
-                    className="mt-1 inline-block break-words font-medium text-[var(--color-signal)]"
-                  >
-                    {documentMap.get(q.id)!.fileName}
-                  </a>
+                  documentMap.get(q.id)!.scanStatus === 'clean' ? (
+                    <a
+                      href={`/api/admin/applications/${application.id}/documents/${q.id}`}
+                      className="mt-1 inline-block break-words font-medium text-[var(--color-signal)]"
+                    >
+                      {documentMap.get(q.id)!.fileName}
+                    </a>
+                  ) : (
+                    // Only a file that passed malware screening can be opened. A submitted application should hold nothing else.
+                    <p className="mt-1 break-words">{documentMap.get(q.id)!.fileName} — not available: it did not pass the malware check ({documentMap.get(q.id)!.scanStatus.replaceAll('_', ' ')}).</p>
+                  )
                 ) : (
                   <p className="mt-1">—</p>
                 )

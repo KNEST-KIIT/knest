@@ -66,3 +66,48 @@ describe('retention evidence', () => {
     expect(calls.every((args) => args.includes('--profile') && args.includes('test'))).toBe(true)
   })
 })
+
+describe('five years, then archive: what the evidence recognises', () => {
+  const withRules = (rules: unknown[]) => assessRetention({ ...baseline(), bucket: { versioning: 'Enabled', rules } })
+  const archive = (over: Record<string, unknown> = {}) => ({ ID: 'archive-after-five-years', Status: 'Enabled', Transitions: [{ Days: 1827, StorageClass: 'DEEP_ARCHIVE' }], ...over })
+
+  it('recognises an enabled rule that moves documents to an archive tier at five years', () => {
+    const report = withRules([archive()])
+    expect(report.archiveTransition).toBe('five-year-archive-transition')
+    expect(report.gaps.join(' ')).not.toContain('No enabled rule moves documents')
+    // Still blocked: the destination is not an approved procedure, and nothing here proves restore or access.
+    expect(report.status).toBe('blocked')
+    expect(report.gaps.join(' ')).toContain('Approved archive destination')
+  })
+
+  it.each([
+    ['moves at one year, not five', archive({ Transitions: [{ Days: 365, StorageClass: 'DEEP_ARCHIVE' }] })],
+    ['moves at 1826 days, a day short of five years', archive({ Transitions: [{ Days: 1826, StorageClass: 'GLACIER' }] })],
+    ['is disabled', archive({ Status: 'Disabled' })],
+    ['moves to a tier that is not an archive', archive({ Transitions: [{ Days: 1827, StorageClass: 'STANDARD_IA' }] })],
+    ['has no transition at all', { ID: 'noncurrent-only', Status: 'Enabled', NoncurrentVersionExpiration: { NoncurrentDays: 90 } }],
+  ])('does not count a rule that %s', (_label, rule) => {
+    const report = withRules([rule])
+    expect(report.archiveTransition).toBe('not-found')
+    expect(report.gaps.join(' ')).toContain('No enabled rule moves documents to an archive storage class at five years or later')
+  })
+
+  it('still flags a rule that deletes current versions, even beside a valid archive rule', () => {
+    const report = withRules([archive(), { ID: 'delete-old', Status: 'Enabled', Expiration: { Days: 3650 } }])
+    expect(report.archiveTransition).toBe('five-year-archive-transition')
+    expect(report.gaps.join(' ')).toContain('Documents lifecycle rule delete-old expires records/versions')
+  })
+
+  it('reads the documents bucket of the app stack, not the media bucket', () => {
+    const asked: string[] = []
+    const replies = [
+      { Arn: 'arn:aws:sts::166917387892:assumed-role/knest-production-operator/test' },
+      ...['/knest-production', 'documents-bucket', 'db'].map((id) => ({ StackResourceDetail: { PhysicalResourceId: id } })),
+      { logGroups: [{ logGroupName: '/knest-production', retentionInDays: 1827 }] },
+      { Status: 'Enabled' }, { Rules: [archive()] }, { DBInstances: [{ BackupRetentionPeriod: 7 }] },
+    ]
+    collectRetention({ profile: 'test', stack: 'knest-production-app' }, (_c, args) => { asked.push(args.join(' ')); return JSON.stringify(replies.shift()) })
+    expect(asked.filter((a) => a.startsWith('cloudformation describe-stack-resource')).map((a) => a.split('--logical-resource-id ')[1]!.split(' ')[0])).toEqual(['LogGroup', 'DocumentsBucket', 'Database'])
+    expect(asked.some((a) => a.includes('--bucket documents-bucket'))).toBe(true)
+  })
+})

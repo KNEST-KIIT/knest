@@ -15,14 +15,24 @@ export function assessRetention(input) {
   else if (Number.isInteger(log.retentionInDays) && log.retentionInDays >= FIVE_YEAR_LOG_DAYS) logPreservation = 'five-year-floor'
   else gaps.push('Application log expiry is shorter than the five-year floor or invalid.')
 
-  if (input.bucket?.versioning !== 'Enabled') gaps.push('Upload bucket versioning is not confirmed Enabled.')
+  // The bucket examined is the clean documents bucket: the only place applicant records are kept after screening.
+  if (input.bucket?.versioning !== 'Enabled') gaps.push('Documents bucket versioning is not confirmed Enabled.')
   for (const rule of input.bucket?.rules ?? []) {
     if (rule.Status !== 'Enabled') continue
     if (rule.Expiration || rule.NoncurrentVersionExpiration) {
-      gaps.push(`Upload lifecycle rule ${rule.ID ?? '(unnamed)'} expires records/versions without archive evidence.`)
+      gaps.push(`Documents lifecycle rule ${rule.ID ?? '(unnamed)'} expires records/versions without archive evidence.`)
     }
   }
-  if (!input.bucket || !Array.isArray(input.bucket.rules)) gaps.push('Upload lifecycle configuration is unproved.')
+  if (!input.bucket || !Array.isArray(input.bucket.rules)) gaps.push('Documents lifecycle configuration is unproved.')
+  // Owner policy: five years, then transfer to an approved backup and archive. An enabled rule that moves documents to an
+  // archive storage class at five years or later is the in-account implementation of that transfer. It is not deletion,
+  // and it does not make the destination "approved": that remains the owner's decision (see the gap below).
+  const archiveTransition = (input.bucket?.rules ?? []).some(
+    (rule) =>
+      rule.Status === 'Enabled' &&
+      (rule.Transitions ?? []).some((transition) => /^(GLACIER|DEEP_ARCHIVE|GLACIER_IR)$/.test(transition.StorageClass ?? '') && Number.isInteger(transition.Days) && transition.Days >= FIVE_YEAR_LOG_DAYS),
+  )
+  if (Array.isArray(input.bucket?.rules) && !archiveTransition) gaps.push('No enabled rule moves documents to an archive storage class at five years or later.')
   // Inventory alone cannot certify an archive, legal holds, collection coverage,
   // record-level history, restoration or institutional access procedures.
   gaps.push('Approved archive destination, five-year transfer, legal holds, access and restore evidence are still required.')
@@ -30,6 +40,7 @@ export function assessRetention(input) {
     status: 'blocked',
     hostedCompliance: 'not-established',
     logPreservation,
+    archiveTransition: archiveTransition ? 'five-year-archive-transition' : 'not-found',
     backupRetentionDays: input.database?.backupRetentionDays ?? null,
     backupNote: 'Rolling recovery backups do not establish five-year record retention or an archive.',
     gaps,
@@ -53,7 +64,7 @@ export function collectRetention({ profile, stack }, run = execFileSync) {
     return value
   }
   const logName = physical('LogGroup')
-  const bucketName = physical('Bucket')
+  const bucketName = physical('DocumentsBucket')
   const dbName = physical('Database')
   const logs = read('logs', 'describe-log-groups', '--log-group-name-prefix', logName)
   const group = logs.logGroups?.find((g) => g.logGroupName === logName)

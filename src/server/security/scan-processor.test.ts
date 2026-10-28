@@ -274,6 +274,17 @@ describe('a verdict applies only to the exact object it names', () => {
     expect(t.logs.some((l) => l.startsWith('malware_scan_binding_violation'))).toBe(true)
   })
 
+  it('logs and acknowledges the hosted drill’s objects without touching any record', async () => {
+    const t = setup()
+    const out = await processScanMessage(ctx(eventBody({ key: 'malware-drill/20261028T010203Z-eicar.txt', result: 'THREATS_FOUND', threats: [{ name: 'EICAR-Test-File (not a virus)' }] })), t.deps)
+    expect(out).toEqual({ disposition: 'ack', outcome: 'drill-object' })
+    expect(t.logs).toHaveLength(1)
+    expect(t.logs[0]).toMatch(/^malware_scan_drill key=malware-drill\/20261028T010203Z-eicar\.txt .*result=THREATS_FOUND threats=1$/)
+    expect(t.store.applied).toEqual([])
+    expect(t.storage.calls).toEqual([])
+    expect(t.notifier.sent).toEqual([])
+  })
+
   it('ignores the object GuardDuty writes to validate its own access', async () => {
     const t = setup()
     const out = await processScanMessage(ctx(eventBody({ key: 'malware-protection-resource-validation-object' })), t.deps)
