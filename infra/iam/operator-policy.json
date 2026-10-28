@@ -130,6 +130,20 @@
       "Resource": "*"
     },
     {
+      "Sid": "TemplateBucket",
+      "Effect": "Allow",
+      "Action": [
+        "s3:PutObject",
+        "s3:GetObject",
+        "s3:ListBucket",
+        "s3:GetBucketLocation"
+      ],
+      "Resource": [
+        "arn:aws:s3:::knest-templates-166917387892",
+        "arn:aws:s3:::knest-templates-166917387892/*"
+      ]
+    },
+    {
       "Sid": "SnapshotsAndRestoreDrills",
       "Effect": "Allow",
       "Action": [

@@ -10,6 +10,7 @@ import { describe, expect, it } from 'vitest'
 const dir = new URL('./', import.meta.url)
 const load = (name: string) => JSON.parse(readFileSync(new URL(name, dir), 'utf8')) as Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any -- policy documents are open-ended
 const actionsOf = (statement: Record<string, any>): string[] => [statement.Action].flat() // eslint-disable-line @typescript-eslint/no-explicit-any
+const TEMPLATE_BUCKET = ['arn:aws:s3:::knest-templates-166917387892', 'arn:aws:s3:::knest-templates-166917387892/*']
 /** IAM action matching: `*` and `?` wildcards, case-insensitive, so `logs:Describe*` grants `logs:DescribeLogGroups`. */
 const matches = (patterns: string[], action: string): boolean =>
   patterns.some((pattern) => new RegExp(`^${pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.')}$`, 'i').test(action))
@@ -34,10 +35,24 @@ describe('operator policy and document screening', () => {
 
   it('does not let the operator read documents, change tags, or use the key for data', () => {
     // Wildcard-aware: an `s3:Get*` grant would give this away without ever naming the action.
-    for (const action of ['s3:GetObject', 's3:GetObjectVersion', 's3:PutObjectTagging', 's3:PutObjectVersionTagging', 'kms:Decrypt', 'kms:GenerateDataKey', 'sqs:ReceiveMessage', 'sqs:DeleteMessage']) {
+    for (const action of ['s3:GetObjectVersion', 's3:PutObjectTagging', 's3:PutObjectVersionTagging', 'kms:Decrypt', 'kms:GenerateDataKey', 'sqs:ReceiveMessage', 'sqs:DeleteMessage']) {
       expect(matches(allowed, action), `${action} must not be granted`).toBe(false)
     }
+    // The one object read the operator has is of CloudFormation templates, in the template bucket and nowhere else.
+    const readers = policy.Statement.filter((s: Record<string, any>) => s.Effect === 'Allow' && matches(actionsOf(s), 's3:GetObject')) // eslint-disable-line @typescript-eslint/no-explicit-any
+    expect(readers.length).toBeGreaterThan(0)
+    for (const statement of readers) expect([statement.Resource].flat(), statement.Sid).toEqual(TEMPLATE_BUCKET)
     for (const action of ['kms:Decrypt', 'kms:ScheduleKeyDeletion', 's3:DeleteObject', 's3:DeleteObjectVersion', 's3:DeleteBucket']) expect(denied, action).toContain(action)
+  })
+
+  it('lets the operator upload and read templates in the template bucket, and still not delete them', () => {
+    // The app template is over CloudFormation's 51,200-byte inline limit (infra/cfn/release-gates.test.ts), so it is
+    // uploaded to S3 and passed by URL; CloudFormation reads it with the caller's permissions.
+    const statement = policy.Statement.find((s: Record<string, any>) => s.Sid === 'TemplateBucket') // eslint-disable-line @typescript-eslint/no-explicit-any
+    expect(statement.Effect).toBe('Allow')
+    expect(actionsOf(statement).sort()).toEqual(['s3:GetBucketLocation', 's3:GetObject', 's3:ListBucket', 's3:PutObject'])
+    expect(statement.Resource).toEqual(TEMPLATE_BUCKET)
+    for (const action of ['s3:DeleteObject', 's3:DeleteObjectVersion', 's3:DeleteBucket']) expect(matches(denied, action), action).toBe(true)
   })
 
   it('lets the retention evidence script make every call it makes', () => {
