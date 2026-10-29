@@ -187,7 +187,9 @@
       "Resource": [
         "arn:aws:budgets::*:budget/knest-s1*",
         "arn:aws:scheduler:ap-south-1:*:schedule/*/knest-s1*",
-        "arn:aws:scheduler:ap-south-1:*:schedule-group/knest-s1*"
+        "arn:aws:scheduler:ap-south-1:*:schedule-group/knest-s1*",
+        "arn:aws:scheduler:us-east-1:*:schedule/*/knest-s1*",
+        "arn:aws:scheduler:us-east-1:*:schedule-group/knest-s1*"
       ]
     },
     {
@@ -285,6 +287,29 @@
         "secretsmanager:GetResourcePolicy"
       ],
       "Resource": "arn:aws:secretsmanager:ap-south-1:*:secret:rds!*"
+    },
+    {
+      "Sid": "ResolveThePublicAmiParameter",
+      "Effect": "Allow",
+      "Action": [
+        "ssm:GetParameter",
+        "ssm:GetParameters"
+      ],
+      "Resource": "arn:aws:ssm:ap-south-1::parameter/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64"
+    },
+    {
+      "Sid": "ReadOnlyAPlanTaggedAsS1",
+      "Effect": "Allow",
+      "Action": [
+        "guardduty:GetMalwareProtectionPlan",
+        "guardduty:ListTagsForResource"
+      ],
+      "Resource": "arn:aws:guardduty:ap-south-1:166917387892:malware-protection-plan/*",
+      "Condition": {
+        "StringEquals": {
+          "aws:ResourceTag/Name": "knest-s1-quarantine"
+        }
+      }
     },
     {
       "Sid": "TheOperatorNeverReadsSecretValues",

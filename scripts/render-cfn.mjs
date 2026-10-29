@@ -1,14 +1,16 @@
 #!/usr/bin/env node
 // Renders the environment variants of the CloudFormation templates from one source.
 //
-//   node scripts/render-cfn.mjs <s1|production> <app|ci> > rendered.yaml
+//   node scripts/render-cfn.mjs <s1|production> <app|ci|edge|waf> > rendered.yaml
 //
 // The templates in infra/cfn are written for production: databases are snapshotted
 // and buckets and registries are kept when a stack is deleted. Lines ending in
 // "# DELETION" are the only ones that differ for the disposable S-1 spike, where the
 // stack must delete everything, including the database (no final snapshot), so that
 // the automated teardown leaves nothing behind. Keeping one source means the spike
-// tests the same template that production runs.
+// tests the same template that production runs. edge and waf have no such lines, so
+// their rendering is the source unchanged; they go through the same command so the
+// S-1 runbook has one rule: upload only what this script printed.
 import { readFileSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
 
@@ -20,8 +22,8 @@ export function render(text, variant) {
 
 function main() {
   const [variant, name] = process.argv.slice(2)
-  if (!variant || !['app', 'ci'].includes(name ?? '')) {
-    console.error('usage: node scripts/render-cfn.mjs <s1|production> <app|ci>')
+  if (!variant || !['app', 'ci', 'edge', 'waf'].includes(name ?? '')) {
+    console.error('usage: node scripts/render-cfn.mjs <s1|production> <app|ci|edge|waf>')
     process.exit(2)
   }
   const source = readFileSync(new URL('../infra/cfn/' + name + '.yaml', import.meta.url), 'utf8')

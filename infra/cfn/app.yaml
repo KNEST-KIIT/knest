@@ -455,6 +455,14 @@ Resources:
             - IsProduction
             - { Id: archive-after-five-years, Status: Enabled, Transitions: [{ StorageClass: DEEP_ARCHIVE, TransitionInDays: !Ref ArchiveDocumentsAfterDays }] }
             - !Ref 'AWS::NoValue'
+          # S-1 only. The s1-expire-objects rule expires current versions by adding a delete marker, and a smoke test that deletes a
+          # document does the same; once the noncurrent versions are gone the marker is all that is left, and it keeps the
+          # bucket from being deleted with the stack (DELETE_FAILED). A rule that expires by days may not also set
+          # ExpiredObjectDeleteMarker, hence a rule of its own. Production never gets it: nothing there is ever expired.
+          - !If
+            - IsProduction
+            - !Ref 'AWS::NoValue'
+            - { Id: s1-remove-lone-delete-markers, Status: Enabled, ExpiredObjectDeleteMarker: true }
 
   DocumentsBucketPolicy:
     Type: AWS::S3::BucketPolicy

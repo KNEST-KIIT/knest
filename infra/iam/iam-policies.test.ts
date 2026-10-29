@@ -293,3 +293,188 @@ describe('S-1 CloudFormation service role (knest-s1-cfn-service): screening perm
     expect(allowActions.some((a) => a.includes('*')), 'no wildcard actions').toBe(false)
   })
 })
+
+describe('S-1 service role: the one secret the edge stack reads, and no other', () => {
+  const ACCOUNT = '166917387892'
+  const policy = load('cfn-service-role-s1-screening.json')
+  const statements = policy.Statement as Record<string, any>[] // eslint-disable-line @typescript-eslint/no-explicit-any
+  const resourcesOf = (statement: Record<string, any>): string[] => [statement.Resource].flat() // eslint-disable-line @typescript-eslint/no-explicit-any
+  const globMatch = (pattern: string, value: string): boolean =>
+    new RegExp(`^${pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.')}$`).test(value)
+  const secretStatements = statements.filter((s) => actionsOf(s).some((a) => a.startsWith('secretsmanager:')))
+  const secretPattern = resourcesOf(secretStatements[0] as Record<string, any>)[0] as string // eslint-disable-line @typescript-eslint/no-explicit-any
+  /** A Secrets Manager ARN carries a six-character random suffix after the name. */
+  const arnOf = (name: string) => `arn:aws:secretsmanager:ap-south-1:${ACCOUNT}:secret:${name}-AbC123`
+  const readable = (name: string) =>
+    secretStatements.some((s) => s.Effect === 'Allow' && matches(actionsOf(s), 'secretsmanager:GetSecretValue') && resourcesOf(s).some((r) => globMatch(r, arnOf(name))))
+
+  it('allows GetSecretValue on exactly the S-1 origin-verify secret, unconditionally and nowhere else', () => {
+    expect(secretStatements.length).toBe(1)
+    const statement = secretStatements[0] as Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
+    expect(statement.Sid).toBe('ReadTheS1OriginVerifySecretForTheEdgeStack')
+    expect(statement.Effect).toBe('Allow')
+    expect(actionsOf(statement)).toEqual(['secretsmanager:GetSecretValue'])
+    expect(resourcesOf(statement)).toEqual([`arn:aws:secretsmanager:ap-south-1:${ACCOUNT}:secret:knest-s1/origin-verify-*`])
+    expect(statement.Condition).toBeUndefined()
+  })
+
+  it('matches the secret app.yaml creates for S-1 and the one edge.yaml resolves, and no other secret of the environment', () => {
+    const app = readFileSync(new URL('../cfn/app.yaml', import.meta.url), 'utf8')
+    const edge = readFileSync(new URL('../cfn/edge.yaml', import.meta.url), 'utf8')
+    const created = /OriginVerifySecret:[\s\S]*?Name: !Sub '([^']+)'/.exec(app)?.[1]?.replaceAll('${Environment}', 's1')
+    expect(created).toBe('knest-s1/origin-verify')
+    expect(edge).toContain('{{resolve:secretsmanager:${OriginVerifySecretId}:SecretString}}')
+    expect(readable(created as string)).toBe(true)
+    // The other secrets of the S-1 stack stay unreadable by the service role, as does the database-managed one.
+    for (const other of ['knest-s1/auth-secret', 'knest-s1/payload-secret', 'knest-s1/db-runtime', 'knest-s1/turnstile-secret', 'rds!db-1234abcd']) expect(readable(other), other).toBe(false)
+  })
+
+  it('gives no access to any production secret, by name, region, account or wildcard', () => {
+    for (const name of ['knest-production/origin-verify', 'knest-production/auth-secret', 'knest-production/payload-secret', 'knest-production/db-runtime', 'knest-production/turnstile-secret', 'knest-origin-verify']) {
+      expect(readable(name), name).toBe(false)
+    }
+    expect(globMatch(secretPattern, `arn:aws:secretsmanager:us-east-1:${ACCOUNT}:secret:knest-s1/origin-verify-AbC123`)).toBe(false)
+    expect(globMatch(secretPattern, 'arn:aws:secretsmanager:ap-south-1:111111111111:secret:knest-s1/origin-verify-AbC123')).toBe(false)
+    expect(JSON.stringify(policy)).not.toMatch(/secretsmanager:\*|secretsmanager:Get\*/)
+    expect(JSON.stringify(policy)).not.toMatch(/production/i)
+  })
+})
+
+describe('S-1 operator policy: AMI parameter and tagged GuardDuty plan reads, within the size limit, with every deny kept', () => {
+  const ACCOUNT = '166917387892'
+  const policy = JSON.parse(readFileSync(new URL('../s1/operator-policy.json', import.meta.url), 'utf8')) as Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
+  const statements = policy.Statement as Record<string, any>[] // eslint-disable-line @typescript-eslint/no-explicit-any
+  const resourcesOf = (statement: Record<string, any>): string[] => [statement.Resource].flat() // eslint-disable-line @typescript-eslint/no-explicit-any
+  const byId = (sid: string) => statements.find((s) => s.Sid === sid) as Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
+  const app = readFileSync(new URL('../cfn/app.yaml', import.meta.url), 'utf8').replace(/\r\n/g, '\n')
+  const allowedActions = statements.filter((s) => s.Effect === 'Allow').flatMap(actionsOf)
+
+  it('stays a managed policy IAM accepts: unique Sids, only Version and Statement, under 6,144 characters without whitespace', () => {
+    expect(Object.keys(policy).sort()).toEqual(['Statement', 'Version'])
+    const sids = statements.map((s) => s.Sid as string)
+    expect(new Set(sids).size).toBe(sids.length)
+    expect(JSON.stringify(policy).replace(/\s/g, '').length).toBeLessThan(6144)
+  })
+
+  it('resolves the public Amazon Linux parameter the app template defaults to, and only that parameter', () => {
+    const statement = byId('ResolveThePublicAmiParameter')
+    expect(statement.Effect).toBe('Allow')
+    expect(actionsOf(statement).sort()).toEqual(['ssm:GetParameter', 'ssm:GetParameters'])
+    const name = /LatestAmiId:\n    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>\n    Default: (\S+)/.exec(app)?.[1]
+    expect(name).toBe('/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64')
+    // Public parameters belong to AWS, so the ARN has no account id.
+    expect(resourcesOf(statement)).toEqual([`arn:aws:ssm:ap-south-1::parameter${name}`])
+    expect(statement.Condition).toBeUndefined()
+    // No other grant reads parameters: the operator still cannot read the S-1 stack's own configuration.
+    expect(allowedActions.filter((a) => /^ssm:Get/i.test(a))).toEqual(['ssm:GetParameter', 'ssm:GetParameters'])
+  })
+
+  it('reads a malware protection plan only when it is tagged as the S-1 plan the template creates', () => {
+    const tag = /MalwareProtectionPlan:[\s\S]*?Tags: \[\{ Key: Name, Value: !Sub '([^']+)' \}\]/.exec(app)?.[1]?.replaceAll('${Environment}', 's1')
+    expect(tag).toBe('knest-s1-quarantine')
+    const statement = byId('ReadOnlyAPlanTaggedAsS1')
+    expect(statement.Effect).toBe('Allow')
+    expect(actionsOf(statement).sort()).toEqual(['guardduty:GetMalwareProtectionPlan', 'guardduty:ListTagsForResource'])
+    expect(resourcesOf(statement)).toEqual([`arn:aws:guardduty:ap-south-1:${ACCOUNT}:malware-protection-plan/*`])
+    expect(statement.Condition).toEqual({ StringEquals: { 'aws:ResourceTag/Name': tag } })
+    // Read, not manage: nothing that creates, changes or deletes a plan, and no unscoped GuardDuty grant, anywhere in the policy.
+    for (const action of ['guardduty:CreateMalwareProtectionPlan', 'guardduty:UpdateMalwareProtectionPlan', 'guardduty:DeleteMalwareProtectionPlan', 'guardduty:TagResource', 'guardduty:ListDetectors', 'guardduty:GetFindings']) {
+      expect(matches(allowedActions, action), `${action} must not be granted`).toBe(false)
+    }
+    expect(JSON.stringify(policy)).not.toContain('guardduty:*')
+  })
+
+  it('keeps every explicit deny: other regions, long-lived credentials, secret values, S-1 parameters, compute outside Mumbai', () => {
+    const denies = statements.filter((s) => s.Effect === 'Deny').map((s) => s.Sid as string)
+    expect(denies).toEqual(['StayInMumbaiAndVirginia', 'NeverCreateLongLivedCredentialsOrUsers', 'NoComputeOrDatabaseOutsideMumbai', 'TheOperatorNeverReadsSecretValues', 'TheOperatorNeverReadsS1Parameters'])
+    expect(byId('TheOperatorNeverReadsSecretValues')).toMatchObject({ Action: 'secretsmanager:GetSecretValue', Resource: '*' })
+    expect(byId('TheOperatorNeverReadsS1Parameters').Resource).toBe('arn:aws:ssm:ap-south-1:*:parameter/knest-s1/*')
+    // The allowed AMI parameter is outside the denied S-1 parameter path, so the deny is not weakened and does not hide it.
+    expect(resourcesOf(byId('ResolveThePublicAmiParameter'))[0]).not.toContain('/knest-s1/')
+    expect(matches(allowedActions, 'secretsmanager:GetSecretValue')).toBe(false)
+  })
+})
+
+describe('S-1 teardown: four schedules in both regions, exact stacks, scoped trust, pass condition', () => {
+  const ACCOUNT = '166917387892'
+  const operator = load('../s1/operator-policy.json')
+  const roles = load('../s1/teardown-roles.json') as { roles: Record<string, any>[]; teardownBehaviourToKnow: string[] } // eslint-disable-line @typescript-eslint/no-explicit-any
+  const scheduler = roles.roles.find((r) => r.name === 'knest-s1-scheduler') as Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
+  const resourcesOf = (statement: Record<string, any>): string[] => [statement.Resource].flat() // eslint-disable-line @typescript-eslint/no-explicit-any
+  const sid = (policy: Record<string, any>, id: string) => policy.Statement.find((s: Record<string, any>) => s.Sid === id) as Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
+
+  it('lets the operator manage knest-s1 schedules and the knest-s1 group in Mumbai and Virginia, and nothing else', () => {
+    const statement = sid(operator, 'S1BudgetsAndTeardownSchedule')
+    expect(statement.Effect).toBe('Allow')
+    expect(resourcesOf(statement).filter((r) => r.startsWith('arn:aws:scheduler:')).sort()).toEqual([
+      'arn:aws:scheduler:ap-south-1:*:schedule-group/knest-s1*',
+      'arn:aws:scheduler:ap-south-1:*:schedule/*/knest-s1*',
+      'arn:aws:scheduler:us-east-1:*:schedule-group/knest-s1*',
+      'arn:aws:scheduler:us-east-1:*:schedule/*/knest-s1*',
+    ])
+    expect(actionsOf(statement).filter((a) => a.startsWith('scheduler:'))).toEqual(['scheduler:*'])
+    // Every other scheduler grant is read-only, and the region fence still allows exactly these two regions.
+    const others = (operator.Statement as Record<string, any>[]).filter((s) => s.Sid !== 'S1BudgetsAndTeardownSchedule' && s.Effect === 'Allow' && actionsOf(s).some((a) => a.startsWith('scheduler:'))) // eslint-disable-line @typescript-eslint/no-explicit-any
+    expect(others.length).toBeGreaterThan(0)
+    for (const other of others) expect(actionsOf(other).filter((a) => a.startsWith('scheduler:')).sort()).toEqual(['scheduler:Get*', 'scheduler:List*'])
+    expect(sid(operator, 'StayInMumbaiAndVirginia').Condition.StringNotEquals['aws:RequestedRegion']).toEqual(['ap-south-1', 'us-east-1'])
+    // Only a knest-s1 role can be passed, and only to the services the teardown uses.
+    const passRole = sid(operator, 'PassOnlyS1Roles')
+    expect(passRole.Resource).toBe('arn:aws:iam::*:role/knest-s1-*')
+    expect(passRole.Condition.StringEquals['iam:PassedToService']).toContain('scheduler.amazonaws.com')
+  })
+
+  it('keeps the operator policy within the managed-policy size limit', () => {
+    expect(JSON.stringify(operator).replace(/\s/g, '').length).toBeLessThan(6144)
+  })
+
+  it('trusts only the scheduler service, in this account, for schedules of the knest-s1 group in any region', () => {
+    const trustStatements = scheduler.trustPolicy.Statement as Record<string, any>[] // eslint-disable-line @typescript-eslint/no-explicit-any
+    expect(trustStatements.length).toBe(1)
+    const trust = trustStatements[0] as Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
+    expect(trust).toMatchObject({ Effect: 'Allow', Principal: { Service: 'scheduler.amazonaws.com' }, Action: 'sts:AssumeRole' })
+    expect(trust.Condition.StringEquals).toEqual({ 'aws:SourceAccount': '<ACCOUNT_ID>' })
+    // The region is a wildcard so one role serves both regions; the account and the group are fixed.
+    expect(trust.Condition.ArnLike).toEqual({ 'aws:SourceArn': 'arn:aws:scheduler:*:<ACCOUNT_ID>:schedule/knest-s1/*' })
+    const source = (trust.Condition.ArnLike['aws:SourceArn'] as string).replace('<ACCOUNT_ID>', ACCOUNT)
+    const arn = (region: string, account: string, group: string) => `arn:aws:scheduler:${region}:${account}:schedule/${group}/knest-s1-expire-app`
+    const covered = (value: string) => new RegExp(`^${source.replace(/[.+^$()|[\]\\{}]/g, '\\$&').replace(/\*/g, '.*')}$`).test(value)
+    expect(covered(arn('ap-south-1', ACCOUNT, 'knest-s1'))).toBe(true)
+    expect(covered(arn('us-east-1', ACCOUNT, 'knest-s1'))).toBe(true)
+    expect(covered(arn('us-east-1', '111111111111', 'knest-s1'))).toBe(false)
+    expect(covered(arn('us-east-1', ACCOUNT, 'default'))).toBe(false)
+    expect(covered(arn('us-east-1', ACCOUNT, 'knest-s1-other'))).toBe(false)
+  })
+
+  it('lets the scheduler role delete exactly the four S-1 stacks and pass exactly the CloudFormation service role to CloudFormation', () => {
+    const statements = scheduler.permissionsPolicy.Statement as Record<string, any>[] // eslint-disable-line @typescript-eslint/no-explicit-any
+    expect(statements.map((s) => s.Sid)).toEqual(['DeleteOnlyTheS1Stacks', 'HandTheDeleteToTheServiceRoleOnly'])
+    const del = sid(scheduler.permissionsPolicy, 'DeleteOnlyTheS1Stacks')
+    expect(del.Effect).toBe('Allow')
+    expect(del.Action).toBe('cloudformation:DeleteStack')
+    expect(del.Condition).toBeUndefined()
+    expect(resourcesOf(del).sort()).toEqual([
+      'arn:aws:cloudformation:ap-south-1:<ACCOUNT_ID>:stack/knest-s1-ci/*',
+      'arn:aws:cloudformation:ap-south-1:<ACCOUNT_ID>:stack/knest-s1-edge/*',
+      'arn:aws:cloudformation:ap-south-1:<ACCOUNT_ID>:stack/knest-s1/*',
+      'arn:aws:cloudformation:us-east-1:<ACCOUNT_ID>:stack/knest-s1-waf/*',
+    ])
+    expect(sid(scheduler.permissionsPolicy, 'HandTheDeleteToTheServiceRoleOnly')).toEqual({
+      Sid: 'HandTheDeleteToTheServiceRoleOnly',
+      Effect: 'Allow',
+      Action: 'iam:PassRole',
+      Resource: 'arn:aws:iam::<ACCOUNT_ID>:role/knest-s1-cfn-service',
+      Condition: { StringEquals: { 'iam:PassedToService': 'cloudformation.amazonaws.com' } },
+    })
+  })
+
+  it('describes four schedules in the staged 00:00, 02:00 and 04:00 UTC order, not the two-schedule design', () => {
+    const prose = roles.teardownBehaviourToKnow.join('\n')
+    expect(prose).toContain('four one-time schedules')
+    for (const name of ['knest-s1-expire-edge', 'knest-s1-expire-waf', 'knest-s1-expire-app', 'knest-s1-expire-ci']) expect(prose, name).toContain(name)
+    expect(prose).toContain('00:00 UTC')
+    expect(prose).toContain('02:00 UTC')
+    expect(prose).toContain('04:00 UTC')
+    expect(prose).not.toMatch(/two schedules|knest-s1-expire deletes/)
+  })
+})

@@ -10,10 +10,19 @@ name: Release image
 #
 # One-time setup per Environment (s1, production), in GitHub > Settings > Environments:
 #   variables  AWS_REGION            ap-south-1
-#              AWS_PUSH_ROLE_ARN     output PushRoleArn of the ci stack
-#              AWS_DEPLOY_ROLE_ARN   output DeployRoleArn of the ci stack
-#              ECR_REPOSITORY        knest-app
+#              AWS_PUSH_ROLE_ARN     output PushRoleArn of that environment's ci stack
+#              AWS_DEPLOY_ROLE_ARN   output DeployRoleArn of that environment's ci stack
+#              ECR_REPOSITORY        s1: knest-s1-app      production: knest-app
+# Each environment has its own repository (the RepositoryName parameter of its ci stack), and
+# its push and deploy roles can reach only that repository: s1 cannot push to or read the
+# production images, and the S-1 operator and service roles are scoped to names starting
+# knest-s1. A value that does not match the environment fails at the push with AccessDenied.
 # Nothing here is a secret; a role ARN grants nothing without the OIDC trust.
+#
+# Tags are immutable (app-<sha>, migrate-<sha>) and the host is deployed by digest, never by
+# tag, so dispatch this once per commit and environment. A second run for the same SHA is
+# refused at the push; if only the deploy job failed, do not re-dispatch: deploy the digests
+# printed in the first run's summary through the deploy document (docs/delivery/S-1-CREATE-RUNBOOK.md).
 
 on:
   workflow_dispatch:

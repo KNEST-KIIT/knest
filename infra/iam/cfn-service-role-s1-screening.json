@@ -201,6 +201,12 @@
         "arn:aws:logs:ap-south-1:166917387892:log-group:/knest-s1",
         "arn:aws:logs:ap-south-1:166917387892:log-group:/knest-s1:*"
       ]
+    },
+    {
+      "Sid": "ReadTheS1OriginVerifySecretForTheEdgeStack",
+      "Effect": "Allow",
+      "Action": "secretsmanager:GetSecretValue",
+      "Resource": "arn:aws:secretsmanager:ap-south-1:166917387892:secret:knest-s1/origin-verify-*"
     }
   ]
 }

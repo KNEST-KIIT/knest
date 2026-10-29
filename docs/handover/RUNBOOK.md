@@ -9,7 +9,7 @@ After reading this you will know how a release is meant to go out, how to undo i
 - **Nothing is deployed.** The CloudFormation templates in `infra/cfn/` and the release workflow `.github/workflows/release-image.yml` are written. They are checked statically (tests, and a `cfn-lint` run reported clean in commit `fac5d49`). CloudFormation itself has not validated them. No AWS resource, DNS record or production database exists for KNEST. Sources: the headers of each template, `docs/delivery/AWS-NATIVE-ARCHITECTURE.md`, `docs/delivery/DNS-MIGRATION.md`, `docs/delivery/TRACKER.md`.
 - **Public production today is a maintenance page on Vercel.**
 - **Every procedure below is derived from the templates and scripts.** None was rehearsed. Where a step is my inference and not written in the repository, it says so.
-- The first rehearsal is the planned hosting spike ("S-1", `docs/delivery/S-1-SPEC.md`). It has not started. It waits on owner decisions (`docs/delivery/S-1-PREFLIGHT.md`).
+- The first rehearsal is the planned hosting spike ("S-1", `docs/delivery/S-1-SPEC.md`). It has not started. It waits on owner decisions (`docs/delivery/S-1-PREFLIGHT.md`); its exact create and verify sequence is `docs/delivery/S-1-CREATE-RUNBOOK.md`.
 - There is one production environment. There is no staging. This was a decision of the owner on 2026-10-09.
 
 ## 1. People and contacts
