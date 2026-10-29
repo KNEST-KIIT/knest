@@ -245,7 +245,7 @@ describe('role documents', () => {
     expect(s.Action).toBe('sts:AssumeRole')
     expect(s.Condition).toEqual({
       StringEquals: { 'aws:SourceAccount': ACCOUNT_ID },
-      ArnLike: { 'aws:SourceArn': `arn:aws:scheduler:*:${ACCOUNT_ID}:schedule/knest-s1/*` },
+      ArnLike: { 'aws:SourceArn': `arn:aws:scheduler:*:${ACCOUNT_ID}:schedule-group/knest-s1` },
     })
   })
 

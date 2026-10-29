@@ -121,7 +121,7 @@ export function buildSchedulerTrustPolicy() {
         Action: 'sts:AssumeRole',
         Condition: {
           StringEquals: { 'aws:SourceAccount': ACCOUNT_ID },
-          ArnLike: { 'aws:SourceArn': `arn:aws:scheduler:*:${ACCOUNT_ID}:schedule/${GROUP_NAME}/*` },
+          ArnLike: { 'aws:SourceArn': `arn:aws:scheduler:*:${ACCOUNT_ID}:schedule-group/${GROUP_NAME}` },
         },
       },
     ],
@@ -379,7 +379,7 @@ function getSchedule(aws, region, name) {
 
 export function planText(expiresOn) {
   const lines = [`S-1 teardown plan for ExpiresOn ${expiresOn} (nothing is created by this command)`, ''];
-  lines.push(`role   ${SCHEDULER_ROLE_ARN}  (trust: scheduler.amazonaws.com for schedule/${GROUP_NAME}/* in ${ACCOUNT_ID})`);
+  lines.push(`role   ${SCHEDULER_ROLE_ARN}  (trust: scheduler.amazonaws.com for schedule-group/${GROUP_NAME} in ${ACCOUNT_ID})`);
   lines.push(`policy ${SCHEDULER_POLICY_NAME}  (cloudformation:DeleteStack on the four stacks; iam:PassRole on ${CFN_SERVICE_ROLE_NAME} to cloudformation only)`);
   for (const region of REGIONS) lines.push(`group  ${GROUP_NAME} in ${region}`);
   lines.push('');
