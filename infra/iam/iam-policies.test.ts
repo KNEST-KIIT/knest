@@ -428,16 +428,16 @@ describe('S-1 teardown: four schedules in both regions, exact stacks, scoped tru
     expect(JSON.stringify(operator).replace(/\s/g, '').length).toBeLessThan(6144)
   })
 
-  it('trusts only the scheduler service, in this account, for schedules of the knest-s1 group in any region', () => {
+  it('trusts only the scheduler service, in this account, for the knest-s1 schedule group in any region', () => {
     const trustStatements = scheduler.trustPolicy.Statement as Record<string, any>[] // eslint-disable-line @typescript-eslint/no-explicit-any
     expect(trustStatements.length).toBe(1)
     const trust = trustStatements[0] as Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
     expect(trust).toMatchObject({ Effect: 'Allow', Principal: { Service: 'scheduler.amazonaws.com' }, Action: 'sts:AssumeRole' })
     expect(trust.Condition.StringEquals).toEqual({ 'aws:SourceAccount': '<ACCOUNT_ID>' })
     // The region is a wildcard so one role serves both regions; the account and the group are fixed.
-    expect(trust.Condition.ArnLike).toEqual({ 'aws:SourceArn': 'arn:aws:scheduler:*:<ACCOUNT_ID>:schedule/knest-s1/*' })
+    expect(trust.Condition.ArnLike).toEqual({ 'aws:SourceArn': 'arn:aws:scheduler:*:<ACCOUNT_ID>:schedule-group/knest-s1' })
     const source = (trust.Condition.ArnLike['aws:SourceArn'] as string).replace('<ACCOUNT_ID>', ACCOUNT)
-    const arn = (region: string, account: string, group: string) => `arn:aws:scheduler:${region}:${account}:schedule/${group}/knest-s1-expire-app`
+    const arn = (region: string, account: string, group: string) => `arn:aws:scheduler:${region}:${account}:schedule-group/${group}`
     const covered = (value: string) => new RegExp(`^${source.replace(/[.+^$()|[\]\\{}]/g, '\\$&').replace(/\*/g, '.*')}$`).test(value)
     expect(covered(arn('ap-south-1', ACCOUNT, 'knest-s1'))).toBe(true)
     expect(covered(arn('us-east-1', ACCOUNT, 'knest-s1'))).toBe(true)
