@@ -1,0 +1,206 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "CreateKeyAndListAliases",
+      "Effect": "Allow",
+      "Action": ["kms:CreateKey", "kms:ListAliases"],
+      "Resource": "*",
+      "Condition": { "StringEquals": { "aws:RequestedRegion": "ap-south-1" } }
+    },
+    {
+      "Sid": "AliasOfTheS1DocumentsKey",
+      "Effect": "Allow",
+      "Action": ["kms:CreateAlias", "kms:UpdateAlias", "kms:DeleteAlias"],
+      "Resource": "arn:aws:kms:ap-south-1:166917387892:alias/knest-s1-documents"
+    },
+    {
+      "Sid": "S1DocumentsKeyLifecycle",
+      "Effect": "Allow",
+      "Action": [
+        "kms:DescribeKey",
+        "kms:PutKeyPolicy",
+        "kms:GetKeyPolicy",
+        "kms:EnableKeyRotation",
+        "kms:GetKeyRotationStatus",
+        "kms:TagResource",
+        "kms:UntagResource",
+        "kms:ListResourceTags",
+        "kms:ScheduleKeyDeletion"
+      ],
+      "Resource": "arn:aws:kms:ap-south-1:166917387892:key/*"
+    },
+    {
+      "Sid": "AliasTheS1DocumentsKey",
+      "Effect": "Allow",
+      "Action": ["kms:CreateAlias", "kms:UpdateAlias", "kms:DeleteAlias"],
+      "Resource": "arn:aws:kms:ap-south-1:166917387892:key/*"
+    },
+    {
+      "Sid": "NeverTouchAKeyThatHasAnyOtherAlias",
+      "Effect": "Deny",
+      "Action": [
+        "kms:DescribeKey",
+        "kms:PutKeyPolicy",
+        "kms:GetKeyPolicy",
+        "kms:EnableKeyRotation",
+        "kms:GetKeyRotationStatus",
+        "kms:TagResource",
+        "kms:UntagResource",
+        "kms:ListResourceTags",
+        "kms:ScheduleKeyDeletion",
+        "kms:CreateAlias",
+        "kms:UpdateAlias",
+        "kms:DeleteAlias"
+      ],
+      "Resource": "arn:aws:kms:ap-south-1:166917387892:key/*",
+      "Condition": { "ForAnyValue:StringNotLike": { "kms:ResourceAliases": "alias/knest-s1-*" } }
+    },
+    {
+      "Sid": "S1QuarantineAndDocumentsBuckets",
+      "Effect": "Allow",
+      "Action": [
+        "s3:CreateBucket",
+        "s3:DeleteBucket",
+        "s3:ListBucket",
+        "s3:GetBucketLocation",
+        "s3:PutBucketVersioning",
+        "s3:GetBucketVersioning",
+        "s3:PutEncryptionConfiguration",
+        "s3:GetEncryptionConfiguration",
+        "s3:PutBucketPublicAccessBlock",
+        "s3:GetBucketPublicAccessBlock",
+        "s3:PutBucketOwnershipControls",
+        "s3:GetBucketOwnershipControls",
+        "s3:PutLifecycleConfiguration",
+        "s3:GetLifecycleConfiguration",
+        "s3:PutBucketNotification",
+        "s3:GetBucketNotification",
+        "s3:PutBucketPolicy",
+        "s3:GetBucketPolicy",
+        "s3:DeleteBucketPolicy",
+        "s3:PutBucketTagging",
+        "s3:GetBucketTagging"
+      ],
+      "Resource": [
+        "arn:aws:s3:::knest-s1-quarantine-166917387892",
+        "arn:aws:s3:::knest-s1-documents-166917387892"
+      ]
+    },
+    {
+      "Sid": "S1VerdictQueues",
+      "Effect": "Allow",
+      "Action": [
+        "sqs:CreateQueue",
+        "sqs:DeleteQueue",
+        "sqs:SetQueueAttributes",
+        "sqs:GetQueueAttributes",
+        "sqs:GetQueueUrl",
+        "sqs:TagQueue",
+        "sqs:UntagQueue",
+        "sqs:ListQueueTags"
+      ],
+      "Resource": [
+        "arn:aws:sqs:ap-south-1:166917387892:knest-s1-scan-results",
+        "arn:aws:sqs:ap-south-1:166917387892:knest-s1-scan-results-dlq"
+      ]
+    },
+    {
+      "Sid": "S1ScanResultAndHealthRules",
+      "Effect": "Allow",
+      "Action": [
+        "events:PutRule",
+        "events:DeleteRule",
+        "events:DescribeRule",
+        "events:EnableRule",
+        "events:DisableRule",
+        "events:PutTargets",
+        "events:RemoveTargets",
+        "events:ListTargetsByRule",
+        "events:TagResource",
+        "events:UntagResource"
+      ],
+      "Resource": "arn:aws:events:ap-south-1:166917387892:rule/knest-s1-scan-*"
+    },
+    {
+      "Sid": "S1AlertTopicPolicy",
+      "Effect": "Allow",
+      "Action": ["sns:SetTopicAttributes", "sns:GetTopicAttributes"],
+      "Resource": "arn:aws:sns:ap-south-1:166917387892:knest-s1-alerts"
+    },
+    {
+      "Sid": "S1ScanRoleForGuardDuty",
+      "Effect": "Allow",
+      "Action": [
+        "iam:CreateRole",
+        "iam:DeleteRole",
+        "iam:GetRole",
+        "iam:TagRole",
+        "iam:UntagRole",
+        "iam:UpdateAssumeRolePolicy",
+        "iam:PutRolePolicy",
+        "iam:GetRolePolicy",
+        "iam:DeleteRolePolicy",
+        "iam:ListRolePolicies",
+        "iam:ListAttachedRolePolicies"
+      ],
+      "Resource": "arn:aws:iam::166917387892:role/knest-s1-guardduty-malware"
+    },
+    {
+      "Sid": "S1DocumentsPolicyOnTheS1InstanceRole",
+      "Effect": "Allow",
+      "Action": ["iam:PutRolePolicy", "iam:GetRolePolicy", "iam:DeleteRolePolicy"],
+      "Resource": "arn:aws:iam::166917387892:role/knest-s1-ec2"
+    },
+    {
+      "Sid": "HandTheS1ScanRoleToGuardDutyOnly",
+      "Effect": "Allow",
+      "Action": "iam:PassRole",
+      "Resource": "arn:aws:iam::166917387892:role/knest-s1-guardduty-malware",
+      "Condition": { "StringEquals": { "iam:PassedToService": "malware-protection-plan.guardduty.amazonaws.com" } }
+    },
+    {
+      "Sid": "CreateTheS1MalwareProtectionPlan",
+      "Effect": "Allow",
+      "Action": ["guardduty:CreateMalwareProtectionPlan", "guardduty:TagResource"],
+      "Resource": "*",
+      "Condition": { "StringEquals": { "aws:RequestedRegion": "ap-south-1", "aws:RequestTag/Name": "knest-s1-quarantine" } }
+    },
+    {
+      "Sid": "ManageOnlyAPlanTaggedAsS1",
+      "Effect": "Allow",
+      "Action": [
+        "guardduty:GetMalwareProtectionPlan",
+        "guardduty:UpdateMalwareProtectionPlan",
+        "guardduty:DeleteMalwareProtectionPlan",
+        "guardduty:TagResource",
+        "guardduty:UntagResource",
+        "guardduty:ListTagsForResource"
+      ],
+      "Resource": "arn:aws:guardduty:ap-south-1:166917387892:malware-protection-plan/*",
+      "Condition": { "StringEquals": { "aws:ResourceTag/Name": "knest-s1-quarantine" } }
+    },
+    {
+      "Sid": "ListPlansAndAlarms",
+      "Effect": "Allow",
+      "Action": ["guardduty:ListMalwareProtectionPlans", "cloudwatch:DescribeAlarms"],
+      "Resource": "*",
+      "Condition": { "StringEquals": { "aws:RequestedRegion": "ap-south-1" } }
+    },
+    {
+      "Sid": "S1Alarms",
+      "Effect": "Allow",
+      "Action": ["cloudwatch:PutMetricAlarm", "cloudwatch:DeleteAlarms", "cloudwatch:TagResource"],
+      "Resource": "arn:aws:cloudwatch:ap-south-1:166917387892:alarm:knest-s1-*"
+    },
+    {
+      "Sid": "S1LogMetricFilters",
+      "Effect": "Allow",
+      "Action": ["logs:PutMetricFilter", "logs:DeleteMetricFilter", "logs:DescribeMetricFilters"],
+      "Resource": [
+        "arn:aws:logs:ap-south-1:166917387892:log-group:/knest-s1",
+        "arn:aws:logs:ap-south-1:166917387892:log-group:/knest-s1:*"
+      ]
+    }
+  ]
+}
