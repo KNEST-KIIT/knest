@@ -267,6 +267,11 @@ Resources:
       AllocatedStorage: !Ref DbAllocatedStorageGb
       StorageType: gp3
       StorageEncrypted: true
+      # Name the AWS-managed keys instead of leaving RDS to resolve the defaults: with neither set, CreateDBInstance failed in S-1 with
+      # KMSKeyNotAccessibleFault, key [null]. Not in production: its database and master secret already exist, a KmsKeyId change
+      # replaces the instance, and RDS cannot change the key of a secret it already manages.
+      KmsKeyId: !If [IsProduction, !Ref 'AWS::NoValue', alias/aws/rds]
+      MasterUserSecret: !If [IsProduction, !Ref 'AWS::NoValue', { KmsKeyId: alias/aws/secretsmanager }]
       MultiAZ: !If [IsMultiAz, true, false]
       PubliclyAccessible: false
       DBName: knest

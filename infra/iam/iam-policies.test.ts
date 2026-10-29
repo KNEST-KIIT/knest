@@ -184,7 +184,9 @@ describe('S-1 CloudFormation service role (knest-s1-cfn-service): screening perm
     expect(flat).not.toMatch(/<[A-Za-z_]+>/)
     expect(flat.match(/\b\d{12}\b/g)?.every((id) => id === ACCOUNT), 'the only account is the S-1 account').toBe(true)
     // Every named resource says knest-s1. The two with generated ids (keys, protection plans) are the only ones that cannot; they are guarded below.
-    const generated = ['arn:aws:kms:ap-south-1:166917387892:key/*', 'arn:aws:guardduty:ap-south-1:166917387892:malware-protection-plan/*']
+    // The third is the AWS-managed RDS key, whose id is fixed by AWS and which is reached by one CreateGrant only (the aws/rds block below).
+    const generated = ['arn:aws:kms:ap-south-1:166917387892:key/*', 'arn:aws:guardduty:ap-south-1:166917387892:malware-protection-plan/*',
+      'arn:aws:kms:ap-south-1:166917387892:key/47649cfc-ca67-4a07-954f-3dd143231cd3']
     for (const arn of statements.flatMap(resourcesOf).filter((r) => r !== '*' && !generated.includes(r))) {
       expect(arn, 'S-1 names only').toMatch(/knest-s1/)
       expect(arn, 'Mumbai or global').toMatch(/^arn:aws:(s3:::|iam::|[a-z0-9]+:ap-south-1:)/)
@@ -227,12 +229,15 @@ describe('S-1 CloudFormation service role (knest-s1-cfn-service): screening perm
     // knest-production-documents) cannot be described, re-keyed, re-tagged, or scheduled for deletion. A key with no alias yet
     // (CloudFormation creates the key before its alias) is not denied, which is what lets the stack create it.
     const keyAllow = statements.find((s) => s.Sid === 'S1DocumentsKeyLifecycle') as Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
-    const keyDeny = statements.find((s) => s.Effect === 'Deny') as Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
-    expect(statements.filter((s) => s.Effect === 'Deny').length).toBe(1)
+    const keyDeny = statements.find((s) => s.Sid === 'NeverTouchAKeyThatHasAnyOtherAlias') as Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
+    const describeDeny = statements.find((s) => s.Sid === 'DescribeOnlyS1KeysAndTheAwsManagedRdsAndSecretsManagerKeys') as Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
+    expect(statements.filter((s) => s.Effect === 'Deny').length).toBe(2)
     expect(resourcesOf(keyDeny)).toEqual(resourcesOf(keyAllow))
     const keyAliasAllow = statements.find((s) => s.Sid === 'AliasTheS1DocumentsKey') as Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
     expect(resourcesOf(keyAliasAllow)).toEqual(resourcesOf(keyAllow))
-    for (const action of [...actionsOf(keyAllow), ...actionsOf(keyAliasAllow)]) expect(actionsOf(keyDeny), `${action} is guarded`).toContain(action)
+    for (const action of [...actionsOf(keyAllow), ...actionsOf(keyAliasAllow)]) expect([...actionsOf(keyDeny), ...actionsOf(describeDeny)], `${action} is guarded`).toContain(action)
+    expect(actionsOf(keyDeny), 'DescribeKey has its own fence').not.toContain('kms:DescribeKey')
+    expect(actionsOf(describeDeny)).toEqual(['kms:DescribeKey'])
     expect(keyDeny.Condition).toEqual({ 'ForAnyValue:StringNotLike': { 'kms:ResourceAliases': 'alias/knest-s1-*' } })
     const aliasTemplate = /AliasName: !Sub '([^']+)'/.exec(text)?.[1] as string
     const denied = (aliases: string[]) => aliases.some((alias) => !globMatch(keyDeny.Condition['ForAnyValue:StringNotLike']['kms:ResourceAliases'], alias))
@@ -286,9 +291,12 @@ describe('S-1 CloudFormation service role (knest-s1-cfn-service): screening perm
     }
     // Same guarantee as the operator policy: infrastructure rights, no data rights.
     for (const action of ['s3:GetObject', 's3:GetObjectVersion', 's3:PutObject', 's3:DeleteObject', 's3:DeleteObjectVersion', 's3:PutObjectTagging', 's3:PutObjectVersionTagging',
-      'kms:Decrypt', 'kms:Encrypt', 'kms:GenerateDataKey', 'kms:CreateGrant', 'kms:CancelKeyDeletion', 'sqs:ReceiveMessage', 'sqs:SendMessage', 'sqs:DeleteMessage', 'sqs:PurgeQueue']) {
+      'kms:Decrypt', 'kms:Encrypt', 'kms:GenerateDataKey', 'kms:CancelKeyDeletion', 'sqs:ReceiveMessage', 'sqs:SendMessage', 'sqs:DeleteMessage', 'sqs:PurgeQueue']) {
       expect(matches(allowActions, action), `${action} must not be granted`).toBe(false)
     }
+    // kms:CreateGrant is granted once, on the AWS-managed RDS key only (see the aws/rds block below).
+    const grants = statements.filter((s) => s.Effect === 'Allow' && matches(actionsOf(s), 'kms:CreateGrant'))
+    expect(grants.map((s) => s.Sid)).toEqual(['RdsGrantOnTheAwsManagedRdsKey'])
     expect(JSON.stringify(policy)).not.toMatch(/"[a-z0-9]+:\*"/i)
     expect(allowActions.some((a) => a.includes('*')), 'no wildcard actions').toBe(false)
   })
@@ -476,5 +484,217 @@ describe('S-1 teardown: four schedules in both regions, exact stacks, scoped tru
     expect(prose).toContain('02:00 UTC')
     expect(prose).toContain('04:00 UTC')
     expect(prose).not.toMatch(/two schedules|knest-s1-expire deletes/)
+  })
+})
+
+describe('S-1 CloudFormation service role base policy: the public AMI parameter, and nothing broader', () => {
+  const ACCOUNT = '166917387892'
+  const roles = load('../s1/teardown-roles.json') as { roles: Record<string, any>[] } // eslint-disable-line @typescript-eslint/no-explicit-any
+  const service = roles.roles.find((r) => r.name === 'knest-s1-cfn-service') as Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
+  const policy = service.permissionsPolicy as Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
+  const statements = policy.Statement as Record<string, any>[] // eslint-disable-line @typescript-eslint/no-explicit-any
+  const resourcesOf = (statement: Record<string, any>): string[] => [statement.Resource].flat() // eslint-disable-line @typescript-eslint/no-explicit-any
+  const byId = (sid: string) => statements.find((s) => s.Sid === sid) as Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
+  const app = readFileSync(new URL('../cfn/app.yaml', import.meta.url), 'utf8').replace(/\r\n/g, '\n')
+  const ami = byId('ResolveThePublicAmiParameterOfTheAppStack')
+
+  it('reads exactly the parameter the app template defaults LatestAmiId to, with only the action CloudFormation invokes, unconditionally', () => {
+    const name = /LatestAmiId:\n    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>\n    Default: (\S+)/.exec(app)?.[1]
+    expect(name).toBe('/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64')
+    expect(ami.Effect).toBe('Allow')
+    // CloudFormation resolves AWS::SSM::Parameter::Value<...> with ssm:GetParameters; nothing else is needed.
+    expect(actionsOf(ami)).toEqual(['ssm:GetParameters'])
+    // Public parameters belong to AWS, so the ARN has an empty account id.
+    expect(resourcesOf(ami)).toEqual([`arn:aws:ssm:ap-south-1::parameter${name}`])
+    expect(ami.Condition).toBeUndefined()
+    expect(Object.keys(ami).sort()).toEqual(['Action', 'Effect', 'Resource', 'Sid'])
+  })
+
+  it('opens no other public or account-less parameter, no wildcard, and no other read of the AWS service namespace', () => {
+    const grants = statements.filter((s) => s.Effect === 'Allow' && actionsOf(s).some((a) => a.startsWith('ssm:')))
+    for (const statement of grants.filter((s) => s !== ami)) {
+      for (const resource of resourcesOf(statement)) {
+        expect(resource, `${statement.Sid} names an account`).not.toMatch(/^arn:aws:ssm:[^:]*::/)
+        expect(resource, `${statement.Sid} stays out of /aws/service`).not.toContain('/aws/')
+      }
+    }
+    // The only statement that can read a parameter value outside knest-s1/* is the single-parameter one above.
+    const reads = grants.filter((s) => matches(actionsOf(s), 'ssm:GetParameters') && !resourcesOf(s).includes('*'))
+    expect(reads.map((s) => s.Sid).sort()).toEqual(['BucketLogsRegistryParameters', 'ResolveThePublicAmiParameterOfTheAppStack'])
+    expect(resourcesOf(ami).some((r) => r.includes('*') || r.includes('?'))).toBe(false)
+    expect(JSON.stringify(ami)).not.toMatch(/ssm:(\*|Get\*|GetParameter\b|GetParametersByPath)/)
+    // No statement with Resource "*" can read parameter values: DescribeParameters stays the only account-wide ssm action.
+    const unscoped = statements.filter((s) => s.Effect === 'Allow' && resourcesOf(s).includes('*')).flatMap(actionsOf)
+    expect(unscoped.filter((a) => a.startsWith('ssm:'))).toEqual(['ssm:DescribeParameters'])
+  })
+
+  it('leaves the account-owned parameter grant as it was and still reaches no production parameter', () => {
+    const owned = byId('BucketLogsRegistryParameters')
+    expect(resourcesOf(owned)).toContain('arn:aws:ssm:ap-south-1:<ACCOUNT_ID>:parameter/knest-s1/*')
+    expect(resourcesOf(owned).filter((r) => r.startsWith('arn:aws:ssm:'))).toEqual(['arn:aws:ssm:ap-south-1:<ACCOUNT_ID>:parameter/knest-s1/*'])
+    expect(actionsOf(owned)).toContain('ssm:*')
+    expect(JSON.stringify(ami)).not.toMatch(/production|knest-/)
+    expect(JSON.stringify(ami)).not.toContain(ACCOUNT)
+  })
+
+  it('still fits the managed-policy size limit once rendered with the account id', () => {
+    const rendered = JSON.stringify(policy).replaceAll('<ACCOUNT_ID>', ACCOUNT)
+    expect(rendered.replace(/\s/g, '').length).toBeLessThan(6144)
+    expect(Object.keys(policy).sort()).toEqual(['Statement', 'Version'])
+    const sids = statements.map((s) => s.Sid as string)
+    expect(new Set(sids).size).toBe(sids.length)
+  })
+})
+
+describe('S-1 CloudFormation service role base policy: GenerateSecretString needs GetRandomPassword, scoped to Mumbai, and nothing more', () => {
+  const roles = load('../s1/teardown-roles.json') as { roles: Record<string, any>[] } // eslint-disable-line @typescript-eslint/no-explicit-any
+  const service = roles.roles.find((r) => r.name === 'knest-s1-cfn-service') as Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
+  const statements = (service.permissionsPolicy as Record<string, any>).Statement as Record<string, any>[] // eslint-disable-line @typescript-eslint/no-explicit-any
+  const resourcesOf = (statement: Record<string, any>): string[] => [statement.Resource].flat() // eslint-disable-line @typescript-eslint/no-explicit-any
+  const app = readFileSync(new URL('../cfn/app.yaml', import.meta.url), 'utf8').replace(/\r\n/g, '\n')
+  const grant = statements.find((s) => s.Sid === 'GenerateTheSecretStringsOfTheAppStack') as Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
+
+  it('is needed because the app template generates four secrets with GenerateSecretString', () => {
+    expect(app.match(/GenerateSecretString:/g)).toHaveLength(4)
+  })
+
+  it('grants only secretsmanager:GetRandomPassword, which has no resource, limited to ap-south-1', () => {
+    expect(grant.Effect).toBe('Allow')
+    expect(actionsOf(grant)).toEqual(['secretsmanager:GetRandomPassword'])
+    // GetRandomPassword does not support resource-level permissions, so "*" is the only valid Resource.
+    expect(resourcesOf(grant)).toEqual(['*'])
+    expect(grant.Condition).toEqual({ StringEquals: { 'aws:RequestedRegion': 'ap-south-1' } })
+    expect(Object.keys(grant).sort()).toEqual(['Action', 'Condition', 'Effect', 'Resource', 'Sid'])
+  })
+
+  it('is the only unscoped secretsmanager action, and no secret value can be read', () => {
+    const unscoped = statements.filter((s) => s.Effect === 'Allow' && resourcesOf(s).includes('*')).flatMap(actionsOf)
+    expect(unscoped.filter((a) => a.startsWith('secretsmanager:'))).toEqual(['secretsmanager:GetRandomPassword'])
+    const allowed = statements.filter((s) => s.Effect === 'Allow').flatMap(actionsOf)
+    expect(matches(allowed, 'secretsmanager:GetSecretValue')).toBe(false)
+    expect(matches(allowed, 'secretsmanager:BatchGetSecretValue')).toBe(false)
+    expect(allowed.filter((a) => a.startsWith('secretsmanager:') && a.includes('*'))).toEqual([])
+  })
+})
+
+describe('S-1 CloudFormation service role: an encrypted RDS instance on the AWS-managed key aws/rds', () => {
+  const ACCOUNT = '166917387892'
+  const policy = load('cfn-service-role-s1-screening.json')
+  const statements = policy.Statement as Record<string, any>[] // eslint-disable-line @typescript-eslint/no-explicit-any
+  const resourcesOf = (statement: Record<string, any>): string[] => [statement.Resource].flat() // eslint-disable-line @typescript-eslint/no-explicit-any
+  const app = readFileSync(new URL('../cfn/app.yaml', import.meta.url), 'utf8').replace(/\r\n/g, '\n')
+  const globMatch = (pattern: string, value: string): boolean =>
+    new RegExp(`^${pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.')}$`).test(value)
+  const keyAllow = statements.find((s) => s.Sid === 'S1DocumentsKeyLifecycle') as Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
+  const describeDeny = statements.find((s) => s.Sid === 'DescribeOnlyS1KeysAndTheAwsManagedRdsAndSecretsManagerKeys') as Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
+  const wideDeny = statements.find((s) => s.Sid === 'NeverTouchAKeyThatHasAnyOtherAlias') as Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
+  /** Whether the deny applies to a key carrying exactly these aliases (ForAnyValue:StringNotLike over every listed pattern). */
+  const fires = (deny: Record<string, any>, aliases: string[]): boolean => { // eslint-disable-line @typescript-eslint/no-explicit-any
+    const patterns = [deny.Condition['ForAnyValue:StringNotLike']['kms:ResourceAliases']].flat() as string[]
+    return aliases.some((alias) => patterns.every((pattern) => !globMatch(pattern, alias)))
+  }
+
+  it('is needed because the S-1 database names the two AWS-managed keys it uses, the storage key and the master-secret key', () => {
+    const db = /\n  Database:\n    Type: AWS::RDS::DBInstance\n([\s\S]*?)\n  \w/.exec(app)?.[1] ?? ''
+    expect(db).toContain('StorageEncrypted: true')
+    expect(db).toContain('ManageMasterUserPassword: true')
+    expect(db).toContain("KmsKeyId: !If [IsProduction, !Ref 'AWS::NoValue', alias/aws/rds]")
+    expect(db).toContain("MasterUserSecret: !If [IsProduction, !Ref 'AWS::NoValue', { KmsKeyId: alias/aws/secretsmanager }]")
+  })
+
+  it('lets DescribeKey reach the aws/rds and aws/secretsmanager keys: it is allowed on keys in Mumbai and the alias fence does not deny it', () => {
+    expect(actionsOf(keyAllow)).toContain('kms:DescribeKey')
+    expect(fires(describeDeny, ['alias/aws/rds'])).toBe(false)
+    expect(fires(describeDeny, ['alias/aws/secretsmanager'])).toBe(false)
+    expect(fires(describeDeny, ['alias/knest-s1-documents'])).toBe(false)
+  })
+
+  it('keeps the fence on every other key, including one that also carries an AWS-managed alias next to a production alias', () => {
+    for (const aliases of [['alias/knest-production-documents'], ['alias/aws/s3'], ['alias/aws/ebs'], ['alias/aws/ssm'], ['alias/aws/secretsmanager-extra'], ['alias/aws/rds', 'alias/knest-production-documents'],
+      ['alias/aws/secretsmanager', 'alias/knest-production-documents'], ['alias/knest-s1-documents', 'alias/other']]) {
+      expect(fires(describeDeny, aliases), `DescribeKey on ${aliases.join(',')}`).toBe(true)
+    }
+    expect(describeDeny.Effect).toBe('Deny')
+    expect(resourcesOf(describeDeny)).toEqual([`arn:aws:kms:ap-south-1:${ACCOUNT}:key/*`])
+    expect(describeDeny.Condition).toEqual({ 'ForAnyValue:StringNotLike': { 'kms:ResourceAliases': ['alias/knest-s1-*', 'alias/aws/rds', 'alias/aws/secretsmanager'] } })
+    expect(Object.keys(describeDeny).sort()).toEqual(['Action', 'Condition', 'Effect', 'Resource', 'Sid'])
+  })
+
+  it('exempts the aws/rds and aws/secretsmanager keys from DescribeKey only: every key-changing action stays denied on them', () => {
+    expect(fires(wideDeny, ['alias/aws/rds'])).toBe(true)
+    expect(fires(wideDeny, ['alias/aws/secretsmanager'])).toBe(true)
+    for (const action of ['kms:PutKeyPolicy', 'kms:ScheduleKeyDeletion', 'kms:EnableKeyRotation', 'kms:TagResource', 'kms:CreateAlias', 'kms:UpdateAlias', 'kms:DeleteAlias']) {
+      expect(actionsOf(wideDeny), `${action} stays denied`).toContain(action)
+    }
+    expect(JSON.stringify(wideDeny.Condition)).not.toContain('aws/rds')
+    expect(JSON.stringify(wideDeny.Condition)).not.toContain('aws/secretsmanager')
+  })
+
+  it('gives the aws/secretsmanager key DescribeKey and nothing else: AWS requires no grant or key use for an AWS-managed secret key', () => {
+    // RDS User Guide, "Permissions required for Secrets Manager integration": kms:DescribeKey covers "aws/secretsmanager"; Decrypt,
+    // GenerateDataKey and CreateGrant are needed only when the caller names a customer managed key, and this template names none.
+    const SECRETS_KEY_ID = 'acfbb0d3-8752-433f-9e8d-ad9c9ddf73c5'
+    expect(JSON.stringify(policy)).not.toContain(SECRETS_KEY_ID)
+    const granting = statements.filter((s) => s.Effect === 'Allow' && matches(actionsOf(s), 'kms:CreateGrant'))
+    expect(granting.map((s) => s.Sid)).toEqual(['RdsGrantOnTheAwsManagedRdsKey'])
+    const secretsManagerFacing = statements.filter((s) => s.Effect === 'Allow' && (s.Condition?.StringEquals?.['kms:ViaService'] ?? '').startsWith('secretsmanager.'))
+    expect(secretsManagerFacing).toEqual([])
+    const customerKeyRights = ['kms:Decrypt', 'kms:GenerateDataKey', 'kms:Encrypt', 'kms:ReEncryptFrom', 'kms:ReEncryptTo']
+    const allow = statements.filter((s) => s.Effect === 'Allow').flatMap(actionsOf)
+    for (const action of customerKeyRights) expect(matches(allow, action), action).toBe(false)
+  })
+
+  it('allows kms:CreateGrant on exactly the aws/rds key, only through RDS and only for an AWS resource', () => {
+    const grant = statements.find((s) => s.Sid === 'RdsGrantOnTheAwsManagedRdsKey') as Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
+    expect(grant.Effect).toBe('Allow')
+    expect(actionsOf(grant)).toEqual(['kms:CreateGrant'])
+    expect(resourcesOf(grant)).toEqual([`arn:aws:kms:ap-south-1:${ACCOUNT}:key/47649cfc-ca67-4a07-954f-3dd143231cd3`])
+    expect(grant.Condition).toEqual({
+      StringEquals: { 'kms:ViaService': 'rds.ap-south-1.amazonaws.com' },
+      Bool: { 'kms:GrantIsForAWSResource': 'true' },
+    })
+    expect(Object.keys(grant).sort()).toEqual(['Action', 'Condition', 'Effect', 'Resource', 'Sid'])
+    // Exactly one statement can create a grant, and the key it names is not a key this policy otherwise manages.
+    const granting = statements.filter((s) => s.Effect === 'Allow' && matches(actionsOf(s), 'kms:CreateGrant'))
+    expect(granting).toEqual([grant])
+    expect(globMatch(resourcesOf(grant)[0] as string, `arn:aws:kms:ap-south-1:${ACCOUNT}:key/1234abcd-12ab-34cd-56ef-1234567890ab`)).toBe(false)
+    expect(resourcesOf(grant).some((r) => r.includes('*') || r.includes('?'))).toBe(false)
+  })
+
+  it('grants no use of any key to the role: no Encrypt, Decrypt, ReEncrypt, GenerateDataKey, ListGrants or wildcard KMS action', () => {
+    const allow = statements.filter((s) => s.Effect === 'Allow').flatMap(actionsOf)
+    for (const action of ['kms:Decrypt', 'kms:Encrypt', 'kms:ReEncryptFrom', 'kms:ReEncryptTo', 'kms:GenerateDataKey', 'kms:GenerateDataKeyWithoutPlaintext', 'kms:ListGrants', 'kms:RevokeGrant', 'kms:RetireGrant']) {
+      expect(matches(allow, action), action).toBe(false)
+    }
+    expect(allow.filter((a) => a.startsWith('kms:') && a.includes('*'))).toEqual([])
+    // The aws/rds key id appears in this one statement and nowhere else in the policy.
+    expect(JSON.stringify(policy).split('47649cfc-ca67-4a07-954f-3dd143231cd3')).toHaveLength(2)
+  })
+
+  it('keeps the grant statement out of the alias fence: the deny that exempts aws/rds for DescribeKey does not cover CreateGrant either way', () => {
+    // CreateGrant on a key with another alias is not allowed (the Allow names one key id), so no new deny is needed; both denies stay.
+    expect(actionsOf(wideDeny)).not.toContain('kms:CreateGrant')
+    expect(actionsOf(describeDeny)).not.toContain('kms:CreateGrant')
+    expect(statements.filter((s) => s.Effect === 'Deny').length).toBe(2)
+  })
+
+  it('lists aliases through one statement: kms:ListAliases takes no resource, so Resource "*" limited to Mumbai, and no other KMS action is unscoped', () => {
+    // AWS KMS "Controlling access to aliases": kms:ListAliases is not related to any key or alias resource, so its Resource must be "*".
+    const listing = statements.filter((s) => s.Effect === 'Allow' && matches(actionsOf(s), 'kms:ListAliases'))
+    expect(listing.map((s) => s.Sid)).toEqual(['CreateKeyAndListAliases'])
+    const only = listing[0] as Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
+    expect(actionsOf(only).sort()).toEqual(['kms:CreateKey', 'kms:ListAliases'])
+    expect(resourcesOf(only)).toEqual(['*'])
+    expect(only.Condition).toEqual({ StringEquals: { 'aws:RequestedRegion': 'ap-south-1' } })
+    expect(Object.keys(only).sort()).toEqual(['Action', 'Condition', 'Effect', 'Resource', 'Sid'])
+    // Nothing else in KMS may sit on "*": no DescribeKey, CreateGrant, key use or key listing without a key ARN.
+    const unscoped = statements.filter((s) => s.Effect === 'Allow' && resourcesOf(s).includes('*')).flatMap(actionsOf)
+    expect(unscoped.filter((a) => a.startsWith('kms:')).sort()).toEqual(['kms:CreateKey', 'kms:ListAliases'])
+    expect(matches(statements.filter((s) => s.Effect === 'Allow').flatMap(actionsOf), 'kms:ListKeys')).toBe(false)
+    // No deny can swallow the listing, and the base policy of the same role holds no KMS right to widen it.
+    for (const deny of statements.filter((s) => s.Effect === 'Deny')) expect(matches(actionsOf(deny), 'kms:ListAliases'), deny.Sid).toBe(false)
+    const roles = load('../s1/teardown-roles.json') as { roles: Record<string, any>[] } // eslint-disable-line @typescript-eslint/no-explicit-any
+    const base = roles.roles.find((r) => r.name === 'knest-s1-cfn-service')?.permissionsPolicy.Statement as Record<string, any>[] // eslint-disable-line @typescript-eslint/no-explicit-any
+    expect(base.flatMap(actionsOf).filter((a) => a.startsWith('kms:'))).toEqual([])
   })
 })

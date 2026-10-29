@@ -40,7 +40,6 @@
       "Sid": "NeverTouchAKeyThatHasAnyOtherAlias",
       "Effect": "Deny",
       "Action": [
-        "kms:DescribeKey",
         "kms:PutKeyPolicy",
         "kms:GetKeyPolicy",
         "kms:EnableKeyRotation",
@@ -55,6 +54,23 @@
       ],
       "Resource": "arn:aws:kms:ap-south-1:166917387892:key/*",
       "Condition": { "ForAnyValue:StringNotLike": { "kms:ResourceAliases": "alias/knest-s1-*" } }
+    },
+    {
+      "Sid": "DescribeOnlyS1KeysAndTheAwsManagedRdsAndSecretsManagerKeys",
+      "Effect": "Deny",
+      "Action": "kms:DescribeKey",
+      "Resource": "arn:aws:kms:ap-south-1:166917387892:key/*",
+      "Condition": { "ForAnyValue:StringNotLike": { "kms:ResourceAliases": ["alias/knest-s1-*", "alias/aws/rds", "alias/aws/secretsmanager"] } }
+    },
+    {
+      "Sid": "RdsGrantOnTheAwsManagedRdsKey",
+      "Effect": "Allow",
+      "Action": "kms:CreateGrant",
+      "Resource": "arn:aws:kms:ap-south-1:166917387892:key/47649cfc-ca67-4a07-954f-3dd143231cd3",
+      "Condition": {
+        "StringEquals": { "kms:ViaService": "rds.ap-south-1.amazonaws.com" },
+        "Bool": { "kms:GrantIsForAWSResource": "true" }
+      }
     },
     {
       "Sid": "S1QuarantineAndDocumentsBuckets",

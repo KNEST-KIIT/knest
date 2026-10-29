@@ -203,6 +203,17 @@
             ]
           },
           {
+            "Sid": "GenerateTheSecretStringsOfTheAppStack",
+            "Effect": "Allow",
+            "Action": "secretsmanager:GetRandomPassword",
+            "Resource": "*",
+            "Condition": {
+              "StringEquals": {
+                "aws:RequestedRegion": "ap-south-1"
+              }
+            }
+          },
+          {
             "Sid": "EdgeStackResources",
             "Effect": "Allow",
             "Action": [
@@ -268,6 +279,12 @@
               "ssm:AddTagsToResource"
             ],
             "Resource": "arn:aws:ssm:ap-south-1:<ACCOUNT_ID>:document/knest-s1-*"
+          },
+          {
+            "Sid": "ResolveThePublicAmiParameterOfTheAppStack",
+            "Effect": "Allow",
+            "Action": "ssm:GetParameters",
+            "Resource": "arn:aws:ssm:ap-south-1::parameter/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64"
           }
         ]
       },

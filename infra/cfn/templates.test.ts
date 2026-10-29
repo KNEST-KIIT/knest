@@ -99,6 +99,31 @@ describe('app.yaml: the properties the design depends on', () => {
     expect(JSON.stringify(t.Resources.DbSubnetGroup!.Properties)).not.toContain('PublicSubnet')
   })
 
+  it('names the AWS-managed RDS and Secrets Manager keys for S-1, and leaves the existing production database and secret alone', () => {
+    // CreateDBInstance with encryption and a managed master password but neither key id failed with KMSKeyNotAccessibleFault, key [null].
+    // KmsKeyId changes replace the instance, and RDS cannot change the key of a secret it already manages, so production keeps the defaults.
+    const db = t.Resources.Database!.Properties!
+    const production = { Ref: 'AWS::NoValue' }
+    expect(t.Conditions!.IsProduction).toEqual({ Equals: [{ Ref: 'Environment' }, 'production'] })
+    expect(db.KmsKeyId).toEqual({ If: ['IsProduction', production, 'alias/aws/rds'] })
+    expect(db.MasterUserSecret).toEqual({ If: ['IsProduction', production, { KmsKeyId: 'alias/aws/secretsmanager' }] })
+    // Encryption and the managed password stay on, which is what the two key properties require.
+    expect(db.StorageEncrypted).toBe(true)
+    expect(db.ManageMasterUserPassword).toBe(true)
+    // The secret ARN the app reads still comes from the managed secret.
+    expect(JSON.stringify(t.Resources.ConfigDbSecretArn!.Properties)).toContain('Database.MasterUserSecret.SecretArn')
+    // Only the two AWS-managed aliases: no customer key of this stack, no key ARN or id, no other alias, and no second database.
+    expect(JSON.stringify([db.KmsKeyId, db.MasterUserSecret])).not.toMatch(/DocumentsKey|arn:aws:kms|[0-9a-f]{8}-[0-9a-f]{4}-/)
+    expect(JSON.stringify(db).match(/alias\/[^"]+/g)).toEqual(['alias/aws/rds', 'alias/aws/secretsmanager'])
+    expect(Object.values(t.Resources).filter((r) => r.Type === 'AWS::RDS::DBInstance')).toHaveLength(1)
+    // Both renderings carry it; the S-1 one differs from production only in the DELETION lines.
+    for (const variant of ['s1', 'production'] as const) {
+      const rendered = load('app', variant).Resources.Database!.Properties!
+      expect(rendered.KmsKeyId, variant).toEqual(db.KmsKeyId)
+      expect(rendered.MasterUserSecret, variant).toEqual(db.MasterUserSecret)
+    }
+  })
+
   it('closes direct production ingress and keeps the S-1 CloudFront rule isolated', () => {
     const ingress = JSON.stringify(t.Resources.AppSecurityGroup!.Properties!.SecurityGroupIngress)
     expect(ingress).toContain('SourcePrefixListId')
