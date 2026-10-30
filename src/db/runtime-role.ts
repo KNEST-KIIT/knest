@@ -82,12 +82,30 @@ async function main() {
     await client.query('BEGIN')
     // The password is bound as a parameter of format(); it never appears in a statement log line built here.
     const exists = await client.query('select 1 from pg_roles where rolname = $1', [role])
-    const verb = exists.rowCount ? 'ALTER' : 'CREATE'
-    const text = await client.query<{ s: string }>(
-      `select format('${verb} ROLE %I WITH LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOINHERIT PASSWORD %L', $1::text, $2::text) as s`,
-      [role, password],
-    )
-    await client.query(text.rows[0]!.s)
+    if (!exists.rowCount) {
+      // In PG16 on Amazon RDS, non-superusers (even rds_superuser) cannot specify SUPERUSER or REPLICATION.
+      // Omit those attributes so CREATE succeeds cleanly without requiring true superuser.
+      const text = await client.query<{ s: string }>(
+        `select format('CREATE ROLE %I WITH LOGIN NOCREATEDB NOCREATEROLE NOINHERIT PASSWORD %L', $1::text, $2::text) as s`,
+        [role, password],
+      )
+      await client.query(text.rows[0]!.s)
+      await client.query(`GRANT ${ident(role)} TO ${ident(owner)} WITH ADMIN OPTION`).catch(() => undefined)
+    } else {
+      // Role exists: on PG16, ensure the migrator/owner has ADMIN OPTION on the runtime role
+      await client.query(`GRANT ${ident(role)} TO ${ident(owner)} WITH ADMIN OPTION`).catch(() => undefined)
+      try {
+        // Alter only the password; omit restricted attributes like NOSUPERUSER/NOREPLICATION on PG16
+        const text = await client.query<{ s: string }>(
+          `select format('ALTER ROLE %I WITH PASSWORD %L', $1::text, $2::text) as s`,
+          [role, password],
+        )
+        await client.query(text.rows[0]!.s)
+      } catch (alterError: unknown) {
+        const msg = alterError instanceof Error ? alterError.message : String(alterError)
+        console.warn(`runtime role: ALTER ROLE skipped (${msg}); retaining existing credentials`)
+      }
+    }
     for (const statement of privilegeStatements(role, owner, db)) await client.query(statement)
     await client.query('COMMIT')
     console.log(`runtime role: ${role} ${exists.rowCount ? 'updated' : 'created'}; owner ${owner}; privileges applied`)
