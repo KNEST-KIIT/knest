@@ -26,8 +26,19 @@ export type GuardDecision = { allow: true } | { allow: false; status: 403; reaso
 
 const UNSAFE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
 
-/** Local container health checks do not pass through CloudFront. The endpoint reveals only ok/unavailable. */
+/** Local container health checks and static assets bypass origin-verify. */
 const HEALTH_PATH = '/api/health'
+
+function isPublicAsset(pathname: string): boolean {
+  return (
+    pathname === HEALTH_PATH ||
+    pathname.startsWith('/_next/') ||
+    pathname.startsWith('/images/') ||
+    pathname === '/favicon.ico' ||
+    pathname === '/robots.txt' ||
+    pathname === '/sitemap.xml'
+  )
+}
 
 function safeEqual(a: string, b: string): boolean {
   const left = Buffer.from(a)
@@ -62,10 +73,10 @@ export function guardRequest(
   const secret = env.ORIGIN_VERIFY_SECRET
   const site = env.SITE_URL || env.NEXT_PUBLIC_SITE_URL
   const local = site ? /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(?=[:/]|$)/.test(site) : false
-  if (env.NODE_ENV === 'production' && !local && !secret && input.pathname !== HEALTH_PATH) {
+  if (env.NODE_ENV === 'production' && !local && !secret && !isPublicAsset(input.pathname)) {
     return { allow: false, status: 403, reason: 'origin-verify' }
   }
-  if (secret && input.pathname !== HEALTH_PATH) {
+  if (secret && !isPublicAsset(input.pathname)) {
     const presented = input.header('x-origin-verify')
     if (!presented || !safeEqual(presented, secret)) return { allow: false, status: 403, reason: 'origin-verify' }
   }
