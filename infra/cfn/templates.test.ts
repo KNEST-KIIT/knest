@@ -129,6 +129,13 @@ describe('app.yaml: the properties the design depends on', () => {
     expect(policy).not.toContain('"s3:*"')
   })
 
+  it('fails closed when the least-privilege runtime database identity is unavailable', () => {
+    expect(text).toContain('runtime database secret is not configured; refusing deployment')
+    expect(text).toContain('runtime role was not provisioned by this release; refusing to start the app')
+    expect(text).not.toContain('the app runs as the database master user')
+    expect(text).not.toContain('DATABASE_URL=postgres://${MASTER_USER}:${MASTER_PASSWORD}@${DB_ENDPOINT}:5432/knest\n                  } > /run/knest/app.env')
+  })
+
   it('refuses a deploy by tag: only an immutable digest is accepted', () => {
     expect(text).toContain('@sha256:[a-f0-9]{64}$')
   })

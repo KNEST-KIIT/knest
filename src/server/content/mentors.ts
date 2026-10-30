@@ -57,7 +57,7 @@ export async function getMentorByUserId(userId: string): Promise<Mentor | null> 
       where: { userId: { equals: userId } },
       depth: 1,
       limit: 1,
-      overrideAccess: false,
+      overrideAccess: true,
     })
 
     return result?.docs?.[0] ?? null

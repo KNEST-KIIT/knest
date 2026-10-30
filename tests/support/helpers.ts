@@ -20,8 +20,13 @@ export async function closeDb() {
 
 export const PASSWORD = 'correct-horse-battery-staple-9'
 
-/** The human-check token the Turnstile stub accepts (tests/support/turnstile-stub.ts). */
-export const CAPTCHA = { turnstileToken: 'valid-token' }
+/** A route-bound human-check token accepted by the integration Turnstile stub. */
+export function captcha(action: 'login' | 'signup' | 'password-reset' | 'contact' | 'application-submit' | 'lab-booking') {
+  return { turnstileToken: `valid-token:${action}` }
+}
+
+/** Most direct callers exercise application submission; other routes use captcha(action). */
+export const CAPTCHA = captcha('application-submit')
 
 type PlatformRole = 'student' | 'founder' | 'mentor' | 'investor' | 'alumni' | 'partner' | 'other'
 type StaffRole = 'reviewer' | 'content_admin' | 'program_manager' | 'startup_manager' | 'mentor_manager' | 'lab_admin' | 'super_admin'
@@ -53,7 +58,7 @@ export async function login(email: string, password = PASSWORD): Promise<Session
   const res = await fetch(`${BASE()}/api/auth/password/login`, {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-forwarded-for': uniqueIp() },
-    body: JSON.stringify({ email, password, ...CAPTCHA }),
+    body: JSON.stringify({ email, password, ...captcha('login') }),
   })
   if (!res.ok) return null
   const cookie = res.headers

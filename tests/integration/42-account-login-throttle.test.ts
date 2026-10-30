@@ -1,5 +1,5 @@
 import { afterAll, describe, expect, it } from 'vitest'
-import { BASE, CAPTCHA, PASSWORD, closeDb, createUser, uniqueIp } from '../support/helpers'
+import { BASE, PASSWORD, captcha, closeDb, createUser, uniqueIp } from '../support/helpers'
 
 /**
  * Failed sign-ins are limited per account as well as per address: a guess spread over many
@@ -13,7 +13,7 @@ const attempt = (email: string, password: string) =>
   fetch(`${BASE()}/api/auth/password/login`, {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-forwarded-for': uniqueIp() },
-    body: JSON.stringify({ email, password, ...CAPTCHA }),
+    body: JSON.stringify({ email, password, ...captcha('login') }),
   })
 
 afterAll(closeDb)

@@ -2,9 +2,9 @@
 import { execFileSync } from 'node:child_process'
 import { pathToFileURL } from 'node:url'
 
-// CloudWatch's supported ten-year value covers leap years. This is a retention
+// CloudWatch's supported five-year value. This is a retention
 // floor for collected logs, not an implementation of calendar-year archiving.
-export const TEN_YEAR_LOG_DAYS = 3653
+export const FIVE_YEAR_LOG_DAYS = 1827
 
 export function assessRetention(input) {
   const gaps = []
@@ -12,8 +12,8 @@ export function assessRetention(input) {
   let logPreservation = 'unknown'
   if (!log) gaps.push('Application log group was not found; collection/retention is unproved.')
   else if (log.retentionInDays === undefined) logPreservation = 'no-expiry'
-  else if (Number.isInteger(log.retentionInDays) && log.retentionInDays >= TEN_YEAR_LOG_DAYS) logPreservation = 'ten-year-floor'
-  else gaps.push('Application log expiry is shorter than the ten-year floor or invalid.')
+  else if (Number.isInteger(log.retentionInDays) && log.retentionInDays >= FIVE_YEAR_LOG_DAYS) logPreservation = 'five-year-floor'
+  else gaps.push('Application log expiry is shorter than the five-year floor or invalid.')
 
   if (input.bucket?.versioning !== 'Enabled') gaps.push('Upload bucket versioning is not confirmed Enabled.')
   for (const rule of input.bucket?.rules ?? []) {
@@ -25,13 +25,13 @@ export function assessRetention(input) {
   if (!input.bucket || !Array.isArray(input.bucket.rules)) gaps.push('Upload lifecycle configuration is unproved.')
   // Inventory alone cannot certify an archive, legal holds, collection coverage,
   // record-level history, restoration or institutional access procedures.
-  gaps.push('Approved archive destination, ten-year transfer, legal holds, access and restore evidence are still required.')
+  gaps.push('Approved archive destination, five-year transfer, legal holds, access and restore evidence are still required.')
   return {
     status: 'blocked',
     hostedCompliance: 'not-established',
     logPreservation,
     backupRetentionDays: input.database?.backupRetentionDays ?? null,
-    backupNote: 'Rolling recovery backups do not establish ten-year record retention or an archive.',
+    backupNote: 'Rolling recovery backups do not establish five-year record retention or an archive.',
     gaps,
   }
 }

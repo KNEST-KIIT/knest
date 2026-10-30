@@ -15,7 +15,7 @@ import type { BrowserContext } from 'playwright'
 
 export const TURNSTILE_TEST_SECRET = 'integration-turnstile-secret'
 export const TURNSTILE_TEST_SITE_KEY = 'integration-site-key'
-export const VALID_TOKEN = 'valid-token'
+export const VALID_TOKEN_PREFIX = 'valid-token:'
 
 export type TurnstileVerifyStub = { endpoint: string; close: () => Promise<void> }
 
@@ -25,8 +25,10 @@ export function startTurnstileVerifyStub(): Promise<TurnstileVerifyStub> {
     req.on('data', (c: Buffer) => chunks.push(c))
     req.on('end', () => {
       const form = new URLSearchParams(Buffer.concat(chunks).toString('utf8'))
-      const success = form.get('secret') === TURNSTILE_TEST_SECRET && form.get('response') === VALID_TOKEN
-      res.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify({ success, 'error-codes': success ? [] : ['invalid-input-response'] }))
+      const token = form.get('response') ?? ''
+      const action = token.startsWith(VALID_TOKEN_PREFIX) ? token.slice(VALID_TOKEN_PREFIX.length) : ''
+      const success = form.get('secret') === TURNSTILE_TEST_SECRET && action.length > 0
+      res.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify({ success, action, hostname: '127.0.0.1', 'error-codes': success ? [] : ['invalid-input-response'] }))
     })
   })
   return new Promise((resolve) =>
@@ -45,13 +47,13 @@ window.turnstile = {
   render: function (el, options) {
     el.setAttribute('data-test-turnstile', 'rendered');
     window.__turnstileOptions['stub-widget'] = options;
-    setTimeout(function () { options.callback('${VALID_TOKEN}'); }, 0);
+    setTimeout(function () { options.callback('${VALID_TOKEN_PREFIX}' + options.action); }, 0);
     return 'stub-widget';
   },
   // A real widget issues a fresh token after reset(); so does this one.
   reset: function (id) {
     var options = window.__turnstileOptions[id || 'stub-widget'];
-    if (options) setTimeout(function () { options.callback('${VALID_TOKEN}'); }, 0);
+    if (options) setTimeout(function () { options.callback('${VALID_TOKEN_PREFIX}' + options.action); }, 0);
   },
   remove: function () {},
 };

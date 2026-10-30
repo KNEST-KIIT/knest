@@ -14,6 +14,14 @@ export type TurnstileResult =
 
 export const TURNSTILE_VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify'
 
+export type TurnstileAction =
+  | 'login'
+  | 'signup'
+  | 'password-reset'
+  | 'contact'
+  | 'application-submit'
+  | 'lab-booking'
+
 type Env = { [name: string]: string | undefined }
 
 /** The public site key, read at request time (never inlined at build, so one image serves any environment). */
@@ -24,11 +32,21 @@ export function turnstileSiteKey(env: Env = process.env): string {
 export async function verifyTurnstile(
   token: unknown,
   remoteIp: string,
+  expectedAction: TurnstileAction,
   env: Env = process.env,
   fetchImpl: typeof fetch = fetch,
 ): Promise<TurnstileResult> {
   const secret = env.TURNSTILE_SECRET_KEY
   if (!secret) return env.NODE_ENV === 'production' ? { ok: false, reason: 'not-configured' } : { ok: true }
+
+  const siteUrl = env.SITE_URL || env.NEXT_PUBLIC_SITE_URL || env.AUTH_URL
+  let expectedHostname = ''
+  try {
+    expectedHostname = siteUrl ? new URL(siteUrl).hostname : ''
+  } catch {
+    return { ok: false, reason: 'not-configured' }
+  }
+  if (env.NODE_ENV === 'production' && !expectedHostname) return { ok: false, reason: 'not-configured' }
 
   if (typeof token !== 'string' || token.length === 0 || token.length > 2048) return { ok: false, reason: 'missing' }
 
@@ -42,8 +60,9 @@ export async function verifyTurnstile(
       signal: AbortSignal.timeout(5000),
     })
     if (!response.ok) return { ok: false, reason: 'unavailable' }
-    const result = (await response.json()) as { success?: boolean }
-    return result.success === true ? { ok: true } : { ok: false, reason: 'rejected' }
+    const result = (await response.json()) as { success?: boolean; action?: unknown; hostname?: unknown }
+    const validContext = result.action === expectedAction && (!expectedHostname || result.hostname === expectedHostname)
+    return result.success === true && validContext ? { ok: true } : { ok: false, reason: 'rejected' }
   } catch {
     // Neither the token nor the secret is logged.
     return { ok: false, reason: 'unavailable' }

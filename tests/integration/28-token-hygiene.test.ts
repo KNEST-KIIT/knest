@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { afterAll, describe, expect, it } from 'vitest'
-import { CAPTCHA, BASE, PASSWORD, closeDb, createUser, db, decodeMailText, login, readMail, uniqueIp } from '../support/helpers'
+import { BASE, PASSWORD, captcha, closeDb, createUser, db, decodeMailText, login, readMail, uniqueIp } from '../support/helpers'
 
 /**
  * Closing evidence for R-08: the e-mailed token is the only copy (the table holds
@@ -52,7 +52,7 @@ describe('password-reset links', () => {
     const address = `rollback-${stamp}@tokens.test`
     const userId = await createUser({ email: address })
     await login(address)
-    await post('/api/auth/password/reset/request', { email: address, ...CAPTCHA })
+    await post('/api/auth/password/reset/request', { email: address, ...captcha('password-reset') })
     const token = await emailedToken(address, 'reset')
     const original = (await db().query('select password_hash from app.users where id = $1', [userId])).rows[0].password_hash
     // The suite's database is disposable. Force the final write to fail and
@@ -76,7 +76,7 @@ describe('password-reset links', () => {
 
   it('are stored as a digest, never as the emailed value', async () => {
     await createUser({ email: mail, platformRole: 'student' })
-    expect((await post('/api/auth/password/reset/request', { email: mail, ...CAPTCHA })).status).toBe(200)
+    expect((await post('/api/auth/password/reset/request', { email: mail, ...captcha('password-reset') })).status).toBe(200)
     const token = await emailedToken(mail, 'reset')
     const stored = await storedFor(`reset-password:${mail}`)
     expect(stored).toEqual([sha256(token)])

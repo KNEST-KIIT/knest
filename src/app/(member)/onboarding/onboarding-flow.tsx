@@ -134,6 +134,20 @@ export function OnboardingFlow({ initial, stagePrefill, next, initialStep }: Pro
     }
   }, [fieldErrors, pending])
 
+  const isDirty = useMemo(() => {
+    return JSON.stringify(answers) !== JSON.stringify(initial)
+  }, [answers, initial])
+
+  useEffect(() => {
+    if (!isDirty || pending) return
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault()
+      event.returnValue = ''
+    }
+    window.addEventListener('beforeunload', warn)
+    return () => window.removeEventListener('beforeunload', warn)
+  }, [isDirty, pending])
+
   const isPeopleRole = answers.platformRole === 'mentor' || answers.platformRole === 'investor' || answers.platformRole === 'partner'
   const isMentor = answers.platformRole === 'mentor'
 

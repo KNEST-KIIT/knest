@@ -11,16 +11,16 @@ import { payloadClient } from '../support/payload'
  */
 
 const ROOT = path.resolve(import.meta.dirname, '../..')
+const TSX_CLI = path.join(ROOT, 'node_modules/tsx/dist/cli.mjs')
 afterAll(closeDb)
 
 function seed(env: Record<string, string | undefined>) {
   const clean: NodeJS.ProcessEnv = { ...process.env }
   for (const k of ['NODE_ENV', 'SEED_PASSWORD', 'SEED_RESET_EXISTING', 'SEED_ADMIN_EMAIL', 'APP_ENV', 'VERCEL_ENV']) delete clean[k]
-  const r = spawnSync('npx', ['tsx', 'src/db/seed.ts'], {
+  const r = spawnSync(process.execPath, [TSX_CLI, 'src/db/seed.ts'], {
     cwd: ROOT,
     env: { ...clean, ...env } as NodeJS.ProcessEnv,
     encoding: 'utf8',
-    shell: true,
     input: '',
     timeout: 240_000,
   })

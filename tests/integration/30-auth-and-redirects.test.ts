@@ -1,6 +1,6 @@
 import { chromium, type Browser } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { CAPTCHA, BASE, PASSWORD, closeDb, createUser, db, decodeMailText, readMail, uniqueIp } from '../support/helpers'
+import { BASE, PASSWORD, captcha, closeDb, createUser, db, decodeMailText, readMail, uniqueIp } from '../support/helpers'
 import { stubTurnstileScript } from '../support/turnstile-stub'
 
 /**
@@ -123,7 +123,7 @@ describe('KN-22a: login timing does not reveal which e-mails exist', () => {
     const res = await fetch(`${BASE()}/api/auth/password/login`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-forwarded-for': uniqueIp() },
-      body: JSON.stringify({ email, password: 'wrong-password-entirely', ...CAPTCHA }),
+      body: JSON.stringify({ email, password: 'wrong-password-entirely', ...captcha('login') }),
     })
     await res.arrayBuffer()
     expect(res.status).toBeGreaterThanOrEqual(400)
@@ -154,7 +154,7 @@ describe('account state', () => {
     const res = await fetch(`${BASE()}/api/auth/password/login`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-forwarded-for': uniqueIp() },
-      body: JSON.stringify({ email: 'off@auth.test', password: PASSWORD, ...CAPTCHA }),
+      body: JSON.stringify({ email: 'off@auth.test', password: PASSWORD, ...captcha('login') }),
     })
     expect(res.status).toBeGreaterThanOrEqual(400)
     const sessions = await db().query(
@@ -170,7 +170,7 @@ describe('sign-up -> e-mailed link -> verified account (nodemailer 10, absolute 
     const signup = await fetch(`${BASE()}/api/auth/password/signup`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-forwarded-for': uniqueIp() },
-      body: JSON.stringify({ name: 'Verify Person', email, password: PASSWORD, ...CAPTCHA }),
+      body: JSON.stringify({ name: 'Verify Person', email, password: PASSWORD, ...captcha('signup') }),
     })
     expect(signup.status).toBe(202)
     // No session cookie: the link in the mailbox is what signs a new account in (KN-22b).

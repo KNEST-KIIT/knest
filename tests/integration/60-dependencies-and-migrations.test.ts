@@ -12,6 +12,8 @@ import { payloadClient, richText } from '../support/payload'
  */
 
 const ROOT = path.resolve(import.meta.dirname, '../..')
+const TSX_CLI = path.join(ROOT, 'node_modules/tsx/dist/cli.mjs')
+const PAYLOAD_CLI = path.join(ROOT, 'node_modules/payload/bin.js')
 afterAll(closeDb)
 
 describe('nodemailer 10', () => {
@@ -34,13 +36,12 @@ describe('migrations (KN-04)', () => {
   it('the committed Payload migrations describe the current collections: no schema drift', () => {
     const dir = path.join(ROOT, 'src', 'migrations')
     const before = new Set(readdirSync(dir))
-    const r = spawnSync('npx', ['payload', 'migrate:create', 'drift_check', '--skip-empty'], {
+    const r = spawnSync(process.execPath, [PAYLOAD_CLI, 'migrate:create', 'drift_check', '--skip-empty'], {
       cwd: ROOT,
       // The media collection gains fields only when the S3 plugin is enabled, and production enables it, so the
       // migrations must describe that schema whether or not the machine running this has a .env that sets a bucket.
       env: { ...process.env, NODE_ENV: 'development', S3_BUCKET: 'drift-check-bucket', S3_REGION: 'ap-south-1', S3_ACCESS_KEY_ID: 'drift', S3_SECRET_ACCESS_KEY: 'drift' },
       encoding: 'utf8',
-      shell: true,
       input: '',
       timeout: 240_000,
     })
@@ -60,12 +61,11 @@ describe('migrations (KN-04)', () => {
   })
 
   it('re-running both migrators on an up-to-date database is a no-op', () => {
-    for (const args of [['tsx', 'src/db/migrate.ts'], ['payload', 'migrate']]) {
-      const r = spawnSync('npx', args, {
+    for (const args of [[TSX_CLI, 'src/db/migrate.ts'], [PAYLOAD_CLI, 'migrate']]) {
+      const r = spawnSync(process.execPath, args, {
         cwd: ROOT,
         env: { ...process.env, NODE_ENV: 'production' },
         encoding: 'utf8',
-        shell: true,
         input: '',
         timeout: 240_000,
       })

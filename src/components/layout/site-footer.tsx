@@ -6,6 +6,7 @@ const COLUMNS = [
     heading: 'Explore',
     links: [
       { href: '/programs', label: 'Programs' },
+      { href: '/admissions', label: 'Admissions' },
       { href: '/startups', label: 'Startups' },
       { href: '/events', label: 'Events' },
       { href: '/resources', label: 'Resources' },

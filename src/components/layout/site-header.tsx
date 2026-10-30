@@ -80,10 +80,10 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
   return (
     <header
       className={cn(
-        'sticky top-0 z-50 w-full transition-all duration-500',
+        'sticky top-0 z-50 w-full transition-colors duration-200 motion-reduce:transition-none bg-[var(--color-paper)]',
         scrolled || open
-          ? 'border-b border-[var(--color-line)]/40 bg-[var(--color-paper)]/95 backdrop-blur-2xl shadow-[0_4px_30px_rgba(0,0,0,0.04)]'
-          : 'border-b border-transparent bg-gradient-to-b from-[var(--color-paper)] via-[var(--color-paper)]/80 to-transparent backdrop-blur-md',
+          ? 'border-b border-[var(--color-line)]'
+          : 'border-b border-transparent',
       )}
     >
       <div className="flex h-[4.5rem] w-full items-center justify-between px-4 sm:px-6 md:px-8 lg:px-6 xl:px-12 2xl:px-16">

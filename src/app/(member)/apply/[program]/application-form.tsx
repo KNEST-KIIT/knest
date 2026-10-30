@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Field, Heading, Input, LiveRegion, MultiSelect, SingleSelect, Textarea } from '@/components/ui'
-import type { ApplicationQuestion } from '@/server/applications/types'
+import { effectiveMaxLength, type ApplicationQuestion } from '@/server/applications/types'
 import { TurnstileWidget } from '@/components/security/turnstile-widget'
 import { applicationResumeIndex, formatApplicationAnswer as formatAnswer } from '@/lib/application-progress'
 import { MAX_UPLOAD_BYTES } from '@/lib/upload-limits'
@@ -55,6 +55,7 @@ export function ApplicationForm({ applicationId, programTitle, questions, initia
 
   const total = questions.length
   const question = questions[index]
+  const questionMaxLen = question ? effectiveMaxLength(question) : undefined
   function updateAnswer(questionId: string, value: unknown) {
     setFieldError(null)
     setFormError(null)
@@ -278,7 +279,7 @@ export function ApplicationForm({ applicationId, programTitle, questions, initia
         </div>
 
         {formError && (
-          <div ref={alertRef} tabIndex={-1} role="alert" className="mt-4 p-3.5 rounded-lg bg-red-50 border border-red-200 text-xs font-medium text-[var(--color-critical)] outline-none flex items-start gap-2">
+          <div ref={alertRef} tabIndex={-1} role="alert" className="mt-4 p-3.5 rounded-[var(--radius-sm)] bg-[var(--color-critical)]/10 border border-[var(--color-critical)]/20 text-xs font-medium text-[var(--color-critical)] outline-none flex items-start gap-2">
             <svg className="size-4 shrink-0 mt-0.5 text-[var(--color-critical)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
               <circle cx="12" cy="12" r="10" />
               <line x1="12" y1="8" x2="12" y2="12" />
@@ -363,7 +364,7 @@ export function ApplicationForm({ applicationId, programTitle, questions, initia
                 label="Your answer"
                 optional={question.required === false}
                 error={fieldError ?? undefined}
-                hint={question.maxLength ? `${String(answers[question.id] ?? '').length} of ${question.maxLength} characters` : undefined}
+                hint={questionMaxLen ? `${String(answers[question.id] ?? '').length} of ${questionMaxLen} characters` : undefined}
               >
                 {(p) => (
                   <Input
@@ -371,7 +372,7 @@ export function ApplicationForm({ applicationId, programTitle, questions, initia
                     ref={inputRef as React.Ref<HTMLInputElement>}
                     type={question.fieldType === 'url' ? 'url' : 'text'}
                     value={(answers[question.id] as string) ?? ''}
-                    maxLength={question.maxLength ?? undefined}
+                    maxLength={questionMaxLen ?? undefined}
                     onChange={(e) => updateAnswer(question.id, e.target.value)}
                   />
                 )}
@@ -383,14 +384,14 @@ export function ApplicationForm({ applicationId, programTitle, questions, initia
                 label="Your answer"
                 optional={question.required === false}
                 error={fieldError ?? undefined}
-                hint={question.maxLength ? `${String(answers[question.id] ?? '').length} of ${question.maxLength} characters` : undefined}
+                hint={questionMaxLen ? `${String(answers[question.id] ?? '').length} of ${questionMaxLen} characters` : undefined}
               >
                 {(p) => (
                   <Textarea
                     {...p}
                     ref={inputRef as React.Ref<HTMLTextAreaElement>}
                     value={(answers[question.id] as string) ?? ''}
-                    maxLength={question.maxLength ?? undefined}
+                    maxLength={questionMaxLen ?? undefined}
                     onChange={(e) => updateAnswer(question.id, e.target.value)}
                   />
                 )}
@@ -439,13 +440,13 @@ export function ApplicationForm({ applicationId, programTitle, questions, initia
           </fieldset>
 
           {!['text', 'url', 'textarea'].includes(question.fieldType) && fieldError && (
-            <div ref={alertRef} tabIndex={-1} role="alert" className="mt-4 p-3 rounded-lg bg-red-50 border border-red-200 text-xs font-medium text-[var(--color-critical)] outline-none">
+            <div ref={alertRef} tabIndex={-1} role="alert" className="mt-4 p-3 rounded-[var(--radius-sm)] bg-[var(--color-critical)]/10 border border-[var(--color-critical)]/20 text-xs font-medium text-[var(--color-critical)] outline-none">
               {fieldError}
             </div>
           )}
 
           {formError && (
-            <div ref={alertRef} tabIndex={-1} role="alert" className="mt-4 p-3.5 rounded-lg bg-red-50 border border-red-200 text-xs font-medium text-[var(--color-critical)] flex items-start gap-2 outline-none">
+            <div ref={alertRef} tabIndex={-1} role="alert" className="mt-4 p-3.5 rounded-[var(--radius-sm)] bg-[var(--color-critical)]/10 border border-[var(--color-critical)]/20 text-xs font-medium text-[var(--color-critical)] flex items-start gap-2 outline-none">
               <svg className="size-4 shrink-0 mt-0.5 text-[var(--color-critical)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="10" />
                 <line x1="12" y1="8" x2="12" y2="12" />

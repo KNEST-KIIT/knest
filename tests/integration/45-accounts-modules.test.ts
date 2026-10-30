@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { BASE, CAPTCHA, PASSWORD, closeDb, createUser, db, decodeMailText, get, login, readMail, uniqueIp, type Session } from '../support/helpers'
+import { BASE, CAPTCHA, PASSWORD, captcha, closeDb, createUser, db, decodeMailText, get, login, readMail, uniqueIp, type Session } from '../support/helpers'
 import { payloadClient, richText } from '../support/payload'
 
 /**
@@ -16,7 +16,7 @@ const signup = (body: Record<string, unknown>) =>
   fetch(`${BASE()}/api/auth/password/signup`, {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-forwarded-for': uniqueIp() },
-    body: JSON.stringify({ ...CAPTCHA, ...body }),
+    body: JSON.stringify({ ...captcha('signup'), ...body }),
   })
 
 const post = (path: string, who: Session, body?: unknown) =>

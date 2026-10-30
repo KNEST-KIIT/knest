@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { afterAll, describe, expect, it } from 'vitest'
 import { hash } from 'bcryptjs'
-import { BASE, CAPTCHA, closeDb, db, uniqueIp } from '../support/helpers'
+import { BASE, captcha, closeDb, db, uniqueIp } from '../support/helpers'
 
 /**
  * Regression coverage for QA-004 (account ownership, credential isolation, and token hygiene).
@@ -40,7 +40,7 @@ describe('QA-004: account ownership and verification token lifecycle', () => {
       name: 'Victim Owner',
       email: victimEmail,
       password: attackerPassword,
-      ...CAPTCHA,
+      ...captcha('signup'),
     })
     expect(signupRes.status).toBe(202)
 
@@ -54,7 +54,7 @@ describe('QA-004: account ownership and verification token lifecycle', () => {
     const loginRes = await post('/api/auth/password/login', {
       email: victimEmail,
       password: attackerPassword,
-      ...CAPTCHA,
+      ...captcha('login'),
     })
     expect(loginRes.status).toBe(401)
     const loginJson = await loginRes.json().catch(() => ({}))
@@ -149,7 +149,7 @@ describe('QA-004: account ownership and verification token lifecycle', () => {
     const attackerLogin = await post('/api/auth/password/login', {
       email: victimEmail,
       password: attackerPassword,
-      ...CAPTCHA,
+      ...captcha('login'),
     })
     expect(attackerLogin.status).toBe(401)
     const attackerJson = await attackerLogin.json().catch(() => ({}))
@@ -159,7 +159,7 @@ describe('QA-004: account ownership and verification token lifecycle', () => {
     const ownerLogin = await post('/api/auth/password/login', {
       email: victimEmail,
       password: ownerPassword,
-      ...CAPTCHA,
+      ...captcha('login'),
     })
     expect(ownerLogin.status).toBe(200)
     const cookie = ownerLogin.headers.getSetCookie().join('; ')
@@ -204,7 +204,7 @@ describe('QA-004: account ownership and verification token lifecycle', () => {
     const ownerLogin = await post('/api/auth/password/login', {
       email: victimEmail,
       password: ownerPassword,
-      ...CAPTCHA,
+      ...captcha('login'),
     })
     expect(ownerLogin.status).toBe(200)
 

@@ -14,7 +14,8 @@ overrides:
   'fast-copy@<3.1.0': '>=3.1.0'
 
 # Advisories accepted on purpose (KN-03). Each is reached only through build/dev
-# tooling, not a request path, and has no patched release. Anything else fails CI.
+# tooling, not a request path, and has no compatible patched route through its
+# current upstream dependency. Anything else fails CI.
 auditConfig:
   ignoreGhsas:
     # braces: ReDoS on deeply nested glob patterns; sass -> chokidar file watching. Unpatched upstream.

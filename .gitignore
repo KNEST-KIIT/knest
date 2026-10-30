@@ -16,6 +16,7 @@ __pycache__/
 *.pyc
 .claude/
 *.pdf
+!public/knest-brochure.pdf
 .vercel
 .env*
 *.log

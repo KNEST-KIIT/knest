@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { istInstant, istParts } from '../../src/server/labs/rules'
-import { BASE, CAPTCHA, closeDb, createUser, db, decodeMailText, get, login, readMail, uniqueIp, type Session } from '../support/helpers'
+import { BASE, captcha, closeDb, createUser, db, decodeMailText, get, login, readMail, uniqueIp, type Session } from '../support/helpers'
 
 /**
  * Lab booking, end to end on the production build and a real database: creating labs, who may
@@ -38,7 +38,7 @@ const slot = (daysAhead: number, hour: number, hours = 1) => ({
   endsAt: istInstant(day(daysAhead), (hour + hours) * 60).toISOString(),
 })
 const request = async (slug: string, who: Session, when: { startsAt: string; endsAt: string }, extra: Record<string, unknown> = {}) =>
-  json(await api(`/api/labs/${slug}/request`, who, { ...when, purpose: 'Prototype testing for my project', headcount: 2, ...CAPTCHA, ...extra }))
+  json(await api(`/api/labs/${slug}/request`, who, { ...when, purpose: 'Prototype testing for my project', headcount: 2, ...captcha('lab-booking'), ...extra }))
 
 async function makeMember(tag: string, options: { verified?: boolean; onboarded?: boolean } = {}) {
   const email = mail(tag)
@@ -239,7 +239,7 @@ describe('requesting a booking', () => {
       expect(res.status, label).toBe(400)
       expect(String(res.body.error), label).toMatch(message)
     }
-    expect((await json(await api(`/api/labs/${labA.slug}/request`, m.session, { startsAt: 'yesterday', endsAt: 'tomorrow', purpose: 'Prototype testing', headcount: 1, ...CAPTCHA }))).status).toBe(400)
+    expect((await json(await api(`/api/labs/${labA.slug}/request`, m.session, { startsAt: 'yesterday', endsAt: 'tomorrow', purpose: 'Prototype testing', headcount: 1, ...captcha('lab-booking') }))).status).toBe(400)
     expect((await db().query('select count(*)::int c from app.lab_bookings where user_id = (select id from app.users where email = $1)', [m.email])).rows[0].c).toBe(0)
   })
 

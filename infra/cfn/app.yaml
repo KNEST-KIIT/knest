@@ -561,14 +561,12 @@ Resources:
                   MASTER_SECRET=$(secret "$(param db-secret-arn)")
                   MASTER_USER=$(echo "$MASTER_SECRET" | jq -r .username)
                   MASTER_PASSWORD=$(echo "$MASTER_SECRET" | jq -rj .password | jq -sRr @uri)
-                  RUNTIME_ARN=$(param db-runtime-secret-arn 2>/dev/null || true)
-                  RUNTIME_USER=""
-                  RUNTIME_PASSWORD=""
-                  if [ -n "$RUNTIME_ARN" ] && [ "$RUNTIME_ARN" != "None" ]; then
-                    RUNTIME_SECRET=$(secret "$RUNTIME_ARN")
-                    RUNTIME_USER=$(echo "$RUNTIME_SECRET" | jq -r .username)
-                    RUNTIME_PASSWORD=$(echo "$RUNTIME_SECRET" | jq -rj .password)
-                  fi
+                  RUNTIME_ARN=$(param db-runtime-secret-arn)
+                  [ -n "$RUNTIME_ARN" ] && [ "$RUNTIME_ARN" != "None" ] || { echo "runtime database secret is not configured; refusing deployment" >&2; exit 1; }
+                  RUNTIME_SECRET=$(secret "$RUNTIME_ARN")
+                  RUNTIME_USER=$(echo "$RUNTIME_SECRET" | jq -er .username)
+                  RUNTIME_PASSWORD=$(echo "$RUNTIME_SECRET" | jq -er .password)
+                  [ -n "$RUNTIME_USER" ] && [ -n "$RUNTIME_PASSWORD" ] || { echo "runtime database secret is incomplete; refusing deployment" >&2; exit 1; }
 
                   {
                     echo "NODE_ENV=production"
@@ -595,16 +593,9 @@ Resources:
                   {
                     cat /run/knest/common.env
                     echo "DATABASE_URL=postgres://${MASTER_USER}:${MASTER_PASSWORD}@${DB_ENDPOINT}:5432/knest"
-                    if [ -n "$RUNTIME_USER" ]; then
-                      echo "DB_RUNTIME_USER=${RUNTIME_USER}"
-                      echo "DB_RUNTIME_PASSWORD=${RUNTIME_PASSWORD}"
-                    fi
+                    echo "DB_RUNTIME_USER=${RUNTIME_USER}"
+                    echo "DB_RUNTIME_PASSWORD=${RUNTIME_PASSWORD}"
                   } > /run/knest/migrate.env
-                  # The app starts as the runtime role only after the migration job reports it provisioned it.
-                  {
-                    cat /run/knest/common.env
-                    echo "DATABASE_URL=postgres://${MASTER_USER}:${MASTER_PASSWORD}@${DB_ENDPOINT}:5432/knest"
-                  } > /run/knest/app.env
 
                   MOUNT="-v /opt/knest/rds-global-bundle.pem:/etc/knest/rds-global-bundle.pem:ro"
                   RUN_OPTS="--env-file /run/knest/app.env $MOUNT"
@@ -620,14 +611,16 @@ Resources:
                   docker pull "$MIGRATE_IMAGE" >/dev/null
                   MIGRATE_LOG=$(mktemp)
                   if docker run --rm --env-file /run/knest/migrate.env $MOUNT "$MIGRATE_IMAGE" > "$MIGRATE_LOG" 2>&1; then cat "$MIGRATE_LOG"; else cat "$MIGRATE_LOG" >&2; echo "migration failed; the previous version keeps running" >&2; rm -f "$MIGRATE_LOG"; exit 1; fi
-                  if [ -n "$RUNTIME_USER" ] && grep -q "runtime role: ${RUNTIME_USER} .*privileges applied" "$MIGRATE_LOG"; then
+                  if grep -q "runtime role: ${RUNTIME_USER} .*privileges applied" "$MIGRATE_LOG"; then
                     {
                       cat /run/knest/common.env
                       echo "DATABASE_URL=postgres://${RUNTIME_USER}:$(printf '%s' "$RUNTIME_PASSWORD" | jq -sRr @uri)@${DB_ENDPOINT}:5432/knest"
                     } > /run/knest/app.env
                     echo "App identity: runtime role ${RUNTIME_USER} (no schema changes)"
                   else
-                    echo "WARNING: runtime role not provisioned by this release; the app runs as the database master user" >&2
+                    echo "runtime role was not provisioned by this release; refusing to start the app" >&2
+                    rm -f "$MIGRATE_LOG"
+                    exit 1
                   fi
                   rm -f "$MIGRATE_LOG" /run/knest/migrate.env
 

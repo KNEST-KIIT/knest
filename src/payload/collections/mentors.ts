@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { canWrite, readPublished } from '../access'
+import { canWrite, canWriteField, readPublished } from '../access'
 import { EXPERTISE_OPTIONS, SECTOR_OPTIONS } from '../fields/taxonomy'
 import { slugField } from '../fields/slug'
 
@@ -61,6 +61,7 @@ export const Mentors: CollectionConfig = {
       name: 'userId',
       type: 'text',
       index: true,
+      access: { read: canWriteField('mentors') },
       admin: {
         position: 'sidebar',
         description:

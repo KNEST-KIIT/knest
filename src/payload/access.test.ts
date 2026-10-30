@@ -87,6 +87,25 @@ describe('metrics.source (NF-02)', () => {
   })
 })
 
+describe('founders.userId and mentors.userId (NF-02 / Privacy)', () => {
+  it('redacts founder userId from anonymous readers but allows startup staff', async () => {
+    const f = field(Founders, 'userId')
+    expect(await f.access!.read!(anon)).toBe(false)
+    expect(await f.access!.read!(staff('startup_manager'))).toBe(true)
+    expect(await f.access!.read!(staff('super_admin'))).toBe(true)
+    expect(await f.access!.read!(staff('content_admin'))).toBe(false)
+  })
+
+  it('redacts mentor userId from anonymous readers but allows mentor staff', async () => {
+    const f = field(Mentors, 'userId')
+    expect(await f.access!.read!(anon)).toBe(false)
+    expect(await f.access!.read!(staff('mentor_manager'))).toBe(true)
+    expect(await f.access!.read!(staff('super_admin'))).toBe(true)
+    expect(await f.access!.read!(staff('content_admin'))).toBe(false)
+  })
+})
+
+
 describe('media (NF-03 / KN-22j)', () => {
   const create = Media.access!.create as (a: Args) => unknown
   const update = Media.access!.update as (a: Args) => unknown

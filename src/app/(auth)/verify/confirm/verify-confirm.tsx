@@ -158,7 +158,7 @@ export function VerifyConfirm({
         </Field>
 
         {formError && (
-          <div role="alert" className="p-3 rounded-lg bg-red-50 border border-red-200 text-xs font-medium text-[var(--color-critical)]">
+          <div role="alert" className="p-3 rounded-[var(--radius-sm)] bg-[var(--color-critical)]/10 border border-[var(--color-critical)]/20 text-xs font-medium text-[var(--color-critical)]">
             {formError}
           </div>
         )}

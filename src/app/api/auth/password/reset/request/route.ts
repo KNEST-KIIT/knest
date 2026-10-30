@@ -9,7 +9,7 @@ export async function POST(request: Request) {
   if (!allowed) return NextResponse.json({ error: 'Too many attempts. Try again later.' }, { status: 429 })
 
   const body = await request.json().catch(() => null)
-  const captcha = await captchaFailure(request, body)
+  const captcha = await captchaFailure(request, body, 'password-reset')
   if (captcha) return captcha
   const result = await requestPasswordReset(body?.email, safeNext(body?.next))
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 })

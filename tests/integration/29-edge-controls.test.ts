@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { CAPTCHA, BASE, closeDb, createUser, get, login, uniqueIp, type Session } from '../support/helpers'
+import { BASE, captcha, closeDb, createUser, get, login, uniqueIp, type Session } from '../support/helpers'
 
 /**
  * Closing evidence for the application half of the edge design: what the origin
@@ -56,7 +56,7 @@ describe('cross-origin writes are refused before any route code runs', () => {
     fetch(`${BASE()}/api/auth/password/login`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-forwarded-for': uniqueIp(), ...(origin ? { origin } : {}) },
-      body: JSON.stringify({ email: 'nobody@edge.test', password: 'wrong-password-123', ...CAPTCHA }),
+      body: JSON.stringify({ email: 'nobody@edge.test', password: 'wrong-password-123', ...captcha('login') }),
     })
 
   it.each(['https://evil.example', 'null', 'http://127.0.0.1:1'])('Origin %s -> 403', async (origin) => {
@@ -76,7 +76,7 @@ describe('cross-origin writes are refused before any route code runs', () => {
     const res = await fetch(`${BASE()}/api/auth/password/login`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-forwarded-for': uniqueIp(), 'sec-fetch-site': 'cross-site' },
-      body: JSON.stringify({ email: 'nobody@edge.test', password: 'wrong-password-123', ...CAPTCHA }),
+      body: JSON.stringify({ email: 'nobody@edge.test', password: 'wrong-password-123', ...captcha('login') }),
     })
     expect(res.status).toBe(403)
   })

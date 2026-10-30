@@ -65,7 +65,7 @@ const INSTITUTIONAL_ROLES = [
     group: 'School of Innovation & Entrepreneurial Leadership',
     role: 'Entrepreneurial leadership, venture development, innovation education, and bespoke startup mentorship.',
     program: 'AICTE-approved MBA - IEV Program',
-    link: 'https://sld.kiit.ac.in/mba',
+    link: 'https://siel.kiit.ac.in/mba',
   },
   {
     group: 'KIIT Kareer School',
@@ -179,7 +179,7 @@ export default function AboutPage() {
             </p>
             <div className="mt-6">
               <a
-                href="https://sld.kiit.ac.in/mba"
+                href="https://siel.kiit.ac.in/mba"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 border border-[var(--color-signal)] bg-[var(--color-signal)] px-6 py-2.5 font-bold uppercase tracking-widest text-xs text-white hover:bg-[var(--color-signal-deep)] transition-colors"
@@ -343,6 +343,13 @@ export default function AboutPage() {
               >
                 Invest in KIIT Founders
               </Link>
+              <a
+                href="/knest-brochure.pdf"
+                download="KNEST-Official-Brochure.pdf"
+                className="w-full text-center border border-[var(--color-line)] bg-white py-2.5 font-bold uppercase tracking-widest text-xs text-[var(--color-ink)] hover:border-[var(--color-ink)] transition-colors"
+              >
+                Download Official Brochure (PDF)
+              </a>
             </div>
           </div>
         </div>

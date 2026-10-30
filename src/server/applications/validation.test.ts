@@ -1,13 +1,20 @@
 import { describe, expect, it } from 'vitest'
 import type { ApplicationQuestion } from './types'
-import { findSubmissionProblem } from './validation'
+import {
+  ALLOWED_UPLOAD_MIME_TYPES,
+  DEFAULT_MAX_TEXT_ANSWER,
+  DEFAULT_MAX_TEXTAREA_ANSWER,
+  effectiveMaxLength,
+  findSubmissionProblem,
+  schemaForQuestion,
+  staffStatusChangeSchema,
+} from './validation'
 
 const q = (over: Partial<ApplicationQuestion> & Pick<ApplicationQuestion, 'id' | 'fieldType'>): ApplicationQuestion => ({
   label: `Question ${over.id}`,
   required: true,
   ...over,
 })
-
 const QUESTIONS: ApplicationQuestion[] = [
   q({ id: 'idea', fieldType: 'textarea', maxLength: 50 }),
   q({ id: 'stage', fieldType: 'select', options: [{ label: 'Idea', value: 'idea' }, { label: 'MVP', value: 'mvp' }] }),
@@ -75,3 +82,81 @@ describe('findSubmissionProblem (KN-31)', () => {
     expect(findSubmissionProblem([], [], [])).toBeNull()
   })
 })
+
+describe('upload format boundary', () => {
+  it('allows inspectable current formats but refuses ambiguous legacy OLE Office files', () => {
+    expect(ALLOWED_UPLOAD_MIME_TYPES).toContain('application/pdf')
+    expect(ALLOWED_UPLOAD_MIME_TYPES).toContain('application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+    expect(ALLOWED_UPLOAD_MIME_TYPES).toContain('application/vnd.openxmlformats-officedocument.presentationml.presentation')
+    expect(ALLOWED_UPLOAD_MIME_TYPES).not.toContain('application/msword')
+    expect(ALLOWED_UPLOAD_MIME_TYPES).not.toContain('application/vnd.ms-powerpoint')
+  })
+})
+
+describe('staffStatusChangeSchema', () => {
+  it('accepts permitted staff statuses with optional note', () => {
+    for (const status of ['under_review', 'shortlisted', 'interview', 'accepted', 'rejected', 'waitlisted'] as const) {
+      const res = staffStatusChangeSchema.safeParse({ status, note: 'Good application' })
+      expect(res.success).toBe(true)
+    }
+  })
+
+  it('prohibits draft and submitted in staff status changes', () => {
+    expect(staffStatusChangeSchema.safeParse({ status: 'draft' }).success).toBe(false)
+    expect(staffStatusChangeSchema.safeParse({ status: 'submitted' }).success).toBe(false)
+  })
+
+  it('rejects arbitrary unknown statuses', () => {
+    expect(staffStatusChangeSchema.safeParse({ status: 'approved' }).success).toBe(false)
+    expect(staffStatusChangeSchema.safeParse({ status: 'cancelled' }).success).toBe(false)
+    expect(staffStatusChangeSchema.safeParse({}).success).toBe(false)
+  })
+
+  it('enforces maximum note length of 2000 characters', () => {
+    expect(staffStatusChangeSchema.safeParse({ status: 'under_review', note: 'x'.repeat(2000) }).success).toBe(true)
+    expect(staffStatusChangeSchema.safeParse({ status: 'under_review', note: 'x'.repeat(2001) }).success).toBe(false)
+  })
+})
+
+describe('effectiveMaxLength and default answer limits', () => {
+  it('applies DEFAULT_MAX_TEXT_ANSWER (500) when CMS maxLength is absent for text', () => {
+    const question = q({ id: 'title', fieldType: 'text' })
+    expect(effectiveMaxLength(question)).toBe(DEFAULT_MAX_TEXT_ANSWER)
+    expect(DEFAULT_MAX_TEXT_ANSWER).toBe(500)
+
+    const schema = schemaForQuestion(question)
+    expect(schema.safeParse('x'.repeat(500)).success).toBe(true)
+    expect(schema.safeParse('x'.repeat(501)).success).toBe(false)
+  })
+
+  it('applies DEFAULT_MAX_TEXTAREA_ANSWER (5000) when CMS maxLength is absent for textarea', () => {
+    const question = q({ id: 'essay', fieldType: 'textarea' })
+    expect(effectiveMaxLength(question)).toBe(DEFAULT_MAX_TEXTAREA_ANSWER)
+    expect(DEFAULT_MAX_TEXTAREA_ANSWER).toBe(5000)
+
+    const schema = schemaForQuestion(question)
+    expect(schema.safeParse('x'.repeat(5000)).success).toBe(true)
+    expect(schema.safeParse('x'.repeat(5001)).success).toBe(false)
+  })
+
+  it('respects explicit CMS maxLength over defaults', () => {
+    const customText = q({ id: 'headline', fieldType: 'text', maxLength: 100 })
+    expect(effectiveMaxLength(customText)).toBe(100)
+    const schemaText = schemaForQuestion(customText)
+    expect(schemaText.safeParse('x'.repeat(100)).success).toBe(true)
+    expect(schemaText.safeParse('x'.repeat(101)).success).toBe(false)
+
+    const customTextarea = q({ id: 'pitch', fieldType: 'textarea', maxLength: 1500 })
+    expect(effectiveMaxLength(customTextarea)).toBe(1500)
+    const schemaArea = schemaForQuestion(customTextarea)
+    expect(schemaArea.safeParse('x'.repeat(1500)).success).toBe(true)
+    expect(schemaArea.safeParse('x'.repeat(1501)).success).toBe(false)
+  })
+
+  it('does not enforce length limits on non-text fields without maxLength', () => {
+    const urlQuestion = q({ id: 'site', fieldType: 'url' })
+    expect(effectiveMaxLength(urlQuestion)).toBeUndefined()
+  })
+})
+
+

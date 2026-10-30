@@ -23,14 +23,9 @@ export function NextStepCard({
   actionHref: string
 }) {
   return (
-    <div className="group relative overflow-hidden rounded-[var(--radius-xl)] bg-[var(--color-ink)] p-8 md:p-12 shadow-2xl text-white">
-      {/* Background gradients and meshes for luxury feel */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-[var(--color-signal)]/40 via-[var(--color-ink)] to-[var(--color-ink)] opacity-60 mix-blend-multiply" />
-      <div className="absolute inset-0 bg-[url('/noise.svg')] opacity-[0.03] mix-blend-overlay" />
-      <div className="absolute right-0 top-0 h-64 w-64 -translate-y-1/2 translate-x-1/2 rounded-full bg-[var(--color-signal)] opacity-20 blur-[100px]" />
-
+    <div className="relative overflow-hidden rounded-[var(--radius-md)] border border-[var(--color-ink)] bg-[var(--color-ink)] p-8 md:p-12 text-white">
       <div className="relative z-10">
-        <p className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 font-[family-name:var(--font-display)] text-[length:var(--text-small)] uppercase tracking-widest text-[var(--color-paper)] backdrop-blur-md">
+        <p className="inline-flex items-center gap-2 rounded-[var(--radius-sm)] border border-white/20 bg-white/10 px-3 py-1 font-[family-name:var(--font-display)] text-[length:var(--text-small)] uppercase tracking-widest text-[var(--color-paper)]">
           <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-signal)]" />
           {eyebrow}
         </p>
@@ -44,7 +39,7 @@ export function NextStepCard({
         </p>
         
         {reason && (
-          <div className="mt-6 max-w-xl rounded-lg border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
+          <div className="mt-6 max-w-xl rounded-[var(--radius-sm)] border border-white/15 bg-white/5 p-4">
             <p className="text-[length:var(--text-small)] text-white/60">
               <strong className="text-white">Why this step:</strong> {reason}
             </p>
@@ -54,10 +49,9 @@ export function NextStepCard({
         <div className="mt-8 flex flex-col sm:flex-row gap-4">
           <Link
             href={actionHref}
-            className="group/btn relative inline-flex min-h-14 items-center justify-center overflow-hidden rounded-full bg-white px-8 py-3 text-center font-medium text-[var(--color-ink)] shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)] transition-transform hover:scale-105"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-sm)] bg-white px-8 py-3 text-center font-medium text-[var(--color-ink)] hover:bg-[var(--color-paper)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white transition-colors duration-200 motion-reduce:transition-none"
           >
-            <span className="relative z-10">{actionLabel}</span>
-            <div className="absolute inset-0 -z-0 bg-gradient-to-r from-transparent via-black/5 to-transparent translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-700" />
+            {actionLabel}
           </Link>
         </div>
       </div>

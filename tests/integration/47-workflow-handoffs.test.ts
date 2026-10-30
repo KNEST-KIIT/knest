@@ -1,11 +1,20 @@
 import { afterAll, describe, expect, it } from 'vitest'
-import { BASE, CAPTCHA, PASSWORD, closeDb, createUser, db, decodeMailText, get, login, readMail, uniqueIp } from '../support/helpers'
+import { BASE, PASSWORD, captcha, closeDb, createUser, db, decodeMailText, get, login, readMail, uniqueIp } from '../support/helpers'
 import { EXPERTISE_OPTIONS } from '../../src/payload/fields/taxonomy'
 
 const stamp = Date.now()
-const post = (path: string, body: unknown) => fetch(`${BASE()}${path}`, {
-  method: 'POST', headers: { 'content-type': 'application/json', 'x-forwarded-for': uniqueIp() }, body: JSON.stringify({ ...CAPTCHA, ...body as object }),
-})
+const post = (path: string, body: unknown) => {
+  const challenge = path.endsWith('/signup')
+    ? captcha('signup')
+    : path.endsWith('/reset/request')
+      ? captcha('password-reset')
+      : path.endsWith('/login')
+        ? captcha('login')
+        : {}
+  return fetch(`${BASE()}${path}`, {
+    method: 'POST', headers: { 'content-type': 'application/json', 'x-forwarded-for': uniqueIp() }, body: JSON.stringify({ ...challenge, ...body as object }),
+  })
+}
 const latestLink = (email: string, kind: string) => {
   const mail = readMail().filter((m) => m.to.some((to) => to.includes(email))).at(-1)
   const text = mail ? decodeMailText(mail.body) : ''
