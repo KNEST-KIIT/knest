@@ -21,9 +21,9 @@ export function Logo({ className = '', inverted = false, size = 'md' }: LogoProp
       <Image
         src={inverted ? '/images/knest_logo_white.png' : '/images/knest_logo.png'}
         alt="KNEST — KIIT University"
-        width={325}
-        height={123}
-        className={`${sizeClasses} w-auto aspect-[650/246] object-contain transition-transform duration-200 hover:scale-[1.02]`}
+        width={741}
+        height={246}
+        className={`${sizeClasses} w-auto aspect-[741/246] object-contain transition-transform duration-200 hover:scale-[1.02]`}
         priority
       />
     </div>
