@@ -73,7 +73,7 @@ export default function AdmissionsPage() {
               Application Deadline
             </span>
             <div className="sm:col-span-2">
-              <span className="inline-flex items-center gap-2 px-2.5 py-1 rounded-sm bg-amber-50 border border-amber-200 text-amber-900 font-semibold text-xs font-mono uppercase tracking-wider">
+              <span className="inline-flex items-center gap-2 px-2.5 py-1 rounded-[var(--radius-sm)] bg-[var(--color-paper-soft)] border border-[var(--color-line)] text-[var(--color-caution)] font-semibold text-xs font-mono uppercase tracking-wider">
                 Awaiting Confirmation · TBD
               </span>
               <p className="mt-2 text-xs text-[var(--color-ink-soft)]">
