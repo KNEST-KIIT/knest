@@ -61,6 +61,20 @@ function ssl(env: NodeJS.ProcessEnv) {
   return { ca: readFileSync(env.DATABASE_SSL_CA_FILE, 'utf8'), rejectUnauthorized: true as const }
 }
 
+async function passwordMatches(user: string, pass: string, databaseUrl: string, sslOpts: ReturnType<typeof ssl>): Promise<boolean> {
+  try {
+    const url = new URL(databaseUrl)
+    url.username = user
+    url.password = pass
+    const probe = new Client({ connectionString: url.toString(), ssl: sslOpts })
+    await probe.connect()
+    await probe.end()
+    return true
+  } catch {
+    return false
+  }
+}
+
 async function main() {
   const role = process.env.DB_RUNTIME_USER
   if (!role) {
@@ -72,7 +86,8 @@ async function main() {
   if (!password || password.length < 24) throw new Error('DB_RUNTIME_PASSWORD must be set and at least 24 characters.')
   if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is not set.')
 
-  const client = new Client({ connectionString: process.env.DATABASE_URL, ssl: ssl(process.env) })
+  const sslOpts = ssl(process.env)
+  const client = new Client({ connectionString: process.env.DATABASE_URL, ssl: sslOpts })
   await client.connect()
   try {
     const who = await client.query<{ owner: string; db: string }>('select current_user as owner, current_database() as db')
@@ -92,18 +107,20 @@ async function main() {
       await client.query(text.rows[0]!.s)
       await client.query(`GRANT ${ident(role)} TO ${ident(owner)} WITH ADMIN OPTION`).catch(() => undefined)
     } else {
-      // Role exists: on PG16, ensure the migrator/owner has ADMIN OPTION on the runtime role
-      await client.query(`GRANT ${ident(role)} TO ${ident(owner)} WITH ADMIN OPTION`).catch(() => undefined)
-      try {
-        // Alter only the password; omit restricted attributes like NOSUPERUSER/NOREPLICATION on PG16
+      // If the runtime role already authenticates with this password, skip ALTER ROLE.
+      const matches = await passwordMatches(role, password, process.env.DATABASE_URL, sslOpts)
+      if (matches) {
+        console.log(`runtime role: password already matches for ${role}; skipping ALTER ROLE`)
+      } else {
+        // Role exists and password needs update: ensure owner has ADMIN OPTION on PG16
+        await client.query(`GRANT ${ident(role)} TO ${ident(owner)} WITH ADMIN OPTION`).catch(() => undefined)
+        // Alter only the password; omit restricted attributes like NOSUPERUSER/NOREPLICATION on PG16.
+        // If this fails, let the error throw so migration aborts rather than deploying unauthenticated container.
         const text = await client.query<{ s: string }>(
           `select format('ALTER ROLE %I WITH PASSWORD %L', $1::text, $2::text) as s`,
           [role, password],
         )
         await client.query(text.rows[0]!.s)
-      } catch (alterError: unknown) {
-        const msg = alterError instanceof Error ? alterError.message : String(alterError)
-        console.warn(`runtime role: ALTER ROLE skipped (${msg}); retaining existing credentials`)
       }
     }
     for (const statement of privilegeStatements(role, owner, db)) await client.query(statement)
