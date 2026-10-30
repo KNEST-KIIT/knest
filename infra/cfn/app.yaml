@@ -59,8 +59,8 @@ Parameters:
     MaxValue: 65535
     Description: Host port used by the load balancer in production (CloudFront directly in S-1). The deploy document publishes container port 3000 on it.
   LatestAmiId:
-    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
-    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64
+    Type: AWS::EC2::Image::Id
+    Default: ami-0cf36b0c962e50fd7
   EcrRepositoryName:
     Type: String
     Default: knest-app
