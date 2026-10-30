@@ -16,4 +16,15 @@ export function proxy(request: NextRequest) {
   return response
 }
 
-export const config = { matcher: '/:path*' }
+export const config = {
+  matcher: [
+    /*
+     * Match all request paths except:
+     * - _next/static (static chunks and bundles)
+     * - _next/image (image optimization requests)
+     * - images/ (public images and logos)
+     * - favicon.ico, sitemap.xml, robots.txt
+     */
+    '/((?!_next/static|_next/image|images/|favicon\\.ico|robots\\.txt|sitemap\\.xml).*)',
+  ],
+}

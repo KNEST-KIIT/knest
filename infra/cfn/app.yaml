@@ -540,7 +540,7 @@ Resources:
                   MIGRATE_IMAGE="{{ MigrateImage }}"
                   TOKEN=$(curl -fsS -X PUT http://169.254.169.254/latest/api/token -H 'X-aws-ec2-metadata-token-ttl-seconds: 120')
                   REGION=$(curl -fsS -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/placement/region)
-                  param() { aws ssm get-parameter --region "$REGION" --name "/knest-$ENVIRONMENT/config/$1" --query Parameter.Value --output text; }
+                  param() { aws ssm get-parameter --region "$REGION" --name "/knest-$ENVIRONMENT/config/$1" --with-decryption --query Parameter.Value --output text; }
                   secret() { aws secretsmanager get-secret-value --region "$REGION" --secret-id "$1" --query SecretString --output text; }
 
                   # Registry login for the image host (the instance role pulls; no stored credentials).
@@ -587,6 +587,10 @@ Resources:
                     echo "EMAIL_FROM=$(param email-from)"
                     echo "FEATURE_LAB_BOOKING=$(param feature-lab-booking)"
                     echo "SITE_INDEXING=$(param site-indexing)"
+                    GOOGLE_ID=$(param auth-google-id 2>/dev/null || true)
+                    [ -n "$GOOGLE_ID" ] && echo "AUTH_GOOGLE_ID=$GOOGLE_ID"
+                    GOOGLE_SECRET=$(param auth-google-secret 2>/dev/null || true)
+                    [ -n "$GOOGLE_SECRET" ] && echo "AUTH_GOOGLE_SECRET=$GOOGLE_SECRET"
                     NOTIFY=$(param enquiry-notify-email 2>/dev/null || true)
                     [ -n "$NOTIFY" ] && echo "ENQUIRY_NOTIFY_EMAIL=$NOTIFY"
                   } > /run/knest/common.env

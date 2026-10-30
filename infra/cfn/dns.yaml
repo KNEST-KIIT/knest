@@ -13,7 +13,7 @@ Description: >-
 Parameters:
   OriginDnsName:
     Type: String
-    AllowedPattern: '^[a-z0-9-]+\.ap-south-1\.elb\.amazonaws\.com\.?$'
+    AllowedPattern: '^[A-Za-z0-9-]+\.ap-south-1\.elb\.amazonaws\.com\.?$'
     Description: Current LoadBalancerDnsName output of knest-production-origin; preserve origin.kiitnest.com when delegating DNS.
   OriginValidationName:
     Type: String
