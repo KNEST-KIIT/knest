@@ -43,6 +43,7 @@ function BentoCard({
       type="button"
       role={multi ? 'checkbox' : 'radio'}
       aria-checked={selected}
+      aria-label={label}
       tabIndex={tabIndex}
       onClick={onClick}
       onKeyDown={onKeyDown}

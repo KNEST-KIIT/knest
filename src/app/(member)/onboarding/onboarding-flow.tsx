@@ -15,32 +15,32 @@ import { StepShell } from './step-shell'
 
 const ROLE_DATA: Record<(typeof PLATFORM_ROLES)[number], { label: string; description: string; icon: string }> = {
   student: {
-    label: 'Student Builder',
+    label: 'Student',
     description: 'Exploring an idea or building a prototype at KIIT. Seeking co-founders, maker lab access, and incubation.',
     icon: '🚀',
   },
   founder: {
-    label: 'Active Founder',
+    label: 'Founder',
     description: 'Leading a registered startup or operational venture. Looking for cohort acceleration, grants, and scaling.',
     icon: '⚡',
   },
   mentor: {
-    label: 'Mentor & Advisor',
+    label: 'Mentor',
     description: 'Experienced operator or industry leader guiding campus founders through technical and business hurdles.',
     icon: '🧭',
   },
   investor: {
-    label: 'Investor / Angel',
-    description: 'Scout, angel, or fund evaluating early-stage student & faculty ventures for investment and partnerships.',
+    label: 'Investor',
+    description: 'Scout, angel, or fund evaluating early-stage campus & faculty ventures for investment and partnerships.',
     icon: '💼',
   },
   alumni: {
-    label: 'KIIT Alumni',
+    label: 'Alumni',
     description: 'Graduate giving back to the ecosystem through guest mentoring, talent recruiting, or capital.',
     icon: '🎓',
   },
   partner: {
-    label: 'Ecosystem Partner',
+    label: 'Partner',
     description: 'Corporate, government, or institutional partner collaborating with KNEST on grants and challenges.',
     icon: '🤝',
   },
