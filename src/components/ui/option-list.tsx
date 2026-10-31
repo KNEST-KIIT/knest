@@ -4,14 +4,21 @@ import { useRef } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 
 /**
- * A selection grid with keyboard navigation and reduced-motion support.
+ * A selection grid with keyboard navigation, rich descriptions, and reduced-motion support.
  */
 
-type Option = { value: string; label: string }
+export type Option = {
+  value: string
+  label: string
+  description?: string
+  icon?: string
+}
 
 function BentoCard({
   selected,
   label,
+  description,
+  icon,
   onClick,
   onKeyDown,
   tabIndex,
@@ -20,6 +27,8 @@ function BentoCard({
 }: {
   selected: boolean
   label: string
+  description?: string
+  icon?: string
   onClick: () => void
   onKeyDown?: (e: React.KeyboardEvent<HTMLButtonElement>) => void
   tabIndex?: number
@@ -37,28 +46,46 @@ function BentoCard({
       tabIndex={tabIndex}
       onClick={onClick}
       onKeyDown={onKeyDown}
-      whileHover={shouldReduceMotion ? undefined : { scale: 1.02 }}
-      whileTap={shouldReduceMotion ? undefined : { scale: 0.98 }}
-      initial={false}
-      animate={{
-        backgroundColor: selected ? 'var(--color-signal-wash)' : 'var(--color-paper-soft)',
-        borderColor: selected ? 'var(--color-signal)' : 'var(--color-line)',
-      }}
-      transition={{ duration: shouldReduceMotion ? 0 : 0.2 }}
-      className="relative flex w-full flex-col items-start justify-center gap-2 rounded-[var(--radius-lg)] border-2 p-5 text-left text-[length:var(--text-body)] shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[var(--color-signal)]"
+      whileHover={shouldReduceMotion ? undefined : { y: -2 }}
+      whileTap={shouldReduceMotion ? undefined : { scale: 0.99 }}
+      className={`group relative flex w-full flex-col justify-between rounded-2xl border-2 p-5 text-left transition-all duration-200 cursor-pointer ${
+        selected
+          ? 'border-[var(--color-signal)] bg-white shadow-[0_4px_16px_rgba(122,31,43,0.08)] ring-1 ring-[var(--color-signal)]'
+          : 'border-[var(--color-line)] bg-white/70 hover:border-[var(--color-signal)]/40 hover:bg-white hover:shadow-xs'
+      } focus:outline-none focus:ring-2 focus:ring-[var(--color-signal)] focus:ring-offset-2`}
     >
-      <div className="flex w-full items-center justify-between">
-        <span className="font-medium text-[var(--color-ink)]">{label}</span>
+      <div className="flex w-full items-start justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          {icon && (
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[var(--color-paper-soft)] text-base">
+              {icon}
+            </span>
+          )}
+          <span className="font-semibold text-sm sm:text-base text-[var(--color-ink)] leading-snug">
+            {label}
+          </span>
+        </div>
         <span
           aria-hidden
-          className={`flex size-5 shrink-0 items-center justify-center border-2 transition-colors duration-200 ${
-            multi ? 'rounded-[var(--radius-sm)]' : 'rounded-full'
-          } ${selected ? 'border-[var(--color-signal)] bg-[var(--color-signal)]' : 'border-[var(--color-line)] bg-white'}`}
+          className={`mt-0.5 flex size-5 shrink-0 items-center justify-center border-2 transition-all duration-200 ${
+            multi ? 'rounded-md' : 'rounded-full'
+          } ${
+            selected
+              ? 'border-[var(--color-signal)] bg-[var(--color-signal)]'
+              : 'border-[var(--color-line-strong)] bg-white group-hover:border-[var(--color-signal)]/50'
+          }`}
         >
-          {selected && <span className="size-2 rounded-full bg-white" />}
+          {selected && (
+            <span className={`${multi ? 'size-2 bg-white' : 'size-2 rounded-full bg-white'}`} />
+          )}
         </span>
       </div>
-      {/* Optional: We can render descriptions here if we extend Option to have a 'description' */}
+
+      {description && (
+        <p className="mt-2 text-xs leading-relaxed text-[var(--color-ink-soft)]">
+          {description}
+        </p>
+      )}
     </motion.button>
   )
 }
@@ -97,18 +124,22 @@ export function SingleSelect({
   const selectedIndex = options.findIndex((opt) => opt.value === value)
 
   return (
-    <div role="radiogroup" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div role="radiogroup" className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       {options.map((opt, i) => {
         const isSelected = value === opt.value
-        const tabIndex = selectedIndex === -1 ? (i === 0 ? 0 : -1) : (isSelected ? 0 : -1)
+        const tabIndex = selectedIndex === -1 ? (i === 0 ? 0 : -1) : isSelected ? 0 : -1
         return (
           <BentoCard
             key={opt.value}
-            buttonRef={(el) => { buttonRefs.current[i] = el }}
+            buttonRef={(el) => {
+              buttonRefs.current[i] = el
+            }}
             multi={false}
             selected={isSelected}
             tabIndex={tabIndex}
             label={opt.label}
+            description={opt.description}
+            icon={opt.icon}
             onClick={() => onChange(opt.value)}
             onKeyDown={(e) => handleKeyDown(e, i)}
           />
@@ -132,9 +163,17 @@ export function MultiSelect({
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       {options.map((opt) => (
-        <BentoCard key={opt.value} multi selected={value.includes(opt.value)} label={opt.label} onClick={() => toggle(opt.value)} />
+        <BentoCard
+          key={opt.value}
+          multi
+          selected={value.includes(opt.value)}
+          label={opt.label}
+          description={opt.description}
+          icon={opt.icon}
+          onClick={() => toggle(opt.value)}
+        />
       ))}
     </div>
   )

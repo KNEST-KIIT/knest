@@ -13,35 +13,123 @@ import { recommend } from '@/server/onboarding/recommend'
 import { GOALS, JOURNEY_STAGES, MENTOR_AVAILABILITY, PLATFORM_ROLES } from '@/server/onboarding/validation'
 import { StepShell } from './step-shell'
 
-const ROLE_LABELS: Record<(typeof PLATFORM_ROLES)[number], string> = {
-  student: 'Student',
-  founder: 'Founder',
-  mentor: 'Mentor',
-  investor: 'Investor',
-  alumni: 'Alumni',
-  partner: 'Partner',
-  other: 'Something else',
+const ROLE_DATA: Record<(typeof PLATFORM_ROLES)[number], { label: string; description: string; icon: string }> = {
+  student: {
+    label: 'Student Builder',
+    description: 'Exploring an idea or building a prototype at KIIT. Seeking co-founders, maker lab access, and incubation.',
+    icon: '🚀',
+  },
+  founder: {
+    label: 'Active Founder',
+    description: 'Leading a registered startup or operational venture. Looking for cohort acceleration, grants, and scaling.',
+    icon: '⚡',
+  },
+  mentor: {
+    label: 'Mentor & Advisor',
+    description: 'Experienced operator or industry leader guiding campus founders through technical and business hurdles.',
+    icon: '🧭',
+  },
+  investor: {
+    label: 'Investor / Angel',
+    description: 'Scout, angel, or fund evaluating early-stage student & faculty ventures for investment and partnerships.',
+    icon: '💼',
+  },
+  alumni: {
+    label: 'KIIT Alumni',
+    description: 'Graduate giving back to the ecosystem through guest mentoring, talent recruiting, or capital.',
+    icon: '🎓',
+  },
+  partner: {
+    label: 'Ecosystem Partner',
+    description: 'Corporate, government, or institutional partner collaborating with KNEST on grants and challenges.',
+    icon: '🤝',
+  },
+  other: {
+    label: 'Something else',
+    description: 'Faculty, university researcher, or ecosystem supporter exploring KNEST programs.',
+    icon: '🌐',
+  },
 }
 
-const GOAL_LABELS: Record<(typeof GOALS)[number], string> = {
-  build_startup: 'Build a startup',
-  explore: 'Explore entrepreneurship',
-  join_program: 'Join a program',
-  find_mentors: 'Find mentors',
-  meet_cofounders: 'Meet co-founders',
-  learn: 'Learn something new',
-  support_founders: 'Support founders',
-  partner: 'Partner with KNEST',
+const GOAL_DATA: Record<(typeof GOALS)[number], { label: string; description: string; icon: string }> = {
+  build_startup: {
+    label: 'Build a startup',
+    description: 'Take a prototype to market and build a sustainable, scalable company.',
+    icon: '💡',
+  },
+  explore: {
+    label: 'Explore entrepreneurship',
+    description: 'Understand the startup ecosystem, attend firesides, and find ideas.',
+    icon: '🔍',
+  },
+  join_program: {
+    label: 'Join an incubation cohort',
+    description: 'Apply to pre-incubation programs, pitch clinics, and founder sprints.',
+    icon: '🎯',
+  },
+  find_mentors: {
+    label: 'Connect with mentors',
+    description: 'Get targeted advice from founders who have built and scaled before.',
+    icon: '👥',
+  },
+  meet_cofounders: {
+    label: 'Find co-founders & teammates',
+    description: 'Match with complementary engineers, designers, and business operators.',
+    icon: '🤝',
+  },
+  learn: {
+    label: 'Master practical skills',
+    description: 'Hardware prototyping, full-stack architecture, and venture pitching.',
+    icon: '📚',
+  },
+  support_founders: {
+    label: 'Support campus founders',
+    description: 'Offer guidance, technical feedback, or early customer introductions.',
+    icon: '🌱',
+  },
+  partner: {
+    label: 'Partner with KNEST',
+    description: 'Sponsor maker spaces, pilot tech, or co-host venture challenges.',
+    icon: '🏢',
+  },
 }
 
-const STAGE_LABELS: Record<(typeof JOURNEY_STAGES)[number], string> = {
-  exploring: 'Just exploring',
-  idea: 'I have an idea',
-  validation: 'Validating it',
-  mvp: 'Building an MVP',
-  early_revenue: 'Early revenue',
-  scaling: 'Scaling',
-  established: 'Established company',
+const STAGE_DATA: Record<(typeof JOURNEY_STAGES)[number], { label: string; description: string; icon: string }> = {
+  exploring: {
+    label: 'Just exploring',
+    description: 'Curious about startups, learning the ropes, and searching for the right problem.',
+    icon: '🧭',
+  },
+  idea: {
+    label: 'I have an idea',
+    description: 'Identified a painful problem and formulating an initial product thesis.',
+    icon: '💡',
+  },
+  validation: {
+    label: 'Validating with users',
+    description: 'Conducting customer interviews, testing landing pages, and assessing demand.',
+    icon: '📊',
+  },
+  mvp: {
+    label: 'Building an MVP',
+    description: 'Actively coding the software or assembling the hardware prototype in lab.',
+    icon: '🛠️',
+  },
+  early_revenue: {
+    label: 'Early revenue / pilots',
+    description: 'Have launched with live users, pilot deployments, or initial paying clients.',
+    icon: '📈',
+  },
+  scaling: {
+    label: 'Scaling & hiring',
+    description: 'Repeatable sales, expanding team, and preparing for external institutional round.',
+    icon: '🚀',
+  },
+  established: {
+    label: 'Established company',
+    description: 'Self-sustaining operations with full-time staff and recurring revenue.',
+    icon: '🏛️',
+  },
 }
 
 const AVAILABILITY_LABELS: Record<(typeof MENTOR_AVAILABILITY)[number], string> = {
@@ -216,7 +304,12 @@ export function OnboardingFlow({ initial, stagePrefill, next, initialStep }: Pro
         pending={pending}
       >
         <SingleSelect
-          options={PLATFORM_ROLES.map((v) => ({ value: v, label: ROLE_LABELS[v] }))}
+          options={PLATFORM_ROLES.map((v) => ({
+            value: v,
+            label: ROLE_DATA[v].label,
+            description: ROLE_DATA[v].description,
+            icon: ROLE_DATA[v].icon,
+          }))}
           value={answers.platformRole}
           onChange={(v) => update('platformRole', v as PlatformRole)}
         />
@@ -238,7 +331,12 @@ export function OnboardingFlow({ initial, stagePrefill, next, initialStep }: Pro
         pending={pending}
       >
         <MultiSelect
-          options={GOALS.map((v) => ({ value: v, label: GOAL_LABELS[v] }))}
+          options={GOALS.map((v) => ({
+            value: v,
+            label: GOAL_DATA[v].label,
+            description: GOAL_DATA[v].description,
+            icon: GOAL_DATA[v].icon,
+          }))}
           value={answers.goals}
           onChange={(v) => update('goals', v)}
         />
@@ -268,7 +366,12 @@ export function OnboardingFlow({ initial, stagePrefill, next, initialStep }: Pro
           </div>
         )}
         <SingleSelect
-          options={JOURNEY_STAGES.map((v) => ({ value: v, label: STAGE_LABELS[v] }))}
+          options={JOURNEY_STAGES.map((v) => ({
+            value: v,
+            label: STAGE_DATA[v].label,
+            description: STAGE_DATA[v].description,
+            icon: STAGE_DATA[v].icon,
+          }))}
           value={answers.journeyStage}
           onChange={(v) => update('journeyStage', v as JourneyStage)}
         />
@@ -440,30 +543,30 @@ export function OnboardingFlow({ initial, stagePrefill, next, initialStep }: Pro
   return (
     <div className="relative">
       <motion.div
-        initial={shouldReduceMotion ? false : { opacity: 0, y: 12 }}
+        initial={shouldReduceMotion ? false : { opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: shouldReduceMotion ? 0 : 0.25, ease: 'easeOut' }}
+        transition={{ duration: shouldReduceMotion ? 0 : 0.3, ease: 'easeOut' }}
         className="mx-auto max-w-2xl text-center"
       >
-        <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-signal-wash)] text-[var(--color-signal)]">
-          <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+        <div className="mb-6 inline-flex size-14 items-center justify-center rounded-2xl bg-[var(--color-signal)]/10 text-[var(--color-signal)] ring-1 ring-[var(--color-signal)]/20 shadow-xs">
+          <svg className="size-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
           </svg>
         </div>
 
-        <Heading as="h1" size="display" className="mb-3 text-[var(--color-ink)]">
+        <Heading as="h1" size="display" className="mb-2 font-[family-name:var(--font-display)] text-3xl sm:text-4xl font-bold tracking-tight text-[var(--color-ink)]">
           Your KNEST Path is Ready
         </Heading>
-        <p className="mb-8 text-[length:var(--text-body)] text-[var(--color-ink-soft)]">
-          Based on your profile, here is where you should begin.
+        <p className="mb-8 text-sm sm:text-base text-[var(--color-ink-soft)] max-w-lg mx-auto leading-relaxed">
+          Based on your role and focus, we’ve tailored your incubation resources and workspace.
         </p>
 
-        <div className="rounded-[var(--radius-md)] border border-[var(--color-line-strong)] bg-white p-6 sm:p-10 text-left">
+        <div className="rounded-2xl border-2 border-[var(--color-line)] bg-white p-6 sm:p-10 text-left shadow-md hover:shadow-lg transition-all duration-300">
           <div className="mb-6 flex flex-wrap items-center justify-between gap-2 border-b border-[var(--color-line)] pb-4">
-            <span className="text-[length:var(--text-small)] font-semibold uppercase tracking-wider text-[var(--color-signal)]">
-              Recommended Path
+            <span className="rounded-full bg-[var(--color-signal)]/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-[var(--color-signal)]">
+              Tailored Route
             </span>
-            <span className="text-[length:var(--text-small)] font-medium text-[var(--color-ink-muted)] uppercase tracking-wider">
+            <span className="text-xs font-mono font-medium text-[var(--color-ink-muted)] uppercase tracking-wider">
               {result.path}
             </span>
           </div>
@@ -472,7 +575,7 @@ export function OnboardingFlow({ initial, stagePrefill, next, initialStep }: Pro
             {result.headline || result.body}
           </h2>
 
-          <p className="mb-8 text-[length:var(--text-body)] leading-relaxed text-[var(--color-ink-soft)]">
+          <p className="mb-8 text-sm sm:text-base leading-relaxed text-[var(--color-ink-soft)]">
             {result.reason}
           </p>
 
@@ -484,8 +587,6 @@ export function OnboardingFlow({ initial, stagePrefill, next, initialStep }: Pro
               setError(null)
               const done = await postStep('complete')
               if (!done.ok) {
-                // Never navigate on failure: /dashboard would bounce back to step 1
-                // with no explanation (the old behaviour, KN-14).
                 setPending(false)
                 setError(done.error ?? 'We could not finish setting up your account. Try again.')
                 return
@@ -493,12 +594,12 @@ export function OnboardingFlow({ initial, stagePrefill, next, initialStep }: Pro
               router.push(completionDestination(next, result.path, answers.journeyStage))
               router.refresh()
             }}
-            className="inline-flex min-h-[44px] w-full sm:w-auto items-center justify-center rounded-[var(--radius-sm)] bg-[var(--color-ink)] px-6 py-3 font-medium text-white transition-colors hover:bg-[var(--color-ink-soft)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-signal)] disabled:opacity-50"
+            className="inline-flex min-h-[48px] w-full sm:w-auto items-center justify-center rounded-xl bg-[var(--color-ink)] px-8 py-3.5 text-sm font-bold text-white shadow-sm transition-all hover:bg-[var(--color-signal)] hover:-translate-y-0.5 active:translate-y-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-signal)] disabled:opacity-50 cursor-pointer"
           >
-            {pending ? 'Finishing setup…' : next?.startsWith('/apply/') ? 'Continue to your application' : next === '/dashboard' ? 'Open your dashboard' : result.cta}
+            {pending ? 'Finalizing your workspace…' : next?.startsWith('/apply/') ? 'Continue to your application →' : next === '/dashboard' ? 'Open your dashboard →' : `${result.cta} →`}
           </button>
           {error && (
-            <p role="alert" className="mt-4 text-[length:var(--text-small)] text-[var(--color-critical)]">
+            <p role="alert" className="mt-4 text-xs font-semibold text-[var(--color-critical)]">
               {error}
             </p>
           )}
@@ -508,9 +609,9 @@ export function OnboardingFlow({ initial, stagePrefill, next, initialStep }: Pro
           type="button"
           disabled={pending}
           onClick={() => goTo(0)}
-          className="mt-8 text-[length:var(--text-small)] font-medium text-[var(--color-ink-muted)] underline-offset-4 hover:text-[var(--color-ink)] hover:underline"
+          className="mt-8 text-xs font-medium text-[var(--color-ink-muted)] underline-offset-4 hover:text-[var(--color-ink)] hover:underline cursor-pointer"
         >
-          Not quite right? Re-configure your profile
+          Want to change something? Re-configure your profile
         </button>
       </motion.div>
     </div>
