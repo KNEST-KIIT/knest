@@ -31,6 +31,7 @@ export const RATE_LIMITS = {
   // Autosave while typing: generous, but not unlimited.
   answerSave: { capacity: 600, refillIntervalSeconds: 60 * 60 },
   onboardingStep: { capacity: 120, refillIntervalSeconds: 60 * 60 },
+  profileUpdate: { capacity: 60, refillIntervalSeconds: 60 * 60 },
   eventRegister: { capacity: 60, refillIntervalSeconds: 60 * 60 },
   notificationRead: { capacity: 300, refillIntervalSeconds: 60 * 60 },
   labRequest: { capacity: 20, refillIntervalSeconds: 60 * 60 },

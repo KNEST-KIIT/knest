@@ -7,11 +7,12 @@ import { requireUser } from '@/server/auth/guards'
 import { googleConfigured } from '@/server/auth/providers'
 import { ButtonLink, Heading, Section } from '@/components/ui'
 import { AccountMethods } from './account-methods'
+import { ProfileEditor } from './profile-editor'
 
-export const metadata: Metadata = { title: 'Your account' }
+export const metadata: Metadata = { title: 'Your profile & account — KNEST' }
 
 const ROLE_LABELS: Record<string, string> = {
-  student: 'Student',
+  student: 'Student Builder',
   founder: 'Founder',
   mentor: 'Mentor',
   investor: 'Investor',
@@ -36,12 +37,19 @@ export default async function AccountPage() {
     db.query.users.findFirst({
       where: eq(users.id, user.id),
       columns: {
+        id: true,
+        email: true,
         passwordHash: true,
         platformRole: true,
         journeyStage: true,
         name: true,
+        bio: true,
         school: true,
         organization: true,
+        graduationYear: true,
+        linkedinUrl: true,
+        websiteUrl: true,
+        skills: true,
       },
     }),
     db.query.accounts.findFirst({
@@ -50,72 +58,67 @@ export default async function AccountPage() {
     }),
   ])
 
-  // Extract boolean hasPassword on the server so passwordHash is never leaked or serialized to client props
   const hasPassword = Boolean(userRow?.passwordHash)
-  const profile = userRow
-    ? {
-        platformRole: userRow.platformRole,
-        journeyStage: userRow.journeyStage,
-        name: userRow.name,
-        school: userRow.school,
-        organization: userRow.organization,
-      }
-    : null
+  const initialProfile = {
+    name: userRow?.name || '',
+    email: userRow?.email || user.email || '',
+    bio: userRow?.bio || '',
+    school: userRow?.school || '',
+    graduationYear: userRow?.graduationYear || null,
+    linkedinUrl: userRow?.linkedinUrl || '',
+    websiteUrl: userRow?.websiteUrl || '',
+    skills: userRow?.skills || [],
+    platformRole: userRow?.platformRole ? ROLE_LABELS[userRow.platformRole] ?? userRow.platformRole : 'Student Builder',
+    journeyStage: userRow?.journeyStage ? STAGE_LABELS[userRow.journeyStage] ?? userRow.journeyStage : null,
+  }
 
   return (
     <Section>
-      <div className="max-w-xl">
-        <Link href="/auth/complete" className="text-sm text-[var(--color-signal)] underline underline-offset-4">← Your workspace</Link>
-        <Heading as="h1" size="title" className="mt-6">Your account</Heading>
-        <p className="mt-3 break-all text-[var(--color-ink-soft)]">{user.email}</p>
-        <p className="mt-3 text-sm text-[var(--color-ink-soft)]">Choose how you sign in. Your applications, profile and access stay with this one account.</p>
-        <AccountMethods hasPassword={hasPassword} googleLinked={Boolean(google)} googleEnabled={googleConfigured()} />
+      <div className="max-w-5xl">
+        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[var(--color-signal)]">
+          <Link href="/auth/complete" className="hover:underline flex items-center gap-1">
+            <span>←</span> Back to workspace
+          </Link>
+          <span>/</span>
+          <span className="text-[var(--color-ink-muted)]">Profile &amp; Settings</span>
+        </div>
 
-        <div className="mt-10 border-t border-[var(--color-line)] pt-8">
-          <Heading as="h2" size="heading">Profile &amp; role</Heading>
-          <p className="mt-2 text-sm text-[var(--color-ink-soft)]">
-            Your platform role, journey stage, and biographical details across KNEST.
-          </p>
-
-          <dl className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm bg-white p-4 rounded-[var(--radius-sm)] border border-[var(--color-line)]">
-            <div>
-              <dt className="text-xs font-semibold uppercase tracking-wider text-[var(--color-ink-muted)]">Platform Role</dt>
-              <dd className="mt-1 font-medium text-[var(--color-ink)]">
-                {profile?.platformRole ? ROLE_LABELS[profile.platformRole] ?? profile.platformRole : 'Not specified'}
-              </dd>
-            </div>
-            {profile?.journeyStage && (
-              <div>
-                <dt className="text-xs font-semibold uppercase tracking-wider text-[var(--color-ink-muted)]">Journey Stage</dt>
-                <dd className="mt-1 font-medium text-[var(--color-ink)]">
-                  {STAGE_LABELS[profile.journeyStage] ?? profile.journeyStage}
-                </dd>
-              </div>
-            )}
-            {profile?.name && (
-              <div>
-                <dt className="text-xs font-semibold uppercase tracking-wider text-[var(--color-ink-muted)]">Name</dt>
-                <dd className="mt-1 font-medium text-[var(--color-ink)]">{profile.name}</dd>
-              </div>
-            )}
-            {(profile?.school || profile?.organization) && (
-              <div>
-                <dt className="text-xs font-semibold uppercase tracking-wider text-[var(--color-ink-muted)]">
-                  {profile.school ? 'School / Department' : 'Organization'}
-                </dt>
-                <dd className="mt-1 font-medium text-[var(--color-ink)]">{profile.school || profile.organization}</dd>
-              </div>
-            )}
-          </dl>
-
-          <div className="mt-5 flex flex-wrap gap-3">
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <Heading as="h1" size="title" className="tracking-tight">
+              Builder Profile &amp; Settings
+            </Heading>
+            <p className="mt-1 text-sm text-[var(--color-ink-soft)]">
+              Manage your campus presence, technical superpowers, and institutional sign-in methods.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
             <ButtonLink href="/onboarding?step=role" variant="secondary" size="sm">
-              Change role or path
-            </ButtonLink>
-            <ButtonLink href="/onboarding?step=profile" variant="secondary" size="sm">
-              Edit profile
+              Change platform role
             </ButtonLink>
           </div>
+        </div>
+
+        {/* Builder Profile Studio */}
+        <ProfileEditor initialProfile={initialProfile} />
+
+        {/* Sign-in & Authentication Methods */}
+        <div className="mt-14 border-t border-[var(--color-line)] pt-10">
+          <Heading as="h2" size="heading">
+            Sign-in &amp; Security Credentials
+          </Heading>
+          <p className="mt-1 text-sm text-[var(--color-ink-soft)]">
+            Choose how you authenticate on KNEST. Your applications, lab bookings, and founder data stay with this one account.
+          </p>
+          <p className="mt-2 text-xs font-mono text-[var(--color-ink-muted)]">
+            Account email: <strong className="text-[var(--color-ink)]">{user.email}</strong>
+          </p>
+
+          <AccountMethods
+            hasPassword={hasPassword}
+            googleLinked={Boolean(google)}
+            googleEnabled={googleConfigured()}
+          />
         </div>
       </div>
     </Section>
