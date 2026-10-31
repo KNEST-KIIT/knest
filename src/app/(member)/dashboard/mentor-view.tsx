@@ -28,7 +28,7 @@ export async function MentorDashboard({ user }: { user: SessionUser }) {
           <div>
             <div className="flex items-center gap-2">
               <span className="font-semibold text-[var(--color-ink)]">Mentor Network Hub</span>
-              <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase text-blue-700 border border-blue-200">
+              <span className="rounded-full bg-[var(--color-paper-soft)] px-2 py-0.5 text-[length:var(--text-micro)] font-semibold tracking-wide uppercase text-[var(--color-signal)] border border-[var(--color-signal)]/30">
                 Advisory Board
               </span>
             </div>
@@ -58,7 +58,7 @@ export async function MentorDashboard({ user }: { user: SessionUser }) {
             Advisory Profile
           </Heading>
           {mentor && (
-            <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-medium text-emerald-700 border border-emerald-200">
+            <span className="rounded-full bg-[var(--color-positive-wash)] px-2.5 py-0.5 text-[length:var(--text-micro)] font-medium text-[var(--color-positive)] border border-[var(--color-positive)]/30">
               Verified Mentor
             </span>
           )}

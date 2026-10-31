@@ -104,11 +104,11 @@ export function ProfileEditor({ initialProfile }: { initialProfile: ProfileData 
       <div className="lg:col-span-5">
         <div className="sticky top-6 rounded-2xl border border-[var(--color-line)] bg-gradient-to-b from-white to-[var(--color-paper-soft)]/60 p-6 shadow-sm">
           <div className="flex items-center justify-between border-b border-[var(--color-line)]/60 pb-4">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--color-signal)]">
+            <span className="text-[length:var(--text-micro)] font-bold uppercase tracking-wider text-[var(--color-signal)]">
               Builder Card Preview
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-medium text-emerald-700">
-              <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-positive-wash)] px-2.5 py-0.5 text-[length:var(--text-micro)] font-medium text-[var(--color-positive)]">
+              <span className="size-1.5 rounded-full bg-[var(--color-positive)] animate-pulse" />
               Active Builder
             </span>
           </div>
@@ -209,13 +209,13 @@ export function ProfileEditor({ initialProfile }: { initialProfile: ProfileData 
           </div>
 
           {message && (
-            <div className="mt-4 rounded-lg bg-emerald-50 border border-emerald-200 p-3 text-xs font-semibold text-emerald-800">
+            <div className="mt-4 rounded-lg bg-[var(--color-positive-wash)] border border-[var(--color-positive)]/30 p-3 text-xs font-semibold text-[var(--color-positive)]">
               {message}
             </div>
           )}
 
           {error && (
-            <div className="mt-4 rounded-lg bg-red-50 border border-red-200 p-3 text-xs font-semibold text-red-800">
+            <div className="mt-4 rounded-lg bg-[var(--color-critical)]/10 border border-[var(--color-critical)]/20 p-3 text-xs font-semibold text-[var(--color-critical)]">
               {error}
             </div>
           )}
@@ -223,7 +223,7 @@ export function ProfileEditor({ initialProfile }: { initialProfile: ProfileData 
           <div className="mt-6 flex flex-col gap-4">
             <div>
               <label className="block text-xs font-semibold text-[var(--color-ink)]">
-                Full name <span className="text-red-500">*</span>
+                Full name <span className="text-[var(--color-critical)]">*</span>
               </label>
               <input
                 type="text"

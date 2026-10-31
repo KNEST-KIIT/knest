@@ -102,8 +102,8 @@ export async function StudentDashboard({
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">
-                <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-positive-wash)] px-2.5 py-0.5 text-xs font-semibold text-[var(--color-positive)]">
+                <span className="size-2 rounded-full bg-[var(--color-positive)] animate-pulse" />
                 Active Student Builder
               </span>
               {profileRow?.school && (
@@ -155,14 +155,14 @@ export async function StudentDashboard({
                     isCurrent
                       ? 'border-[var(--color-signal)] bg-white shadow-xs'
                       : isPast
-                        ? 'border-emerald-200 bg-emerald-50/40 text-emerald-900'
+                        ? 'border-[var(--color-positive)]/30 bg-[var(--color-positive-wash)] text-[var(--color-positive)]'
                         : 'border-[var(--color-line)]/60 bg-[var(--color-paper-soft)]/40 text-[var(--color-ink-muted)]'
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-[10px] font-bold">0{idx + 1}</span>
+                    <span className="font-mono text-[length:var(--text-micro)] font-bold">0{idx + 1}</span>
                     {isPast ? (
-                      <span className="text-xs text-emerald-600 font-bold">✓</span>
+                      <span className="text-xs text-[var(--color-positive)] font-bold">✓</span>
                     ) : isCurrent ? (
                       <span className="size-2 rounded-full bg-[var(--color-signal)] animate-ping" />
                     ) : null}

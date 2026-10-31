@@ -39,7 +39,7 @@ export async function FounderDashboard({
           <div>
             <div className="flex items-center gap-2">
               <span className="font-semibold text-[var(--color-ink)]">Founder Venture Hub</span>
-              <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase text-emerald-700 border border-emerald-200">
+              <span className="rounded-full bg-[var(--color-positive-wash)] px-2 py-0.5 text-[length:var(--text-micro)] font-semibold tracking-wide uppercase text-[var(--color-positive)] border border-[var(--color-positive)]/30">
                 Active Cohort
               </span>
             </div>
@@ -89,7 +89,7 @@ export async function FounderDashboard({
                   Registered Venture
                 </span>
                 {startup.stage && (
-                  <span className="rounded-md bg-stone-100 px-2.5 py-1 font-mono text-xs uppercase tracking-wider text-stone-700 font-semibold border border-stone-200">
+                  <span className="rounded-md bg-[var(--color-paper-soft)] px-2.5 py-1 font-mono text-xs uppercase tracking-wider text-[var(--color-ink-muted)] font-semibold border border-[var(--color-line)]">
                     {startup.stage}
                   </span>
                 )}
