@@ -23,6 +23,16 @@ const ROLE_LABELS: Record<(typeof PLATFORM_ROLES)[number], string> = {
   other: 'Something else',
 }
 
+const ROLE_DESCRIPTIONS: Record<(typeof PLATFORM_ROLES)[number], string> = {
+  student: 'Enrolled student exploring ideas, joining teams, or building founder skills.',
+  founder: 'Actively building a venture, seeking incubation, lab access, or funding.',
+  mentor: 'Industry leader or domain specialist guiding student and alumni ventures.',
+  investor: 'Angel, syndicate, or venture fund seeking verified campus deal flow.',
+  alumni: 'KIIT graduate staying connected, advising startups, or scaling a company.',
+  partner: 'Corporate, accelerator, or ecosystem partner providing tools or grants.',
+  other: 'Researcher, faculty, or ecosystem collaborator exploring campus ventures.',
+}
+
 const GOAL_LABELS: Record<(typeof GOALS)[number], string> = {
   build_startup: 'Build a startup',
   explore: 'Explore entrepreneurship',
@@ -34,6 +44,17 @@ const GOAL_LABELS: Record<(typeof GOALS)[number], string> = {
   partner: 'Partner with KNEST',
 }
 
+const GOAL_DESCRIPTIONS: Record<(typeof GOALS)[number], string> = {
+  build_startup: 'Turn a breakthrough idea into a high-growth company with campus backing.',
+  explore: 'Learn the fundamentals of technology commercialization and startup mechanics.',
+  join_program: 'Enroll in structured incubation cohorts, hackathons, and grant tracks.',
+  find_mentors: 'Connect with verified domain experts for technical and market guidance.',
+  meet_cofounders: 'Find complementary technical, operational, or design partners.',
+  learn: 'Access curated playbooks, venture templates, and masterclass sessions.',
+  support_founders: 'Offer office hours, advisory sessions, or capital to student builders.',
+  partner: 'Sponsor cohorts, collaborate on research, or integrate campus pilot tools.',
+}
+
 const STAGE_LABELS: Record<(typeof JOURNEY_STAGES)[number], string> = {
   exploring: 'Just exploring',
   idea: 'I have an idea',
@@ -42,6 +63,16 @@ const STAGE_LABELS: Record<(typeof JOURNEY_STAGES)[number], string> = {
   early_revenue: 'Early revenue',
   scaling: 'Scaling',
   established: 'Established company',
+}
+
+const STAGE_DESCRIPTIONS: Record<(typeof JOURNEY_STAGES)[number], string> = {
+  exploring: 'Curious about entrepreneurship without a finalized problem statement.',
+  idea: 'Formulating a solution thesis in need of market feedback and validation.',
+  validation: 'Interviewing prospective users to establish problem-solution fit.',
+  mvp: 'Actively writing code or fabricating hardware in the Maker Lab.',
+  early_revenue: 'Initial pilot contracts, beta users, or recurring customer revenue.',
+  scaling: 'Accelerating product distribution and growing the core engineering team.',
+  established: 'Mature operational venture seeking institutional capital and partnerships.',
 }
 
 const AVAILABILITY_LABELS: Record<(typeof MENTOR_AVAILABILITY)[number], string> = {
@@ -216,7 +247,11 @@ export function OnboardingFlow({ initial, stagePrefill, next, initialStep }: Pro
         pending={pending}
       >
         <SingleSelect
-          options={PLATFORM_ROLES.map((v) => ({ value: v, label: ROLE_LABELS[v] }))}
+          options={PLATFORM_ROLES.map((v) => ({
+            value: v,
+            label: ROLE_LABELS[v],
+            description: ROLE_DESCRIPTIONS[v],
+          }))}
           value={answers.platformRole}
           onChange={(v) => update('platformRole', v as PlatformRole)}
         />
@@ -238,7 +273,11 @@ export function OnboardingFlow({ initial, stagePrefill, next, initialStep }: Pro
         pending={pending}
       >
         <MultiSelect
-          options={GOALS.map((v) => ({ value: v, label: GOAL_LABELS[v] }))}
+          options={GOALS.map((v) => ({
+            value: v,
+            label: GOAL_LABELS[v],
+            description: GOAL_DESCRIPTIONS[v],
+          }))}
           value={answers.goals}
           onChange={(v) => update('goals', v)}
         />
@@ -268,7 +307,11 @@ export function OnboardingFlow({ initial, stagePrefill, next, initialStep }: Pro
           </div>
         )}
         <SingleSelect
-          options={JOURNEY_STAGES.map((v) => ({ value: v, label: STAGE_LABELS[v] }))}
+          options={JOURNEY_STAGES.map((v) => ({
+            value: v,
+            label: STAGE_LABELS[v],
+            description: STAGE_DESCRIPTIONS[v],
+          }))}
           value={answers.journeyStage}
           onChange={(v) => update('journeyStage', v as JourneyStage)}
         />

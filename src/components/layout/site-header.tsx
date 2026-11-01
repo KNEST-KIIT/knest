@@ -134,7 +134,7 @@ export function SiteHeader({ signedIn = false, unreadCount = 0 }: { signedIn?: b
                 {unreadCount > 0 && (
                   <span
                     aria-hidden
-                    className="absolute -right-1.5 -top-1.5 flex size-4 items-center justify-center rounded-full bg-[var(--color-signal)] text-[9px] font-medium text-white"
+                    className="absolute -right-1.5 -top-1.5 flex size-4 items-center justify-center rounded-full bg-[var(--color-signal)] text-[length:var(--text-micro)] font-medium text-white"
                   >
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </span>

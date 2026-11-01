@@ -11,7 +11,7 @@ export function Hero({ homepage }: { homepage: Homepage }) {
         <div className="max-w-2xl border-l-4 border-[var(--color-signal)] pl-6 md:pl-10 pt-0 pb-1">
           <RevealHeading 
             size="hero" 
-            className="text-[var(--color-ink)] text-5xl lg:text-[64px] font-bold tracking-tight leading-[1.05]"
+            className="text-[var(--color-ink)] text-5xl lg:text-[length:var(--text-hero)] font-bold tracking-tight leading-[1.05]"
           >
             {homepage.heroHeadline}
           </RevealHeading>

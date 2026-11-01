@@ -42,7 +42,7 @@ export function PasswordInput({
         id={toggleId}
         type="button"
         onClick={() => setVisible((v) => !v)}
-        className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-[11px] font-semibold uppercase tracking-wider text-[var(--color-ink-muted)] hover:text-[var(--color-signal)] transition-colors"
+        className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-[length:var(--text-micro)] font-semibold uppercase tracking-wider text-[var(--color-ink-muted)] hover:text-[var(--color-signal)] transition-colors"
       >
         <span className="sr-only">{visible ? 'Hide password' : 'Show password'}</span>
         <span aria-hidden>{visible ? 'Hide' : 'Show'}</span>

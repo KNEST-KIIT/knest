@@ -73,7 +73,7 @@ export function LoginForm({ googleEnabled, turnstileSiteKey, recoveryNext = null
     <div>
       {searchParams.get('reset') === 'success' && <p role="status" className="mb-6 text-sm text-[var(--color-positive)]">Your password is updated. Log in to continue.</p>}
       <div className="mb-8">
-        <span className="inline-block text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-signal)] mb-2">
+        <span className="inline-block text-[length:var(--text-micro)] font-bold uppercase tracking-[0.2em] text-[var(--color-signal)] mb-2">
           Your KNEST account
         </span>
         <h1 className="font-[family-name:var(--font-display)] text-3xl sm:text-4xl font-bold tracking-tight text-[var(--color-ink)]">
@@ -129,7 +129,7 @@ export function LoginForm({ googleEnabled, turnstileSiteKey, recoveryNext = null
           <div className="mt-1.5 flex justify-end">
             <a 
               href={next ? `/reset?next=${encodeURIComponent(next)}` : '/reset'}
-              className="text-[11px] font-medium text-[var(--color-signal)] hover:underline hover:text-[var(--color-signal-deep)] transition-colors"
+              className="text-[length:var(--text-micro)] font-medium text-[var(--color-signal)] hover:underline hover:text-[var(--color-signal-deep)] transition-colors"
             >
               Forgot password?
             </a>

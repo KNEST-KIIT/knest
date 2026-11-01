@@ -122,7 +122,7 @@ export function VerifyConfirm({
   return (
     <div className="max-w-md">
       <div className="mb-6">
-        <span className="inline-block text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--color-signal)] mb-2">
+        <span className="inline-block text-[length:var(--text-micro)] font-bold uppercase tracking-[0.2em] text-[var(--color-signal)] mb-2">
           Confirm your email
         </span>
         <Heading as="h1" size="title">

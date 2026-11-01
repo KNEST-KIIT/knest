@@ -28,7 +28,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                   <span className="text-xl font-[family-name:var(--font-display)] font-bold tracking-tight text-[var(--color-ink)]">
                     KNEST
                   </span>
-                  <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-[var(--color-ink-muted)] group-hover:text-[var(--color-signal)] transition-colors">
+                  <span className="text-[length:var(--text-micro)] font-bold uppercase tracking-[0.2em] text-[var(--color-ink-muted)] group-hover:text-[var(--color-signal)] transition-colors">
                     Student Talent &amp; Ventures
                   </span>
                 </div>
@@ -41,7 +41,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             </div>
 
             {/* Footer Trust Markers */}
-            <div className="mt-12 flex items-center gap-3 text-[11px] text-[var(--color-ink-muted)]">
+            <div className="mt-12 flex items-center gap-3 text-[length:var(--text-micro)] text-[var(--color-ink-muted)]">
               <Link href="/" className="hover:text-[var(--color-signal)] transition-colors font-medium">
                 ← Back to homepage
               </Link>

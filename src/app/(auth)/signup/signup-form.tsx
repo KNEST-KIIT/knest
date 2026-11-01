@@ -96,7 +96,7 @@ export function SignupForm({ googleEnabled, turnstileSiteKey }: { googleEnabled:
   return (
     <div>
       <div className="mb-8">
-        <span className="inline-block text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--color-signal)] mb-2">
+        <span className="inline-block text-[length:var(--text-micro)] font-bold uppercase tracking-[0.2em] text-[var(--color-signal)] mb-2">
           Create your account
         </span>
         <h1 className="font-[family-name:var(--font-display)] text-3xl sm:text-4xl font-bold tracking-tight text-[var(--color-ink)]">

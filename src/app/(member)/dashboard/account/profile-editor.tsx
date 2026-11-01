@@ -126,11 +126,11 @@ export function ProfileEditor({ initialProfile }: { initialProfile: ProfileData 
                 {profile.graduationYear ? ` · Class of '${String(profile.graduationYear).slice(-2)}` : ''}
               </p>
               <div className="mt-1.5 flex flex-wrap gap-1.5">
-                <span className="inline-block rounded-[var(--radius-sm)] bg-[var(--color-signal)]/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[var(--color-signal)]">
+                <span className="inline-block rounded-[var(--radius-sm)] bg-[var(--color-signal)]/10 px-2 py-0.5 text-[length:var(--text-micro)] font-bold uppercase tracking-wider text-[var(--color-signal)]">
                   {profile.platformRole}
                 </span>
                 {profile.journeyStage && (
-                  <span className="inline-block rounded-[var(--radius-sm)] bg-[var(--color-ink)]/5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-muted)]">
+                  <span className="inline-block rounded-[var(--radius-sm)] bg-[var(--color-ink)]/5 px-2 py-0.5 text-[length:var(--text-micro)] font-bold uppercase tracking-wider text-[var(--color-ink-muted)]">
                     {profile.journeyStage}
                   </span>
                 )}
@@ -144,7 +144,7 @@ export function ProfileEditor({ initialProfile }: { initialProfile: ProfileData 
 
           {/* Skills tags preview */}
           <div className="mt-5 border-t border-[var(--color-line)]/60 pt-4">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-muted)]">
+            <span className="text-[length:var(--text-micro)] font-bold uppercase tracking-wider text-[var(--color-ink-muted)]">
               Core Skills &amp; Stack
             </span>
             <div className="mt-2 flex flex-wrap gap-1.5">
@@ -281,7 +281,7 @@ export function ProfileEditor({ initialProfile }: { initialProfile: ProfileData 
                 maxLength={500}
                 className="mt-1 w-full rounded-lg border border-[var(--color-line)] px-3 py-2 text-sm text-[var(--color-ink)] focus:border-[var(--color-signal)] focus:outline-none focus:ring-1 focus:ring-[var(--color-signal)]"
               />
-              <span className="text-[10px] text-[var(--color-ink-muted)]">
+              <span className="text-[length:var(--text-micro)] text-[var(--color-ink-muted)]">
                 {profile.bio.length} / 500 characters
               </span>
             </div>
@@ -317,7 +317,7 @@ export function ProfileEditor({ initialProfile }: { initialProfile: ProfileData 
 
               {/* Suggestions */}
               <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-                <span className="text-[10px] text-[var(--color-ink-muted)]">Suggestions:</span>
+                <span className="text-[length:var(--text-micro)] text-[var(--color-ink-muted)]">Suggestions:</span>
                 {COMMON_SKILLS.filter((s) => !profile.skills.includes(s))
                   .slice(0, 6)
                   .map((s) => (
@@ -325,7 +325,7 @@ export function ProfileEditor({ initialProfile }: { initialProfile: ProfileData 
                       key={s}
                       type="button"
                       onClick={() => addSkill(s)}
-                      className="rounded bg-[var(--color-paper-soft)] px-2 py-0.5 text-[10px] font-medium text-[var(--color-ink-soft)] hover:bg-[var(--color-signal)]/10 hover:text-[var(--color-signal)] transition-colors"
+                      className="rounded bg-[var(--color-paper-soft)] px-2 py-0.5 text-[length:var(--text-micro)] font-medium text-[var(--color-ink-soft)] hover:bg-[var(--color-signal)]/10 hover:text-[var(--color-signal)] transition-colors"
                     >
                       + {s}
                     </button>

@@ -41,6 +41,22 @@ export const JOURNEY_STAGES = [
 
 export const MENTOR_AVAILABILITY = ['open', 'limited', 'unavailable'] as const
 
+const normalizeUrl = (val: unknown): unknown => {
+  if (typeof val !== 'string') return val
+  const trimmed = val.trim()
+  if (!trimmed) return ''
+  // If user entered a plain hostname/path without protocol (e.g. linkedin.com/in/user), prepend https://
+  if (!/^https?:\/\//i.test(trimmed) && trimmed.includes('.')) {
+    return `https://${trimmed}`
+  }
+  return trimmed
+}
+
+const optionalUrl = z.preprocess(
+  normalizeUrl,
+  z.string().url('That doesn’t look like a URL.').optional().or(z.literal(''))
+)
+
 export const stepRoleSchema = z.object({
   platformRole: z.enum(PLATFORM_ROLES),
 })
@@ -61,7 +77,7 @@ export const stepProfileSchema = z.object({
   name: z.string().trim().min(1, 'Tell us your name.').max(120),
   school: z.string().trim().max(160).optional(),
   graduationYear: z.coerce.number().int().min(1990).max(2100).optional(),
-  linkedinUrl: z.string().trim().url('That doesn’t look like a URL.').optional().or(z.literal('')),
+  linkedinUrl: optionalUrl,
   bio: z.string().trim().max(500).optional(),
   skills: z.array(z.string()).optional(),
 })
@@ -74,5 +90,5 @@ export const stepMentorProfileSchema = z.object({
     .min(1, 'Pick at least one.'),
   yearsOfExperience: z.coerce.number().int().min(0).max(80).optional(),
   mentorAvailability: z.enum(MENTOR_AVAILABILITY),
-  linkedinUrl: z.string().trim().url('That doesn’t look like a URL.').optional().or(z.literal('')),
+  linkedinUrl: optionalUrl,
 })

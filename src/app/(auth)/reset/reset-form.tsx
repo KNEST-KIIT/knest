@@ -70,7 +70,7 @@ export function ResetForm({ turnstileSiteKey, next }: { turnstileSiteKey: string
   return (
     <div>
       <div className="mb-6">
-        <span className="inline-block text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-signal)] mb-1.5">
+        <span className="inline-block text-[length:var(--text-micro)] font-bold uppercase tracking-[0.2em] text-[var(--color-signal)] mb-1.5">
           Account Recovery
         </span>
         <h1 className="font-[family-name:var(--font-display)] text-2xl sm:text-3xl font-bold tracking-tight text-[var(--color-ink)]">

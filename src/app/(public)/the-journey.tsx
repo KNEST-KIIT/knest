@@ -228,7 +228,7 @@ export function TheJourney({
               <div className="absolute inset-0 bg-[var(--color-signal)]/15 mix-blend-multiply z-10" />
               <Image src={current.content.image} alt={current.stage.label} fill sizes="(min-width: 1024px) 40vw, 100vw" className="object-cover grayscale contrast-110 hover:grayscale-0 transition-all duration-700 ease-out"
               />
-              <div className="absolute bottom-4 left-4 z-20 bg-black/80 px-3 py-1 text-[11px] font-mono uppercase tracking-widest text-[var(--color-paper)]/80 border border-white/10 backdrop-blur-sm">
+              <div className="absolute bottom-4 left-4 z-20 bg-black/80 px-3 py-1 text-[length:var(--text-micro)] font-mono uppercase tracking-widest text-[var(--color-paper)]/80 border border-white/10 backdrop-blur-sm">
                 Stage 0{activeIdx + 1} {'//'} {current.stage.label}
               </div>
             </div>

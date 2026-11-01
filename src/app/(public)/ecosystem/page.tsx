@@ -199,7 +199,7 @@ export default async function EcosystemPage() {
             >
               <div>
                 <div className="flex items-center justify-between border-b border-[var(--color-line)] pb-3">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-signal)]">
+                  <span className="text-[length:var(--text-micro)] font-bold uppercase tracking-widest text-[var(--color-signal)]">
                     {spec.tag}
                   </span>
                   <span className="font-mono text-xs text-[var(--color-ink-muted)]">

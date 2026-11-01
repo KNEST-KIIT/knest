@@ -50,7 +50,7 @@ export async function ContributionDashboard({ role }: { role: keyof typeof journ
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-6">
             <div>
               <div className="flex items-center gap-2">
-                <span className="rounded-full bg-[var(--color-signal)]/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[var(--color-signal)]">
+                <span className="rounded-full bg-[var(--color-signal)]/10 px-2 py-0.5 text-[length:var(--text-micro)] font-bold uppercase tracking-wider text-[var(--color-signal)]">
                   Active Dealflow
                 </span>
                 <span className="text-xs text-[var(--color-ink-muted)]">· Verified KNEST Cohort Startups</span>
@@ -76,11 +76,11 @@ export async function ContributionDashboard({ role }: { role: keyof typeof journ
                 >
                   <div>
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-[var(--color-signal)]">
+                      <span className="font-mono text-[length:var(--text-micro)] font-bold uppercase tracking-wider text-[var(--color-signal)]">
                         {startup.stage || 'Incubation'}
                       </span>
                       {startup.sectors?.[0] && (
-                        <span className="rounded bg-white px-2 py-0.5 text-[10px] font-medium text-[var(--color-ink-muted)] border border-[var(--color-line)]">
+                        <span className="rounded bg-white px-2 py-0.5 text-[length:var(--text-micro)] font-medium text-[var(--color-ink-muted)] border border-[var(--color-line)]">
                           {startup.sectors[0]}
                         </span>
                       )}

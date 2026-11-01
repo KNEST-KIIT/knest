@@ -138,7 +138,7 @@ export async function StudentDashboard({
         {/* 5-Stage Venture Progression Ribbon */}
         <div className="mt-6 border-t border-[var(--color-line)]/70 pt-5">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--color-signal)]">
+            <span className="text-[length:var(--text-micro)] font-bold uppercase tracking-wider text-[var(--color-signal)]">
               Zero to Launch Runway
             </span>
             <span className="text-xs font-mono text-[var(--color-ink-muted)]">
@@ -176,7 +176,7 @@ export async function StudentDashboard({
                   >
                     {stage.label}
                   </p>
-                  <p className="truncate text-[10px] text-[var(--color-ink-muted)]">
+                  <p className="truncate text-[length:var(--text-micro)] text-[var(--color-ink-muted)]">
                     {stage.subtitle}
                   </p>
                 </div>
@@ -254,7 +254,7 @@ export async function StudentDashboard({
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <span className="rounded-full bg-[var(--color-signal)]/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[var(--color-signal)]">
+              <span className="rounded-full bg-[var(--color-signal)]/10 px-2 py-0.5 text-[length:var(--text-micro)] font-bold uppercase tracking-wider text-[var(--color-signal)]">
                 Campus 15B Infrastructure
               </span>
               <span className="text-xs text-[var(--color-ink-muted)]">· Open for Student Booking</span>
@@ -277,7 +277,7 @@ export async function StudentDashboard({
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <span className="rounded-full bg-[var(--color-positive-wash)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[var(--color-positive)]">
+              <span className="rounded-full bg-[var(--color-positive-wash)] px-2 py-0.5 text-[length:var(--text-micro)] font-bold uppercase tracking-wider text-[var(--color-positive)]">
                 Hackathon Tournaments
               </span>
               <span className="text-xs text-[var(--color-ink-muted)]">· Active Arena</span>
@@ -339,7 +339,7 @@ export async function StudentDashboard({
                 >
                   <div className="flex items-start gap-4">
                     <div className="flex min-w-[3.25rem] flex-col items-center justify-center rounded-xl border border-[var(--color-line)] bg-[var(--color-paper-soft)] px-2.5 py-2 text-center">
-                      <span className="text-[10px] font-bold uppercase text-[var(--color-signal)] leading-none">
+                      <span className="text-[length:var(--text-micro)] font-bold uppercase text-[var(--color-signal)] leading-none">
                         {month}
                       </span>
                       <span className="text-lg font-bold leading-none mt-1 text-[var(--color-ink)] font-[family-name:var(--font-display)]">

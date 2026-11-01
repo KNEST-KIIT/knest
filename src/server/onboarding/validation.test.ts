@@ -28,6 +28,12 @@ describe('Onboarding step validation', () => {
 
     const resUrl = stepProfileSchema.safeParse({ name: 'Valid Name', linkedinUrl: 'https://linkedin.com/in/test' })
     expect(resUrl.success).toBe(true)
+
+    const resBare = stepProfileSchema.safeParse({ name: 'Valid Name', linkedinUrl: 'linkedin.com/in/test' })
+    expect(resBare.success).toBe(true)
+    if (resBare.success) {
+      expect(resBare.data.linkedinUrl).toBe('https://linkedin.com/in/test')
+    }
   })
 
   it('validates mentor profile requiring name and expertiseAreas', () => {

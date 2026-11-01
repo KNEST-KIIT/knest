@@ -48,16 +48,22 @@ export function StepShell({
         className="mb-10"
       >
         <div className="flex items-center justify-between mb-3">
-          <p className="text-[length:var(--text-small)] font-medium tracking-wide uppercase text-[var(--color-signal)]">
-            Step {index} of {total}
-          </p>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-signal-wash)] px-3 py-0.5 text-[length:var(--text-micro)] font-semibold uppercase tracking-wider text-[var(--color-signal)]">
+              <span className="size-1.5 rounded-full bg-[var(--color-signal)]" />
+              Step {index} of {total}
+            </span>
+          </div>
+          <span className="text-[length:var(--text-micro)] font-medium text-[var(--color-ink-muted)]">
+            {Math.round((index / total) * 100)}% Complete
+          </span>
         </div>
         <p className="mb-3 text-[length:var(--text-small)] text-[var(--color-ink-muted)]">Your answers are saved when you continue. You can return to this step.</p>
-        <div role="progressbar" aria-label="Account setup" aria-valuemin={0} aria-valuemax={total} aria-valuenow={index} className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--color-paper-soft)]">
+        <div role="progressbar" aria-label="Account setup" aria-valuemin={0} aria-valuemax={total} aria-valuenow={index} className="h-2 w-full overflow-hidden rounded-full bg-[var(--color-paper-soft)] shadow-inner">
           <motion.div
-            initial={{ width: `${((index - 1) / total) * 100}%` }}
+            initial={reducedMotion ? false : { width: `${((index - 1) / total) * 100}%` }}
             animate={{ width: `${(index / total) * 100}%` }}
-            transition={{ type: 'spring', stiffness: 100, damping: 20 }}
+            transition={reducedMotion ? { duration: 0 } : { type: 'spring', stiffness: 100, damping: 20 }}
             className="h-full rounded-full bg-[var(--color-signal)]"
           />
         </div>

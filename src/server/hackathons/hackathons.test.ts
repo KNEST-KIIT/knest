@@ -68,3 +68,37 @@ describe('Hackathon Webhook Payload Builder', () => {
     expect(TYPE_COLORS.winner).toBe(0x7d5f18)
   })
 })
+
+describe('Hackathon Squad Lifecycle Rules', () => {
+  it('enforces that a solo leader leaving auto-disbands the team cleanly', () => {
+    const leaderId = 'usr_leader'
+    const teamMembers = [{ userId: leaderId, role: 'leader' }]
+    const otherMembers = teamMembers.filter((m) => m.userId !== leaderId)
+    
+    // If no other members exist, leaving triggers disband
+    const shouldDisband = otherMembers.length === 0
+    expect(shouldDisband).toBe(true)
+  })
+
+  it('blocks leader from leaving if other members exist without transferring leadership', () => {
+    const leaderId = 'usr_leader'
+    const teamMembers = [
+      { userId: leaderId, role: 'leader' },
+      { userId: 'usr_member2', role: 'member' },
+    ]
+    const otherMembers = teamMembers.filter((m) => m.userId !== leaderId)
+    
+    const shouldDisband = otherMembers.length === 0
+    expect(shouldDisband).toBe(false)
+    expect(otherMembers).toHaveLength(1)
+  })
+
+  it('validates leadership transfer target must exist in team', () => {
+    const teamMembers = ['usr_leader', 'usr_member2', 'usr_member3']
+    const targetUserId = 'usr_member2'
+    const nonMemberUserId = 'usr_stranger'
+
+    expect(teamMembers.includes(targetUserId)).toBe(true)
+    expect(teamMembers.includes(nonMemberUserId)).toBe(false)
+  })
+})

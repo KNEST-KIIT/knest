@@ -88,7 +88,7 @@ export async function FounderDashboard({
           <div className="lg:col-span-6 flex flex-col justify-between rounded-xl border border-[var(--color-line)] bg-white p-6 shadow-sm">
             <div>
               <div className="flex items-center justify-between gap-2 mb-3">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--color-signal)]">
+                <span className="text-[length:var(--text-micro)] font-bold uppercase tracking-wider text-[var(--color-signal)]">
                   Registered Venture
                 </span>
                 {startup.stage && (

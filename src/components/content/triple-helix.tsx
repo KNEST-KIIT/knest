@@ -231,7 +231,7 @@ export function TripleHelix() {
                   : 'bg-white border-2 border-[var(--color-line)] hover:border-[var(--color-signal)] hover:bg-[#f4e4e2]/40',
               )}
             >
-              <p className="font-mono text-[11px] sm:text-xs font-bold text-[var(--color-signal)] tracking-widest uppercase">
+              <p className="font-mono text-[length:var(--text-micro)] sm:text-xs font-bold text-[var(--color-signal)] tracking-widest uppercase">
                 01 // {PILLARS.university.scope}
               </p>
               <h4 className="mt-1 font-[family-name:var(--font-display)] text-xl sm:text-2xl font-bold text-[var(--color-ink)] tracking-tight">
@@ -252,7 +252,7 @@ export function TripleHelix() {
                   {/* Arrow pointing UP to Node 01 */}
                   <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-0 h-0 border-x-[8px] border-x-transparent border-b-[8px] border-b-[var(--color-signal)]" />
 
-                  <span className="font-mono text-[10px] font-bold text-[var(--color-signal)] uppercase tracking-widest">
+                  <span className="font-mono text-[length:var(--text-micro)] font-bold text-[var(--color-signal)] uppercase tracking-widest">
                     {PILLARS.university.num} {'//'} {PILLARS.university.scope}
                   </span>
                   <h5 className="mt-1.5 font-[family-name:var(--font-display)] text-lg sm:text-xl font-bold text-[var(--color-ink)]">
@@ -261,7 +261,7 @@ export function TripleHelix() {
                   <p className="mt-2 text-xs sm:text-sm text-[var(--color-ink-soft)] font-normal leading-relaxed">
                     {PILLARS.university.role}
                   </p>
-                  <div className="mt-3 pt-2.5 border-t border-[var(--color-line)] flex items-center justify-between text-[11px] font-mono font-semibold text-[var(--color-signal)]">
+                  <div className="mt-3 pt-2.5 border-t border-[var(--color-line)] flex items-center justify-between text-[length:var(--text-micro)] font-mono font-semibold text-[var(--color-signal)]">
                     <span>REINFORCING NODE</span>
                     <span>→</span>
                   </div>
@@ -291,7 +291,7 @@ export function TripleHelix() {
                   {/* Arrow pointing DOWN to Node 02 */}
                   <div className="absolute -bottom-2 right-12 w-0 h-0 border-x-[8px] border-x-transparent border-t-[8px] border-t-[var(--color-signal)]" />
 
-                  <span className="font-mono text-[10px] font-bold text-[var(--color-signal)] uppercase tracking-widest">
+                  <span className="font-mono text-[length:var(--text-micro)] font-bold text-[var(--color-signal)] uppercase tracking-widest">
                     {PILLARS.schools.num} {'//'} {PILLARS.schools.scope}
                   </span>
                   <h5 className="mt-1.5 font-[family-name:var(--font-display)] text-lg sm:text-xl font-bold text-[var(--color-ink)]">
@@ -300,7 +300,7 @@ export function TripleHelix() {
                   <p className="mt-2 text-xs sm:text-sm text-[var(--color-ink-soft)] font-normal leading-relaxed">
                     {PILLARS.schools.role}
                   </p>
-                  <div className="mt-3 pt-2.5 border-t border-[var(--color-line)] flex items-center justify-between text-[11px] font-mono font-semibold text-[var(--color-signal)]">
+                  <div className="mt-3 pt-2.5 border-t border-[var(--color-line)] flex items-center justify-between text-[length:var(--text-micro)] font-mono font-semibold text-[var(--color-signal)]">
                     <span>REINFORCING NODE</span>
                     <span>→</span>
                   </div>
@@ -317,7 +317,7 @@ export function TripleHelix() {
                   : 'bg-white border-2 border-[var(--color-line)] hover:border-[var(--color-signal)] hover:bg-[#f4e4e2]/40',
               )}
             >
-              <p className="font-mono text-[11px] sm:text-xs font-bold text-[var(--color-signal)] tracking-widest uppercase">
+              <p className="font-mono text-[length:var(--text-micro)] sm:text-xs font-bold text-[var(--color-signal)] tracking-widest uppercase">
                 02 // {PILLARS.schools.scope}
               </p>
               <h4 className="mt-1 font-[family-name:var(--font-display)] text-lg sm:text-xl font-bold text-[var(--color-ink)] tracking-tight">
@@ -347,7 +347,7 @@ export function TripleHelix() {
                   {/* Arrow pointing DOWN to Node 03 */}
                   <div className="absolute -bottom-2 left-12 w-0 h-0 border-x-[8px] border-x-transparent border-t-[8px] border-t-[var(--color-signal)]" />
 
-                  <span className="font-mono text-[10px] font-bold text-[var(--color-signal)] uppercase tracking-widest">
+                  <span className="font-mono text-[length:var(--text-micro)] font-bold text-[var(--color-signal)] uppercase tracking-widest">
                     {PILLARS.partners.num} {'//'} {PILLARS.partners.scope}
                   </span>
                   <h5 className="mt-1.5 font-[family-name:var(--font-display)] text-lg sm:text-xl font-bold text-[var(--color-ink)]">
@@ -356,7 +356,7 @@ export function TripleHelix() {
                   <p className="mt-2 text-xs sm:text-sm text-[var(--color-ink-soft)] font-normal leading-relaxed">
                     {PILLARS.partners.role}
                   </p>
-                  <div className="mt-3 pt-2.5 border-t border-[var(--color-line)] flex items-center justify-between text-[11px] font-mono font-semibold text-[var(--color-signal)]">
+                  <div className="mt-3 pt-2.5 border-t border-[var(--color-line)] flex items-center justify-between text-[length:var(--text-micro)] font-mono font-semibold text-[var(--color-signal)]">
                     <span>REINFORCING NODE</span>
                     <span>→</span>
                   </div>
@@ -373,7 +373,7 @@ export function TripleHelix() {
                   : 'bg-white border-2 border-[var(--color-line)] hover:border-[var(--color-signal)] hover:bg-[#f4e4e2]/40',
               )}
             >
-              <p className="font-mono text-[11px] sm:text-xs font-bold text-[var(--color-signal)] tracking-widest uppercase">
+              <p className="font-mono text-[length:var(--text-micro)] sm:text-xs font-bold text-[var(--color-signal)] tracking-widest uppercase">
                 03 // {PILLARS.partners.scope}
               </p>
               <h4 className="mt-1 font-[family-name:var(--font-display)] text-lg sm:text-xl font-bold text-[var(--color-ink)] tracking-tight">

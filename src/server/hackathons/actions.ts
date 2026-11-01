@@ -329,6 +329,94 @@ export async function joinTeamByCode(
   return { ok: true }
 }
 
+export async function disbandTeam(hackathonId: string): Promise<ActionResult> {
+  const user = await requireUserOrThrow()
+
+  const membership = await db.query.hackathonTeamMembers.findFirst({
+    where: and(
+      eq(hackathonTeamMembers.hackathonId, hackathonId),
+      eq(hackathonTeamMembers.userId, user.id),
+    ),
+    with: { team: { columns: { id: true, leaderId: true } } },
+  })
+  if (!membership) return { ok: false, error: 'You are not on a team for this hackathon.' }
+  if (membership.role !== 'leader') {
+    return { ok: false, error: 'Only the team leader can disband the team.' }
+  }
+
+  // Check if team has already submitted a final submission
+  const sub = await db.query.hackathonSubmissions.findFirst({
+    where: and(
+      eq(hackathonSubmissions.hackathonId, hackathonId),
+      eq(hackathonSubmissions.teamId, membership.team.id),
+    ),
+    columns: { id: true, status: true },
+  })
+  if (sub?.status === 'submitted') {
+    return { ok: false, error: 'Cannot disband a team with a finalized submission.' }
+  }
+
+  if (sub) {
+    await db.delete(hackathonSubmissions).where(eq(hackathonSubmissions.id, sub.id))
+  }
+
+  await db
+    .delete(hackathonTeamMembers)
+    .where(eq(hackathonTeamMembers.teamId, membership.team.id))
+
+  await db
+    .delete(hackathonTeams)
+    .where(eq(hackathonTeams.id, membership.team.id))
+
+  return { ok: true }
+}
+
+export async function transferLeadership(
+  hackathonId: string,
+  newLeaderUserId: string,
+): Promise<ActionResult> {
+  const user = await requireUserOrThrow()
+
+  const currentMembership = await db.query.hackathonTeamMembers.findFirst({
+    where: and(
+      eq(hackathonTeamMembers.hackathonId, hackathonId),
+      eq(hackathonTeamMembers.userId, user.id),
+    ),
+    with: { team: { columns: { id: true, leaderId: true } } },
+  })
+  if (!currentMembership || currentMembership.role !== 'leader') {
+    return { ok: false, error: 'Only the current team leader can transfer leadership.' }
+  }
+
+  const targetMembership = await db.query.hackathonTeamMembers.findFirst({
+    where: and(
+      eq(hackathonTeamMembers.teamId, currentMembership.team.id),
+      eq(hackathonTeamMembers.userId, newLeaderUserId),
+    ),
+    columns: { id: true },
+  })
+  if (!targetMembership) {
+    return { ok: false, error: 'The new leader must be an existing member of your team.' }
+  }
+
+  await db
+    .update(hackathonTeamMembers)
+    .set({ role: 'leader' })
+    .where(eq(hackathonTeamMembers.id, targetMembership.id))
+
+  await db
+    .update(hackathonTeamMembers)
+    .set({ role: 'member' })
+    .where(eq(hackathonTeamMembers.id, currentMembership.id))
+
+  await db
+    .update(hackathonTeams)
+    .set({ leaderId: newLeaderUserId })
+    .where(eq(hackathonTeams.id, currentMembership.team.id))
+
+  return { ok: true }
+}
+
 export async function leaveTeam(hackathonId: string): Promise<ActionResult> {
   const user = await requireUserOrThrow()
 
@@ -340,11 +428,23 @@ export async function leaveTeam(hackathonId: string): Promise<ActionResult> {
     with: { team: { columns: { id: true, leaderId: true } } },
   })
   if (!membership) return { ok: false, error: 'You are not on a team for this hackathon.' }
+
   if (membership.role === 'leader') {
+    const otherMembers = await db.query.hackathonTeamMembers.findMany({
+      where: and(
+        eq(hackathonTeamMembers.teamId, membership.team.id),
+        ne(hackathonTeamMembers.userId, user.id),
+      ),
+      columns: { id: true },
+    })
+    if (otherMembers.length === 0) {
+      // Solo leader: automatically disband the team cleanly
+      return disbandTeam(hackathonId)
+    }
     return {
       ok: false,
       error:
-        'Team leaders cannot leave. Transfer leadership to another member or disband the team.',
+        'Team leaders cannot leave while other members are in the team. Transfer leadership or disband the team.',
     }
   }
 

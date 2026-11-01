@@ -39,7 +39,7 @@ export function Field({
         {/* Optional fields are marked; required ones are not. Most fields are
             required, so marking the exception is quieter than marking the rule. */}
         {optional && (
-          <span className="ml-1 text-[11px] font-normal normal-case text-[var(--color-ink-muted)]">(optional)</span>
+          <span className="ml-1 text-[length:var(--text-micro)] font-normal normal-case text-[var(--color-ink-muted)]">(optional)</span>
         )}
       </label>
 
