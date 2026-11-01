@@ -9,7 +9,6 @@ import { LogoutButton } from './logout-button'
 
 const NAV = [
   { href: '/programs', label: 'Programs' },
-  { href: '/hackathons', label: 'Hackathons' },
   { href: '/startups', label: 'Startups' },
   { href: '/ecosystem', label: 'Ecosystem' },
   { href: '/events', label: 'Events' },
