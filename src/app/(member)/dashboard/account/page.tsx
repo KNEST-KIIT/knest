@@ -76,7 +76,7 @@ export default async function AccountPage() {
     <Section>
       <div className="max-w-5xl">
         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[var(--color-signal)]">
-          <Link href="/auth/complete" className="hover:underline flex items-center gap-1">
+          <Link href="/dashboard" className="hover:underline flex items-center gap-1">
             <span>←</span> Back to workspace
           </Link>
           <span>/</span>

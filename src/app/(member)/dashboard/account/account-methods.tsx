@@ -156,9 +156,17 @@ export function AccountMethods({
           {googleLinked
             ? 'Connected. "Continue with Google" signs directly into this KNEST account.'
             : googleEnabled
-              ? 'Connect your university or personal Google account with this same email. Enter your KNEST password below to verify ownership.'
+              ? hasPassword
+                ? 'Connect your university or personal Google account with this same email. Enter your KNEST password below to verify ownership.'
+                : 'Connect your university or personal Google account with this same email. To link Google, first establish a password above using "Email Password Setup Link".'
               : 'Google sign-in is not configured in this environment.'}
         </p>
+
+        {!googleLinked && googleEnabled && !hasPassword && (
+          <div className="mt-4 rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[var(--color-paper-soft)] p-3 text-xs text-[var(--color-ink-soft)]">
+            Please set up a password in the section above before linking Google to confirm ownership of this account.
+          </div>
+        )}
 
         {googleLinked && params.get('google') === 'connected' && (
           <div className="mt-3 rounded-[var(--radius-md)] border border-[var(--color-positive)]/30 bg-[var(--color-positive-wash)] p-3 text-xs font-medium text-[var(--color-positive)]">

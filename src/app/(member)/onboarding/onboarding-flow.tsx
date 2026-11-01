@@ -510,7 +510,7 @@ export function OnboardingFlow({ initial, stagePrefill, next, initialStep }: Pro
           onClick={() => goTo(0)}
           className="mt-8 text-[length:var(--text-small)] font-medium text-[var(--color-ink-muted)] underline-offset-4 hover:text-[var(--color-ink)] hover:underline"
         >
-          Not quite right? Re-configure your profile
+          Not quite right? Change your answers.
         </button>
       </motion.div>
     </div>
