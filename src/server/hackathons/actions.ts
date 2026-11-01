@@ -1,4 +1,4 @@
-import 'server-only'
+'use server'
 
 import { and, count, desc, eq, ne } from 'drizzle-orm'
 import { db } from '@/db/client'
