@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import { eq } from 'drizzle-orm'
 import { db } from '@/db/client'
 import { users } from '@/db/schema'
@@ -81,7 +80,7 @@ export async function StudentDashboard({
     }
   } else {
     nextStep = {
-      eyebrow: 'Recommended step',
+      eyebrow: 'Your next step',
       heading: result.headline || result.body,
       body: result.reason,
       actionLabel: result.cta,
