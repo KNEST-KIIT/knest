@@ -103,4 +103,8 @@ export const notificationType = appSchema.enum('notification_type', [
   'booking_decided',
   'booking_alternative',
   'booking_cancelled',
-])
+  'hackathon_registered',
+  'hackathon_team_joined',
+  'hackathon_team_left',
+  'hackathon_submission_received',
+  'hackathon_result_announced',])

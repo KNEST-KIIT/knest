@@ -120,6 +120,9 @@ export async function StudentDashboard({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <ButtonLink href="/hackathons" size="sm" variant="secondary">
+              ⚡ Hackathons Arena
+            </ButtonLink>
             <ButtonLink href="/dashboard/lab-booking" size="sm" variant="secondary">
               🏢 Book Maker Lab
             </ButtonLink>
@@ -265,6 +268,29 @@ export async function StudentDashboard({
           </div>
           <ButtonLink href="/dashboard/lab-booking" size="sm">
             Book a Facility →
+          </ButtonLink>
+        </div>
+      </section>
+
+      {/* 48-Hour Founder Sprints & Hackathons */}
+      <section className="rounded-2xl border border-[var(--color-line)] bg-[var(--color-paper-raised)] p-6 shadow-sm">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="rounded-full bg-[var(--color-positive-wash)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[var(--color-positive)]">
+                Hackathon Tournaments
+              </span>
+              <span className="text-xs text-[var(--color-ink-muted)]">· Active Arena</span>
+            </div>
+            <h3 className="mt-1 font-[family-name:var(--font-display)] text-lg font-bold text-[var(--color-ink)]">
+              48-Hour Founder Sprints &amp; Bounties
+            </h3>
+            <p className="mt-0.5 text-xs text-[var(--color-ink-soft)] max-w-xl">
+              Form cross-school squads, join with 6-digit codes, prototype in campus labs, and compete for grants.
+            </p>
+          </div>
+          <ButtonLink href="/hackathons" size="sm" variant="secondary">
+            Enter Arena →
           </ButtonLink>
         </div>
       </section>

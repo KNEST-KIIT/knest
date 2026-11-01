@@ -50,9 +50,12 @@ export async function FounderDashboard({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          <ButtonLink href="/hackathons" variant="secondary" size="sm" className="text-xs">
+            ⚡ Hackathons Arena
+          </ButtonLink>
           {isLabBookingEnabled() && (
             <ButtonLink href="/dashboard/lab-booking" variant="secondary" size="sm" className="text-xs">
-              ⚡ Book Maker Lab
+              🏢 Book Maker Lab
             </ButtonLink>
           )}
           <ButtonLink href="/programs" variant="secondary" size="sm" className="text-xs">

@@ -99,6 +99,13 @@
       "when": 1791751708805,
       "tag": "0013_lab_attendance_qr",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1793556489173,
+      "tag": "0014_0014_hackathon_module",
+      "breakpoints": true
     }
   ]
 }
