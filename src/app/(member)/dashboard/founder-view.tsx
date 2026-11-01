@@ -203,12 +203,12 @@ export async function FounderDashboard({
       {/* Notification history */}
       {notificationsSlot}
 
-      {/* Bottom Row: Stage Resources & Playbooks */}
+      {/* Bottom Row: Stage Resources & Toolkits */}
       <section className="rounded-xl border border-[var(--color-line)] bg-white p-6 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-2 mb-6">
           <div>
             <Heading as="h2" size="heading" uppercase={false}>
-              Founder Playbooks & Resources
+              Founder Resources &amp; Guides
             </Heading>
             <p className="text-xs text-[var(--color-ink-muted)] mt-1">
               Curated frameworks for validation, equity splits, and venture building

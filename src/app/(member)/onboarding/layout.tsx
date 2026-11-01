@@ -20,7 +20,7 @@ export default async function OnboardingLayout({ children }: { children: React.R
               <span className="size-2 rounded-full bg-[var(--color-signal)]" />
               KNEST
             </HomeLink>
-            <span className="text-[11px] font-mono uppercase tracking-widest text-[var(--color-ink-muted)]">
+            <span className="text-[length:var(--text-micro)] font-mono uppercase tracking-widest text-[var(--color-ink-muted)]">
               Incubation Setup
             </span>
           </div>

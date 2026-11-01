@@ -17,7 +17,7 @@ import { NextStepCard } from './next-step-card'
 
 const ROADMAP_STAGES = [
   { id: 'exploring', label: 'Exploring', subtitle: 'Problem Hunt' },
-  { id: 'idea', label: 'Idea Validation', subtitle: 'Customer Discovery' },
+  { id: 'idea', label: 'Idea Validation', subtitle: 'Problem Validation' },
   { id: 'mvp', label: 'MVP Prototype', subtitle: 'Code & Hardware' },
   { id: 'early_revenue', label: 'Early Traction', subtitle: 'Pilot & Users' },
   { id: 'scaling', label: 'Incubated Venture', subtitle: 'KNEST Cohort' },
@@ -337,12 +337,12 @@ export async function StudentDashboard({
         )}
       </section>
 
-      {/* Founder Playbooks & Knowledge Base */}
+      {/* Venture Guides & Knowledge Base */}
       <section className="rounded-2xl border border-[var(--color-line)] bg-white p-6 shadow-sm">
         <div className="flex items-center justify-between mb-6">
           <div>
             <Heading as="h2" size="heading" uppercase={false}>
-              Venture Playbooks &amp; Guides
+              Venture Guides &amp; Frameworks
             </Heading>
             <p className="mt-0.5 text-xs text-[var(--color-ink-soft)]">
               Curated frameworks for user interviews, pitch decks, and legal foundations.
