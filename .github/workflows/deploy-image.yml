@@ -1,0 +1,92 @@
+name: Deploy image
+
+# Deploys specific ECR image digests to an environment using the SSM deploy document.
+# Can be dispatched with explicit digests that were already built and scanned by the release workflow.
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        type: choice
+        options: [s1, production]
+        required: true
+        default: production
+      app_image:
+        description: App image (e.g. 166917387892.dkr.ecr.ap-south-1.amazonaws.com/knest-app@sha256:...)
+        type: string
+        required: true
+        default: 166917387892.dkr.ecr.ap-south-1.amazonaws.com/knest-app@sha256:a142abf68f999aceae1103f3b0433adb283a41df22e7c3cab34930862588402e
+      migrate_image:
+        description: Migrate image (e.g. 166917387892.dkr.ecr.ap-south-1.amazonaws.com/knest-app@sha256:...)
+        type: string
+        required: true
+        default: 166917387892.dkr.ecr.ap-south-1.amazonaws.com/knest-app@sha256:0d9cf089b5e35a578e191fea52f83e40bc2cd8e859d7a92970e889a6c662fac3
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy digest (${{ inputs.environment }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: ${{ inputs.environment }}
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check the Environment is configured
+        env:
+          AWS_DEPLOY_ROLE_ARN: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+        run: |
+          if [ -z "$AWS_DEPLOY_ROLE_ARN" ]; then echo "::error::AWS_DEPLOY_ROLE_ARN is not set for ${{ inputs.environment }}"; exit 1; fi
+
+      - uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-session-name: knest-deploy-${{ github.run_id }}
+
+      - name: Run the deploy document on the host
+        env:
+          ENVIRONMENT: ${{ inputs.environment }}
+          APP_IMAGE: ${{ inputs.app_image }}
+          MIGRATE_IMAGE: ${{ inputs.migrate_image }}
+        run: |
+          COMMAND_ID=$(aws ssm send-command \
+            --document-name "knest-${ENVIRONMENT}-deploy" \
+            --targets "Key=tag:knest-deploy-target,Values=${ENVIRONMENT}" \
+            --parameters "Environment=${ENVIRONMENT},AppImage=${APP_IMAGE},MigrateImage=${MIGRATE_IMAGE}" \
+            --comment "deploy ${APP_IMAGE}" \
+            --query Command.CommandId --output text)
+          echo "command $COMMAND_ID"
+          INSTANCE_ID=None
+          for i in $(seq 1 12); do
+            INSTANCE_ID=$(aws ssm list-command-invocations --command-id "$COMMAND_ID" --query 'CommandInvocations[0].InstanceId' --output text)
+            [ "$INSTANCE_ID" != "None" ] && break
+            sleep 5
+          done
+          if [ "$INSTANCE_ID" = "None" ]; then echo "::error::no host answered the deploy command"; exit 1; fi
+          echo "Deploy started on instance $INSTANCE_ID. Waiting for completion..."
+          for j in $(seq 1 60); do
+            STATUS=$(aws ssm get-command-invocation --command-id "$COMMAND_ID" --instance-id "$INSTANCE_ID" --query Status --output text)
+            echo "Current status: $STATUS ($j/60)"
+            if [ "$STATUS" = "Success" ]; then
+              aws ssm get-command-invocation --command-id "$COMMAND_ID" --instance-id "$INSTANCE_ID" \
+                --query '{status:Status,output:StandardOutputContent,errors:StandardErrorContent}' --output json
+              echo "Deployment succeeded!"
+              exit 0
+            elif [ "$STATUS" = "Failed" ] || [ "$STATUS" = "Cancelled" ] || [ "$STATUS" = "TimedOut" ]; then
+              aws ssm get-command-invocation --command-id "$COMMAND_ID" --instance-id "$INSTANCE_ID" \
+                --query '{status:Status,output:StandardOutputContent,errors:StandardErrorContent}' --output json
+              echo "Deployment failed with status $STATUS"
+              exit 1
+            fi
+            sleep 10
+          done
+          echo "::error::SSM deploy command timed out waiting for completion"
+          exit 1
