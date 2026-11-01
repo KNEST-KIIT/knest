@@ -164,6 +164,7 @@ export default async function HackathonDetailPage({
             hackathonId={hackathon.id}
             isRegistered={Boolean(registration)}
             myTeam={myTeam}
+            currentUserId={user?.id}
             availableTracks={hackathon.tracks}
             canCreateTeam={isRegistrationsOpen || isSubmissionsOpen}
           />

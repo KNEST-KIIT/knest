@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { sanitizeSubmissionUrl } from './url-sanitize'
 
 describe('Hackathon Rubric and Weighting Engine', () => {
   it('calculates weighted criteria score accurately', () => {
@@ -100,5 +101,31 @@ describe('Hackathon Squad Lifecycle Rules', () => {
 
     expect(teamMembers.includes(targetUserId)).toBe(true)
     expect(teamMembers.includes(nonMemberUserId)).toBe(false)
+  })
+})
+
+describe('Hackathon Submission URL Normalizer & Sanitizer', () => {
+  const sanitize = sanitizeSubmissionUrl
+
+  it('prepends https:// to bare domains', () => {
+    expect(sanitize('github.com/kiitnest/knest')).toBe('https://github.com/kiitnest/knest')
+    expect(sanitize('myhackathon.vercel.app')).toBe('https://myhackathon.vercel.app/')
+  })
+
+  it('preserves existing https:// and http:// schemes', () => {
+    expect(sanitize('https://github.com/kiitnest/knest')).toBe('https://github.com/kiitnest/knest')
+    expect(sanitize('http://localhost:3000')).toBe('http://localhost:3000/')
+  })
+
+  it('rejects unsafe schemes like javascript: or data:', () => {
+    expect(sanitize('javascript:alert(1)')).toBeNull()
+    expect(sanitize('data:text/html,<h1>PWNED</h1>')).toBeNull()
+  })
+
+  it('handles empty or whitespace-only strings gracefully', () => {
+    expect(sanitize('')).toBeNull()
+    expect(sanitize('   ')).toBeNull()
+    expect(sanitize(undefined)).toBeNull()
+    expect(sanitize(null)).toBeNull()
   })
 })

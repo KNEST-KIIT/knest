@@ -26,7 +26,7 @@ const ROLE_LABELS: Record<(typeof PLATFORM_ROLES)[number], string> = {
 const ROLE_DESCRIPTIONS: Record<(typeof PLATFORM_ROLES)[number], string> = {
   student: 'Enrolled student exploring ideas, joining teams, or building founder skills.',
   founder: 'Actively building a venture, seeking incubation, lab access, or funding.',
-  mentor: 'Industry leader or domain specialist guiding student and alumni ventures.',
+  mentor: 'Industry leader or domain specialist guiding early-stage and alumni ventures.',
   investor: 'Angel, syndicate, or venture fund seeking verified campus deal flow.',
   alumni: 'KIIT graduate staying connected, advising startups, or scaling a company.',
   partner: 'Corporate, accelerator, or ecosystem partner providing tools or grants.',

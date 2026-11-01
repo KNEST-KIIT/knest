@@ -14,6 +14,7 @@ import {
   hackathonScores,
 } from '@/db/schema'
 import { requireUserOrThrow } from '@/server/auth/guards'
+import { sanitizeSubmissionUrl } from './url-sanitize'
 import { enforceRateLimit, RATE_LIMITS } from '@/server/security/rate-limit'
 
 export type ActionResult = { ok: true } | { ok: false; error: string }
@@ -519,10 +520,10 @@ export async function saveSubmissionDraft(
     projectTitle: data.projectTitle ?? '',
     tagline: data.tagline ?? '',
     description: data.description ?? '',
-    repoUrl: data.repoUrl ?? null,
-    demoUrl: data.demoUrl ?? null,
-    videoUrl: data.videoUrl ?? null,
-    figmaUrl: data.figmaUrl ?? null,
+    repoUrl: sanitizeSubmissionUrl(data.repoUrl),
+    demoUrl: sanitizeSubmissionUrl(data.demoUrl),
+    videoUrl: sanitizeSubmissionUrl(data.videoUrl),
+    figmaUrl: sanitizeSubmissionUrl(data.figmaUrl),
     techStack: data.techStack ?? [],
     selectedTracks: data.selectedTracks ?? [],
     updatedAt: new Date(),

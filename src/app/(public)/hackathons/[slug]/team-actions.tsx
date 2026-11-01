@@ -5,15 +5,18 @@ import { useRouter } from 'next/navigation'
 import { Button, Input, Textarea } from '@/components/ui'
 import {
   createTeam,
+  disbandTeam,
   joinTeamByCode,
   leaveTeam,
   registerForHackathon,
+  transferLeadership,
 } from '@/server/hackathons/actions'
 
 export function HackathonTeamActions({
   hackathonId,
   isRegistered,
   myTeam,
+  currentUserId,
   availableTracks,
   canCreateTeam,
 }: {
@@ -23,18 +26,24 @@ export function HackathonTeamActions({
     id: string
     name: string
     joinCode: string
+    leaderId?: string | null
     selectedTracks: string[]
     techStack: string[]
     members: { role: string; user: { id: string; name: string | null } }[]
   } | null
+  currentUserId?: string | null
   availableTracks: { id: string; name: string }[]
   canCreateTeam: boolean
 }) {
   const router = useRouter()
-  const [modal, setModal] = useState<'create' | 'join' | 'register' | null>(null)
+  const [modal, setModal] = useState<
+    'create' | 'join' | 'register' | 'transfer' | 'disband' | null
+  >(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [copiedCode, setCopiedCode] = useState(false)
+  const [targetLeaderId, setTargetLeaderId] = useState('')
 
   // Registration state
   const [regLookingForTeam, setRegLookingForTeam] = useState(true)
@@ -48,6 +57,27 @@ export function HackathonTeamActions({
 
   // Join team state
   const [joinCode, setJoinCode] = useState('')
+
+  const isLeader = Boolean(
+    myTeam &&
+      currentUserId &&
+      (myTeam.leaderId === currentUserId ||
+        myTeam.members.find((m) => m.user.id === currentUserId)?.role === 'leader'),
+  )
+
+  const otherMembers =
+    myTeam?.members.filter((m) => m.user.id !== currentUserId) ?? []
+
+  async function handleCopyCode() {
+    if (!myTeam?.joinCode) return
+    try {
+      await navigator.clipboard.writeText(myTeam.joinCode)
+      setCopiedCode(true)
+      setTimeout(() => setCopiedCode(false), 2000)
+    } catch {
+      // Fallback
+    }
+  }
 
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault()
@@ -133,6 +163,38 @@ export function HackathonTeamActions({
     }
   }
 
+  async function handleDisbandTeam() {
+    setLoading(true)
+    setError(null)
+
+    const res = await disbandTeam(hackathonId)
+    setLoading(false)
+    if (res.ok) {
+      setSuccess('Team disbanded successfully.')
+      setModal(null)
+      router.refresh()
+    } else {
+      setError(res.error)
+    }
+  }
+
+  async function handleTransferLeadership(e: React.FormEvent) {
+    e.preventDefault()
+    if (!targetLeaderId) return
+    setLoading(true)
+    setError(null)
+
+    const res = await transferLeadership(hackathonId, targetLeaderId)
+    setLoading(false)
+    if (res.ok) {
+      setSuccess('Leadership transferred successfully.')
+      setModal(null)
+      router.refresh()
+    } else {
+      setError(res.error)
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4">
       {error && (
@@ -146,41 +208,143 @@ export function HackathonTeamActions({
         </div>
       )}
 
-      {/* Action Buttons Bar */}
-      <div className="flex flex-wrap items-center gap-3">
-        {!isRegistered ? (
-          <Button onClick={() => setModal('register')} size="sm">
-            ✨ Register for Hackathon
-          </Button>
-        ) : !myTeam && canCreateTeam ? (
-          <>
-            <Button onClick={() => setModal('create')} size="sm">
-              🚀 Create a Team
+      {/* Action Buttons Bar when not in a team */}
+      {!myTeam && (
+        <div className="flex flex-wrap items-center gap-3">
+          {!isRegistered ? (
+            <Button onClick={() => setModal('register')} size="sm">
+              ✨ Register for Hackathon
             </Button>
-            <Button onClick={() => setModal('join')} variant="secondary" size="sm">
-              🔑 Join with 6-Digit Code
-            </Button>
-          </>
-        ) : null}
+          ) : canCreateTeam ? (
+            <>
+              <Button onClick={() => setModal('create')} size="sm">
+                🚀 Create a Team
+              </Button>
+              <Button onClick={() => setModal('join')} variant="secondary" size="sm">
+                🔑 Join with 6-Digit Code
+              </Button>
+            </>
+          ) : null}
+        </div>
+      )}
 
-        {myTeam && (
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-[var(--color-ink-muted)]">
-              Your Team: <strong>{myTeam.name}</strong>
-            </span>
-            <span className="font-mono text-xs rounded bg-[var(--color-paper-soft)] px-2 py-0.5 border border-[var(--color-line)]">
-              Code: {myTeam.joinCode}
-            </span>
-            <button
-              onClick={handleLeaveTeam}
-              disabled={loading}
-              className="text-xs text-[var(--color-critical)] hover:underline ml-2"
-            >
-              Leave
-            </button>
+      {/* Institutional Squad Card when member is in a team */}
+      {myTeam && (
+        <div className="flex flex-col gap-4 rounded-2xl border border-[var(--color-line)] bg-white p-5 shadow-xs">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-line)]/60 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="flex size-10 items-center justify-center rounded-xl bg-[var(--color-signal-wash)] text-lg">
+                🛡️
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-[family-name:var(--font-display)] text-base font-bold text-[var(--color-ink)]">
+                    {myTeam.name}
+                  </span>
+                  <span className="rounded-full bg-[var(--color-positive-wash)] px-2.5 py-0.5 text-[length:var(--text-micro)] font-bold text-[var(--color-positive)]">
+                    {myTeam.members.length}{' '}
+                    {myTeam.members.length === 1 ? 'member' : 'members'}
+                  </span>
+                  {isLeader && (
+                    <span className="rounded-full bg-[var(--color-signal-wash)] px-2.5 py-0.5 text-[length:var(--text-micro)] font-bold text-[var(--color-signal)]">
+                      Team Captain
+                    </span>
+                  )}
+                </div>
+                <p className="mt-0.5 text-[length:var(--text-micro)] text-[var(--color-ink-muted)]">
+                  Share your squad join code with peers to invite them to this sprint.
+                </p>
+              </div>
+            </div>
+
+            {/* Join Code Badge with 1-click Copy */}
+            <div className="flex items-center gap-2 rounded-xl border border-[var(--color-line)] bg-[var(--color-paper-soft)] p-1.5 pl-3">
+              <span className="text-[length:var(--text-micro)] font-medium text-[var(--color-ink-muted)]">
+                Invite Code:
+              </span>
+              <span className="font-mono text-xs font-bold tracking-wider text-[var(--color-ink)]">
+                {myTeam.joinCode}
+              </span>
+              <button
+                type="button"
+                onClick={handleCopyCode}
+                className="rounded-lg border border-[var(--color-line)] bg-white px-2 py-1 text-[length:var(--text-micro)] font-semibold text-[var(--color-ink)] transition-colors hover:bg-[var(--color-paper-soft)]"
+                title="Copy Join Code"
+              >
+                {copiedCode ? '✓ Copied' : 'Copy'}
+              </button>
+            </div>
           </div>
-        )}
-      </div>
+
+          {/* Squad Members Roster & Actions */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[length:var(--text-micro)] font-bold uppercase tracking-wider text-[var(--color-ink-muted)]">
+                Roster:
+              </span>
+              {myTeam.members.map((m) => (
+                <span
+                  key={m.user.id}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-line)] bg-[var(--color-paper-soft)] px-2.5 py-1 text-xs text-[var(--color-ink)]"
+                >
+                  <span>{m.user.name || 'Anonymous Hacker'}</span>
+                  {m.role === 'leader' && (
+                    <span className="rounded bg-[var(--color-signal)] px-1 py-0.2 text-[length:var(--text-micro)] font-bold text-white">
+                      Captain
+                    </span>
+                  )}
+                  {m.user.id === currentUserId && (
+                    <span className="text-[length:var(--text-micro)] text-[var(--color-ink-muted)]">
+                      (You)
+                    </span>
+                  )}
+                </span>
+              ))}
+            </div>
+
+            {/* Squad Management Action Buttons */}
+            <div className="flex items-center gap-2">
+              {isLeader ? (
+                <>
+                  {otherMembers.length > 0 && (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => {
+                        setTargetLeaderId(otherMembers[0]?.user.id ?? '')
+                        setModal('transfer')
+                      }}
+                      disabled={loading}
+                    >
+                      Delegate Captain
+                    </Button>
+                  )}
+                  <Button
+                    type="button"
+                    variant="danger"
+                    size="sm"
+                    onClick={() => setModal('disband')}
+                    disabled={loading}
+                  >
+                    Disband Squad
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleLeaveTeam}
+                  disabled={loading}
+                >
+                  Leave Squad
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Register Modal */}
       {modal === 'register' && (
@@ -216,7 +380,12 @@ export function HackathonTeamActions({
             </label>
 
             <div className="flex items-center gap-2 justify-end">
-              <Button type="button" variant="secondary" size="sm" onClick={() => setModal(null)}>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setModal(null)}
+              >
                 Cancel
               </Button>
               <Button type="submit" size="sm" disabled={loading}>
@@ -311,7 +480,12 @@ export function HackathonTeamActions({
             </div>
 
             <div className="flex items-center gap-2 justify-end">
-              <Button type="button" variant="secondary" size="sm" onClick={() => setModal(null)}>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setModal(null)}
+              >
                 Cancel
               </Button>
               <Button type="submit" size="sm" disabled={loading}>
@@ -348,11 +522,98 @@ export function HackathonTeamActions({
             </div>
 
             <div className="flex items-center gap-2 justify-end">
-              <Button type="button" variant="secondary" size="sm" onClick={() => setModal(null)}>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setModal(null)}
+              >
                 Cancel
               </Button>
               <Button type="submit" size="sm" disabled={loading}>
                 {loading ? 'Joining...' : 'Join Team'}
+              </Button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Disband Team Modal */}
+      {modal === 'disband' && (
+        <div className="rounded-2xl border border-[var(--color-critical)]/40 bg-[var(--color-paper-raised)] p-6 shadow-sm">
+          <div className="flex items-center gap-2 text-[var(--color-critical)]">
+            <span className="text-lg">⚠️</span>
+            <h3 className="font-[family-name:var(--font-display)] text-lg font-bold">
+              Disband Squad &quot;{myTeam?.name}&quot;?
+            </h3>
+          </div>
+          <p className="mt-2 text-xs text-[var(--color-ink-soft)] leading-relaxed">
+            This action cannot be undone. Any draft project submission will be deleted, and all members
+            will be released to join other teams or register a new squad.
+          </p>
+
+          <div className="mt-6 flex items-center gap-2 justify-end">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => setModal(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="danger"
+              size="sm"
+              onClick={handleDisbandTeam}
+              disabled={loading}
+            >
+              {loading ? 'Disbanding...' : 'Confirm Disband'}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Transfer Leadership Modal */}
+      {modal === 'transfer' && (
+        <div className="rounded-2xl border border-[var(--color-line)] bg-[var(--color-paper-raised)] p-6 shadow-sm">
+          <h3 className="font-[family-name:var(--font-display)] text-lg font-bold text-[var(--color-ink)]">
+            Delegate Squad Captain Role
+          </h3>
+          <p className="mt-1 text-xs text-[var(--color-ink-soft)]">
+            Select an active squad member to become the new Team Captain. You will remain on the team as a member.
+          </p>
+
+          <form onSubmit={handleTransferLeadership} className="mt-4 flex flex-col gap-4">
+            <div>
+              <label className="text-xs font-semibold text-[var(--color-ink)]">
+                Select New Captain
+              </label>
+              <select
+                value={targetLeaderId}
+                onChange={(e) => setTargetLeaderId(e.target.value)}
+                className="mt-1 block w-full rounded-xl border border-[var(--color-line)] bg-white px-3 py-2 text-xs text-[var(--color-ink)] focus:outline-hidden focus:ring-2 focus:ring-[var(--color-signal)]"
+                required
+              >
+                {otherMembers.map((m) => (
+                  <option key={m.user.id} value={m.user.id}>
+                    {m.user.name || 'Anonymous Hacker'} ({m.user.id.slice(0, 8)})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2 justify-end">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setModal(null)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" size="sm" disabled={loading || !targetLeaderId}>
+                {loading ? 'Transferring...' : 'Confirm Transfer'}
               </Button>
             </div>
           </form>
