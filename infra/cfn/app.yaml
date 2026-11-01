@@ -611,6 +611,10 @@ Resources:
                   aws rds create-db-snapshot --region "$REGION" --db-instance-identifier "$(param db-instance-id)" --db-snapshot-identifier "$SNAPSHOT" >/dev/null
                   aws rds wait db-snapshot-available --region "$REGION" --db-snapshot-identifier "$SNAPSHOT"
 
+                  # Free disk space from old dangling/unused images before pulling new release targets
+                  echo "Pruning unused container images to free disk space"
+                  docker image prune -af --filter "until=1h" >/dev/null 2>&1 || docker image prune -f >/dev/null 2>&1 || true
+
                   echo "Migrating with $MIGRATE_IMAGE"
                   docker pull "$MIGRATE_IMAGE" >/dev/null
                   MIGRATE_LOG=$(mktemp)
