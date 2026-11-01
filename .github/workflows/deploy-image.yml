@@ -61,7 +61,7 @@ jobs:
             --document-name "knest-${ENVIRONMENT}-deploy" \
             --targets "Key=tag:knest-deploy-target,Values=${ENVIRONMENT}" \
             --parameters "Environment=${ENVIRONMENT},AppImage=${APP_IMAGE},MigrateImage=${MIGRATE_IMAGE}" \
-            --comment "deploy ${APP_IMAGE}" \
+            --comment "deploy release" \
             --query Command.CommandId --output text)
           echo "command $COMMAND_ID"
           INSTANCE_ID=None
@@ -90,3 +90,4 @@ jobs:
           done
           echo "::error::SSM deploy command timed out waiting for completion"
           exit 1
+
