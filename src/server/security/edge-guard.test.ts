@@ -70,4 +70,18 @@ describe('same-origin writes', () => {
   it('normalises the configured addresses', () => {
     expect([...allowedOrigins({ SITE_URL: 'https://kiitnest.com/path?x=1', ALLOWED_ORIGINS: 'https://a.example/' })]).toEqual(['https://kiitnest.com', 'https://a.example'])
   })
+
+  it('stops an anonymous reader asking the API for an unbounded or very large page', () => {
+    const read = (limit: string | null, cookie?: string) =>
+      guardRequest({ method: 'GET', pathname: '/api/startups', header: headers(cookie ? { cookie } : {}), query: (name) => (name === 'limit' ? limit : null) }, sameSite)
+    expect(read(null).allow).toBe(true)
+    expect(read('20').allow).toBe(true)
+    expect(read('100').allow).toBe(true)
+    expect(read('0')).toEqual({ allow: false, status: 400, reason: 'query-too-large' })
+    expect(read('100000').allow).toBe(false)
+    expect(read('abc').allow).toBe(false)
+    expect(read('0', 'authjs.session-token=abc').allow).toBe(true)
+    expect(read('0', 'a=b; __Secure-authjs.session-token=abc').allow).toBe(true)
+    expect(guardRequest({ method: 'GET', pathname: '/programs', header: headers({}), query: () => '0' }, sameSite).allow).toBe(true)
+  })
 })

@@ -1,4 +1,5 @@
 import { getContentClient } from './payload-client'
+import { cachedRead } from './cache'
 
 export type SearchResultType = 'program' | 'startup' | 'mentor' | 'event' | 'resource'
 
@@ -22,8 +23,11 @@ export type SearchResult = {
  * programmes, startups, mentors, events and resources (module 19), even though the
  * mentor directory also has its own expertise filter. Partners are not searched.
  */
-export async function search(query: string): Promise<SearchResult[]> {
-  const trimmed = query.trim()
+/** Longer text matches nothing a person meant to find and only makes the database scan slower. */
+export const MAX_SEARCH_LENGTH = 100
+
+async function searchUncached(query: string): Promise<SearchResult[]> {
+  const trimmed = query.trim().slice(0, MAX_SEARCH_LENGTH)
   if (!trimmed) return []
 
   const payload = await getContentClient()
@@ -124,3 +128,6 @@ export async function search(query: string): Promise<SearchResult[]> {
     })
     .map(({ result }) => result)
 }
+
+// Shared by every visitor and expired on any CMS change: see ./cache.ts.
+export const search = cachedRead('search.search', searchUncached)

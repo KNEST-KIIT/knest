@@ -22,7 +22,10 @@ export type GuardEnv = {
   ALLOWED_ORIGINS?: string
 }
 
-export type GuardDecision = { allow: true } | { allow: false; status: 403; reason: 'origin-verify' | 'origin-mismatch' }
+export type GuardDecision =
+  | { allow: true }
+  | { allow: false; status: 403; reason: 'origin-verify' | 'origin-mismatch' }
+  | { allow: false; status: 400; reason: 'query-too-large' }
 
 const UNSAFE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
 
@@ -67,7 +70,7 @@ export function allowedOrigins(env: GuardEnv): Set<string> {
 }
 
 export function guardRequest(
-  input: { method: string; pathname: string; header: (name: string) => string | null },
+  input: { method: string; pathname: string; header: (name: string) => string | null; query?: (name: string) => string | null },
   env: GuardEnv,
 ): GuardDecision {
   const secret = env.ORIGIN_VERIFY_SECRET
@@ -98,5 +101,23 @@ export function guardRequest(
     }
   }
 
+  // The CMS REST API answers anonymous readers with whatever page size they ask for, and limit=0 means
+  // everything. One request must not be able to read a whole collection at depth. Signed-in staff are not capped.
+  if (input.pathname.startsWith('/api/') && !hasSessionCookie(input.header('cookie'))) {
+    const raw = input.query?.('limit')
+    if (raw !== null && raw !== undefined) {
+      const limit = Number(raw)
+      if (!Number.isFinite(limit) || limit <= 0 || limit > MAX_ANONYMOUS_API_LIMIT) {
+        return { allow: false, status: 400, reason: 'query-too-large' }
+      }
+    }
+  }
+
   return { allow: true }
+}
+
+export const MAX_ANONYMOUS_API_LIMIT = 100
+
+function hasSessionCookie(cookie: string | null): boolean {
+  return cookie !== null && /(?:^|;\s*)(?:__Secure-)?authjs\.session-token=/.test(cookie)
 }

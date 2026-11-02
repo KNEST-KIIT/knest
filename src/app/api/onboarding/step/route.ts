@@ -1,3 +1,4 @@
+import { unexpectedError } from '@/server/http/errors'
 import { NextResponse } from 'next/server'
 import { UnauthorizedError } from '@/server/auth/guards'
 import { limitByUser } from '@/server/security/route-limits'
@@ -26,7 +27,8 @@ export async function POST(request: Request) {
   if (limited) return limited
   const body = await request.json().catch(() => null)
   const step = body?.step as keyof typeof HANDLERS | undefined
-  const handler = step ? HANDLERS[step] : undefined
+  // Own keys only: 'constructor' or 'toString' must not resolve to an inherited function.
+  const handler = typeof step === 'string' && Object.hasOwn(HANDLERS, step) ? HANDLERS[step] : undefined
 
   if (!handler) return NextResponse.json({ error: 'Unknown step.' }, { status: 400 })
 
@@ -43,6 +45,6 @@ export async function POST(request: Request) {
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: 'Sign in to continue.' }, { status: error.status })
     }
-    throw error
+    return unexpectedError(error)
   }
 }

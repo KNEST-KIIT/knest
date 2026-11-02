@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { and, eq } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import { db } from '@/db/client'
 import {
   hackathonAnnouncements,
@@ -11,16 +11,53 @@ import {
   notifications,
   users,
 } from '@/db/schema'
-import { requireUserOrThrow } from '@/server/auth/guards'
+import { requireUserOrThrow, UnauthorizedError } from '@/server/auth/guards'
 import type { StaffRole } from '@/server/auth/roles'
+import { isDiscordWebhookUrl, isTelegramBotToken, isTelegramChatId } from './webhook-safety'
 import { dispatchHackathonWebhook } from './webhooks'
 
 export type ActionResult = { ok: true } | { ok: false; error: string }
 
 function requireOrganizerOrStaff(user: { staffRole: StaffRole | null }) {
   if (user.staffRole !== 'super_admin' && user.staffRole !== 'program_manager') {
-    throw new Error('Access denied: hackathon management requires program_manager or super_admin.')
+    // A 403 the caller can answer with, not an anonymous Error that surfaces as a 500.
+    throw new UnauthorizedError(403)
   }
+}
+
+const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+
+/** Why a hackathon's settings cannot be saved, or null. One message, for the organiser to read. */
+export function hackathonProblem(data: {
+  slug: string
+  title: string
+  minTeamSize?: number
+  maxTeamSize?: number
+  registrationsOpenAt?: Date | null
+  registrationsCloseAt?: Date | null
+  submissionsOpenAt?: Date | null
+  submissionsCloseAt?: Date | null
+  discordWebhookUrl?: string
+  telegramBotToken?: string
+  telegramChatId?: string
+}): string | null {
+  const slug = data.slug.trim().toLowerCase()
+  if (!SLUG.test(slug) || slug.length > 80) return 'The address (slug) may use lowercase letters, numbers and single hyphens, up to 80 characters.'
+  if (!data.title.trim() || data.title.trim().length > 160) return 'Give the hackathon a title of up to 160 characters.'
+  const min = data.minTeamSize ?? 1
+  const max = data.maxTeamSize ?? 4
+  if (!Number.isInteger(min) || !Number.isInteger(max) || min < 1 || max < min || max > 50) return 'Team size must be whole numbers, with the smallest at least 1 and no larger than the largest.'
+  const ordered = (a?: Date | null, b?: Date | null) => !a || !b || a.getTime() < b.getTime()
+  if (!ordered(data.registrationsOpenAt, data.registrationsCloseAt)) return 'Registrations must close after they open.'
+  if (!ordered(data.submissionsOpenAt, data.submissionsCloseAt)) return 'Submissions must close after they open.'
+  const discord = data.discordWebhookUrl?.trim()
+  if (discord && !isDiscordWebhookUrl(discord)) return 'That is not a Discord webhook address (https://discord.com/api/webhooks/...).'
+  const token = data.telegramBotToken?.trim()
+  const chat = data.telegramChatId?.trim()
+  if ((token || chat) && !(token && chat)) return 'Telegram needs both a bot token and a chat id.'
+  if (token && !isTelegramBotToken(token)) return 'That does not look like a Telegram bot token.'
+  if (chat && !isTelegramChatId(chat)) return 'That does not look like a Telegram chat id.'
+  return null
 }
 
 /**
@@ -52,6 +89,9 @@ export async function upsertHackathonEvent(data: {
   const user = await requireUserOrThrow()
   requireOrganizerOrStaff(user)
 
+  const problem = hackathonProblem(data)
+  if (problem) return { ok: false, error: problem }
+
   // Validate criteria weights sum to 100 if present
   if (data.judgingCriteria && data.judgingCriteria.length > 0) {
     const totalWeight = data.judgingCriteria.reduce((sum, c) => sum + c.weight, 0)
@@ -60,12 +100,12 @@ export async function upsertHackathonEvent(data: {
     }
   }
 
+  // organizerId is not part of an edit: whoever saves a hackathon must not take it over from its organiser.
   const payload = {
     slug: data.slug.trim().toLowerCase(),
     title: data.title.trim(),
     tagline: data.tagline?.trim(),
     description: data.description?.trim(),
-    organizerId: user.id,
     status: data.status ?? 'draft',
     minTeamSize: data.minTeamSize ?? 1,
     maxTeamSize: data.maxTeamSize ?? 4,
@@ -85,16 +125,23 @@ export async function upsertHackathonEvent(data: {
     updatedAt: new Date(),
   }
 
-  if (data.id) {
-    await db.update(hackathonEvents).set(payload).where(eq(hackathonEvents.id, data.id))
-    return { ok: true, id: data.id }
-  } else {
+  try {
+    if (data.id) {
+      const updated = await db.update(hackathonEvents).set(payload).where(eq(hackathonEvents.id, data.id)).returning({ id: hackathonEvents.id })
+      if (updated.length === 0) return { ok: false, error: 'That hackathon no longer exists.' }
+      return { ok: true, id: data.id }
+    }
     const [inserted] = await db
       .insert(hackathonEvents)
       .values({ ...payload, organizerId: user.id })
       .returning({ id: hackathonEvents.id })
     if (!inserted) return { ok: false, error: 'Failed to create hackathon.' }
     return { ok: true, id: inserted.id }
+  } catch (error) {
+    // The slug is unique; saying so is better than an error page.
+    const e = error as { code?: string; cause?: { code?: string } } | null
+    if (e?.code === '23505' || e?.cause?.code === '23505') return { ok: false, error: 'Another hackathon already uses that address (slug). Choose a different one.' }
+    throw error
   }
 }
 
@@ -113,6 +160,12 @@ export async function createAndDispatchAnnouncement(
   const user = await requireUserOrThrow()
   requireOrganizerOrStaff(user)
 
+  const title = data.title?.trim() ?? ''
+  const body = data.body?.trim() ?? ''
+  if (!title || title.length > 160) return { ok: false, error: 'Give the announcement a title of up to 160 characters.' }
+  if (!body || body.length > 4000) return { ok: false, error: 'Write a message of up to 4000 characters.' }
+  if (!['info', 'success', 'warning', 'deadline', 'winner'].includes(data.type)) return { ok: false, error: 'Choose an announcement type.' }
+
   const hackathon = await db.query.hackathonEvents.findFirst({
     where: eq(hackathonEvents.id, hackathonId),
     columns: { id: true, title: true, slug: true },
@@ -125,10 +178,11 @@ export async function createAndDispatchAnnouncement(
     .values({
       hackathonId,
       authorId: user.id,
-      title: data.title.trim(),
-      body: data.body.trim(),
+      title,
+      body,
       type: data.type,
-      emailSent: data.sendEmail ?? false,
+      // No e-mail is sent from here yet, so the row must not claim one was.
+      emailSent: false,
     })
     .returning({ id: hackathonAnnouncements.id })
 
@@ -183,14 +237,24 @@ export async function assignJudge(
   const user = await requireUserOrThrow()
   requireOrganizerOrStaff(user)
 
-  // Verify the target user exists
+  // Verify the target user exists and can sign in
   const judge = await db.query.users.findFirst({
     where: eq(users.id, judgeUserId),
-    columns: { id: true, name: true },
+    columns: { id: true, name: true, isActive: true },
   })
-  if (!judge) return { ok: false, error: 'Judge user not found.' }
+  if (!judge || !judge.isActive) return { ok: false, error: 'Judge user not found.' }
 
-  for (const submissionId of submissionIds) {
+  // Every submission must belong to THIS hackathon: the ids come from the caller, and an assignment under the
+  // wrong event would let a judge score work that is not part of it.
+  const ids = [...new Set(submissionIds)]
+  if (ids.length === 0 || ids.length > 200) return { ok: false, error: 'Choose between 1 and 200 submissions.' }
+  const owned = await db.query.hackathonSubmissions.findMany({
+    where: and(eq(hackathonSubmissions.hackathonId, hackathonId), inArray(hackathonSubmissions.id, ids)),
+    columns: { id: true },
+  })
+  if (owned.length !== ids.length) return { ok: false, error: 'One of those submissions does not belong to this hackathon.' }
+
+  for (const submissionId of ids) {
     await db
       .insert(hackathonJudgeAssignments)
       .values({
@@ -208,6 +272,9 @@ export async function assignJudge(
  * Calculate the full judging leaderboard with criteria weights and judge averages.
  */
 export async function getHackathonLeaderboard(hackathonId: string) {
+  // Scores before the results are announced are the organisers' to see, not the public's.
+  const user = await requireUserOrThrow()
+  requireOrganizerOrStaff(user)
   const hackathon = await db.query.hackathonEvents.findFirst({
     where: eq(hackathonEvents.id, hackathonId),
     columns: { id: true, title: true, judgingCriteria: true },

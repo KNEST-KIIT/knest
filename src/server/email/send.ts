@@ -41,6 +41,10 @@ const smtpTransporter = process.env.SMTP_HOST
       port: Number(process.env.SMTP_PORT ?? 587),
       secure: Number(process.env.SMTP_PORT) === 465,
       auth: process.env.SMTP_USER ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASSWORD } : undefined,
+      // nodemailer waits minutes by default; a stuck provider must fail, so the outbox can retry it.
+      connectionTimeout: 5_000,
+      greetingTimeout: 5_000,
+      socketTimeout: 15_000,
     })
   : null
 
@@ -48,7 +52,12 @@ let sesClient: SesLikeClient | undefined
 async function ses(): Promise<SesLikeClient> {
   if (sesClient) return sesClient
   const { SESv2Client } = await import('@aws-sdk/client-sesv2')
-  const client = new SESv2Client({ region: process.env.AWS_REGION || process.env.S3_REGION }) as unknown as SesLikeClient
+  const client = new SESv2Client({
+    region: process.env.AWS_REGION || process.env.S3_REGION,
+    // The SDK has no overall request timeout by default; a hung call must fail so the outbox can retry it.
+    requestHandler: { connectionTimeout: 3_000, requestTimeout: 10_000 },
+    maxAttempts: 2,
+  }) as unknown as SesLikeClient
   sesClient = client
   return client
 }

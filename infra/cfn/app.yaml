@@ -82,6 +82,14 @@ Parameters:
     Default: 'false'
     AllowedValues: ['true', 'false']
     Description: Switches lab booking on (FEATURE_LAB_BOOKING). Keep false until the lab operating policy (HD-16) is signed by the people responsible.
+  ZeroDowntimeDeploy:
+    Type: String
+    Default: 'off'
+    AllowedValues: ['on', 'off']
+    Description: >-
+      'on' deploys by swapping two container slots behind the load balancer (scripts/ops/deploy-slot.sh), so a release
+      never leaves the target group empty. Keep 'off' (one container, replaced in place) until the swap has been proven on
+      the S-1 stack and the production target group lists both ports (origin.yaml). See docs/delivery/ZERO-DOWNTIME-DEPLOY.md.
   SiteIndexing:
     Type: String
     Default: 'off'
@@ -385,6 +393,16 @@ Resources:
                 Resource:
                   - !Sub 'arn:aws:rds:${AWS::Region}:${AWS::AccountId}:db:${Database}'
                   - !Sub 'arn:aws:rds:${AWS::Region}:${AWS::AccountId}:snapshot:pre-migrate-*'
+              # Moving traffic between the two container slots (scripts/ops/deploy-slot.sh). Registering and deregistering is
+              # limited to target groups in this account and region; reading a target's health cannot be scoped to one.
+              - Sid: SwapContainerSlotsBehindTheLoadBalancer
+                Effect: Allow
+                Action: ['elasticloadbalancing:RegisterTargets', 'elasticloadbalancing:DeregisterTargets']
+                Resource: !Sub 'arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:targetgroup/*/*'
+              - Sid: ReadTargetHealth
+                Effect: Allow
+                Action: ['elasticloadbalancing:DescribeTargetHealth']
+                Resource: '*'
               - Sid: PullImages
                 Effect: Allow
                 Action: ['ecr:BatchGetImage', 'ecr:GetDownloadUrlForLayer', 'ecr:BatchCheckLayerAvailability']
@@ -445,6 +463,9 @@ Resources:
   ConfigFeatureLabBooking:
     Type: AWS::SSM::Parameter
     Properties: { Name: !Sub '/knest-${Environment}/config/feature-lab-booking', Type: String, Value: !Ref FeatureLabBooking }
+  ConfigZeroDowntimeDeploy:
+    Type: AWS::SSM::Parameter
+    Properties: { Name: !Sub '/knest-${Environment}/config/zero-downtime-deploy', Type: String, Value: !Ref ZeroDowntimeDeploy }
   ConfigSiteIndexing:
     Type: AWS::SSM::Parameter
     Properties: { Name: !Sub '/knest-${Environment}/config/site-indexing', Type: String, Value: !Ref SiteIndexing }
@@ -593,6 +614,12 @@ Resources:
                     [ -n "$GOOGLE_SECRET" ] && echo "AUTH_GOOGLE_SECRET=$GOOGLE_SECRET"
                     NOTIFY=$(param enquiry-notify-email 2>/dev/null || true)
                     [ -n "$NOTIFY" ] && echo "ENQUIRY_NOTIFY_EMAIL=$NOTIFY"
+                    # Document screening (src/server/security/malware-scan.ts). Without a scanner every upload is refused,
+                    # so set this parameter as soon as one exists: aws ssm put-parameter --name /knest-ENV/config/malware-scanner-url
+                    SCANNER=$(param malware-scanner-url 2>/dev/null || true)
+                    [ -n "$SCANNER" ] && echo "MALWARE_SCANNER_URL=$SCANNER"
+                    SCANNER_MS=$(param malware-scanner-timeout-ms 2>/dev/null || true)
+                    [ -n "$SCANNER_MS" ] && echo "MALWARE_SCANNER_TIMEOUT_MS=$SCANNER_MS"
                   } > /run/knest/common.env
                   {
                     cat /run/knest/common.env
@@ -603,6 +630,11 @@ Resources:
 
                   MOUNT="-v /opt/knest/rds-global-bundle.pem:/etc/knest/rds-global-bundle.pem:ro"
                   RUN_OPTS="--env-file /run/knest/app.env $MOUNT"
+                  # Optional hard memory ceiling for the app container, in MB (aws ssm put-parameter --name
+                  # /knest-ENV/config/container-memory-mb). On the 2 GB host a runaway process otherwise lets the kernel's
+                  # out-of-memory killer pick any process, including the agent. Leave unset until a normal run has been observed.
+                  CONTAINER_MB=$(param container-memory-mb 2>/dev/null || true)
+                  [ -n "$CONTAINER_MB" ] && RUN_OPTS="$RUN_OPTS --memory=${CONTAINER_MB}m"
                   PREVIOUS=$(docker inspect knest 2>/dev/null | jq -r '.[0].Config.Image // empty' || true)
 
                   # Migrations only move forward, so take a restore point first and stop if it cannot be made.
@@ -631,6 +663,140 @@ Resources:
                     exit 1
                   fi
                   rm -f "$MIGRATE_LOG" /run/knest/migrate.env
+
+                  # Zero-downtime path: two container slots behind the load balancer. Off unless the stack parameter
+                  # ZeroDowntimeDeploy is 'on'; the in-place replacement below stays the default. The script is embedded
+                  # verbatim from scripts/ops/deploy-slot.sh (infra/deploy-slot-embedded.test.ts fails if they differ).
+                  if [ "$(param zero-downtime-deploy 2>/dev/null || echo off)" = "on" ]; then
+                    mkdir -p /opt/knest
+                    cat > /opt/knest/deploy-slot.sh <<'KNEST_DEPLOY_SLOT'
+                  #!/usr/bin/env bash
+                  #
+                  # Zero-downtime container swap on ONE host: two slots (knest-a on port 3000, knest-b on port 3001), both registered
+                  # with the load balancer's target group. A release is started in the idle slot, proven healthy locally and by the
+                  # load balancer, and only then is the old slot taken out of rotation, drained and stopped. At no point does the
+                  # target group have zero healthy targets, and any failure leaves the old slot exactly as it was.
+                  #
+                  #   deploy-slot.sh <image>
+                  #
+                  # Environment (all but the first three have defaults):
+                  #   TARGET_GROUP_ARN   the load balancer target group
+                  #   INSTANCE_ID        this instance's id, as registered in the target group
+                  #   RUN_OPTS           extra `docker run` options (env file, mounts, log driver)
+                  #   REGION, SLOT_A_PORT, SLOT_B_PORT, DRAIN_SECONDS, HEALTH_TRIES, TARGET_TRIES, POLL_SECONDS
+                  #
+                  # The very first swap meets the old single container named `knest` (port 3000). It is treated as the live slot: the
+                  # release starts in slot b, and `knest` is drained and removed like any old slot.
+                  #
+                  # STATUS: tested with stand-in docker/aws commands (infra/deploy-slot.test.ts). NOT yet wired into the deploy document
+                  # in infra/cfn/app.yaml, and not yet run against a real load balancer. See docs/delivery/ZERO-DOWNTIME-DEPLOY.md.
+                  set -euo pipefail
+
+                  IMAGE="${1:?usage: deploy-slot.sh <image>}"
+                  : "${TARGET_GROUP_ARN:?TARGET_GROUP_ARN is required}"
+                  : "${INSTANCE_ID:?INSTANCE_ID is required}"
+                  REGION="${REGION:-ap-south-1}"
+                  RUN_OPTS="${RUN_OPTS:-}"
+                  PORT_A="${SLOT_A_PORT:-3000}"
+                  PORT_B="${SLOT_B_PORT:-3001}"
+                  DRAIN_SECONDS="${DRAIN_SECONDS:-60}"
+                  HEALTH_TRIES="${HEALTH_TRIES:-45}"
+                  TARGET_TRIES="${TARGET_TRIES:-30}"
+                  POLL_SECONDS="${POLL_SECONDS:-2}"
+
+                  # No Docker `--format` Go templates anywhere in this file: it is embedded in an SSM document, where a pair of opening braces
+                  # starts a parameter placeholder. Names are the last column of `docker ps`; health comes from `docker inspect` through jq.
+                  running() { docker ps | awk 'NR > 1 { print $NF }' | grep -qx "$1"; }
+                  port_of() { case "$1" in knest-a | knest) echo "$PORT_A" ;; knest-b) echo "$PORT_B" ;; esac; }
+
+                  # Which container is serving now?
+                  LIVE=""
+                  if running knest-a; then LIVE="knest-a"; fi
+                  if running knest-b; then
+                    if [ -n "$LIVE" ]; then echo "Both slots are running; refusing to guess which is live. Stop one and retry." >&2; exit 3; fi
+                    LIVE="knest-b"
+                  fi
+                  if [ -z "$LIVE" ] && running knest; then LIVE="knest"; fi
+
+                  # The release goes to the other slot. With nothing running, or the legacy container, that is slot b / slot a.
+                  if [ "$LIVE" = "knest-a" ] || [ "$LIVE" = "knest" ]; then NEW="knest-b"; else NEW="knest-a"; fi
+                  if [ "$LIVE" = "knest" ]; then NEW="knest-b"; fi
+                  NEW_PORT="$(port_of "$NEW")"
+
+                  target() { echo "Id=$INSTANCE_ID,Port=$1"; }
+
+                  registered=0
+                  cleanup_failed_release() {
+                    echo "Release failed; leaving ${LIVE:-nothing} in service." >&2
+                    if [ "$registered" = "1" ]; then
+                      aws elbv2 deregister-targets --region "$REGION" --target-group-arn "$TARGET_GROUP_ARN" --targets "$(target "$NEW_PORT")" >/dev/null 2>&1 || true
+                    fi
+                    docker logs --tail 40 "$NEW" >&2 2>&1 || true
+                    docker rm -f "$NEW" >/dev/null 2>&1 || true
+                  }
+
+                  echo "Live: ${LIVE:-none}. Starting $IMAGE as $NEW on port $NEW_PORT."
+                  docker rm -f "$NEW" >/dev/null 2>&1 || true
+                  # shellcheck disable=SC2086  # RUN_OPTS is a list of options on purpose
+                  if ! docker run -d --name "$NEW" --restart unless-stopped $RUN_OPTS -p "${NEW_PORT}:3000" "$IMAGE" >/dev/null; then
+                    cleanup_failed_release
+                    exit 1
+                  fi
+
+                  # 1. The container's own health check.
+                  ok=0
+                  for _ in $(seq 1 "$HEALTH_TRIES"); do
+                    status="$(docker inspect "$NEW" 2>/dev/null | jq -r '.[0].State.Health.Status // "starting"' 2>/dev/null || echo starting)"
+                    if [ "$status" = "healthy" ]; then ok=1; break; fi
+                    sleep "$POLL_SECONDS"
+                  done
+                  if [ "$ok" != "1" ]; then
+                    echo "$NEW did not become healthy." >&2
+                    cleanup_failed_release
+                    exit 1
+                  fi
+
+                  # 2. Put it in rotation and wait until the load balancer agrees. The old slot is still serving throughout.
+                  if ! aws elbv2 register-targets --region "$REGION" --target-group-arn "$TARGET_GROUP_ARN" --targets "$(target "$NEW_PORT")" >/dev/null; then
+                    cleanup_failed_release
+                    exit 1
+                  fi
+                  registered=1
+                  ok=0
+                  for _ in $(seq 1 "$TARGET_TRIES"); do
+                    state="$(aws elbv2 describe-target-health --region "$REGION" --target-group-arn "$TARGET_GROUP_ARN" --targets "$(target "$NEW_PORT")" --query 'TargetHealthDescriptions[0].TargetHealth.State' --output text 2>/dev/null || echo unknown)"
+                    if [ "$state" = "healthy" ]; then ok=1; break; fi
+                    sleep "$POLL_SECONDS"
+                  done
+                  if [ "$ok" != "1" ]; then
+                    echo "The load balancer did not mark $NEW healthy." >&2
+                    cleanup_failed_release
+                    exit 1
+                  fi
+
+                  # 3. Only now retire the old slot: out of rotation first, wait out the drain, then stop it.
+                  if [ -n "$LIVE" ]; then
+                    aws elbv2 deregister-targets --region "$REGION" --target-group-arn "$TARGET_GROUP_ARN" --targets "$(target "$(port_of "$LIVE")")" >/dev/null || true
+                    sleep "$DRAIN_SECONDS"
+                    docker rm -f "$LIVE" >/dev/null 2>&1 || true
+                  fi
+                  echo "live=$NEW"
+                  KNEST_DEPLOY_SLOT
+                    TG_ARN=$(param target-group-arn)
+                    IMDS_TOKEN=$(curl -fsS -X PUT http://169.254.169.254/latest/api/token -H 'X-aws-ec2-metadata-token-ttl-seconds: 120')
+                    INSTANCE_ID=$(curl -fsS -H "X-aws-ec2-metadata-token: $IMDS_TOKEN" http://169.254.169.254/latest/meta-data/instance-id)
+                    SLOT_PREVIOUS=$(docker ps | awk 'NR > 1 && $NF ~ /^knest(-[ab])?$/ { print $2; exit }')
+                    SLOT_OPTS="$RUN_OPTS --log-driver awslogs --log-opt awslogs-region=$REGION --log-opt awslogs-group=/knest-$ENVIRONMENT --log-opt awslogs-stream=app-$(date +%s)"
+                    docker pull "$APP_IMAGE" >/dev/null
+                    if TARGET_GROUP_ARN="$TG_ARN" INSTANCE_ID="$INSTANCE_ID" REGION="$REGION" RUN_OPTS="$SLOT_OPTS" bash /opt/knest/deploy-slot.sh "$APP_IMAGE"; then
+                      rm -f /run/knest/common.env /run/knest/app.env
+                      echo "$APP_IMAGE" > /opt/knest/current
+                      [ -n "$SLOT_PREVIOUS" ] && echo "$SLOT_PREVIOUS" > /opt/knest/previous
+                      exit 0
+                    fi
+                    rm -f /run/knest/app.env
+                    exit 1
+                  fi
 
                   echo "Starting $APP_IMAGE (previous: ${PREVIOUS:-none})"
                   docker pull "$APP_IMAGE" >/dev/null
@@ -727,6 +893,184 @@ Resources:
       EvaluationPeriods: 1
       Threshold: 4294967296
       ComparisonOperator: LessThanThreshold
+      AlarmActions: [!Ref AlertTopic]
+
+  # A host that fails its SYSTEM check (the underlying hardware, not the software) is moved to healthy
+  # hardware by EC2 itself. There is one instance, so waiting for a person to notice costs the whole outage.
+  HostRecoverAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: The instance failed its system status check; EC2 recovers it onto healthy hardware.
+      Namespace: AWS/EC2
+      MetricName: StatusCheckFailed_System
+      Dimensions: [{ Name: InstanceId, Value: !Ref AppInstance }]
+      Statistic: Maximum
+      Period: 60
+      EvaluationPeriods: 2
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Sub 'arn:${AWS::Partition}:automate:${AWS::Region}:ec2:recover', !Ref AlertTopic]
+
+  # The database is a burstable class: when the credit balance runs out the CPU is throttled hard, which
+  # looks like the site going slow with no error. Connections and memory are the other two ways it stalls.
+  DbCpuCreditAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Database CPU credits are nearly spent; sustained load will be throttled.
+      Namespace: AWS/RDS
+      MetricName: CPUCreditBalance
+      Dimensions: [{ Name: DBInstanceIdentifier, Value: !Ref Database }]
+      Statistic: Minimum
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 20
+      ComparisonOperator: LessThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref AlertTopic]
+  DbConnectionsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Database connections are close to the limit of a small instance.
+      Namespace: AWS/RDS
+      MetricName: DatabaseConnections
+      Dimensions: [{ Name: DBInstanceIdentifier, Value: !Ref Database }]
+      Statistic: Maximum
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 60
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref AlertTopic]
+  DbMemoryAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Database free memory is below 100 MB.
+      Namespace: AWS/RDS
+      MetricName: FreeableMemory
+      Dimensions: [{ Name: DBInstanceIdentifier, Value: !Ref Database }]
+      Statistic: Minimum
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 104857600
+      ComparisonOperator: LessThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref AlertTopic]
+
+  # Application log lines that mean a feature is failing while the process stays up. Each is a line the
+  # code writes on purpose (named in the comment), so a rename in code must be matched here.
+  ScannerMissingMetricFilter:
+    Type: AWS::Logs::MetricFilter
+    Properties:
+      LogGroupName: !Ref LogGroup
+      FilterPattern: '?malware_scanner_not_configured ?malware_scan_unavailable'
+      MetricTransformations:
+        - { MetricNamespace: !Sub 'knest-${Environment}', MetricName: DocumentScanUnavailable, MetricValue: '1', DefaultValue: 0 }
+  ScannerMissingAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Document uploads are being refused because malware screening is missing or unreachable (src/server/security/malware-scan.ts).
+      Namespace: !Sub 'knest-${Environment}'
+      MetricName: DocumentScanUnavailable
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref AlertTopic]
+
+  StorageMissingMetricFilter:
+    Type: AWS::Logs::MetricFilter
+    Properties:
+      LogGroupName: !Ref LogGroup
+      FilterPattern: storage_reconcile_missing
+      MetricTransformations:
+        - { MetricNamespace: !Sub 'knest-${Environment}', MetricName: DocumentObjectMissing, MetricValue: '1', DefaultValue: 0 }
+  StorageMissingAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: An application document is recorded in the database but its file is missing from the bucket (src/server/storage/reconcile.ts).
+      Namespace: !Sub 'knest-${Environment}'
+      MetricName: DocumentObjectMissing
+      Statistic: Sum
+      Period: 86400
+      EvaluationPeriods: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref AlertTopic]
+
+  EmailRetryMetricFilter:
+    Type: AWS::Logs::MetricFilter
+    Properties:
+      LogGroupName: !Ref LogGroup
+      FilterPattern: email_outbox_retry
+      MetricTransformations:
+        - { MetricNamespace: !Sub 'knest-${Environment}', MetricName: EmailOutboxRetry, MetricValue: '1', DefaultValue: 0 }
+  EmailRetryAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Mail is failing and being retried. The abandon alarm only fires about a day later; this one catches a broken SES setup early.
+      Namespace: !Sub 'knest-${Environment}'
+      MetricName: EmailOutboxRetry
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref AlertTopic]
+
+  # SES judges the account on these two rates and pauses sending when they stay high (review at 5 percent bounces and
+  # 0.1 percent complaints, pause at 10 and 0.5). A paused account sends no verification or reset mail to anyone.
+  # They are account-wide metrics SES publishes by itself, so no configuration set is needed to watch them.
+  SesBounceRateAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: SES bounce rate is above 5 percent. Typo'd addresses in a cohort import are the usual cause; fix them before SES pauses sending.
+      Namespace: AWS/SES
+      MetricName: Reputation.BounceRate
+      Statistic: Maximum
+      Period: 3600
+      EvaluationPeriods: 1
+      Threshold: 0.05
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref AlertTopic]
+  SesComplaintRateAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: SES complaint rate is above 0.1 percent (recipients marking mail as spam).
+      Namespace: AWS/SES
+      MetricName: Reputation.ComplaintRate
+      Statistic: Maximum
+      Period: 3600
+      EvaluationPeriods: 1
+      Threshold: 0.001
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref AlertTopic]
+
+  SessionLookupMetricFilter:
+    Type: AWS::Logs::MetricFilter
+    Properties:
+      LogGroupName: !Ref LogGroup
+      FilterPattern: '"session lookup failed"'
+      MetricTransformations:
+        - { MetricNamespace: !Sub 'knest-${Environment}', MetricName: SessionLookupFailed, MetricValue: '1', DefaultValue: 0 }
+  SessionLookupAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Signed-in people cannot be recognised, which almost always means the database is unreachable or saturated.
+      Namespace: !Sub 'knest-${Environment}'
+      MetricName: SessionLookupFailed
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 10
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
       AlarmActions: [!Ref AlertTopic]
 
 Outputs:

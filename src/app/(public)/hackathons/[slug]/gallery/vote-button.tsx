@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { toggleCommunityVote } from '@/server/hackathons/actions'
+import { safely } from '@/lib/safe-action'
 
 export function HackathonVoteButton({
   hackathonId,
@@ -30,7 +31,7 @@ export function HackathonVoteButton({
     setVoted(nextVoted)
     setCount(nextCount)
 
-    const res = await toggleCommunityVote(hackathonId, submissionId)
+    const res = await safely(() => toggleCommunityVote(hackathonId, submissionId))
     setLoading(false)
 
     if (!res.ok) {

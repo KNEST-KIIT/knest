@@ -1,6 +1,7 @@
 import type { Where } from 'payload'
 import { getContentClient } from './payload-client'
 import type { Event } from '@/payload/payload-types'
+import { cachedRead, cachedReadOr } from './cache'
 
 export type EventFilters = {
   eventType?: string
@@ -15,7 +16,7 @@ export type EventFilters = {
  */
 
 /** Empty means empty; failure throws (KN-01 / KN-21). No invented events. */
-export async function listEvents(filters: EventFilters = {}) {
+async function listEventsUncached(filters: EventFilters = {}) {
   const payload = await getContentClient()
 
   const where: Where = { and: [] }
@@ -37,7 +38,7 @@ export async function listEvents(filters: EventFilters = {}) {
 }
 
 /** Empty means empty; failure throws (KN-01). The "upcoming" list used to substitute two invented events. */
-export async function listUpcomingEvents(filters: EventFilters = {}) {
+async function listUpcomingEventsUncached(filters: EventFilters = {}) {
   const payload = await getContentClient()
 
   // Still "upcoming" while it is running: an event with an end time stays listed until
@@ -70,16 +71,19 @@ export async function listUpcomingEvents(filters: EventFilters = {}) {
   return result.docs
 }
 
-export async function getEventById(id: number): Promise<Event | null> {
+async function getEventByIdUncached(id: number): Promise<Event | null> {
   try {
     const payload = await getContentClient()
     return await payload.findByID({ collection: 'events', id, depth: 1, overrideAccess: false })
-  } catch {
-    return null
+  } catch (error) {
+    // A missing event is null; anything else must not be cached as "missing".
+    const status = (error as { status?: number } | null)?.status
+    if (status === 404 || status === 403) return null
+    throw error
   }
 }
 
-export async function getEventBySlug(slug: string): Promise<Event | null> {
+async function getEventBySlugUncached(slug: string): Promise<Event | null> {
   try {
     const payload = await getContentClient()
 
@@ -93,13 +97,13 @@ export async function getEventBySlug(slug: string): Promise<Event | null> {
 
     return result?.docs?.[0] ?? null
   } catch (error) {
-    console.warn('Could not fetch event by slug:', error)
-    return null
+    // Rethrown so the cache never remembers a failure; the exported reader below turns it into null.
+    throw error
   }
 }
 
 /** Events matching a stage/interest set, for dashboard recommendations (7-9.9). Falls back to any upcoming event if nothing matches — a near-match beats an empty dashboard. */
-export async function listRecommendedEvents(stage: string | null, limit = 3) {
+async function listRecommendedEventsUncached(stage: string | null, limit = 3) {
   const matched = stage ? await listUpcomingEvents({ stage }) : []
   if (matched.length >= limit || !stage) return matched.slice(0, limit)
 
@@ -108,3 +112,10 @@ export async function listRecommendedEvents(stage: string | null, limit = 3) {
   const filler = fallback.filter((e) => !matchedIds.has(e.id))
   return [...matched, ...filler].slice(0, limit)
 }
+
+// Shared by every visitor and expired on any CMS change: see ./cache.ts.
+export const listEvents = cachedRead('events.listEvents', listEventsUncached)
+export const listUpcomingEvents = cachedRead('events.listUpcomingEvents', listUpcomingEventsUncached)
+export const getEventBySlug = cachedReadOr('events.getEventBySlug', getEventBySlugUncached, null)
+export const getEventById = cachedReadOr('events.getEventById', getEventByIdUncached, null)
+export const listRecommendedEvents = cachedRead('events.listRecommendedEvents', listRecommendedEventsUncached)

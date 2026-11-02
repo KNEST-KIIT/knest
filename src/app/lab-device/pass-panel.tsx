@@ -49,8 +49,10 @@ export function PassPanel() {
   useEffect(() => {
     if (!selected) return
     let cancelled = false
+    let madeStep = -1
     const make = async () => {
       const now = nowMs()
+      madeStep = Math.floor(now / STEP_MS)
       let next: string
       try {
         next = await makePass(device, selected, action, now)
@@ -64,9 +66,11 @@ export function PassPanel() {
     }
     void make()
     const timer = window.setInterval(() => {
-      const left = Math.ceil((STEP_MS - (nowMs() % STEP_MS)) / 1000)
-      setSecondsLeft(left)
-      if (left >= 29) void make()
+      const now = nowMs()
+      setSecondsLeft(Math.ceil((STEP_MS - (now % STEP_MS)) / 1000))
+      // A backgrounded phone runs this timer late, so "the first second of a step" can be missed and the screen
+      // would keep showing a pass the lab refuses as expired. Compare steps instead of guessing the second.
+      if (Math.floor(now / STEP_MS) !== madeStep) void make()
     }, 1000)
     return () => {
       cancelled = true

@@ -37,7 +37,17 @@ type Tab = 'pass' | 'scan'
  * filled while online, bounded to 24 hours, and wiped on log out.
  */
 export function DeviceApp() {
-  const { store, persistent } = useMemo(() => openDeviceStore(), [])
+  const opened = useMemo(() => openDeviceStore(), [])
+  const { store } = opened
+  const [persistent, setPersistent] = useState(opened.persistent)
+  // An IndexedDB that exists but refuses to open is only discovered by trying it.
+  useEffect(() => {
+    let live = true
+    void store.probe().then((durable) => live && setPersistent(durable))
+    return () => {
+      live = false
+    }
+  }, [store])
   const online = useOnline()
   const [phase, setPhase] = useState<Phase>({ kind: 'loading' })
   const [tab, setTab] = useState<Tab>('pass')

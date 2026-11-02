@@ -1,11 +1,11 @@
-import { and, eq } from 'drizzle-orm'
+import { and, count, eq, gt, gte, inArray, lte } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/db/client'
-import { auditLogs, labBlackouts, labDepartments, labHours, labs, labStaff, users } from '@/db/schema'
+import { auditLogs, labBlackouts, labBookings, labDepartments, labHours, labs, labStaff, users } from '@/db/schema'
 import { requireUserOrThrow, UnauthorizedError } from '@/server/auth/guards'
 import type { StaffRole } from '@/server/auth/roles'
 import { actorFor, isLabAdmin, requireManager } from './access'
-import { isValidDateString } from './rules'
+import { isValidDateString, istInstant, LIVE_STATUSES } from './rules'
 import type { Result } from './service'
 
 const fail = (error: string, code: 'invalid' | 'not-found' | 'forbidden' | 'state' = 'invalid') => ({ ok: false as const, error, code })
@@ -152,7 +152,11 @@ export async function setLabHours(labId: string, input: unknown): Promise<Result
 
 const blackoutSchema = z.object({ startsOn: z.string(), endsOn: z.string(), reason: z.string().trim().max(200).optional() })
 
-export async function addBlackout(labId: string, input: unknown): Promise<Result> {
+/**
+ * Closing dates does not touch bookings already made (a head decides what to do with each), so the answer says
+ * how many live bookings now fall inside the closed period and the screen can tell the head to deal with them.
+ */
+export async function addBlackout(labId: string, input: unknown): Promise<Result<{ affected: number }>> {
   const lab = await labById(labId)
   if (!lab) return fail('That lab doesn’t exist.', 'not-found')
   const actor = await actorFor(labId)
@@ -165,7 +169,19 @@ export async function addBlackout(labId: string, input: unknown): Promise<Result
     const [row] = await tx.insert(labBlackouts).values({ labId, startsOn: parsed.data.startsOn, endsOn: parsed.data.endsOn, reason: parsed.data.reason ?? '' }).returning({ id: labBlackouts.id })
     await tx.insert(auditLogs).values({ actorUserId: actor.id, action: 'lab_blackout_added', entityType: 'lab', entityId: labId, before: null, after: { blackoutId: row!.id, startsOn: parsed.data.startsOn, endsOn: parsed.data.endsOn } })
   })
-  return { ok: true }
+  const [affected] = await db
+    .select({ value: count() })
+    .from(labBookings)
+    .where(
+      and(
+        eq(labBookings.labId, labId),
+        inArray(labBookings.status, [...LIVE_STATUSES]),
+        gte(labBookings.startsAt, istInstant(parsed.data.startsOn)),
+        lte(labBookings.startsAt, istInstant(parsed.data.endsOn, 24 * 60)),
+        gt(labBookings.endsAt, new Date()),
+      ),
+    )
+  return { ok: true, affected: affected?.value ?? 0 }
 }
 
 export async function removeBlackout(labId: string, blackoutId: string): Promise<Result> {

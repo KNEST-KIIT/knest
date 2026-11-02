@@ -1,4 +1,5 @@
 import { getContentClient } from './payload-client'
+import { cachedRead } from './cache'
 
 /**
  * Articles where `startup` is set: founder stories, for /invest (section 4.6).
@@ -7,7 +8,7 @@ import { getContentClient } from './payload-client'
  * Empty means empty; failure throws (KN-01). This module used to substitute six
  * invented, bylined articles for either case.
  */
-export async function listFounderArticles(limit = 6) {
+async function listFounderArticlesUncached(limit = 6) {
   const payload = await getContentClient()
 
   const result = await payload.find({
@@ -23,7 +24,7 @@ export async function listFounderArticles(limit = 6) {
 }
 
 /** One published article by slug, or null. A draft or missing article is null, never an error. */
-export async function getArticleBySlug(slug: string) {
+async function getArticleBySlugUncached(slug: string) {
   const payload = await getContentClient()
   const result = await payload.find({
     collection: 'articles',
@@ -35,7 +36,7 @@ export async function getArticleBySlug(slug: string) {
   return result.docs[0] ?? null
 }
 
-export async function listArticles(limit = 12) {
+async function listArticlesUncached(limit = 12) {
   const payload = await getContentClient()
 
   const result = await payload.find({
@@ -48,3 +49,8 @@ export async function listArticles(limit = 12) {
 
   return result.docs
 }
+
+// Shared by every visitor and expired on any CMS change: see ./cache.ts.
+export const listFounderArticles = cachedRead('articles.listFounderArticles', listFounderArticlesUncached)
+export const getArticleBySlug = cachedRead('articles.getArticleBySlug', getArticleBySlugUncached)
+export const listArticles = cachedRead('articles.listArticles', listArticlesUncached)

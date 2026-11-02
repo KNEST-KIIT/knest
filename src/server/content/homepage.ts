@@ -1,6 +1,7 @@
 import { getContentClient } from './payload-client'
 import type { Homepage } from '@/payload/payload-types'
 import { HOMEPAGE_COPY } from './homepage-copy'
+import { cachedRead } from './cache'
 
 export type SectionKey = NonNullable<Homepage['sections']>[number]['key']
 
@@ -39,10 +40,16 @@ export const FALLBACK_HOMEPAGE: Homepage = {
  * makes that guarantee structural rather than something a caller has to
  * remember.
  */
+// Only a successful read is cached (a read that throws is never remembered), so the outage fallback below
+// is still chosen fresh on every request while the CMS is down.
+const readHomepage = cachedRead('homepage.global', async () => {
+  const payload = await getContentClient()
+  return payload.findGlobal({ slug: 'homepage', depth: 1, overrideAccess: false })
+})
+
 export async function getHomepage(): Promise<Homepage> {
   try {
-    const payload = await getContentClient()
-    const result = await payload.findGlobal({ slug: 'homepage', depth: 1, overrideAccess: false })
+    const result = await readHomepage()
     if (result && result.heroHeadline) return result
     return FALLBACK_HOMEPAGE
   } catch (error) {

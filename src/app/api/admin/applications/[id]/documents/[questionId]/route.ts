@@ -1,3 +1,4 @@
+import { unexpectedError } from '@/server/http/errors'
 import { and, eq, ne } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
 import { db } from '@/db/client'
@@ -21,7 +22,7 @@ export async function GET(
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: 'Not permitted.' }, { status: error.status })
     }
-    throw error
+    return unexpectedError(error)
   }
 
   const application = await db.query.applications.findFirst({

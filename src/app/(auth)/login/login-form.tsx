@@ -59,8 +59,11 @@ export function LoginForm({ googleEnabled, turnstileSiteKey, recoveryNext = null
     if (!res.ok) {
       setError(data.error ?? 'Something went wrong. Try again.')
       setPending(false)
-      setCaptchaToken(null)
-      setCaptchaReset((n) => n + 1)
+      // "Busy" was answered before the human check ran, so its token is unspent and still good for the retry.
+      if (res.status !== 503) {
+        setCaptchaToken(null)
+        setCaptchaReset((n) => n + 1)
+      }
       emailRef.current?.focus()
       return
     }

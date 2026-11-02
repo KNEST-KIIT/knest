@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { unexpectedError } from '@/server/http/errors'
 import { signUpWithPassword } from '@/server/auth/actions'
 import { checkRateLimit, clientIp, RATE_LIMITS } from '@/server/security/rate-limit'
 import { captchaFailure } from '@/server/security/captcha'
@@ -10,7 +11,12 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null)
   const captcha = await captchaFailure(request, body, 'signup')
   if (captcha) return captcha
-  const result = await signUpWithPassword(body)
+  let result: Awaited<ReturnType<typeof signUpWithPassword>>
+  try {
+    result = await signUpWithPassword(body)
+  } catch (error) {
+    return unexpectedError(error)
+  }
 
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: 400 })

@@ -185,6 +185,10 @@ export function ApplicationForm({ applicationId, programTitle, questions, initia
       return
     }
     if (!res.ok) {
+      if (data.code === 'already-submitted') {
+        setSubmitted(true)
+        return
+      }
       if (data.code === 'verify-required') {
         router.push(`/verify?next=${encodeURIComponent(window.location.pathname)}`)
         return

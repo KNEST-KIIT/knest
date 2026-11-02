@@ -1,13 +1,14 @@
 import type { Where } from 'payload'
 import { getContentClient } from './payload-client'
 import type { Resource } from '@/payload/payload-types'
+import { cachedRead, cachedReadOr } from './cache'
 
 export type ResourceFilters = {
   stage?: string
   format?: string
 }
 
-export async function listResources(filters: ResourceFilters = {}) {
+async function listResourcesUncached(filters: ResourceFilters = {}) {
   try {
     const payload = await getContentClient()
 
@@ -27,12 +28,12 @@ export async function listResources(filters: ResourceFilters = {}) {
 
     return result?.docs || []
   } catch (error) {
-    console.warn('Could not fetch resources:', error)
-    return []
+    // Rethrown so the cache never remembers a failure; the exported reader below turns it into [].
+    throw error
   }
 }
 
-export async function getResourceBySlug(slug: string): Promise<Resource | null> {
+async function getResourceBySlugUncached(slug: string): Promise<Resource | null> {
   try {
     const payload = await getContentClient()
 
@@ -56,14 +57,19 @@ export async function getResourceBySlug(slug: string): Promise<Resource | null> 
 
     return resource
   } catch (error) {
-    console.warn('Could not fetch resource by slug:', error)
-    return null
+    // Rethrown so the cache never remembers a failure; the exported reader below turns it into null.
+    throw error
   }
 }
 
 /** Resources matching a stage, for dashboard recommendations (7-9.9). */
-export async function listRecommendedResources(stage: string | null, limit = 3) {
+async function listRecommendedResourcesUncached(stage: string | null, limit = 3) {
   if (!stage) return []
   const matched = await listResources({ stage })
   return matched.slice(0, limit)
 }
+
+// Shared by every visitor and expired on any CMS change: see ./cache.ts.
+export const listResources = cachedReadOr('resources.listResources', listResourcesUncached, [])
+export const getResourceBySlug = cachedReadOr('resources.getResourceBySlug', getResourceBySlugUncached, null)
+export const listRecommendedResources = cachedRead('resources.listRecommendedResources', listRecommendedResourcesUncached)

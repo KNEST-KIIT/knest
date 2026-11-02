@@ -13,6 +13,9 @@ Parameters:
   AppInstanceId: { Type: 'AWS::EC2::Instance::Id' }
   AppSecurityGroupId: { Type: 'AWS::EC2::SecurityGroup::Id' }
   AppPort: { Type: Number, Default: 3000, MinValue: 1024, MaxValue: 65535 }
+  # The second container slot (scripts/ops/deploy-slot.sh). Registered with the target group from the start; it stays
+  # unhealthy, and receives nothing, until a swap deploy starts a container there.
+  AppAltPort: { Type: Number, Default: 3001, MinValue: 1024, MaxValue: 65535 }
   CloudFrontPrefixListId:
     Type: String
     AllowedPattern: '^pl-[0-9a-f]+$'
@@ -65,6 +68,24 @@ Resources:
       ToPort: !Ref AppPort
       SourceSecurityGroupId: !Ref OriginSecurityGroup
 
+  OriginToAppAlt:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref OriginSecurityGroup
+      IpProtocol: tcp
+      FromPort: !Ref AppAltPort
+      ToPort: !Ref AppAltPort
+      DestinationSecurityGroupId: !Ref AppSecurityGroupId
+
+  AppFromOriginAlt:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AppSecurityGroupId
+      IpProtocol: tcp
+      FromPort: !Ref AppAltPort
+      ToPort: !Ref AppAltPort
+      SourceSecurityGroupId: !Ref OriginSecurityGroup
+
   LoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
@@ -82,14 +103,29 @@ Resources:
       Protocol: HTTP
       Port: !Ref AppPort
       TargetType: instance
-      Targets: [{ Id: !Ref AppInstanceId, Port: !Ref AppPort }]
+      Targets:
+        - { Id: !Ref AppInstanceId, Port: !Ref AppPort }
+        - { Id: !Ref AppInstanceId, Port: !Ref AppAltPort }
       HealthCheckPath: /api/health
       HealthCheckProtocol: HTTP
+      # Every deploy replaces the single container, and the load balancer sends nothing to it until it has passed
+      # HealthyThresholdCount checks in a row. At the default 30 second interval that was about a minute of 502s
+      # after the app was already answering; at 10 seconds it is about twenty. /api/health is one cheap query.
+      HealthCheckIntervalSeconds: 10
+      HealthCheckTimeoutSeconds: 5
       Matcher: { HttpCode: '200' }
       HealthyThresholdCount: 2
       UnhealthyThresholdCount: 2
       TargetGroupAttributes:
         - { Key: deregistration_delay.timeout_seconds, Value: '60' }
+
+  # The deploy document reads this to swap container slots (scripts/ops/deploy-slot.sh).
+  TargetGroupArnParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /knest-production/config/target-group-arn
+      Type: String
+      Value: !Ref TargetGroup
 
   Listener:
     Type: AWS::ElasticLoadBalancingV2::Listener
@@ -116,6 +152,41 @@ Resources:
       Threshold: 1
       ComparisonOperator: LessThanThreshold
       TreatMissingData: breaching
+      AlarmActions: [!Ref AlertTopicArn]
+
+  # The application answering with server errors while its health check still passes: the failure the
+  # healthy-targets alarm cannot see (a broken page, a failing dependency, a saturated pool).
+  TargetErrorsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: The application returned 5xx responses at a sustained rate.
+      Namespace: AWS/ApplicationELB
+      MetricName: HTTPCode_Target_5XX_Count
+      Dimensions:
+        - { Name: LoadBalancer, Value: !GetAtt LoadBalancer.LoadBalancerFullName }
+        - { Name: TargetGroup, Value: !GetAtt TargetGroup.TargetGroupFullName }
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 20
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref AlertTopicArn]
+  TargetSlowAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Average response time above 3 seconds for 10 minutes (a saturated database or pool).
+      Namespace: AWS/ApplicationELB
+      MetricName: TargetResponseTime
+      Dimensions:
+        - { Name: LoadBalancer, Value: !GetAtt LoadBalancer.LoadBalancerFullName }
+        - { Name: TargetGroup, Value: !GetAtt TargetGroup.TargetGroupFullName }
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 3
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
       AlarmActions: [!Ref AlertTopicArn]
 
 Outputs:

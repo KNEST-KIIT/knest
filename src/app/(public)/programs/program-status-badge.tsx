@@ -1,5 +1,6 @@
 import { StatusBadge } from '@/components/ui'
 import type { Program } from '@/payload/payload-types'
+import { deadlineInstant } from '@/server/applications/availability'
 
 const CONFIG: Record<Program['applicationStatus'], { label: string; tone: 'signal' | 'caution' | 'neutral' | 'archive' }> = {
   open: { label: 'Applications open', tone: 'signal' },
@@ -15,7 +16,7 @@ export function ProgramStatusBadge({
   status: Program['applicationStatus']
   deadline?: string | null
 }) {
-  const isExpired = status === 'open' && Boolean(deadline && new Date(deadline) < new Date())
+  const isExpired = status === 'open' && Boolean(deadline && deadlineInstant(deadline) < new Date())
   const effectiveStatus = isExpired ? 'closed' : status
   return <StatusBadge status={effectiveStatus} config={CONFIG} variant="pill" />
 }

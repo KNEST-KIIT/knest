@@ -14,27 +14,39 @@ export type SessionUser = Session['user']
  * control.
  */
 
-export async function getSessionUser(): Promise<SessionUser | null> {
+/**
+ * Looks the session up and says whether the lookup itself failed. A failed lookup is not the same as
+ * "nobody is signed in": during a database outage, treating it as a logout sends signed-in people to a
+ * sign-in form that cannot work either, and they conclude their account is gone.
+ */
+async function lookupSession(): Promise<{ user: SessionUser | null; failed: boolean }> {
   try {
     const session = await auth()
-    return session?.user ?? null
+    return { user: session?.user ?? null, failed: false }
   } catch (error) {
     // Next signals "this render is dynamic" (and redirect/notFound) by throwing. Those
     // must reach Next, or a page that reads the session gets prerendered as if
     // nobody were signed in.
     unstable_rethrow(error)
-    // Fail closed: a lookup failure is "not signed in", in every environment.
+    // Fail closed: a lookup failure never grants access, in every environment.
     // (A development-only mock user used to be returned here; it masked real
     // failures and was one NODE_ENV misconfiguration away from a bypass.)
     // Log the error object only. It never carries the session token.
     console.error('[auth] session lookup failed; treating request as signed out', error)
-    return null
+    return { user: null, failed: true }
   }
+}
+
+export async function getSessionUser(): Promise<SessionUser | null> {
+  return (await lookupSession()).user
 }
 
 /** Requires any signed-in user. Redirects to login, preserving the destination. */
 export async function requireUser(returnTo?: string): Promise<SessionUser> {
-  const user = await getSessionUser()
+  const { user, failed } = await lookupSession()
+  // A page cannot tell a signed-in person from a stranger when the lookup broke. Show the error page
+  // (which offers "Try again") instead of redirecting them to a sign-in that would also fail.
+  if (failed) throw new Error('Session lookup failed')
   if (!user) {
     const target = returnTo ? `/login?next=${encodeURIComponent(returnTo)}` : '/login'
     redirect(target)

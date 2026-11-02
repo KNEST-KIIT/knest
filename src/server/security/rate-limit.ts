@@ -11,7 +11,8 @@ type RateLimitConfig = { capacity: number; refillIntervalSeconds: number }
  * takes to refill to `capacity` — not a request-per-second rate directly.
  */
 export const RATE_LIMITS = {
-  login: { capacity: 5, refillIntervalSeconds: 15 * 60 },
+  // Failed sign-ins per address. Campus networks share one address, so this is looser than a home line would need.
+  login: { capacity: 20, refillIntervalSeconds: 15 * 60 },
   // Failed sign-ins per account (hashed e-mail), whatever address they come from. Looser than the per-address
   // limit so a stranger cannot lock a person out for long, tight enough to stop a distributed guess.
   loginAccount: { capacity: 10, refillIntervalSeconds: 60 * 60 },
@@ -23,6 +24,8 @@ export const RATE_LIMITS = {
   // Fire-and-forget selector clicks: far above what a person produces, far below flooding.
   analyticsTrack: { capacity: 60, refillIntervalSeconds: 10 * 60 },
   // Public contact form: a person sends a few, a bot sends hundreds.
+  // Public site search fans out to five collections per request, so it is bounded per address.
+  search: { capacity: 40, refillIntervalSeconds: 10 * 60 },
   enquirySubmit: { capacity: 3, refillIntervalSeconds: 60 * 60 },
   // Sends an e-mail: bounded per address as well as per connection.
   verifySend: { capacity: 5, refillIntervalSeconds: 60 * 60 },

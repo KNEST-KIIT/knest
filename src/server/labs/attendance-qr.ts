@@ -152,6 +152,29 @@ export const dbLookups: Lookups = {
   },
 }
 
+/**
+ * Remembers key and role answers for the length of one request. A phone syncing after class sends up to 50
+ * scans, nearly all signed by the same two or three keys; asking the database about each one every time was
+ * most of the work. Bookings are NOT remembered: an earlier event in the same batch can complete one, and the
+ * next event must see that.
+ */
+export function memoisedLookups(base: Lookups): Lookups {
+  const keys = new Map<string, Promise<KeyRecord | null>>()
+  const roles = new Map<string, Promise<LabRole>>()
+  return {
+    key: (keyId) => {
+      if (!keys.has(keyId)) keys.set(keyId, base.key(keyId))
+      return keys.get(keyId)!
+    },
+    booking: (id) => base.booking(id),
+    labRole: (userId, labId) => {
+      const id = `${userId}:${labId}`
+      if (!roles.has(id)) roles.set(id, base.labRole(userId, labId))
+      return roles.get(id)!
+    },
+  }
+}
+
 // ---------------------------------------------------------------------------------- context and roster
 
 export type KeyEntry = { keyId: string; publicKey: string }
@@ -375,13 +398,14 @@ export async function submitScanBatch(input: { clientNowMs: unknown; events: unk
     return fail(`Send between 1 and ${MAX_BATCH_EVENTS} events.`, 'invalid')
   }
   const results: ScanOutcome[] = []
+  const lookups = memoisedLookups(dbLookups)
   for (const token of input.events as string[]) {
-    results.push(await processEvent(token, user.id, input.clientNowMs, now))
+    results.push(await processEvent(token, user.id, input.clientNowMs, now, lookups))
   }
   return { ok: true, results }
 }
 
-async function processEvent(token: string, userId: string, clientNowMs: number, now: Date): Promise<ScanOutcome> {
+async function processEvent(token: string, userId: string, clientNowMs: number, now: Date, lookups: Lookups = dbLookups): Promise<ScanOutcome> {
   const parsed = parseToken(token, 'scan')
   if (!parsed) return { id: null, status: 'rejected', code: 'malformed', check: null, duplicate: false }
   const eventId = parsed.payload.id
@@ -392,7 +416,7 @@ async function processEvent(token: string, userId: string, clientNowMs: number, 
     return outcomeFromRow(prior, true)
   }
 
-  const decision = await decideScan(token, { submitterUserId: userId, serverNowMs: now.getTime(), clientNowMs }, dbLookups)
+  const decision = await decideScan(token, { submitterUserId: userId, serverNowMs: now.getTime(), clientNowMs }, lookups)
   return persist(parsed.payload, token, decision, userId, clientNowMs, now)
 }
 

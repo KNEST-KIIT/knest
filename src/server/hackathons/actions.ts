@@ -13,11 +13,23 @@ import {
   hackathonJudgeAssignments,
   hackathonScores,
 } from '@/db/schema'
-import { requireUserOrThrow } from '@/server/auth/guards'
+import { getSessionUser, requireUserOrThrow } from '@/server/auth/guards'
 import { sanitizeSubmissionUrl } from './url-sanitize'
 import { enforceRateLimit, RATE_LIMITS } from '@/server/security/rate-limit'
 
 export type ActionResult = { ok: true } | { ok: false; error: string }
+
+/** Free text a person typed is kept to a size a page can show; lists are kept to a count and an item length. */
+const clipText = (value: string | undefined, max: number) => (value ?? '').slice(0, max)
+const clipList = (value: string[] | undefined, count: number, itemMax: number) =>
+  (Array.isArray(value) ? value : []).filter((item) => typeof item === 'string').slice(0, count).map((item) => item.slice(0, itemMax))
+
+// Every export of a 'use server' file is a public endpoint, callable by anyone who can find its id, so the
+// reads below decide for themselves what the caller may see rather than relying on the page that uses them.
+async function isHackathonStaff(): Promise<boolean> {
+  const user = await getSessionUser()
+  return user?.staffRole === 'super_admin' || user?.staffRole === 'program_manager'
+}
 
 // ---------------------------------------------------------------------------
 // Read — public
@@ -54,7 +66,7 @@ export async function listPublicHackathons() {
 
 /** Get a single hackathon by slug. */
 export async function getHackathonBySlug(slug: string) {
-  return db.query.hackathonEvents.findFirst({
+  const found = await db.query.hackathonEvents.findFirst({
     where: eq(hackathonEvents.slug, slug),
     columns: {
       id: true,
@@ -82,6 +94,9 @@ export async function getHackathonBySlug(slug: string) {
       telegramChatId: false,
     },
   })
+  // A draft is the organiser's work in progress; the public list hides it and so must a direct address.
+  if (found?.status === 'draft' && !(await isHackathonStaff())) return undefined
+  return found
 }
 
 /** Count registered participants for a hackathon (public). */
@@ -103,16 +118,20 @@ export async function registerForHackathon(
   opts: { selectedTracks?: string[]; lookingForTeam?: boolean; skills?: string[] } = {},
 ): Promise<ActionResult> {
   const user = await requireUserOrThrow()
-  await enforceRateLimit(user.id, RATE_LIMITS.applicationStart)
+  await enforceRateLimit(`hackathon:${user.id}`, RATE_LIMITS.applicationStart)
 
   // Check hackathon exists and is accepting registrations.
   const hackathon = await db.query.hackathonEvents.findFirst({
     where: eq(hackathonEvents.id, hackathonId),
-    columns: { id: true, status: true, registrationsCloseAt: true },
+    columns: { id: true, status: true, registrationsOpenAt: true, registrationsCloseAt: true },
   })
   if (!hackathon) return { ok: false, error: 'Hackathon not found.' }
-  if (hackathon.status === 'draft' || hackathon.status === 'archived') {
+  // The page offers registration only while the event is open; the server holds the same line.
+  if (hackathon.status !== 'open') {
     return { ok: false, error: 'Registrations are not open for this hackathon.' }
+  }
+  if (hackathon.registrationsOpenAt && hackathon.registrationsOpenAt > new Date()) {
+    return { ok: false, error: 'Registrations have not opened yet.' }
   }
   if (hackathon.registrationsCloseAt && hackathon.registrationsCloseAt < new Date()) {
     return { ok: false, error: 'Registrations have closed for this hackathon.' }
@@ -124,9 +143,9 @@ export async function registerForHackathon(
     .values({
       hackathonId,
       userId: user.id,
-      selectedTracks: opts.selectedTracks ?? [],
-      lookingForTeam: opts.lookingForTeam ?? false,
-      skills: opts.skills ?? [],
+      selectedTracks: clipList(opts.selectedTracks, 20, 80),
+      lookingForTeam: opts.lookingForTeam === true,
+      skills: clipList(opts.skills, 30, 40),
     })
     .onConflictDoNothing()
 
@@ -220,7 +239,7 @@ export async function createTeam(
   },
 ): Promise<ActionResult & { teamId?: string }> {
   const user = await requireUserOrThrow()
-  await enforceRateLimit(user.id, RATE_LIMITS.applicationStart)
+  await enforceRateLimit(`hackathon:${user.id}`, RATE_LIMITS.applicationStart)
 
   // Must be registered.
   const reg = await db.query.hackathonRegistrations.findFirst({
@@ -279,7 +298,7 @@ export async function joinTeamByCode(
   joinCode: string,
 ): Promise<ActionResult> {
   const user = await requireUserOrThrow()
-  await enforceRateLimit(user.id, RATE_LIMITS.applicationStart)
+  await enforceRateLimit(`hackathon:${user.id}`, RATE_LIMITS.applicationStart)
 
   const team = await db.query.hackathonTeams.findFirst({
     where: and(
@@ -466,7 +485,16 @@ export async function leaveTeam(hackathonId: string): Promise<ActionResult> {
 // ---------------------------------------------------------------------------
 
 /** Get draft or submitted submission for the current user's team. */
+/** A team's own submission, drafts included: only its members (and hackathon staff) may read it. */
 export async function getTeamSubmission(teamId: string) {
+  const user = await requireUserOrThrow()
+  if (!(await isHackathonStaff())) {
+    const membership = await db.query.hackathonTeamMembers.findFirst({
+      where: and(eq(hackathonTeamMembers.teamId, teamId), eq(hackathonTeamMembers.userId, user.id)),
+      columns: { id: true },
+    })
+    if (!membership) return undefined
+  }
   return db.query.hackathonSubmissions.findFirst({
     where: eq(hackathonSubmissions.teamId, teamId),
   })
@@ -514,18 +542,24 @@ export async function saveSubmissionDraft(
     return { ok: false, error: 'Your submission has already been submitted and cannot be edited.' }
   }
 
+  // Drafts are written while the event is taking entries, not after it has moved on or before it exists.
+  const event = await db.query.hackathonEvents.findFirst({ where: eq(hackathonEvents.id, hackathonId), columns: { status: true } })
+  if (!event || (event.status !== 'open' && event.status !== 'building')) {
+    return { ok: false, error: 'This hackathon is not taking project entries right now.' }
+  }
+
   const payload = {
     hackathonId,
     teamId,
-    projectTitle: data.projectTitle ?? '',
-    tagline: data.tagline ?? '',
-    description: data.description ?? '',
+    projectTitle: clipText(data.projectTitle, 160),
+    tagline: clipText(data.tagline, 200),
+    description: clipText(data.description, 10_000),
     repoUrl: sanitizeSubmissionUrl(data.repoUrl),
     demoUrl: sanitizeSubmissionUrl(data.demoUrl),
     videoUrl: sanitizeSubmissionUrl(data.videoUrl),
     figmaUrl: sanitizeSubmissionUrl(data.figmaUrl),
-    techStack: data.techStack ?? [],
-    selectedTracks: data.selectedTracks ?? [],
+    techStack: clipList(data.techStack, 30, 40),
+    selectedTracks: clipList(data.selectedTracks, 20, 80),
     updatedAt: new Date(),
   }
 
@@ -599,6 +633,11 @@ export async function submitProject(
 // ---------------------------------------------------------------------------
 
 export async function listGallerySubmissions(hackathonId: string) {
+  // The organiser chooses whether the gallery is public; a private one shows nothing to the public, and a
+  // draft event shows nothing at all.
+  const hackathon = await db.query.hackathonEvents.findFirst({ where: eq(hackathonEvents.id, hackathonId), columns: { galleryPublic: true, status: true } })
+  if (!hackathon) return []
+  if (!(await isHackathonStaff()) && (!hackathon.galleryPublic || hackathon.status === 'draft')) return []
   // Only return submitted projects for public gallery.
   return db.query.hackathonSubmissions.findMany({
     where: and(
@@ -639,24 +678,29 @@ export async function toggleCommunityVote(
   submissionId: string,
 ): Promise<ActionResult & { voted?: boolean }> {
   const user = await requireUserOrThrow()
-  await enforceRateLimit(user.id, RATE_LIMITS.applicationStart)
+  await enforceRateLimit(`hackathon-vote:${user.id}`, { capacity: 60, refillIntervalSeconds: 60 * 60 })
 
-  // Verify hackathon has voting enabled and is completed.
-  const hackathon = await db.query.hackathonEvents.findFirst({
-    where: eq(hackathonEvents.id, hackathonId),
-    columns: { communityVotingEnabled: true, status: true },
-  })
-  if (!hackathon?.communityVotingEnabled) {
-    return { ok: false, error: 'Community voting is not enabled for this hackathon.' }
-  }
-
-  // No voting for own team's submission.
+  // The submission decides which hackathon the vote belongs to. The id the caller sends is only checked
+  // against it: trusting it let a vote for one event be recorded under another that had voting switched on.
   const submission = await db.query.hackathonSubmissions.findFirst({
     where: eq(hackathonSubmissions.id, submissionId),
     with: { team: { with: { members: { columns: { userId: true } } } } },
-    columns: { id: true },
+    columns: { id: true, hackathonId: true, status: true },
   })
-  if (!submission) return { ok: false, error: 'Submission not found.' }
+  if (!submission || submission.hackathonId !== hackathonId || submission.status !== 'submitted') return { ok: false, error: 'Submission not found.' }
+
+  const hackathon = await db.query.hackathonEvents.findFirst({
+    where: eq(hackathonEvents.id, submission.hackathonId),
+    columns: { communityVotingEnabled: true, galleryPublic: true, status: true },
+  })
+  if (!hackathon?.communityVotingEnabled || !hackathon.galleryPublic) {
+    return { ok: false, error: 'Community voting is not enabled for this hackathon.' }
+  }
+  // Votes open once projects are in and close when the event is archived; a draft has nothing to vote on.
+  if (!['judging', 'completed'].includes(hackathon.status)) {
+    return { ok: false, error: 'Voting is not open yet.' }
+  }
+
   const onTeam = submission.team?.members.some((m) => m.userId === user.id)
   if (onTeam) return { ok: false, error: 'You cannot vote for your own team\'s submission.' }
 
@@ -673,11 +717,17 @@ export async function toggleCommunityVote(
     return { ok: true, voted: false }
   }
 
-  await db.insert(hackathonCommunityVotes).values({
-    submissionId,
-    hackathonId,
-    userId: user.id,
-  })
+  try {
+    await db.insert(hackathonCommunityVotes).values({
+      submissionId,
+      hackathonId: submission.hackathonId,
+      userId: user.id,
+    })
+  } catch (error) {
+    // Two clicks at once: the second hits the unique index. The vote exists, which is what was asked for.
+    const e = error as { code?: string; cause?: { code?: string } } | null
+    if (e?.code !== '23505' && e?.cause?.code !== '23505') throw error
+  }
   return { ok: true, voted: true }
 }
 
@@ -728,12 +778,31 @@ export async function submitJudgeScores(
 ): Promise<ActionResult> {
   const user = await requireUserOrThrow()
 
+  if (!Array.isArray(scores) || scores.length === 0 || scores.length > 50) {
+    return { ok: false, error: 'Send between 1 and 50 scores.' }
+  }
   // Validate score range.
   for (const s of scores) {
-    if (s.score < 1 || s.score > 10 || !Number.isInteger(s.score)) {
+    if (typeof s?.criterionId !== 'string' || !Number.isInteger(s.score) || s.score < 1 || s.score > 10) {
       return { ok: false, error: 'Scores must be integers between 1 and 10.' }
     }
+    if (s.notes !== undefined && (typeof s.notes !== 'string' || s.notes.length > 2000)) {
+      return { ok: false, error: 'Notes must be text of at most 2000 characters.' }
+    }
   }
+  if (new Set(scores.map((s) => s.criterionId)).size !== scores.length) {
+    return { ok: false, error: 'Each criterion can be scored once.' }
+  }
+
+  // Only the event's own judging criteria can be scored, and only while it is being judged.
+  const event = await db.query.hackathonEvents.findFirst({
+    where: eq(hackathonEvents.id, hackathonId),
+    columns: { judgingCriteria: true, status: true },
+  })
+  if (!event) return { ok: false, error: 'Hackathon not found.' }
+  if (event.status !== 'judging') return { ok: false, error: 'Scoring is open only while the event is in judging.' }
+  const known = new Set(((event.judgingCriteria ?? []) as { id: string }[]).map((c) => c.id))
+  if (scores.some((s) => !known.has(s.criterionId))) return { ok: false, error: 'One of those criteria does not belong to this hackathon.' }
 
   // Verify judge assignment.
   const assignment = await db.query.hackathonJudgeAssignments.findFirst({

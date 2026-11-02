@@ -19,6 +19,13 @@ describe('runtime database role', () => {
     }
   })
 
+  it('keeps the audit trail append-only, revoking after the broad grants', () => {
+    const statements = privilegeStatements('knest_app', 'knest_admin', 'knest')
+    const revoke = statements.findIndex((s) => /REVOKE UPDATE, DELETE ON "app"."audit_logs"/.test(s))
+    const grant = statements.findIndex((s) => /GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA "app"/.test(s))
+    expect(revoke).toBeGreaterThan(grant)
+  })
+
   it('quotes identifiers', () => {
     const all = privilegeStatements('knest_app', 'a"b', 'db"x').join('\n')
     expect(all).toContain('"a""b"')

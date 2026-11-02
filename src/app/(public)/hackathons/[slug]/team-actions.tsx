@@ -11,6 +11,7 @@ import {
   registerForHackathon,
   transferLeadership,
 } from '@/server/hackathons/actions'
+import { safely } from '@/lib/safe-action'
 
 export function HackathonTeamActions({
   hackathonId,
@@ -89,10 +90,10 @@ export function HackathonTeamActions({
       .map((s) => s.trim())
       .filter(Boolean)
 
-    const res = await registerForHackathon(hackathonId, {
+    const res = await safely(() => registerForHackathon(hackathonId, {
       lookingForTeam: regLookingForTeam,
       skills: skillsArray,
-    })
+    }))
 
     setLoading(false)
     if (res.ok) {
@@ -114,12 +115,12 @@ export function HackathonTeamActions({
       .map((s) => s.trim())
       .filter(Boolean)
 
-    const res = await createTeam(hackathonId, {
+    const res = await safely(() => createTeam(hackathonId, {
       name: teamName,
       selectedTracks: teamTracks,
       techStack: stackArray,
       recruitmentPitch,
-    })
+    }))
 
     setLoading(false)
     if (res.ok) {
@@ -136,7 +137,7 @@ export function HackathonTeamActions({
     setLoading(true)
     setError(null)
 
-    const res = await joinTeamByCode(hackathonId, joinCode)
+    const res = await safely(() => joinTeamByCode(hackathonId, joinCode))
 
     setLoading(false)
     if (res.ok) {
@@ -153,7 +154,7 @@ export function HackathonTeamActions({
     setLoading(true)
     setError(null)
 
-    const res = await leaveTeam(hackathonId)
+    const res = await safely(() => leaveTeam(hackathonId))
     setLoading(false)
     if (res.ok) {
       setSuccess('Left team.')
@@ -167,7 +168,7 @@ export function HackathonTeamActions({
     setLoading(true)
     setError(null)
 
-    const res = await disbandTeam(hackathonId)
+    const res = await safely(() => disbandTeam(hackathonId))
     setLoading(false)
     if (res.ok) {
       setSuccess('Team disbanded successfully.')
@@ -184,7 +185,7 @@ export function HackathonTeamActions({
     setLoading(true)
     setError(null)
 
-    const res = await transferLeadership(hackathonId, targetLeaderId)
+    const res = await safely(() => transferLeadership(hackathonId, targetLeaderId))
     setLoading(false)
     if (res.ok) {
       setSuccess('Leadership transferred successfully.')

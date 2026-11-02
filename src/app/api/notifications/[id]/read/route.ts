@@ -1,3 +1,4 @@
+import { unexpectedError } from '@/server/http/errors'
 import { NextResponse } from 'next/server'
 import { UnauthorizedError } from '@/server/auth/guards'
 import { markNotificationRead } from '@/server/notifications/actions'
@@ -16,6 +17,6 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: 'Sign in to continue.' }, { status: error.status })
     }
-    throw error
+    return unexpectedError(error)
   }
 }

@@ -50,6 +50,9 @@ export function privilegeStatements(role: string, owner: string, database: strin
       `ALTER DEFAULT PRIVILEGES FOR ROLE ${o} IN SCHEMA ${s} GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO ${r}`,
     )
   }
+  // The audit trail is append-only for the application. The grants above give every table full row access,
+  // so this follows them: a flaw in the app can still add a row, but can no longer edit or erase history.
+  statements.push(`REVOKE UPDATE, DELETE ON "app"."audit_logs" FROM ${r}`)
   // The Drizzle bookkeeping schema stays with the migration role.
   statements.push(`REVOKE ALL ON SCHEMA "drizzle" FROM ${r}`)
   return statements

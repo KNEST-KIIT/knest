@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { UnauthorizedError } from '@/server/auth/guards'
 import { isLabAttendanceQrEnabled } from '@/server/features'
 import { limitByUser } from '@/server/security/route-limits'
+import { unexpectedError } from '@/server/http/errors'
 import type { QrCode, QrResult } from './attendance-qr'
 
 const STATUS_FOR_CODE: Record<QrCode, number> = { closed: 404, invalid: 400, 'not-found': 404, forbidden: 403, conflict: 409, limit: 409 }
@@ -27,7 +28,7 @@ export async function qrRoute(handler: () => Promise<NextResponse>): Promise<Nex
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: error.status === 401 ? 'Sign in to continue.' : 'Not permitted.' }, { status: error.status, headers: NO_STORE })
     }
-    throw error
+    return unexpectedError(error)
   }
 }
 

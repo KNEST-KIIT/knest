@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { compare, hash } from 'bcryptjs'
+import { comparePassword, hashPassword, PasswordBusyError } from './password-work'
 import { and, eq, isNull } from 'drizzle-orm'
 import { db } from '@/db/client'
 import { accounts, sessions, users } from '@/db/schema'
@@ -37,7 +37,15 @@ export async function loginWithPassword(input: unknown): Promise<AuthResult> {
 
   // Always run a bcrypt comparison, even with no matching account, so response
   // time does not reveal which email addresses are registered.
-  const matches = await compare(parsed.data.password, user?.passwordHash ?? DUMMY_HASH)
+  let matches: boolean
+  try {
+    matches = await comparePassword(parsed.data.password, user?.passwordHash ?? DUMMY_HASH)
+  } catch (error) {
+    // Password checks run one at a time (password-work.ts); past the line the person is asked to retry. This is
+    // not a wrong password, so it must not count against the address or the account.
+    if (error instanceof PasswordBusyError) return { ok: false, error: 'Sign-in is busy right now. Try again in a moment.', serverError: true }
+    throw error
+  }
 
   if (!user || !user.passwordHash || !matches || !user.isActive) {
     return { ok: false, error: 'That email and password don’t match.' }
@@ -73,7 +81,7 @@ export async function signUpWithPassword(input: unknown): Promise<AuthResult> {
   }
   const next = safeNext((input as { next?: unknown } | null)?.next as string | undefined)
 
-  const passwordHash = parsed.data.password ? await hash(parsed.data.password, 12) : null
+  const passwordHash = parsed.data.password ? await hashPassword(parsed.data.password) : null
   const [created] = await db
     .insert(users)
     .values({
@@ -122,7 +130,7 @@ export async function sendVerificationEmail(emailInput: string, next?: string | 
   const nextParam = returnTo ? `&next=${encodeURIComponent(returnTo)}` : ''
   const link = `${siteUrl()}/verify/confirm?email=${encodeURIComponent(parsed.data)}&token=${token}${nextParam}`
   const { subject, text } = verifyEmailTemplate(link)
-  await sendEmail({ to: parsed.data, subject, text })
+  await sendEmail({ to: parsed.data, subject, text }, { ttlMs: VERIFY_TTL_MS })
 
   return { ok: true }
 }
@@ -142,7 +150,7 @@ export async function confirmEmailVerification(
     if (!parsedPw.success) {
       return { ok: false, error: parsedPw.error.issues[0]?.message ?? 'Choose a password of at least 12 characters to activate your account.' }
     }
-    newPasswordHash = await hash(parsedPw.data, 12)
+    newPasswordHash = await hashPassword(parsedPw.data)
   }
 
   // 2. Perform verification inside a transaction with row locking
@@ -247,7 +255,8 @@ export async function requestPasswordReset(emailInput: string, next?: string | n
     const returnTo = safeNext(next)
     const link = `${siteUrl()}/reset/confirm?email=${encodeURIComponent(parsed.data)}&token=${token}${returnTo ? `&next=${encodeURIComponent(returnTo)}` : ''}`
     const { subject, text } = user.passwordHash ? resetPasswordTemplate(link) : setupPasswordTemplate(link)
-    await sendEmail({ to: parsed.data, subject, text }).catch((error) => {
+    // The link lives for RESET_TTL_MS; a retry after that would deliver a dead link, so the outbox stops there too.
+    await sendEmail({ to: parsed.data, subject, text }, { ttlMs: RESET_TTL_MS }).catch((error) => {
       console.error('Failed to send reset email:', error)
     })
   }
@@ -269,12 +278,12 @@ export async function resetPassword(
 
   // Token consumption, password replacement and revocation either all commit
   // or all roll back. A failed write must not burn the only recovery link.
-  const passwordHash = await hash(parsedPassword.data, 12)
+  const passwordHash = await hashPassword(parsedPassword.data)
   const valid = await db.transaction(async (tx) => {
     if (!(await consumeToken('reset-password', parsedEmail.data, token, tx))) return false
     const [user] = await tx.update(users)
       .set({ passwordHash, emailVerified: new Date(), updatedAt: new Date() })
-      .where(eq(users.email, parsedEmail.data))
+      .where(and(eq(users.email, parsedEmail.data), eq(users.isActive, true)))
       .returning({ id: users.id })
     if (user) await tx.delete(sessions).where(eq(sessions.userId, user.id))
     return Boolean(user)

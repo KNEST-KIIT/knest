@@ -89,12 +89,66 @@ export class IndexedDbDeviceStore implements DeviceStore {
   }
 }
 
-/** The browser's store, or memory when IndexedDB is unavailable (the page then says keys will not persist). */
-export function openDeviceStore(): { store: DeviceStore; persistent: boolean } {
-  try {
-    if (typeof indexedDB !== 'undefined') return { store: new IndexedDbDeviceStore(), persistent: true }
-  } catch {
-    // fall through
+/**
+ * IndexedDB when it works, memory when it does not. `indexedDB` can exist and still refuse to open (Safari
+ * private browsing, storage blocked by policy, a full disk), and that refusal used to surface on the first
+ * scan, which was then lost. Here the first failed operation switches to memory for good, so a scan is
+ * still queued and sent while the page stays open, and `persistent()` says the truth for the warning.
+ */
+export class ResilientDeviceStore implements DeviceStore {
+  private active: DeviceStore
+  private durable: boolean
+  constructor(primary: DeviceStore | null, private fallback: DeviceStore = new MemoryDeviceStore()) {
+    this.active = primary ?? fallback
+    this.durable = primary !== null
   }
-  return { store: new MemoryDeviceStore(), persistent: false }
+
+  persistent(): boolean {
+    return this.durable
+  }
+
+  /** Opens the primary store once so an unusable one is found now rather than during a scan. */
+  async probe(): Promise<boolean> {
+    await this.run((s) => s.get<unknown>('meta', '__probe__'))
+    return this.durable
+  }
+
+  private async run<T>(op: (store: DeviceStore) => Promise<T>): Promise<T> {
+    try {
+      return await op(this.active)
+    } catch (error) {
+      if (this.active === this.fallback) throw error
+      this.active = this.fallback
+      this.durable = false
+      return op(this.active)
+    }
+  }
+
+  get<T>(store: StoreName, key: string) {
+    return this.run((s) => s.get<T>(store, key))
+  }
+  put(store: StoreName, key: string, value: unknown) {
+    return this.run((s) => s.put(store, key, value))
+  }
+  delete(store: StoreName, key: string) {
+    return this.run((s) => s.delete(store, key))
+  }
+  all<T>(store: StoreName) {
+    return this.run((s) => s.all<T>(store))
+  }
+  clear(store: StoreName) {
+    return this.run((s) => s.clear(store))
+  }
+}
+
+/** The browser's store, or memory when IndexedDB is unavailable (the page then says keys will not persist). */
+export function openDeviceStore(): { store: ResilientDeviceStore; persistent: boolean } {
+  let primary: DeviceStore | null = null
+  try {
+    if (typeof indexedDB !== 'undefined') primary = new IndexedDbDeviceStore()
+  } catch {
+    // fall through to memory
+  }
+  const store = new ResilientDeviceStore(primary)
+  return { store, persistent: store.persistent() }
 }

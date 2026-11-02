@@ -69,6 +69,8 @@ export async function reconcileDocuments(options: { apply: boolean; now?: number
       removed += 1
     }
   }
+  // A row whose object is gone is lost applicant data. Its own line so an alarm can watch for it.
+  if (plan.missing.length > 0) console.error(`storage_reconcile_missing count=${plan.missing.length}`)
   console.log(
     `storage_reconcile considered=${plan.considered} orphans=${plan.orphans.length} missing=${plan.missing.length} removed=${removed} applied=${options.apply && !plan.refused}${plan.refused ? ` refused="${plan.refused}"` : ''}`,
   )

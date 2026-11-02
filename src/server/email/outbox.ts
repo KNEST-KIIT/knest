@@ -20,6 +20,8 @@ export const DEAD_BODY_RETENTION_MS = 7 * 24 * 60 * 60 * 1000
 export const DEFAULT_TTL_MS = 24 * 60 * 60 * 1000
 export const MAX_ATTEMPTS = 8
 const LEASE_MS = 2 * 60 * 1000
+/** How long a request waits for the first send attempt before leaving the rest to the worker. */
+export const FIRST_ATTEMPT_WAIT_MS = 4_000
 const BACKOFF_MS = [60_000, 5 * 60_000, 15 * 60_000, 60 * 60_000, 3 * 60 * 60_000, 6 * 60 * 60_000, 12 * 60 * 60_000]
 
 /** Delay before the next attempt, given how many attempts have already failed (1 = the first failure). */
@@ -38,8 +40,6 @@ type Message = { to: string; subject: string; text: string }
 async function attempt(id: string, message: Message): Promise<'sent' | 'retry' | 'dead'> {
   try {
     await sendEmailDirect(message)
-    await db.update(emailOutbox).set({ status: 'sent', sentAt: new Date(), body: '', lastError: null }).where(eq(emailOutbox.id, id))
-    return 'sent'
   } catch (error) {
     const description = describeError(error)
     const [row] = await db
@@ -64,6 +64,16 @@ async function attempt(id: string, message: Message): Promise<'sent' | 'retry' |
     console.error(`email_outbox_retry id=${id} attempts=${failed} error=${description}`)
     return 'retry'
   }
+  // The message has gone. Recording that is bookkeeping: if it fails the row stays pending until its
+  // lease runs out, but it must never be counted as a failed send, or the person gets the mail twice.
+  const markSent = () =>
+    db.update(emailOutbox).set({ status: 'sent', sentAt: new Date(), body: '', lastError: null }).where(eq(emailOutbox.id, id))
+  try {
+    await markSent()
+  } catch {
+    await markSent().catch((error) => console.error(`email_outbox_mark_sent_failed id=${id} error=${describeError(error)}`))
+  }
+  return 'sent'
 }
 
 /** Stores the message, then makes the first attempt. Never throws once the row is stored. */
@@ -87,7 +97,18 @@ export async function sendDurably(message: Message, ttlMs = DEFAULT_TTL_MS): Pro
     await sendEmailDirect(message)
     return
   }
-  await attempt(id, message)
+  // The row is durable, so the person's request does not have to wait for a slow mail provider: past
+  // this point the worker owns the retry. The attempt carries on in the background either way.
+  let giveUp: ReturnType<typeof setTimeout> | undefined
+  const waited = new Promise<void>((resolve) => {
+    giveUp = setTimeout(resolve, FIRST_ATTEMPT_WAIT_MS)
+  })
+  const sending = attempt(id, message).then(
+    () => undefined,
+    (error) => console.error('email_outbox_attempt', describeError(error)),
+  )
+  await Promise.race([sending, waited])
+  clearTimeout(giveUp)
 }
 
 export type RequeueResult = 'queued' | 'not_found' | 'not_resendable' | 'no_body'

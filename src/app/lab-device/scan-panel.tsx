@@ -69,8 +69,10 @@ export function ScanPanel() {
   useEffect(() => {
     if (!labId) return
     let cancelled = false
+    let madeStep = -1
     const make = async () => {
       const now = nowMs()
+      madeStep = Math.floor(now / STEP_MS)
       const next = await makeLabCode(device, labId, mode, now)
       if (cancelled) return
       setDeskToken(next)
@@ -78,9 +80,11 @@ export function ScanPanel() {
     }
     void make()
     const timer = window.setInterval(() => {
-      const left = Math.ceil((STEP_MS - (nowMs() % STEP_MS)) / 1000)
-      setSecondsLeft(left)
-      if (left >= 29) void make()
+      const now = nowMs()
+      setSecondsLeft(Math.ceil((STEP_MS - (now % STEP_MS)) / 1000))
+      // A backgrounded tab runs this timer late, so "the first second of a step" can be missed entirely and the
+      // desk would keep showing a code that students' phones refuse. Compare steps instead of guessing the second.
+      if (Math.floor(now / STEP_MS) !== madeStep) void make()
     }, 1000)
     return () => {
       cancelled = true
@@ -93,7 +97,14 @@ export function ScanPanel() {
   async function onPass(text: string) {
     const at = nowMs()
     const offline = await probeOffline()
-    const res = await scanStudentPass({ scanned: text, roster: roster ?? [], expectedAction: mode, device, outbox, nowMs: at, offline })
+    let res: Awaited<ReturnType<typeof scanStudentPass>>
+    try {
+      res = await scanStudentPass({ scanned: text, roster: roster ?? [], expectedAction: mode, device, outbox, nowMs: at, offline })
+    } catch {
+      // Saving to the device failed. Say so: a silent failure here is a student who believes they were checked in.
+      push({ tone: 'bad', text: 'That scan could not be saved on this device. Scan again, and if it keeps happening, record attendance by hand.' })
+      return
+    }
     if (!res.ok) {
       push({ tone: 'bad', text: PROBLEMS[res.problem] })
       return

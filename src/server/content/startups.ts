@@ -1,6 +1,7 @@
 import type { Where } from 'payload'
 import { getContentClient } from './payload-client'
 import type { Startup } from '@/payload/payload-types'
+import { cachedRead, cachedReadOr } from './cache'
 
 export type StartupFilters = {
   stage?: string
@@ -14,7 +15,7 @@ export type StartupFilters = {
  * honest error. Substituting invented startups for either is what this module
  * used to do.
  */
-export async function listStartups(filters: StartupFilters = {}) {
+async function listStartupsUncached(filters: StartupFilters = {}) {
   const payload = await getContentClient()
 
   const where: Where = { and: [] }
@@ -35,7 +36,7 @@ export async function listStartups(filters: StartupFilters = {}) {
 }
 
 /** Startups.featured, for the homepage and /invest showcases — no filter beyond featured itself. */
-export async function listFeaturedStartups(limit = 6) {
+async function listFeaturedStartupsUncached(limit = 6) {
   const payload = await getContentClient()
 
   const result = await payload.find({
@@ -50,7 +51,7 @@ export async function listFeaturedStartups(limit = 6) {
   return result.docs
 }
 
-export async function getStartupBySlug(slug: string): Promise<Startup | null> {
+async function getStartupBySlugUncached(slug: string): Promise<Startup | null> {
   try {
     const payload = await getContentClient()
 
@@ -64,8 +65,8 @@ export async function getStartupBySlug(slug: string): Promise<Startup | null> {
 
     return result?.docs?.[0] ?? null
   } catch (error) {
-    console.warn('Could not fetch startup by slug:', error)
-    return null
+    // Rethrown so the cache never remembers a failure; the exported reader below turns it into null.
+    throw error
   }
 }
 
@@ -109,3 +110,8 @@ export async function getStartupForUser(userId: string): Promise<Startup | null>
     return null
   }
 }
+
+// Shared by every visitor and expired on any CMS change: see ./cache.ts.
+export const listStartups = cachedRead('startups.listStartups', listStartupsUncached)
+export const listFeaturedStartups = cachedRead('startups.listFeaturedStartups', listFeaturedStartupsUncached)
+export const getStartupBySlug = cachedReadOr('startups.getStartupBySlug', getStartupBySlugUncached, null)

@@ -2,7 +2,10 @@ import type { Metadata } from 'next'
 import { Button, EmptyState, Heading, Input, LinkCard, LiveRegion, Section, Tag } from '@/components/ui'
 import { resultSummary } from '@/lib/result-summary'
 import { searchEmpty } from '@/lib/empty-state-copy'
+import { headers } from 'next/headers'
 import { search, type SearchResultType } from '@/server/content/search'
+import { checkRateLimit, RATE_LIMITS } from '@/server/security/rate-limit'
+import { clientIpFromHeaders } from '@/server/security/client-ip'
 import { track } from '@/server/analytics/track'
 import { toLoggedSearch } from '@/lib/search-query-log'
 
@@ -20,6 +23,15 @@ const TYPE_LABELS: Record<SearchResultType, string> = {
 }
 
 async function SearchResults({ query }: { query: string }) {
+  const requestHeaders = await headers()
+  const allowed = await checkRateLimit(`search:${clientIpFromHeaders((name) => requestHeaders.get(name), process.env)}`, RATE_LIMITS.search)
+  if (!allowed) {
+    return (
+      <p role="status" className="text-[length:var(--text-small)] text-[var(--color-ink-soft)]">
+        You have searched a lot in a short time. Wait a few minutes and try again.
+      </p>
+    )
+  }
   const results = await search(query)
   await track('search_query', { ...toLoggedSearch(query, results.length) })
   const empty = searchEmpty(query)

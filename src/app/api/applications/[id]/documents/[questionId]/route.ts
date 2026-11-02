@@ -1,3 +1,4 @@
+import { unexpectedError } from '@/server/http/errors'
 import { and, eq } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
 import { db } from '@/db/client'
@@ -28,6 +29,6 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     } })
   } catch (error) {
     if (error instanceof UnauthorizedError) return NextResponse.json({ error: 'Sign in to continue.' }, { status: error.status })
-    throw error
+    return unexpectedError(error)
   }
 }

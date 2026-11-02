@@ -1,6 +1,7 @@
 import type { Where } from 'payload'
 import { getContentClient } from './payload-client'
 import type { Mentor } from '@/payload/payload-types'
+import { cachedRead, cachedReadOr } from './cache'
 
 export type MentorFilters = {
   expertise?: string
@@ -23,7 +24,7 @@ function byAvailability(a: Mentor, b: Mentor): number {
  * collection's own "honest over hiding" design intent.
  */
 /** Empty means empty; failure throws (KN-01). No invented mentors. */
-export async function listMentors(filters: MentorFilters = {}) {
+async function listMentorsUncached(filters: MentorFilters = {}) {
   const payload = await getContentClient()
 
   const where: Where = { and: [] }
@@ -67,7 +68,7 @@ export async function getMentorByUserId(userId: string): Promise<Mentor | null> 
   }
 }
 
-export async function getMentorBySlug(slug: string): Promise<Mentor | null> {
+async function getMentorBySlugUncached(slug: string): Promise<Mentor | null> {
   try {
     const payload = await getContentClient()
 
@@ -81,7 +82,11 @@ export async function getMentorBySlug(slug: string): Promise<Mentor | null> {
 
     return result?.docs?.[0] ?? null
   } catch (error) {
-    console.warn('Could not fetch mentor by slug:', error)
-    return null
+    // Rethrown so the cache never remembers a failure; the exported reader below turns it into null.
+    throw error
   }
 }
+
+// Shared by every visitor and expired on any CMS change: see ./cache.ts.
+export const listMentors = cachedRead('mentors.listMentors', listMentorsUncached)
+export const getMentorBySlug = cachedReadOr('mentors.getMentorBySlug', getMentorBySlugUncached, null)

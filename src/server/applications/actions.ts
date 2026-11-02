@@ -207,6 +207,8 @@ export async function uploadDocument(
         error: 'The uploaded file failed security screening and was rejected.',
       }
     }
+    // Alarmed in CloudWatch: a scanner that is down or missing refuses every applicant's document.
+    console.error(`malware_scan_unavailable reason=${scan.reason} detail=${scan.threat ?? 'none'}`)
     return {
       ok: false,
       error: 'Security screening is temporarily unavailable. Please try again shortly.',
@@ -255,7 +257,9 @@ export async function submitApplication(applicationId: string): Promise<ActionRe
   const application = await loadOwnedApplication(applicationId, sessionUser.id)
   if (!application) throw new UnauthorizedError(403)
   if (application.status !== 'draft') {
-    return { ok: false, error: 'This application has already been submitted.' }
+    // The code lets the form treat a repeat as the success it is: a timeout after the commit makes the
+    // person press Submit again, and that must not read as a failure.
+    return { ok: false, error: 'This application has already been submitted.', code: 'already-submitted' }
   }
 
   const program = await getApplicationProgram(application.programId)
@@ -337,7 +341,7 @@ export async function submitApplication(applicationId: string): Promise<ActionRe
     await writeNotification(tx, notifyInput)
     return { kind: 'submitted' as const }
   })
-  if (outcome.kind === 'already') return { ok: false, error: 'This application has already been submitted.' }
+  if (outcome.kind === 'already') return { ok: false, error: 'This application has already been submitted.', code: 'already-submitted' }
   if (outcome.kind === 'invalid') return { ok: false, error: outcome.message }
 
   await sendNotificationEmail(sessionUser.id, notifyInput.email)

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { UnauthorizedError } from '@/server/auth/guards'
 import { isLabBookingEnabled } from '@/server/features'
 import { limitByUser } from '@/server/security/route-limits'
+import { unexpectedError } from '@/server/http/errors'
 import type { Result } from './service'
 
 const STATUS_FOR_CODE = { closed: 404, ineligible: 403, invalid: 400, limit: 409, conflict: 409, 'not-found': 404, state: 409, forbidden: 403 } as const
@@ -30,7 +31,7 @@ export async function labRoute(
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: error.status === 401 ? 'Sign in to continue.' : 'Not permitted.' }, { status: error.status })
     }
-    throw error
+    return unexpectedError(error)
   }
 }
 

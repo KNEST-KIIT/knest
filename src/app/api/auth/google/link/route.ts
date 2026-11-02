@@ -1,4 +1,4 @@
-import { compare } from 'bcryptjs'
+import { comparePassword, PasswordBusyError } from '@/server/auth/password-work'
 import { NextResponse } from 'next/server'
 import { signIn } from '@/server/auth'
 import { currentLinkSession, issueGoogleLinkGrant } from '@/server/auth/google-link'
@@ -15,7 +15,10 @@ export async function POST(request: Request) {
   }
   const body = await request.json().catch(() => null)
   if (!current.passwordHash || typeof body?.password !== 'string' || body.password.length > 200 ||
-      !(await compare(body.password, current.passwordHash))) {
+      !(await comparePassword(body.password, current.passwordHash).catch((error) => {
+        if (error instanceof PasswordBusyError) return null
+        throw error
+      }))) {
     return NextResponse.json({ error: 'Enter your current KNEST password to connect Google.' }, { status: 400 })
   }
   try {

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button, Input, Textarea } from '@/components/ui'
 import { saveSubmissionDraft, submitProject } from '@/server/hackathons/actions'
+import { safely } from '@/lib/safe-action'
 
 type SubmissionData = {
   id?: string
@@ -60,7 +61,7 @@ export function HackathonSubmissionForm({
       .map((s) => s.trim())
       .filter(Boolean)
 
-    const res = await saveSubmissionDraft(hackathonId, teamId, {
+    const res = await safely(() => saveSubmissionDraft(hackathonId, teamId, {
       projectTitle: title,
       tagline,
       description,
@@ -70,7 +71,7 @@ export function HackathonSubmissionForm({
       figmaUrl: figmaUrl || undefined,
       techStack: stackArray,
       selectedTracks: tracks,
-    })
+    }))
 
     setSaving(false)
     if (res.ok) {
@@ -96,7 +97,7 @@ export function HackathonSubmissionForm({
       .map((s) => s.trim())
       .filter(Boolean)
 
-    const saveRes = await saveSubmissionDraft(hackathonId, teamId, {
+    const saveRes = await safely(() => saveSubmissionDraft(hackathonId, teamId, {
       projectTitle: title,
       tagline,
       description,
@@ -106,7 +107,7 @@ export function HackathonSubmissionForm({
       figmaUrl: figmaUrl || undefined,
       techStack: stackArray,
       selectedTracks: tracks,
-    })
+    }))
 
     if (!saveRes.ok) {
       setSubmitting(false)
@@ -114,7 +115,7 @@ export function HackathonSubmissionForm({
       return
     }
 
-    const res = await submitProject(hackathonId, teamId)
+    const res = await safely(() => submitProject(hackathonId, teamId))
     setSubmitting(false)
 
     if (res.ok) {

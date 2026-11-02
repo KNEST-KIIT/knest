@@ -1,6 +1,7 @@
 import type { Where } from 'payload'
 import { getContentClient } from './payload-client'
 import type { Program } from '@/payload/payload-types'
+import { cachedRead } from './cache'
 
 export type ProgramFilters = {
   stage?: string
@@ -18,7 +19,7 @@ export type ProgramFilters = {
  */
 
 /** Empty means empty; failure throws (KN-01). No invented programs. */
-export async function listPrograms(filters: ProgramFilters = {}) {
+async function listProgramsUncached(filters: ProgramFilters = {}) {
   const payload = await getContentClient()
 
   const where: Where = { and: [] }
@@ -42,7 +43,7 @@ export async function listPrograms(filters: ProgramFilters = {}) {
 }
 
 /** Programs a mentor is attached to — "programs you support" on the mentor dashboard (§4.1). */
-export async function listProgramsByMentor(mentorId: number) {
+async function listProgramsByMentorUncached(mentorId: number) {
   const payload = await getContentClient()
 
   const result = await payload.find({
@@ -57,16 +58,20 @@ export async function listProgramsByMentor(mentorId: number) {
 }
 
 /** For a founder's accepted program (dashboard §4.1) — the caller already has the ID from an application row. */
-export async function getProgramById(id: number): Promise<Program | null> {
+async function getProgramByIdUncached(id: number): Promise<Program | null> {
   const payload = await getContentClient()
   try {
     return await payload.findByID({ collection: 'programs', id, depth: 1, overrideAccess: false })
-  } catch {
-    return null
+  } catch (error) {
+    // Only "there is no such program" (or it is a draft the visitor may not see) is null. A database
+    // that cannot be reached must not read as a missing page.
+    const status = (error as { status?: number } | null)?.status
+    if (status === 404 || status === 403) return null
+    throw error
   }
 }
 
-export async function getProgramBySlug(slug: string): Promise<Program | null> {
+async function getProgramBySlugUncached(slug: string): Promise<Program | null> {
   const payload = await getContentClient()
 
   const result = await payload.find({
@@ -89,7 +94,7 @@ export async function getProgramBySlug(slug: string): Promise<Program | null> {
  * a startup names its cohort, so this is the read side of that — the program
  * page never re-enters which startups came out of it.
  */
-export async function listProgramCohortsWithStartups(programId: number) {
+async function listProgramCohortsWithStartupsUncached(programId: number) {
   const payload = await getContentClient()
 
   const cohorts = await payload.find({
@@ -121,3 +126,10 @@ export async function listProgramCohortsWithStartups(programId: number) {
     }),
   }))
 }
+
+// Shared by every visitor and expired on any CMS change: see ./cache.ts.
+export const listPrograms = cachedRead('programs.listPrograms', listProgramsUncached)
+export const listProgramsByMentor = cachedRead('programs.listProgramsByMentor', listProgramsByMentorUncached)
+export const getProgramById = cachedRead('programs.getProgramById', getProgramByIdUncached)
+export const getProgramBySlug = cachedRead('programs.getProgramBySlug', getProgramBySlugUncached)
+export const listProgramCohortsWithStartups = cachedRead('programs.listProgramCohortsWithStartups', listProgramCohortsWithStartupsUncached)

@@ -104,7 +104,16 @@ export function JudgeScorecard({
       notes: notes[c.id] || undefined,
     }))
 
-    const res = await submitJudgeScores(hackathonId, selectedSubId, payload)
+    let res: Awaited<ReturnType<typeof submitJudgeScores>>
+    try {
+      res = await submitJudgeScores(hackathonId, selectedSubId, payload)
+    } catch {
+      // A dropped connection, an expired session or a rate limit: the scores on screen are still here, so say
+      // so and let the judge press Save again instead of leaving the button stuck on "Saving".
+      setSaving(false)
+      setError('Your scores could not be saved. Check your connection and sign-in, then press Save again. What you entered is still on this page.')
+      return
+    }
     setSaving(false)
 
     if (res.ok) {

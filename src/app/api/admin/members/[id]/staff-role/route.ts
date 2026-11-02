@@ -1,3 +1,4 @@
+import { unexpectedError } from '@/server/http/errors'
 import { NextResponse } from 'next/server'
 import { UnauthorizedError } from '@/server/auth/guards'
 import { limitByUser } from '@/server/security/route-limits'
@@ -24,6 +25,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: 'Not permitted.' }, { status: error.status })
     }
-    throw error
+    return unexpectedError(error)
   }
 }

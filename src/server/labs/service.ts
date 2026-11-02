@@ -159,7 +159,8 @@ export async function requestBooking(slug: string, input: unknown, now = new Dat
       const mine = await tx
         .select({ startsAt: labBookings.startsAt, endsAt: labBookings.endsAt })
         .from(labBookings)
-        .where(and(eq(labBookings.userId, sessionUser.id), eq(labBookings.labId, lab.id), inArray(labBookings.status, [...LIVE_STATUSES])))
+        // A booking that has been attended is 'completed', and it still used the week's hours.
+        .where(and(eq(labBookings.userId, sessionUser.id), eq(labBookings.labId, lab.id), inArray(labBookings.status, [...LIVE_STATUSES, 'completed'])))
       const weekly = weeklyHoursProblem({ existing: mine, request: { startsAt, endsAt }, maxHoursPerWeek: lab.maxHoursPerWeek })
       if (weekly) throw new LimitError(weekly)
 
@@ -194,7 +195,7 @@ export async function requestBooking(slug: string, input: unknown, now = new Dat
 export type Decision =
   | { action: 'approve'; assistantUserId?: string | null; note?: string | null }
   | { action: 'reject'; note: string }
-  | { action: 'propose'; startsAt: string; endsAt: string; note?: string | null }
+  | { action: 'propose'; startsAt: string; endsAt: string; note?: string | null; assistantUserId?: string | null }
 
 async function loadBooking(id: string) {
   const [row] = await db
@@ -231,6 +232,7 @@ export async function decideBooking(bookingId: string, decision: Decision, now =
   if (decision.action === 'approve') {
     target = 'approved'
     if (booking.status !== 'requested') return fail('This request has already been decided.', 'state')
+    if (booking.startsAt.getTime() <= now.getTime()) return fail('That time has already started or passed. Suggest another time or decline it with a reason.', 'invalid')
     if (lab.requiresAssistant && !decision.assistantUserId) return fail('This lab needs an assistant assigned before a booking is approved.', 'invalid')
     if (decision.assistantUserId) {
       const member = await db.query.labStaff.findFirst({ where: and(eq(labStaff.labId, lab.id), eq(labStaff.userId, decision.assistantUserId)), columns: { id: true } })
@@ -261,7 +263,13 @@ export async function decideBooking(bookingId: string, decision: Decision, now =
     const endsAt = new Date(decision.endsAt)
     const problem = problemWithRequest({ policy: policyOf(lab), hours: found.hours, blackouts: found.blackouts, now, startsAt, endsAt, headcount: booking.headcount })
     if (problem) return fail(`That alternative doesn’t work: ${problem}`, 'invalid')
-    patch = { status: target, proposedStartsAt: startsAt, proposedEndsAt: endsAt, decisionNote: decision.note?.trim() || null }
+    // Accepting a suggestion approves the booking, so a lab that needs an assistant needs one named now.
+    if (lab.requiresAssistant && !decision.assistantUserId) return fail('This lab needs an assistant assigned before a time is suggested.', 'invalid')
+    if (decision.assistantUserId) {
+      const member = await db.query.labStaff.findFirst({ where: and(eq(labStaff.labId, lab.id), eq(labStaff.userId, decision.assistantUserId)), columns: { id: true } })
+      if (!member) return fail('That person is not on this lab’s staff.', 'invalid')
+    }
+    patch = { status: target, proposedStartsAt: startsAt, proposedEndsAt: endsAt, decisionNote: decision.note?.trim() || null, ...(decision.assistantUserId ? { assistantUserId: decision.assistantUserId } : {}) }
     const t = bookingAlternativeTemplate({ lab: lab.name, original: when, proposed: `${formatEventTime(startsAt)} to ${formatEventTime(endsAt)}`, note: decision.note, path })
     notice = { userId: booking.userId, type: 'booking_alternative', title: t.subject, body: `Suggested: ${formatEventTime(startsAt)}`, href: path, email: t }
   }
@@ -298,6 +306,7 @@ export async function respondToProposal(bookingId: string, accept: boolean, now 
   const { booking, lab } = row
   if (booking.status !== 'alternative_proposed' || !booking.proposedStartsAt || !booking.proposedEndsAt) return fail('There is no suggestion waiting for an answer.', 'state')
   if (accept && booking.proposedStartsAt.getTime() <= now.getTime()) return fail('That suggested time has passed.', 'state')
+  if (accept && lab.requiresAssistant && !booking.assistantUserId) return fail('This lab needs an assistant assigned before the booking can be confirmed. Ask the lab for a new suggestion.', 'invalid')
   if (accept) {
     // The lab may have changed its hours or closed that day since the suggestion was made. Notice is not re-checked: the head chose the time.
     const current = await getLabBySlug(lab.slug)
@@ -321,6 +330,13 @@ export async function respondToProposal(bookingId: string, accept: boolean, now 
       const heads = await tx.select({ userId: labStaff.userId }).from(labStaff).where(and(eq(labStaff.labId, lab.id), eq(labStaff.role, 'head')))
       const t = bookingCancelledTemplate({ lab: lab.name, when: formatEventTime(booking.startsAt), by: row.memberName ?? row.memberEmail, note: 'They declined the suggested time.', path: `/dashboard/lab-staff/${lab.slug}` })
       if (!accept) await notifyMany(heads.map((h) => ({ userId: h.userId, type: 'booking_cancelled' as const, title: t.subject, body: `${row.memberName ?? row.memberEmail} declined the suggested time`, href: `/dashboard/lab-staff/${lab.slug}`, email: t })), tx)
+      if (accept) {
+        // The head asked for this time; being told it is now confirmed closes that loop.
+        const when = `${formatEventTime(booking.proposedStartsAt!)} to ${formatEventTime(booking.proposedEndsAt!)}`
+        const confirmed = bookingRequestedTemplate({ lab: lab.name, who: row.memberName ?? row.memberEmail, when, purpose: 'They accepted the suggested time, so the booking is confirmed.', path: `/dashboard/lab-staff/${lab.slug}` })
+        await notifyMany(heads.map((h) => ({ userId: h.userId, type: 'booking_requested' as const, title: confirmed.subject, body: `${row.memberName ?? row.memberEmail} accepted ${when}`, href: `/dashboard/lab-staff/${lab.slug}`, email: confirmed })), tx)
+      }
+      await tx.insert(auditLogs).values({ actorUserId: sessionUser.id, action: accept ? 'lab_booking_proposal_accepted' : 'lab_booking_proposal_declined', entityType: 'lab_booking', entityId: bookingId, before: { status: 'alternative_proposed' }, after: { status: accept ? 'approved' : 'cancelled' } })
       return true
     })
     if (!done) return fail('That suggestion was already answered.', 'state')

@@ -22,10 +22,16 @@ import { Startups } from './collections/startups'
 import { Testimonials } from './collections/testimonials'
 import { Homepage } from './globals/homepage'
 import { auditGlobalAfterChange, withAudit } from './audit-hooks'
+import { expireContentAfterGlobalChange, withContentExpiry } from './revalidate-hooks'
 import { databaseSsl } from '../db/ssl'
+import { poolSettings } from '../db/pool-settings'
 import { s3ClientConfig } from '../server/storage/s3-config'
 
 const dirname = path.dirname(fileURLToPath(import.meta.url))
+
+// `payload migrate` may run a slow schema change; only the request path gets a statement timeout.
+const migrating = process.argv.some((arg) => arg === 'migrate' || arg.startsWith('migrate:'))
+const poolEnv = migrating ? { ...process.env, DB_STATEMENT_TIMEOUT_MS: '0' } : process.env
 
 export default buildConfig({
   // `admin.user` must point at an auth-enabled collection. Ours is a read-only
@@ -63,7 +69,7 @@ export default buildConfig({
     Staff,
   ]
     // The staff mirror is rewritten on every admin request; auditing it would drown the trail.
-    .map((c) => (c.slug === 'staff' ? c : withAudit(c)))
+    .map((c) => (c.slug === 'staff' ? c : withContentExpiry(withAudit(c))))
     .map((c) => ({
     ...c,
     admin: {
@@ -80,7 +86,7 @@ export default buildConfig({
                 : 'Other',
     },
   })),
-  globals: [{ ...Homepage, hooks: { ...Homepage.hooks, afterChange: [...(Homepage.hooks?.afterChange ?? []), auditGlobalAfterChange] } }],
+  globals: [{ ...Homepage, hooks: { ...Homepage.hooks, afterChange: [...(Homepage.hooks?.afterChange ?? []), auditGlobalAfterChange, expireContentAfterGlobalChange] } }],
   plugins: [
     // CMS media lives in the same bucket as application documents, under media/. A container's
     // disk is replaced on every deploy, so media on local disk would be lost. With no S3_BUCKET
@@ -93,12 +99,19 @@ export default buildConfig({
     }),
   ],
   editor: lexicalEditor(),
+  // The site reads the CMS through the local API and the admin uses REST, so nothing needs GraphQL. Leaving
+  // it on exposes a second, easy-to-abuse query surface to anonymous visitors.
+  graphQL: { disable: true },
+  // Bounds how far a relationship query can fan out (the default is 10).
+  maxDepth: 3,
+  // Media is images for web pages; an unbounded upload is buffered whole in memory.
+  upload: { limits: { fileSize: 10 * 1024 * 1024 } },
   // Required for the Media collection's image sizes.
   sharp,
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: { outputFile: path.resolve(dirname, 'payload-types.ts') },
   db: postgresAdapter({
-    pool: { connectionString: process.env.DATABASE_URL, ssl: databaseSsl(process.env) },
+    pool: { connectionString: process.env.DATABASE_URL, ssl: databaseSsl(process.env), ...poolSettings(poolEnv) },
     // Payload keeps entirely to `cms`; `app` is Drizzle's (spec §32).
     schemaName: 'cms',
     // The cms schema is created by committed migrations (src/migrations), in every

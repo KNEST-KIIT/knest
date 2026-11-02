@@ -58,6 +58,8 @@ export default async function setup() {
     DATABASE_URL: db.url,
     AUTH_SECRET: SECRET,
     PAYLOAD_SECRET: SECRET,
+    // The suite edits the CMS from its own process, outside the server, so the server must not hold content back.
+    CONTENT_CACHE: process.env.TEST_CONTENT_CACHE === 'on' ? 'on' : 'off',
     AUTH_URL: baseUrl,
     AUTH_TRUST_HOST: 'true',
     NEXT_PUBLIC_SITE_URL: baseUrl,

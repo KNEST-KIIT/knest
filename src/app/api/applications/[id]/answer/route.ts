@@ -1,3 +1,4 @@
+import { unexpectedError } from '@/server/http/errors'
 import { NextResponse } from 'next/server'
 import { UnauthorizedError } from '@/server/auth/guards'
 import { saveAnswer } from '@/server/applications/actions'
@@ -8,7 +9,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const limited = await limitByUser('answerSave')
   if (limited) return limited
   const body = await request.json().catch(() => null)
-  const questionId = body?.questionId as string | undefined
+  const questionId = typeof body?.questionId === 'string' ? body.questionId : undefined
   if (!questionId) return NextResponse.json({ error: 'Missing question.' }, { status: 400 })
 
   try {
@@ -19,6 +20,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: 'Sign in to continue.' }, { status: error.status })
     }
-    throw error
+    return unexpectedError(error)
   }
 }

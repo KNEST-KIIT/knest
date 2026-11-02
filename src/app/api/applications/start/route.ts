@@ -1,3 +1,4 @@
+import { unexpectedError } from '@/server/http/errors'
 import { NextResponse } from 'next/server'
 import { UnauthorizedError } from '@/server/auth/guards'
 import { startApplication } from '@/server/applications/actions'
@@ -5,7 +6,7 @@ import { RateLimitError } from '@/server/security/rate-limit'
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null)
-  const programSlug = body?.programSlug as string | undefined
+  const programSlug = typeof body?.programSlug === 'string' ? body.programSlug : undefined
   if (!programSlug) return NextResponse.json({ error: 'Missing program.' }, { status: 400 })
 
   try {
@@ -19,6 +20,6 @@ export async function POST(request: Request) {
     if (error instanceof RateLimitError) {
       return NextResponse.json({ error: 'Too many attempts. Try again later.' }, { status: 429 })
     }
-    throw error
+    return unexpectedError(error)
   }
 }

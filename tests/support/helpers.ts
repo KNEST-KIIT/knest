@@ -55,11 +55,18 @@ export type Session = { cookie: string }
 
 /** Signs in through the real login route and returns the session cookie. */
 export async function login(email: string, password = PASSWORD): Promise<Session | null> {
-  const res = await fetch(`${BASE()}/api/auth/password/login`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-forwarded-for': uniqueIp() },
-    body: JSON.stringify({ email, password, ...captcha('login') }),
-  })
+  // Password checks are queued one at a time, and past the queue the server answers 503 "busy, retry". A client
+  // is expected to retry that, so the helper does, which lets a test sign many people in at once.
+  let res: Response
+  for (let attempt = 0; ; attempt++) {
+    res = await fetch(`${BASE()}/api/auth/password/login`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-forwarded-for': uniqueIp() },
+      body: JSON.stringify({ email, password, ...captcha('login') }),
+    })
+    if (res.status !== 503 || attempt >= 30) break
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+  }
   if (!res.ok) return null
   const cookie = res.headers
     .getSetCookie()

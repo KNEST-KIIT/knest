@@ -20,9 +20,16 @@ import { s3ClientConfig } from './s3-config'
 const s3Configured = Boolean(process.env.S3_BUCKET)
 const LOCAL_UPLOAD_DIR = path.join(process.cwd(), 'uploads')
 
+// One client for the process: each carries its own connection pool, and building one per call left idle
+// sockets behind and paid a new TLS handshake every time.
+let cachedClient: import('@aws-sdk/client-s3').S3Client | undefined
+
 async function s3Client() {
+  if (cachedClient) return cachedClient
   const { S3Client } = await import('@aws-sdk/client-s3')
-  return new S3Client(s3ClientConfig(process.env))
+  // The SDK waits indefinitely by default; a stalled object store must fail so the request can answer.
+  cachedClient = new S3Client({ ...s3ClientConfig(process.env), requestHandler: { connectionTimeout: 3_000, requestTimeout: 30_000 }, maxAttempts: 3 })
+  return cachedClient
 }
 
 export function generateStorageKey(originalName: string): string {
