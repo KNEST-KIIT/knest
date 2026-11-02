@@ -14,6 +14,7 @@ import {
   bookingRequestedTemplate,
 } from '@/server/notifications/templates'
 import { actorFor, canManage, isLabAdmin, labRoleFor, requireManager, requireStaffOfLab } from './access'
+import { lockLabBookings } from './booking-lock'
 import {
   canTransition,
   generateSlots,
@@ -147,6 +148,7 @@ export async function requestBooking(slug: string, input: unknown, now = new Dat
   let created: { id: string; notices: NotifyInput[] }
   try {
     created = await db.transaction(async (tx) => {
+      await lockLabBookings(tx, lab.id)
       // One person's requests are checked and inserted one at a time, so two tabs cannot both slip under the limits.
       await tx.select({ id: users.id }).from(users).where(eq(users.id, sessionUser.id)).for('update')
 
@@ -308,6 +310,7 @@ export async function respondToProposal(bookingId: string, accept: boolean, now 
 
   try {
     const done = await db.transaction(async (tx) => {
+      if (accept) await lockLabBookings(tx, lab.id)
       const updated = await tx
         .update(labBookings)
         .set(
