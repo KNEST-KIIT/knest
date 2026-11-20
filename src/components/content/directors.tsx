@@ -47,7 +47,7 @@ export function Directors() {
         </Heading>
       </div>
 
-      <ul className="mt-4 grid gap-3 grid-cols-1 min-[480px]:grid-cols-2 lg:grid-cols-4">
+      <ul className="mt-4 grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         {DIRECTORS.map((d) => (
           <li key={d.name} className="min-w-0 border border-[var(--color-line)] bg-white">
             <div className="relative aspect-square w-full overflow-hidden bg-[var(--color-paper-soft)]">
@@ -55,7 +55,7 @@ export function Directors() {
                 src={d.photo}
                 alt={`Portrait of ${d.name}`}
                 fill
-                sizes="(min-width: 1024px) 25vw, (min-width: 480px) 50vw, 100vw"
+                sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
                 className="object-cover object-center"
               />
             </div>
