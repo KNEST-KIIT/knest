@@ -14,12 +14,12 @@ import type { Homepage } from '@/payload/payload-types'
 export function ProblemSection({ homepage }: { homepage: Homepage }) {
   const problemParagraphs = (homepage.problemBody ?? '').split(/\n{2,}/).filter(Boolean)
   return (
-    <Section className="border-b border-[var(--color-line)]">
+    <Section className="border-b border-[var(--color-line)] py-8 md:py-10">
       <div className="max-w-3xl">
-        <Heading as="h2" size="display" uppercase className="whitespace-pre-line">
+        <Heading as="h2" size="display" uppercase className="whitespace-pre-line text-3xl lg:text-4xl">
           {homepage.problemHeading}
         </Heading>
-        <div className="mt-8 space-y-5 text-lg leading-relaxed text-[var(--color-ink-soft)]">
+        <div className="mt-5 space-y-5 text-lg leading-relaxed text-[var(--color-ink-soft)]">
           {problemParagraphs.map((p) => (
             <p key={p}>{p}</p>
           ))}
@@ -33,13 +33,13 @@ export function PersonSection({ homepage }: { homepage: Homepage }) {
   const personLines = (homepage.personLines ?? []).map((l) => l.line).filter(Boolean)
   if (personLines.length === 0 && !homepage.personHeading) return null
   return (
-    <Section className="bg-[var(--color-paper-soft)] border-b border-[var(--color-line)]">
+    <Section className="bg-[var(--color-paper-soft)] border-b border-[var(--color-line)] py-8 md:py-10">
       <div className="max-w-3xl">
-        <Heading as="h2" size="display" uppercase className="whitespace-pre-line">
+        <Heading as="h2" size="display" uppercase className="whitespace-pre-line text-3xl lg:text-4xl">
           {homepage.personHeading}
         </Heading>
         {personLines.length > 0 && (
-          <div className="mt-8 space-y-2 text-lg leading-relaxed text-[var(--color-ink-soft)]">
+          <div className="mt-5 space-y-2 text-lg leading-relaxed text-[var(--color-ink-soft)]">
             {personLines.map((line) => (
               <p key={line}>{line}</p>
             ))}
@@ -53,13 +53,13 @@ export function PersonSection({ homepage }: { homepage: Homepage }) {
 export function KnestSection({ homepage }: { homepage: Homepage }) {
   if (!homepage.knestHeading && !homepage.knestBody) return null
   return (
-    <Section className="border-b border-[var(--color-line)]">
+    <Section className="border-b border-[var(--color-line)] py-8 md:py-10">
       <div className="max-w-3xl">
-        <Heading as="h2" size="display" uppercase className="whitespace-pre-line">
+        <Heading as="h2" size="display" uppercase className="whitespace-pre-line text-3xl lg:text-4xl">
           {homepage.knestHeading}
         </Heading>
         {homepage.knestBody && (
-          <p className="mt-8 text-lg leading-relaxed text-[var(--color-ink-soft)]">{homepage.knestBody}</p>
+          <p className="mt-5 text-lg leading-relaxed text-[var(--color-ink-soft)]">{homepage.knestBody}</p>
         )}
       </div>
     </Section>

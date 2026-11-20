@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Heading, Section } from '@/components/ui'
 import { PageHeader } from '@/components/layout/page-header'
+import { Directors } from '@/components/content/directors'
 
 export const metadata: Metadata = {
   title: 'About KNEST',
@@ -101,7 +102,7 @@ export default function AboutPage() {
       />
 
       {/* Mission & Academic Creed */}
-      <Section className="border-b border-[var(--color-line)] bg-white py-10 md:py-14">
+      <Section className="border-b border-[var(--color-line)] bg-white py-8 md:py-10">
         <div className="max-w-4xl">
           <p className="text-xs uppercase tracking-[0.2em] font-bold text-[var(--color-signal)]">
             Institutional Mission
@@ -128,7 +129,7 @@ export default function AboutPage() {
       </Section>
 
       {/* Objectives Grid */}
-      <Section className="border-b border-[var(--color-line)] bg-[var(--color-paper)] py-10 md:py-14">
+      <Section className="border-b border-[var(--color-line)] bg-[var(--color-paper)] py-8 md:py-10">
         <div className="max-w-3xl">
           <p className="text-xs uppercase tracking-[0.2em] font-bold text-[var(--color-signal)]">
             Core Mandate
@@ -141,7 +142,7 @@ export default function AboutPage() {
           </p>
         </div>
 
-        <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {OBJECTIVES.map((obj) => (
             <div
               key={obj.num}
@@ -164,8 +165,8 @@ export default function AboutPage() {
       </Section>
 
       {/* School of Innovation & Entrepreneurial Leadership */}
-      <Section className="border-b border-[var(--color-line)] bg-white py-10 md:py-14">
-        <div className="grid gap-10 lg:grid-cols-12 items-start">
+      <Section className="border-b border-[var(--color-line)] bg-white py-8 md:py-10">
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-10 lg:grid-cols-12 items-start">
           <div className="lg:col-span-5">
             <p className="text-xs uppercase tracking-[0.2em] font-bold text-[var(--color-signal)]">
               Academic Anchor
@@ -189,7 +190,7 @@ export default function AboutPage() {
             </div>
           </div>
 
-          <div className="lg:col-span-7 grid gap-5 sm:grid-cols-2">
+          <div className="lg:col-span-7 grid grid-cols-[minmax(0,1fr)] gap-5 sm:grid-cols-2">
             {PILLARS_SIEL.map((pillar) => (
               <div key={pillar.title} className="border border-[var(--color-line)] bg-[var(--color-paper)] p-5">
                 <h3 className="font-[family-name:var(--font-display)] text-lg font-bold text-[var(--color-ink)]">
@@ -205,7 +206,7 @@ export default function AboutPage() {
       </Section>
 
       {/* Institutional Support Table */}
-      <Section className="border-b border-[var(--color-line)] bg-[var(--color-paper)] py-10 md:py-14">
+      <Section className="border-b border-[var(--color-line)] bg-[var(--color-paper)] py-8 md:py-10">
         <div className="max-w-3xl">
           <p className="text-xs uppercase tracking-[0.2em] font-bold text-[var(--color-signal)]">
             Cross-Campus Operations
@@ -218,7 +219,7 @@ export default function AboutPage() {
           </p>
         </div>
 
-        <div className="mt-8 overflow-x-auto border border-[var(--color-line)] bg-white">
+        <div className="mt-6 overflow-x-auto border border-[var(--color-line)] bg-white">
           <table className="w-full min-w-80 border-collapse text-left text-sm">
             <thead>
               <tr className="border-b border-[var(--color-line)] bg-[var(--color-paper-soft)]">
@@ -259,7 +260,7 @@ export default function AboutPage() {
       </Section>
 
       {/* Expected 5-Year Outcomes */}
-      <Section className="border-b border-[var(--color-line)] bg-[var(--color-ink)] text-[var(--color-paper)] py-10 md:py-14">
+      <Section className="border-b border-[var(--color-line)] bg-[var(--color-ink)] text-[var(--color-paper)] py-8 md:py-10">
         <div className="max-w-3xl">
           <p className="text-xs uppercase tracking-[0.2em] font-bold text-[var(--color-signal-on-ink)]">
             Our five-year goals
@@ -272,7 +273,7 @@ export default function AboutPage() {
           </p>
         </div>
 
-        <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {OUTCOMES.map((item) => (
             <div key={item.label} className="border border-[var(--color-line-invert)] bg-white/5 p-6 backdrop-blur-sm">
               <span className="font-[family-name:var(--font-display)] text-3xl font-bold text-[var(--color-signal-on-ink)]">
@@ -289,8 +290,13 @@ export default function AboutPage() {
         </div>
       </Section>
 
+      {/* Directors */}
+      <Section className="border-b border-[var(--color-line)] bg-[var(--color-paper)] py-8 md:py-10">
+        <Directors />
+      </Section>
+
       {/* Institutional Leadership & Contact */}
-      <Section className="bg-white py-10 md:py-14">
+      <Section className="bg-white py-8 md:py-10">
         <div className="grid gap-10 lg:grid-cols-12 items-center">
           <div className="lg:col-span-7">
             <p className="text-xs uppercase tracking-[0.2em] font-bold text-[var(--color-signal)]">

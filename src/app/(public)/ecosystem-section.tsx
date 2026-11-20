@@ -32,11 +32,11 @@ export function EcosystemSection({
   if (groups.length === 0 && validMetrics.length === 0 && validTestimonials.length === 0) return null
 
   return (
-    <Section className="border-t border-[var(--color-line)]">
+    <Section className="border-t border-[var(--color-line)] py-8 md:py-10">
       {groups.length > 0 && (
         <>
           <div className="max-w-3xl">
-            <Heading as="h2" size="display">
+            <Heading as="h2" size="display" className="text-3xl lg:text-4xl">
               Who is on the platform.
             </Heading>
             <p className="mt-4 text-lg leading-relaxed text-[var(--color-ink-soft)]">
@@ -44,7 +44,7 @@ export function EcosystemSection({
             </p>
           </div>
 
-          <div className="mt-10 grid gap-10 md:grid-cols-3">
+          <div className="mt-8 grid gap-8 md:grid-cols-3">
             {groups.map((group) => (
               <section key={group.key} aria-labelledby={`ecosystem-${group.key}`} className="min-w-0 border-t-2 border-[var(--color-ink)] pt-5">
                 <h3 id={`ecosystem-${group.key}`} className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-signal)]">

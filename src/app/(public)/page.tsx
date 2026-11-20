@@ -81,7 +81,7 @@ export default async function HomePage() {
                         What KNEST offers
                       </p>
                     </Reveal>
-                    <RevealHeading as="h2" size="display" className="tracking-tight text-4xl md:text-5xl font-bold text-[var(--color-ink)] leading-[1.1]">
+                    <RevealHeading as="h2" size="display" className="tracking-tight text-3xl lg:text-4xl font-bold text-[var(--color-ink)] leading-[1.1]">
                       What KNEST actually gives you.
                     </RevealHeading>
                   </div>
@@ -140,18 +140,18 @@ export default async function HomePage() {
 
           case 'closing':
             return (
-              <div key={key} className="bg-[var(--color-ink)] py-16 md:py-24 border-t border-[var(--color-signal)] relative overflow-hidden">
+              <div key={key} className="bg-[var(--color-ink)] py-10 md:py-14 border-t border-[var(--color-signal)] relative overflow-hidden">
                 <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_center,_var(--color-signal)_0%,_transparent_70%)] mix-blend-screen pointer-events-none"></div>
                 <Section inverted className="text-center relative z-10 !py-0">
-                <Heading as="h2" size="display" className="text-white">
+                <Heading as="h2" size="display" className="text-white text-3xl lg:text-4xl">
                   {homepage.closingHeading}
                 </Heading>
                 {homepage.closingBody && (
-                  <p className="mt-6 text-lg md:text-xl font-light text-[var(--color-paper)]/80 max-w-2xl mx-auto">
+                  <p className="mt-4 text-lg font-light text-[var(--color-paper)]/80 max-w-2xl mx-auto">
                     {homepage.closingBody}
                   </p>
                 )}
-                <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-6">
+                <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-6">
                   <ButtonLink href="/signup" size="lg" className="rounded-none uppercase tracking-widest text-sm px-8 border border-white hover:bg-white hover:text-[var(--color-ink)]">
                     {homepage.closingCta ?? 'Start your journey'}
                   </ButtonLink>

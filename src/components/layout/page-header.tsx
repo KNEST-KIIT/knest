@@ -8,6 +8,8 @@ export interface PageHeaderProps {
   description: string
   imageSrc?: string
   imageAlt?: string
+  /** 'contain' shows a diagram whole, in colour, instead of a cropped decorative photo. */
+  imageFit?: 'cover' | 'contain'
   badgeText?: string
   className?: string
   children?: React.ReactNode
@@ -19,6 +21,7 @@ export function PageHeader({
   description,
   imageSrc,
   imageAlt = '',
+  imageFit = 'cover',
   badgeText,
   className,
   children,
@@ -61,14 +64,23 @@ export function PageHeader({
 
         {/* Right Architectural Visual Block (if present) */}
         {imageSrc && (
-          <div className="w-full lg:w-52.5 xl:w-60 h-27.5 lg:h-auto border-t lg:border-t-0 lg:border-l border-[var(--color-line)] relative overflow-hidden self-stretch">
-            <div className="absolute inset-0 bg-[var(--color-signal)]/10 mix-blend-multiply z-10" />
+          <div
+            className={cn(
+              'w-full lg:w-52.5 xl:w-60 border-t lg:border-t-0 lg:border-l border-[var(--color-line)] relative overflow-hidden self-stretch',
+              imageFit === 'contain' ? 'h-40 lg:h-auto lg:min-h-44 bg-black' : 'h-27.5 lg:h-auto',
+            )}
+          >
+            {imageFit === 'cover' && <div className="absolute inset-0 bg-[var(--color-signal)]/10 mix-blend-multiply z-10" />}
             <Image
               src={imageSrc}
               alt={imageAlt ?? ''}
               fill
               sizes="(min-width: 1280px) 240px, (min-width: 1024px) 210px, 100vw"
-              className="object-cover object-center grayscale hover:grayscale-0 transition-all duration-700 ease-out"
+              className={
+                imageFit === 'contain'
+                  ? 'object-contain object-center'
+                  : 'object-cover object-center grayscale hover:grayscale-0 transition-all duration-700 ease-out'
+              }
             />
           </div>
         )}

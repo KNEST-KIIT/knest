@@ -7,6 +7,7 @@ import { RESOURCES_EMPTY } from '@/lib/empty-state-copy'
 import { listResources, type ResourceFilters as Filters } from '@/server/content/resources'
 import { resourceDestination } from '@/lib/resource-url'
 import { ResourceFilters } from './filters'
+import { LabBookingCallout } from './lab-booking-callout'
 
 export const metadata: Metadata = {
   title: 'Resources',
@@ -117,7 +118,9 @@ export default async function ResourcesPage({
       />
 
       <Section className="py-8 md:py-10">
-        <div className="border-b border-[var(--color-line)] pb-5">
+        <LabBookingCallout />
+
+        <div className="mt-8 border-b border-[var(--color-line)] pb-5">
           <Suspense>
             <ResourceFilters />
           </Suspense>

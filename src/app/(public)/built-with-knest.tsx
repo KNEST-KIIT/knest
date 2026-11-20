@@ -21,7 +21,7 @@ export async function BuiltWithKnest({ homepage }: { homepage: Homepage }) {
         <EmptyState {...STARTUPS_EMPTY} size="default" />
       ) : (
         <>
-          <Heading as="h2" size="display">
+          <Heading as="h2" size="display" className="text-3xl lg:text-4xl">
             Built with KNEST.
           </Heading>
           <div className="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">

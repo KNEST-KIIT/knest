@@ -136,7 +136,7 @@ export function JourneySelector({ signedIn }: { signedIn: boolean }) {
 
   return (
     <div>
-      <Heading as="h2" size="display">
+      <Heading as="h2" size="display" className="text-3xl lg:text-4xl">
         Where are you right now?
       </Heading>
       <p className="mt-4 max-w-[52ch] text-[var(--color-ink-soft)]">

@@ -65,7 +65,7 @@ export function TheJourney({
   const current = stagePrograms[activeIdx] ?? stagePrograms[0]!
 
   return (
-    <section className="relative py-12 md:py-16 bg-[var(--color-ink)] text-[var(--color-paper)] overflow-hidden border-t border-[var(--color-line)]">
+    <section className="relative py-8 md:py-10 bg-[var(--color-ink)] text-[var(--color-paper)] overflow-hidden border-t border-[var(--color-line)]">
       <div className="mx-auto max-w-160 px-6 md:px-10">
         {/* Header Block */}
         <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-white/10 pb-5 gap-6">
@@ -73,7 +73,7 @@ export function TheJourney({
             <p className="text-xs uppercase tracking-[0.25em] font-bold text-[var(--color-signal-on-ink)]">
               Six stages
             </p>
-            <Heading as="h2" size="display" className="mt-2 tracking-tight text-[var(--color-paper)] text-3xl md:text-5xl font-bold">
+            <Heading as="h2" size="display" className="mt-2 tracking-tight text-[var(--color-paper)] text-3xl lg:text-4xl font-bold">
               The Trajectory
             </Heading>
             <p className="mt-3 text-base md:text-lg font-light text-[var(--color-paper)]/70 max-w-2xl">

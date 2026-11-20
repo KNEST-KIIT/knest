@@ -3,7 +3,6 @@ import { Card, Heading, Section, Tag } from '@/components/ui'
 import { PageHeader } from '@/components/layout/page-header'
 import { listInfrastructure } from '@/server/content/infrastructure'
 import { listPartners } from '@/server/content/partners'
-import { TripleHelix } from '@/components/content/triple-helix'
 
 export const metadata: Metadata = {
   title: 'Ecosystem',
@@ -111,30 +110,11 @@ export default async function EcosystemPage() {
         kicker="Institutional Framework"
         title="The Innovation Ecosystem."
         description="KNEST integrates academic excellence, cutting-edge physical prototyping labs, and global corporate networks into an interconnected engine for student ventures."
-        imageSrc="/images/stage_mvp.jpg"
-        imageAlt="KNEST Innovation Ecosystem"
+        imageSrc="/images/triple_helix_triangle.jpg"
+        imageAlt="Triple helix model: KIIT University, Schools of KIIT and Corporate Partners around KIIT, Nurturing Entrepreneurship and Student Talent"
+        imageFit="contain"
         badgeText="University-Anchored · Triple Helix Architecture"
       />
-
-      {/* Triple Helix Section */}
-      <Section className="border-b border-[var(--color-line)] bg-white py-10 md:py-14">
-        <div className="max-w-3xl">
-          <p className="text-xs uppercase tracking-[0.2em] font-bold text-[var(--color-signal)]">
-            Institutional Architecture
-          </p>
-          <Heading as="h2" size="display" className="mt-2 text-3xl md:text-4xl text-[var(--color-ink)]">
-            The Triple Helix Model
-          </Heading>
-          <p className="mt-4 text-base text-[var(--color-ink-soft)] font-light leading-relaxed">
-            KNEST operates as a university-anchored triple helix, where academia, industry, and institutional
-            governance continuously reinforce one another to produce scalable, high-agency ventures.
-          </p>
-        </div>
-
-        <div className="mt-8">
-          <TripleHelix />
-        </div>
-      </Section>
 
       {/* 6 Dimensions of Innovation */}
       <Section className="border-b border-[var(--color-line)] bg-[var(--color-paper)] py-10 md:py-14">
@@ -150,7 +130,7 @@ export default async function EcosystemPage() {
           </p>
         </div>
 
-        <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {ECOSYSTEM_DIMENSIONS.map((dim, i) => (
             <div
               key={dim.title}
@@ -258,7 +238,7 @@ export default async function EcosystemPage() {
           </p>
         </div>
 
-        <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {SYNERGY_POINTS.map((pt, i) => (
             <div key={pt.label} className="border border-[var(--color-line-invert)] bg-white/5 p-8 backdrop-blur-sm">
               <span className="font-[family-name:var(--font-display)] text-2xl font-bold text-[var(--color-signal-on-ink)]">
