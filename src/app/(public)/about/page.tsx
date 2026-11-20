@@ -128,6 +128,11 @@ export default function AboutPage() {
         </div>
       </Section>
 
+      {/* Directors */}
+      <Section id="directors" className="border-b border-[var(--color-line)] bg-[var(--color-paper-soft)] scroll-mt-24 py-8 md:py-10">
+        <Directors />
+      </Section>
+
       {/* Objectives Grid */}
       <Section className="border-b border-[var(--color-line)] bg-[var(--color-paper)] py-8 md:py-10">
         <div className="max-w-3xl">
@@ -288,11 +293,6 @@ export default function AboutPage() {
             </div>
           ))}
         </div>
-      </Section>
-
-      {/* Directors */}
-      <Section className="border-b border-[var(--color-line)] bg-[var(--color-paper)] py-8 md:py-10">
-        <Directors />
       </Section>
 
       {/* Institutional Leadership & Contact */}

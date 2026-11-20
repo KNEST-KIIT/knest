@@ -39,7 +39,9 @@ try {
         const { rows: [result] } = await client.query(
           'SELECT has_table_privilege($1::oid, $2) AS allowed', [table.oid, privilege],
         )
-        assert.equal(result.allowed, privilege !== 'TRUNCATE', `${schema}.${table.relname}: ${privilege}`)
+        // The audit trail is append-only for the runtime role (see privilegeStatements in src/db/runtime-role.ts).
+        const appendOnly = schema === 'app' && table.relname === 'audit_logs' && (privilege === 'UPDATE' || privilege === 'DELETE')
+        assert.equal(result.allowed, privilege !== 'TRUNCATE' && !appendOnly, `${schema}.${table.relname}: ${privilege}`)
       }
     }
   }

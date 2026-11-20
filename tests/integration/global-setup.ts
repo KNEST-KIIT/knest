@@ -1,5 +1,5 @@
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process'
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import net from 'node:net'
 import os from 'node:os'
 import path from 'node:path'
@@ -139,7 +139,9 @@ ${roleStep.stderr.slice(-800)}`)
   if (existsSync(path.join(ROOT, '.next', 'BUILD_ID'))) {
     server = spawn(process.execPath, [path.join(ROOT, 'node_modules/next/dist/bin/next'), 'start', ROOT, '-p', String(port), '-H', '127.0.0.1'], {
       cwd: work,
-      env: { ...env, DATABASE_URL: runtimeUrl.toString(), NODE_ENV: 'production', PATH: process.env.PATH },
+      // The production pool timeouts (5s to get a connection, 15s per statement) are tuned for a real database.
+      // A busy shared CI runner running a browser beside the server needs more room, or a slow moment reads as an outage.
+      env: { ...env, DATABASE_URL: runtimeUrl.toString(), NODE_ENV: 'production', PATH: process.env.PATH, DB_CONNECT_TIMEOUT_MS: '30000', DB_STATEMENT_TIMEOUT_MS: '60000' },
       stdio: ['ignore', 'pipe', 'pipe'],
     })
     const log: string[] = []
@@ -171,6 +173,18 @@ ${roleStep.stderr.slice(-800)}`)
   process.env.MALWARE_SCANNER_URL = scanner.endpoint
 
   return async () => {
+    // Show the end of the server's own log in the CI output, so a failed browser step can be traced to what the server said.
+    if (process.env.CI) {
+      try {
+        const tail = readFileSync(path.join(work, 'server.log'), 'utf8').slice(-6000)
+        if (tail.trim()) console.log(`
+--- server.log (tail) ---
+${tail}
+--- end server.log ---`)
+      } catch {
+        // no server log: nothing to show
+      }
+    }
     if (server?.pid) {
       if (process.platform === 'win32') {
         spawnSync('taskkill', ['/pid', String(server.pid), '/t', '/f'], { windowsHide: true, stdio: 'ignore' })

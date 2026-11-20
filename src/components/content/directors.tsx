@@ -49,7 +49,7 @@ export function Directors() {
 
       <ul className="mt-4 grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         {DIRECTORS.map((d) => (
-          <li key={d.name} className="min-w-0 border border-[var(--color-line)] bg-white">
+          <li key={d.name} className="flex min-w-0 flex-col border border-[var(--color-line)] bg-white">
             <div className="relative aspect-square w-full overflow-hidden bg-[var(--color-paper-soft)]">
               <Image
                 src={d.photo}
@@ -59,7 +59,7 @@ export function Directors() {
                 className="object-cover object-center"
               />
             </div>
-            <div className="flex flex-col items-start gap-2 border-t border-[var(--color-line)] p-3">
+            <div className="flex flex-1 flex-col items-start justify-between gap-2 border-t border-[var(--color-line)] p-3">
               <p className="font-[family-name:var(--font-display)] text-base md:text-lg font-bold leading-snug text-[var(--color-ink)]">
                 {d.name}
               </p>
