@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect, useCallback, useId } from 'react'
+import { useState, useEffect, useCallback, useId, useRef } from 'react'
 import Image from 'next/image'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { Heading } from '@/components/ui'
 
 export interface DirectorProfile {
@@ -109,21 +109,47 @@ export function Directors() {
   const titleId = useId()
   const descId = useId()
 
+  const reduceMotion = useReducedMotion()
+  const dialogRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLElement | null>(null)
+
+  const open = (d: DirectorProfile) => {
+    triggerRef.current = document.activeElement as HTMLElement | null
+    setSelectedDirector(d)
+  }
+
   const handleClose = useCallback(() => {
     setSelectedDirector(null)
+    triggerRef.current?.focus()
   }, [])
 
-  // Close on Escape key
+  // Escape closes, Tab stays inside the dialog, focus moves in on open and
+  // returns to the card that opened it on close.
   useEffect(() => {
+    if (!selectedDirector) return
+    const dialog = dialogRef.current
+    dialog?.focus()
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         handleClose()
+        return
+      }
+      if (e.key !== 'Tab' || !dialog) return
+      const focusable = dialog.querySelectorAll<HTMLElement>('a[href], button:not([disabled])')
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (!first || !last) return
+      const active = document.activeElement
+      if (e.shiftKey && (active === first || active === dialog)) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault()
+        first.focus()
       }
     }
-    if (selectedDirector) {
-      document.body.style.overflow = 'hidden'
-      window.addEventListener('keydown', handleKeyDown)
-    }
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', handleKeyDown)
     return () => {
       document.body.style.overflow = ''
       window.removeEventListener('keydown', handleKeyDown)
@@ -138,7 +164,7 @@ export function Directors() {
             Institutional Leadership
           </p>
           <Heading as="h2" size="display" className="mt-2 text-3xl lg:text-4xl text-[var(--color-ink)]">
-            Directors KiiTNEST
+            Board of Directors
           </Heading>
           <p className="mt-2 text-sm md:text-base text-[var(--color-ink-muted)]">
             Click any profile to view their institutional brief, focus areas, and leadership journey.
@@ -150,14 +176,14 @@ export function Directors() {
         {DIRECTORS.map((d) => (
           <motion.li
             key={d.name}
-            whileHover={{ y: -4 }}
+            whileHover={reduceMotion ? undefined : { y: -4 }}
             transition={{ duration: 0.2 }}
             className="group relative flex min-w-0 flex-col border border-[var(--color-line)] bg-white shadow-xs transition-shadow hover:shadow-md hover:border-[var(--color-signal)]"
           >
             {/* Clickable Card Media */}
             <button
               type="button"
-              onClick={() => setSelectedDirector(d)}
+              onClick={() => open(d)}
               className="relative aspect-square w-full overflow-hidden bg-[var(--color-paper-soft)] cursor-pointer text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-signal)]"
               aria-haspopup="dialog"
               aria-label={`View full profile and brief for ${d.name}`}
@@ -167,7 +193,7 @@ export function Directors() {
                 alt={`Portrait of ${d.name}`}
                 fill
                 sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
-                className="object-cover object-center transition-transform duration-500 ease-out group-hover:scale-105"
+                className="object-cover object-center transition-transform duration-300 ease-out group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-ink)]/70 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 flex items-end p-3">
                 <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-white/95 px-2.5 py-1 text-xs font-bold text-[var(--color-ink)] shadow-xs">
@@ -180,19 +206,15 @@ export function Directors() {
             {/* Card Footer */}
             <div className="flex flex-1 flex-col items-start justify-between gap-3 border-t border-[var(--color-line)] p-3.5">
               <div className="w-full">
-                <button
-                  type="button"
-                  onClick={() => setSelectedDirector(d)}
-                  className="w-full text-left font-[family-name:var(--font-display)] text-base md:text-lg font-bold leading-snug text-[var(--color-ink)] transition-colors hover:text-[var(--color-signal)] cursor-pointer"
-                >
+                <p className="font-[family-name:var(--font-display)] text-base md:text-lg font-bold leading-snug text-[var(--color-ink)]">
                   {d.name}
-                </button>
+                </p>
               </div>
 
               <div className="flex w-full items-center justify-between gap-2 border-t border-[var(--color-line)]/50 pt-2.5">
                 <button
                   type="button"
-                  onClick={() => setSelectedDirector(d)}
+                  onClick={() => open(d)}
                   className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-signal)] hover:underline cursor-pointer"
                 >
                   <span>Profile Brief</span>
@@ -239,11 +261,13 @@ export function Directors() {
               aria-modal="true"
               aria-labelledby={titleId}
               aria-describedby={descId}
-              initial={{ opacity: 0, scale: 0.95, y: 16 }}
+              ref={dialogRef}
+              tabIndex={-1}
+              initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.95, y: 16 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 16 }}
+              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.95, y: 16 }}
               transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-              className="relative z-10 flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden border border-[var(--color-line)] bg-white shadow-2xl rounded-[var(--radius-sm)]"
+              className="relative z-10 flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden outline-none border border-[var(--color-line)] bg-white shadow-2xl rounded-[var(--radius-sm)]"
             >
               {/* Header Bar */}
               <div className="flex items-center justify-between border-b border-[var(--color-line)] bg-[var(--color-paper-soft)] px-5 py-3.5">
@@ -269,6 +293,7 @@ export function Directors() {
                       src={selectedDirector.photo}
                       alt={`Portrait of ${selectedDirector.name}`}
                       fill
+                      sizes="8rem"
                       className="object-cover object-center"
                     />
                   </div>

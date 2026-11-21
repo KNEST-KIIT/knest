@@ -41,7 +41,7 @@ export default async function HomePage() {
       },
     ),
     getEcosystemCounts(),
-    track('landing_view').catch((err) => console.error('Homepage: analytics track failed', err)),
+    track('landing_view'),
   ])
   const sections = enabledSections(homepage)
 
