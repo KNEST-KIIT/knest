@@ -2,7 +2,7 @@ import Image from 'next/image'
 import { Heading } from '@/components/ui'
 
 /**
- * The four Directors of KiiTNEST. Cards carry a photo, a name and a LinkedIn
+ * The four members of the KiiTNEST Board of Directors. Cards carry a photo, a name and a LinkedIn
  * link and nothing else: the stakeholders asked for no designations here. Their
  * KiiTNEST designations belong on the Team page once confirmed.
  */
@@ -43,7 +43,7 @@ export function Directors() {
       <div className="max-w-3xl">
         <p className="text-xs uppercase tracking-[0.2em] font-bold text-[var(--color-signal)]">Leadership</p>
         <Heading as="h2" size="display" className="mt-2 text-3xl lg:text-4xl text-[var(--color-ink)]">
-          Directors KiiTNEST
+          Board of Directors
         </Heading>
       </div>
 
