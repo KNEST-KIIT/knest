@@ -56,6 +56,12 @@ export async function track(
   props?: Record<string, unknown>,
   options?: { userId?: string },
 ): Promise<void> {
+  // In development, skip writing analytics if no local DB is available so local
+  // browsing and UI design work is never blocked by connection timeouts.
+  if (process.env.NODE_ENV !== 'production' && !process.env.ENABLE_LOCAL_ANALYTICS) {
+    return
+  }
+
   try {
     const [sessionUser, sessionId] = await Promise.all([getSessionUser(), getOrSetSessionId()])
     const userId = options?.userId ?? sessionUser?.id
@@ -66,10 +72,18 @@ export async function track(
       props,
     })
   } catch (error) {
-    // Next uses framework-controlled exceptions to opt a route out of static
-    // rendering. Swallowing one here makes the build noisy and can render with
-    // the wrong caching semantics; only genuine analytics failures are best-effort.
-    unstable_rethrow(error)
-    console.error('Failed to record analytics event:', event, error)
+    // Only rethrow Next.js internal control-flow exceptions (like redirect or notFound).
+    // Database connection, network, or pool errors must NEVER crash the request.
+    if (
+      error &&
+      typeof error === 'object' &&
+      'digest' in error &&
+      typeof (error as { digest?: unknown }).digest === 'string' &&
+      ((error as { digest: string }).digest.startsWith('NEXT_REDIRECT') ||
+        (error as { digest: string }).digest.startsWith('NEXT_NOT_FOUND'))
+    ) {
+      unstable_rethrow(error)
+    }
+    console.warn('[analytics] tracking event skipped:', event, (error as Error)?.message ?? error)
   }
 }
